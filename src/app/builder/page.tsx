@@ -1,24 +1,24 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import CEPageHeader from "@/components/ui/cepageheader";
 
 import { BuilderProvider } from "@/components/builder/context/buildercontext";
-import NavigationTabsManager from "@/components/builder/navigation/navigationtabsmanager";
+
 import OrganizationSection from "@/components/builder/organization/organizationsection";
+import NavigationTabsManager from "@/components/builder/navigation/navigationtabsmanager";
+
 import PerformanceSheet from "@/components/builder/performance/performancesheet";
 import PerformanceHeader from "@/components/builder/performance/performanceheader";
+
 import Objectives from "@/components/builder/objectives/objectives";
 import Comments from "@/components/builder/comments/comments";
 
-import CEPageHeader from "@/components/ui/cepageheader";
-
-
 export default function BuilderPage() {
- 
-
   return (
     <BuilderProvider>
       <main className="min-h-screen bg-slate-100">
+
         {/* ================= PAGE HEADER ================= */}
 
         <CEPageHeader
@@ -56,6 +56,7 @@ export default function BuilderPage() {
           {/* ================= Organization ================= */}
 
           <OrganizationSection />
+
           {/* ================= Navigation ================= */}
 
           <NavigationTabsManager />
@@ -73,6 +74,7 @@ export default function BuilderPage() {
           </PerformanceSheet>
 
         </div>
+
       </main>
     </BuilderProvider>
   );

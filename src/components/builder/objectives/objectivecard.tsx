@@ -3,45 +3,86 @@
 import { Button } from "@/components/ui/button";
 import CECard from "@/components/ui/cecard";
 
-import BuilderSection from "@/components/builder/shared/buildersection";
-import { useBuilder } from "@/components/builder/context/buildercontext";
+import type { BuilderObjective } from "@/lib/types/builderdocument";
 
-import ObjectiveCard from "./objectivecard";
+type ObjectiveCardProps = {
+  objective: BuilderObjective;
+};
 
-export default function Objectives() {
-  const { builderDocument } = useBuilder();
-
+export default function ObjectiveCard({
+  objective,
+}: ObjectiveCardProps) {
   return (
-    <BuilderSection
-      title="Objectives"
-      toolbar={
-        <div className="flex gap-2">
-          <Button variant="outline">
-            Configure
-          </Button>
+    <CECard>
+      <div className="space-y-6">
 
-          <Button>
-            + Add Objective
-          </Button>
+        {/* ================= Header ================= */}
+
+        <div className="flex items-start justify-between">
+
+          <div>
+            <h3 className="text-lg font-semibold">
+              {objective.title}
+            </h3>
+
+            <p className="mt-2 text-sm text-slate-600">
+              {objective.description}
+            </p>
+          </div>
+
+          <div className="text-right">
+            <p className="text-xs uppercase text-slate-500">
+              Weight
+            </p>
+
+            <p className="text-xl font-bold">
+              {objective.weight}%
+            </p>
+          </div>
+
         </div>
-      }
-    >
-      <CECard>
 
-        <div className="space-y-8">
+        {/* ================= Key Results ================= */}
 
-          {builderDocument.objectives.map((objective) => (
+        <div className="space-y-3">
 
-            <ObjectiveCard
-              key={objective.id}
-              objective={objective}
-            />
+          {objective.keyResults.map((kr) => (
+
+            <div
+              key={kr.id}
+              className="rounded-md border p-4"
+            >
+              <div className="font-medium">
+                {kr.title}
+              </div>
+
+              <div className="mt-2 flex gap-6 text-sm text-slate-600">
+                <span>Target: {kr.target}</span>
+                <span>Current: {kr.current}</span>
+                <span>Score: {kr.score}</span>
+              </div>
+
+            </div>
 
           ))}
 
         </div>
 
-      </CECard>
-    </BuilderSection>
+        {/* ================= Footer ================= */}
+
+        <div className="flex justify-end gap-2">
+
+          <Button variant="outline">
+            Edit
+          </Button>
+
+          <Button variant="outline">
+            Delete
+          </Button>
+
+        </div>
+
+      </div>
+    </CECard>
   );
 }
