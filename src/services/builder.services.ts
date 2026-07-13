@@ -1,6 +1,6 @@
 // src/services/builderservice.ts
 
-import { BuilderState } from "@/types/builder";
+import { BuilderState } from "@/lib/types/builder";
 
 export async function loadBuilder(): Promise<BuilderState> {
   return {

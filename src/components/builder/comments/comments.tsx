@@ -1,48 +1,45 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import CECard from "@/components/ui/cecard";
 
-export default function comments() {
+import BuilderSection from "@/components/builder/shared/buildersection";
+import { useBuilder } from "@/components/builder/context/buildercontext";
+
+export default function Comments() {
+  const { builderDocument } = useBuilder();
+
   return (
-    <section className="rounded-xl border bg-white p-6 shadow-sm">
-
-      {/* Header */}
-
-      <div className="flex items-center justify-between">
-
-        <h2 className="text-xl font-semibold">
-          Comments
-        </h2>
-
+    <BuilderSection
+      title="Comments"
+      toolbar={
         <Button variant="outline">
-          ⚙ Configure
+          Configure
         </Button>
+      }
+    >
+      <CECard>
 
-      </div>
+        <div className="rounded-lg border bg-slate-50 p-6">
 
-      {/* Content */}
+          <label className="mb-3 block text-sm font-medium text-slate-700">
+            {builderDocument.comments.label}
+          </label>
 
-      <div className="mt-6 rounded-lg border bg-slate-50 p-6">
+          <textarea
+            rows={6}
+            disabled
+            placeholder={builderDocument.comments.placeholder}
+            className="w-full resize-none rounded-lg border border-slate-300 bg-white p-4 text-slate-500 outline-none"
+          />
 
-        <label className="mb-3 block text-sm font-medium text-slate-700">
-          Manager / Employee Comments
-        </label>
+          <p className="mt-3 text-sm text-slate-500">
+            {builderDocument.comments.helpText}
+          </p>
 
-        <textarea
-          rows={6}
-          disabled
-          placeholder="Comments placeholder..."
-          className="w-full resize-none rounded-lg border border-slate-300 bg-white p-4 text-slate-500 outline-none"
-        />
+        </div>
 
-        <p className="mt-3 text-sm text-slate-500">
-          Comments provide additional context, coaching notes, observations,
-          accomplishments, challenges, and discussion points related to the
-          current performance period.
-        </p>
-
-      </div>
-
-    </section>
+      </CECard>
+    </BuilderSection>
   );
 }

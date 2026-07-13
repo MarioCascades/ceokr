@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { Organization } from "@/types/organization";
+import { Organization } from "@/lib/types/organization";
 import { getOrganization } from "@/services/organization.service";
 
 export function useOrganization() {

@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
-import { Organization } from "@/types/organization";
+import { Organization } from "@/lib/types/organization";
 
 export async function getOrganization(): Promise<Organization | null> {
   const { data, error } = await supabase

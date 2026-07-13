@@ -1,54 +1,76 @@
+"use client";
+
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import CECard from "@/components/ui/cecard";
 
-interface OrganizationSectionProps {
-  companyName?: string;
-}
+import BuilderSection from "@/components/builder/shared/buildersection";
+import OrganizationDialog from "./organizationdialog";
 
-export default function OrganizationSection({
-  companyName,
-}: OrganizationSectionProps) {
+import { useBuilder } from "@/components/builder/context/buildercontext";
+
+export default function OrganizationSection() {
+  const { builderDocument } = useBuilder();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   return (
-    <CECard>
+    <>
+      <BuilderSection
+        title="Organization"
+        toolbar={
+          <Button
+            variant="outline"
+            onClick={() => setDialogOpen(true)}
+          >
+            Configure
+          </Button>
+        }
+      >
+        <CECard>
 
-      <div className="flex justify-end">
+          <div className="flex flex-col items-center rounded-xl bg-slate-50 px-10 py-12 text-center">
 
-        <Button variant="outline">
-          Configure
-        </Button>
+            {/* Logo */}
 
-      </div>
+            <div className="flex h-28 w-28 items-center justify-center rounded-full border-2 border-dashed border-slate-300 bg-white">
 
-      <div className="mt-6 flex flex-col items-center rounded-xl bg-slate-50 px-10 py-12 text-center">
+              <span className="text-sm italic text-slate-400">
+                Logo Placeholder
+              </span>
 
-        {/* Logo */}
+            </div>
 
-        <div className="flex h-28 w-28 items-center justify-center rounded-full border-2 border-dashed border-slate-300 bg-white">
+            {/* Organization */}
 
-          <span className="text-sm italic text-slate-400">
-            Logo Placeholder
-          </span>
+            <h2 className="mt-8 text-4xl font-bold italic text-slate-400">
 
-        </div>
+              {builderDocument.organization.companyName}
 
-        {/* Organization */}
+            </h2>
 
-        <h2 className="mt-8 text-4xl font-bold italic text-slate-400">
+            <p className="mt-3 text-lg font-medium text-slate-600">
+              Performance Management Platform
+            </p>
 
-          {companyName ?? "Organization Name Placeholder"}
+            <p className="mt-2 italic text-slate-400">
 
-        </h2>
+              {builderDocument.organization.tagline}
 
-        <p className="mt-3 text-lg font-medium text-slate-600">
-          Performance Management Platform
-        </p>
+            </p>
 
-        <p className="mt-2 italic text-slate-400">
-          Organization Tagline Placeholder
-        </p>
+          </div>
 
-      </div>
+        </CECard>
+      </BuilderSection>
 
-    </CECard>
+      <OrganizationDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        companyName={builderDocument.organization.companyName}
+        tagline={builderDocument.organization.tagline ?? ""}
+      />
+    </>
   );
 }
