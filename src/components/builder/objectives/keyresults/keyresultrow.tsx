@@ -2,10 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 
-import type { KeyResult } from "../objectives";
+import type { BuilderKeyResult } from "@/lib/types/builderdocument";
 
 interface KeyResultRowProps {
-  keyResult: KeyResult;
+  keyResult: BuilderKeyResult;
 }
 
 export default function KeyResultRow({
@@ -14,9 +14,13 @@ export default function KeyResultRow({
   return (
     <div className="rounded-lg border bg-white p-5">
 
+      {/* ================= Title ================= */}
+
       <h5 className="text-lg font-semibold">
         {keyResult.title}
       </h5>
+
+      {/* ================= Metrics ================= */}
 
       <div className="mt-5 grid grid-cols-3 gap-6">
 
@@ -36,6 +40,8 @@ export default function KeyResultRow({
         />
 
       </div>
+
+      {/* ================= Actions ================= */}
 
       <div className="mt-6 flex justify-end">
 
