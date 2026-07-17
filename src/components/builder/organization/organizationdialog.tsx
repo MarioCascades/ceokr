@@ -3,80 +3,64 @@
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import CEDialog from "@/components/ui/cedialog";
+import CEField from "@/components/ui/cefield";
+import CEInput from "@/components/ui/ceinput";
+
+import { BuilderOrganization } from "@/lib/types/builderdocument";
+
+import { useBuilder } from "@/components/builder/context/buildercontext";
 
 interface OrganizationDialogProps {
-  companyName: string;
-  tagline: string;
+  organization: BuilderOrganization;
 
   open: boolean;
+
   onClose: () => void;
 }
 
 export default function OrganizationDialog({
-  companyName,
-  tagline,
+  organization,
   open,
   onClose,
 }: OrganizationDialogProps) {
-  const [name, setName] = useState(companyName);
+  const { updateOrganization } = useBuilder();
 
-  const [organizationTagline, setOrganizationTagline] =
-    useState(tagline);
+  const [companyName, setCompanyName] = useState("");
+  const [tagline, setTagline] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
 
   useEffect(() => {
-    setName(companyName);
-    setOrganizationTagline(tagline);
-  }, [companyName, tagline, open]);
+    if (!open) return;
 
-  if (!open) {
-    return null;
+    setCompanyName(organization.companyName);
+    setTagline(organization.tagline ?? "");
+    setLogoUrl(organization.logoUrl ?? "");
+  }, [organization, open]);
+
+  function handleSave() {
+    updateOrganization({
+      companyName,
+      tagline,
+      logoUrl,
+    });
+
+    onClose();
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-
-      <div className="w-full max-w-2xl rounded-xl bg-white p-8 shadow-xl">
-
-        <h2 className="text-2xl font-bold">
-          Configure Organization
-        </h2>
-
-        <div className="mt-8 space-y-6">
-
-          <div>
-
-            <label className="mb-2 block text-sm font-medium">
-              Company Name
-            </label>
-
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border p-3"
-            />
-
-          </div>
-
-          <div>
-
-            <label className="mb-2 block text-sm font-medium">
-              Tagline
-            </label>
-
-            <input
-              value={organizationTagline}
-              onChange={(e) =>
-                setOrganizationTagline(e.target.value)
-              }
-              className="w-full rounded-lg border p-3"
-            />
-
-          </div>
-
-        </div>
-
-        <div className="mt-10 flex justify-end gap-3">
-
+    <CEDialog
+      open={open}
+      onOpenChange={(value) => {
+        if (!value) {
+          onClose();
+        }
+      }}
+      title="Configure Organization"
+      description="Configure the organization details shown on the Performance Sheet."
+      size="lg"
+      footer={
+        <>
           <Button
             variant="outline"
             onClick={onClose}
@@ -84,14 +68,54 @@ export default function OrganizationDialog({
             Cancel
           </Button>
 
-          <Button>
+          <Button
+            onClick={handleSave}
+          >
             Save
           </Button>
+        </>
+      }
+    >
+      <div className="space-y-6">
 
-        </div>
+        <CEField
+          label="Company Name"
+          required
+        >
+          <CEInput
+            value={companyName}
+            onChange={(e) =>
+              setCompanyName(e.target.value)
+            }
+            placeholder="Enter company name"
+          />
+        </CEField>
+
+        <CEField
+          label="Tagline"
+        >
+          <CEInput
+            value={tagline}
+            onChange={(e) =>
+              setTagline(e.target.value)
+            }
+            placeholder="Enter company tagline"
+          />
+        </CEField>
+
+        <CEField
+          label="Logo URL"
+        >
+          <CEInput
+            value={logoUrl}
+            onChange={(e) =>
+              setLogoUrl(e.target.value)
+            }
+            placeholder="https://..."
+          />
+        </CEField>
 
       </div>
-
-    </div>
+    </CEDialog>
   );
 }

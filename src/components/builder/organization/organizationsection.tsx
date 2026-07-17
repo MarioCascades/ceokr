@@ -29,22 +29,29 @@ export default function OrganizationSection() {
         }
       >
         <CECard>
-
           <div className="flex flex-col items-center rounded-xl bg-slate-50 px-10 py-12 text-center">
 
             {/* Logo */}
 
-            <div className="flex h-28 w-28 items-center justify-center rounded-full border-2 border-dashed border-slate-300 bg-white">
+            <div className="flex h-28 w-28 items-center justify-center rounded-full border-2 border-dashed border-slate-300 bg-white overflow-hidden">
 
-              <span className="text-sm italic text-slate-400">
-                Logo Placeholder
-              </span>
+              {builderDocument.organization.logoUrl ? (
+                <img
+                  src={builderDocument.organization.logoUrl}
+                  alt={builderDocument.organization.companyName}
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <span className="text-sm italic text-slate-400">
+                  Logo Placeholder
+                </span>
+              )}
 
             </div>
 
             {/* Organization */}
 
-            <h2 className="mt-8 text-4xl font-bold italic text-slate-400">
+            <h2 className="mt-8 text-4xl font-bold text-slate-800">
 
               {builderDocument.organization.companyName}
 
@@ -54,22 +61,20 @@ export default function OrganizationSection() {
               Performance Management Platform
             </p>
 
-            <p className="mt-2 italic text-slate-400">
+            <p className="mt-2 italic text-slate-500">
 
               {builderDocument.organization.tagline}
 
             </p>
 
           </div>
-
         </CECard>
       </BuilderSection>
 
       <OrganizationDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        companyName={builderDocument.organization.companyName}
-        tagline={builderDocument.organization.tagline ?? ""}
+        organization={builderDocument.organization}
       />
     </>
   );
