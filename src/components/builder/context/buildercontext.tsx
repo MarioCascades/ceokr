@@ -7,8 +7,27 @@ import {
   ReactNode,
 } from "react";
 
+import { BuilderDocument } from "@/lib/types/builderdocument";
+import { initialBuilderDocument } from "@/lib/builder/builderdefaults";
+
 import {
-  BuilderDocument,
+  updateOrganization as updateOrganizationAction,
+  updatePerformanceHeader as updatePerformanceHeaderAction,
+  addObjective as addObjectiveAction,
+  updateObjective as updateObjectiveAction,
+  deleteObjective as deleteObjectiveAction,
+  addKeyResult as addKeyResultAction,
+  updateKeyResult as updateKeyResultAction,
+  deleteKeyResult as deleteKeyResultAction,
+  updateComments as updateCommentsAction,
+} from "@/lib/builder/builderactions";
+
+import {
+  BuilderOrganization,
+  BuilderPerformanceHeader,
+  BuilderObjective,
+  BuilderKeyResult,
+  BuilderComments,
 } from "@/lib/types/builderdocument";
 
 type BuilderContextType = {
@@ -19,114 +38,54 @@ type BuilderContextType = {
   setActiveSheet: React.Dispatch<React.SetStateAction<string>>;
 
   builderDocument: BuilderDocument;
+
   setBuilderDocument: React.Dispatch<
     React.SetStateAction<BuilderDocument>
   >;
+
+  updateOrganization: (
+    organization: BuilderOrganization
+  ) => void;
+
+  updatePerformanceHeader: (
+    header: BuilderPerformanceHeader
+  ) => void;
+
+  addObjective: (
+    objective: BuilderObjective
+  ) => void;
+
+  updateObjective: (
+    objective: BuilderObjective
+  ) => void;
+
+  deleteObjective: (
+    objectiveId: string
+  ) => void;
+
+  addKeyResult: (
+    objectiveId: string,
+    keyResult: BuilderKeyResult
+  ) => void;
+
+  updateKeyResult: (
+    objectiveId: string,
+    keyResult: BuilderKeyResult
+  ) => void;
+
+  deleteKeyResult: (
+    objectiveId: string,
+    keyResultId: string
+  ) => void;
+
+  updateComments: (
+    comments: BuilderComments
+  ) => void;
 };
 
-const initialBuilderDocument: BuilderDocument = {
-  id: "builder-document",
-
-  organization: {
-    companyName: "Test 1",
-    tagline: "Organization Tagline Placeholder",
-    logoUrl: "",
-  },
-
-  navigation: {
-    tabs: [],
-  },
-
-  performanceHeader: {
-    employeeName: "Employee Name Placeholder",
-    employeeRole: "Role Placeholder",
-    roleDescription:
-      "Role description placeholder. This area will contain a brief description of the employee's responsibilities and expectations within the organization.",
-
-    metrics: [
-      {
-        id: "timeframe",
-        title: "OKR Timeframe",
-        value: "July 2026",
-      },
-      {
-        id: "10-state",
-        title: "10-State",
-        value: "8 / 10",
-      },
-      {
-        id: "updated",
-        title: "Date Updated",
-        value: "July 7, 2026",
-      },
-      {
-        id: "period",
-        title: "% Into Period",
-        value: "20%",
-      },
-    ],
-  },
-
-  objectives: [
-  {
-    id: "objective-1",
-
-    title: "Objective Placeholder",
-
-    description:
-      "Objective description placeholder. This area will contain a description of the objective and explain the intended outcome.",
-
-    weight: 30,
-
-    keyResults: [
-      {
-        id: "kr-1",
-
-        title: "Key Result Placeholder",
-
-        target: "—",
-
-        current: "—",
-
-        score: "—",
-      },
-      {
-        id: "kr-2",
-
-        title: "Key Result Placeholder",
-
-        target: "—",
-
-        current: "—",
-
-        score: "—",
-      },
-      {
-        id: "kr-3",
-
-        title: "Key Result Placeholder",
-
-        target: "—",
-
-        current: "—",
-
-        score: "—",
-      },
-    ],
-  },
-],
-
-  comments: {
-    label: "Manager / Employee Comments",
-    placeholder: "Comments placeholder...",
-    helpText:
-      "Comments provide additional context, coaching notes, observations, accomplishments, challenges, and discussion points related to the current performance period.",
-  },
-};
-
-const BuilderContext = createContext<BuilderContextType | undefined>(
-  undefined
-);
+const BuilderContext = createContext<
+  BuilderContextType | undefined
+>(undefined);
 
 export function BuilderProvider({
   children,
@@ -141,6 +100,111 @@ export function BuilderProvider({
   const [builderDocument, setBuilderDocument] =
     useState(initialBuilderDocument);
 
+  const updateOrganization = (
+    organization: BuilderOrganization
+  ) => {
+    setBuilderDocument((current) =>
+      updateOrganizationAction(
+        current,
+        organization
+      )
+    );
+  };
+
+  const updatePerformanceHeader = (
+    header: BuilderPerformanceHeader
+  ) => {
+    setBuilderDocument((current) =>
+      updatePerformanceHeaderAction(
+        current,
+        header
+      )
+    );
+  };
+
+  const addObjective = (
+    objective: BuilderObjective
+  ) => {
+    setBuilderDocument((current) =>
+      addObjectiveAction(
+        current,
+        objective
+      )
+    );
+  };
+
+  const updateObjective = (
+    objective: BuilderObjective
+  ) => {
+    setBuilderDocument((current) =>
+      updateObjectiveAction(
+        current,
+        objective
+      )
+    );
+  };
+
+  const deleteObjective = (
+    objectiveId: string
+  ) => {
+    setBuilderDocument((current) =>
+      deleteObjectiveAction(
+        current,
+        objectiveId
+      )
+    );
+  };
+
+  const addKeyResult = (
+    objectiveId: string,
+    keyResult: BuilderKeyResult
+  ) => {
+    setBuilderDocument((current) =>
+      addKeyResultAction(
+        current,
+        objectiveId,
+        keyResult
+      )
+    );
+  };
+
+  const updateKeyResult = (
+    objectiveId: string,
+    keyResult: BuilderKeyResult
+  ) => {
+    setBuilderDocument((current) =>
+      updateKeyResultAction(
+        current,
+        objectiveId,
+        keyResult
+      )
+    );
+  };
+
+  const deleteKeyResult = (
+    objectiveId: string,
+    keyResultId: string
+  ) => {
+    setBuilderDocument((current) =>
+      deleteKeyResultAction(
+        current,
+        objectiveId,
+        keyResultId
+      )
+    );
+  };
+
+  const updateComments = (
+    comments: BuilderComments
+  ) => {
+    setBuilderDocument((current) =>
+      updateCommentsAction(
+        current,
+        comments
+      )
+    );
+  };
+
   return (
     <BuilderContext.Provider
       value={{
@@ -152,6 +216,19 @@ export function BuilderProvider({
 
         builderDocument,
         setBuilderDocument,
+
+        updateOrganization,
+        updatePerformanceHeader,
+
+        addObjective,
+        updateObjective,
+        deleteObjective,
+
+        addKeyResult,
+        updateKeyResult,
+        deleteKeyResult,
+
+        updateComments,
       }}
     >
       {children}
