@@ -4,6 +4,7 @@ import {
   BuilderPerformanceHeader,
   BuilderObjective,
   BuilderKeyResult,
+  BuilderInitiative,
   BuilderComments,
 } from "@/lib/types/builderdocument";
 
@@ -142,6 +143,109 @@ export function deleteKeyResult(
         keyResults: objective.keyResults.filter(
           (kr) => kr.id !== keyResultId
         ),
+      };
+    }),
+  };
+}
+
+/* ==========================================================
+   Initiatives
+========================================================== */
+
+export function addInitiative(
+  document: BuilderDocument,
+  objectiveId: string,
+  keyResultId: string,
+  initiative: BuilderInitiative
+): BuilderDocument {
+  return {
+    ...document,
+    objectives: document.objectives.map((objective) => {
+      if (objective.id !== objectiveId) {
+        return objective;
+      }
+
+      return {
+        ...objective,
+        keyResults: objective.keyResults.map((kr) => {
+          if (kr.id !== keyResultId) {
+            return kr;
+          }
+
+          return {
+            ...kr,
+            initiatives: [
+              ...kr.initiatives,
+              initiative,
+            ],
+          };
+        }),
+      };
+    }),
+  };
+}
+
+export function updateInitiative(
+  document: BuilderDocument,
+  objectiveId: string,
+  keyResultId: string,
+  initiative: BuilderInitiative
+): BuilderDocument {
+  return {
+    ...document,
+    objectives: document.objectives.map((objective) => {
+      if (objective.id !== objectiveId) {
+        return objective;
+      }
+
+      return {
+        ...objective,
+        keyResults: objective.keyResults.map((kr) => {
+          if (kr.id !== keyResultId) {
+            return kr;
+          }
+
+          return {
+            ...kr,
+            initiatives: kr.initiatives.map((i) =>
+              i.id === initiative.id
+                ? initiative
+                : i
+            ),
+          };
+        }),
+      };
+    }),
+  };
+}
+
+export function deleteInitiative(
+  document: BuilderDocument,
+  objectiveId: string,
+  keyResultId: string,
+  initiativeId: string
+): BuilderDocument {
+  return {
+    ...document,
+    objectives: document.objectives.map((objective) => {
+      if (objective.id !== objectiveId) {
+        return objective;
+      }
+
+      return {
+        ...objective,
+        keyResults: objective.keyResults.map((kr) => {
+          if (kr.id !== keyResultId) {
+            return kr;
+          }
+
+          return {
+            ...kr,
+            initiatives: kr.initiatives.filter(
+              (i) => i.id !== initiativeId
+            ),
+          };
+        }),
       };
     }),
   };

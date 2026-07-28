@@ -67,6 +67,10 @@ export const initialBuilderDocument: BuilderDocument = {
           current: "—",
 
           score: "—",
+
+          weight: 10,
+
+          initiatives: [],
         },
         {
           id: "kr-2",
@@ -78,6 +82,10 @@ export const initialBuilderDocument: BuilderDocument = {
           current: "—",
 
           score: "—",
+
+          weight: 10,
+
+          initiatives: [],
         },
         {
           id: "kr-3",
@@ -89,6 +97,10 @@ export const initialBuilderDocument: BuilderDocument = {
           current: "—",
 
           score: "—",
+
+          weight: 10,
+
+          initiatives: [],
         },
       ],
     },

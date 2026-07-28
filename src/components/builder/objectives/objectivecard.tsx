@@ -90,7 +90,7 @@ export default function ObjectiveCard({
       <CECard>
         <div className="space-y-6">
 
-          {/* Header */}
+          {/* ================= Header ================= */}
 
           <div className="flex items-start justify-between">
 
@@ -120,17 +120,17 @@ export default function ObjectiveCard({
 
           </div>
 
-          {/* Key Results */}
+          {/* ================= Key Results ================= */}
 
           <KeyResults
-            keyResults={objective.keyResults}
+            objective={objective}
             editMode={editMode}
             onAdd={handleAddKeyResult}
             onEdit={handleEditKeyResult}
             onDelete={handleDeleteKeyResult}
           />
 
-          {/* Footer */}
+          {/* ================= Footer ================= */}
 
           <div className="flex justify-end gap-2">
 

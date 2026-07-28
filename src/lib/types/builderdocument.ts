@@ -3,15 +3,7 @@
  * CascadEffects Performance Platform
  * Builder Document
  * ----------------------------------------------------------
- * This is the master document edited by the Builder.
- * The same document will eventually be used by:
- *
- * • Builder
- * • Runtime
- * • AI Services
- * • Reports
- * • PDF Export
- * • Database Storage
+ * Master document edited by the Builder.
  * ==========================================================
  */
 
@@ -97,6 +89,10 @@ export interface BuilderObjective {
   keyResults: BuilderKeyResult[];
 }
 
+/* ==========================================================
+   Key Results
+========================================================== */
+
 export interface BuilderKeyResult {
   id: string;
 
@@ -109,6 +105,18 @@ export interface BuilderKeyResult {
   score: string;
 
   weight: number;
+
+  initiatives: BuilderInitiative[];
+}
+
+/* ==========================================================
+   Initiatives
+========================================================== */
+
+export interface BuilderInitiative {
+  id: string;
+
+  text: string;
 }
 
 /* ==========================================================

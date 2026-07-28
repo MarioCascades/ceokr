@@ -66,6 +66,8 @@ export default function KeyResultDialog({
       score,
 
       weight,
+
+      initiatives: keyResult?.initiatives ?? [],
     };
 
     onSave(updatedKeyResult);
