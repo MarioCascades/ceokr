@@ -107,6 +107,8 @@ export interface BuilderKeyResult {
   current: string;
 
   score: string;
+
+  weight: number;
 }
 
 /* ==========================================================
