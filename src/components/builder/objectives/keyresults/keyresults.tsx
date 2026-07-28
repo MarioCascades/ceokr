@@ -32,22 +32,20 @@ export default function KeyResults({
           <KeyResultRow
             key={keyResult.id}
             keyResult={keyResult}
-            editMode={editMode}
+            editMode={true}
             onEdit={onEdit}
             onDelete={onDelete}
           />
         ))
       )}
 
-      {editMode && (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={onAdd}
-        >
-          + Add Key Result
-        </Button>
-      )}
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={onAdd}
+      >
+        + Add Key Result
+      </Button>
     </div>
   );
 }
