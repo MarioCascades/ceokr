@@ -1,115 +1,70 @@
-import { BuilderDocument } from "@/lib/types/builderdocument";
+import type {
+  BuilderDocument,
+} from "@/lib/types/builderdocument";
+
+/* ==========================================================
+   Initial Builder Document
+   ----------------------------------------------------------
+   This represents a new, unconfigured performance sheet.
+
+   IMPORTANT:
+   Placeholder/example Objectives and Key Results should NOT
+   exist here because Builder validation treats objects in
+   these arrays as real configuration data.
+
+   Visual empty states belong in the UI components instead.
+========================================================== */
 
 export const initialBuilderDocument: BuilderDocument = {
   id: "builder-document",
 
+  /* ========================================================
+     Organization
+  ======================================================== */
+
   organization: {
-    companyName: "Test 1",
-    tagline: "Organization Tagline Placeholder",
+    companyName: "",
+    tagline: "",
     logoUrl: "",
   },
+
+  /* ========================================================
+     Navigation
+  ======================================================== */
 
   navigation: {
     tabs: [],
   },
 
+  /* ========================================================
+     Performance Header
+  ======================================================== */
+
   performanceHeader: {
-    employeeName: "Employee Name Placeholder",
+    employeeName: "",
 
-    employeeRole: "Role Placeholder",
+    employeeRole: "",
 
-    roleDescription:
-      "Role description placeholder. This area will contain a brief description of the employee's responsibilities and expectations within the organization.",
+    roleDescription: "",
 
-    metrics: [
-      {
-        id: "timeframe",
-        title: "OKR Timeframe",
-        value: "July 2026",
-      },
-      {
-        id: "10-state",
-        title: "10-State",
-        value: "8 / 10",
-      },
-      {
-        id: "updated",
-        title: "Date Updated",
-        value: "July 7, 2026",
-      },
-      {
-        id: "period",
-        title: "% Into Period",
-        value: "20%",
-      },
-    ],
+    metrics: [],
   },
 
-  objectives: [
-    {
-      id: "objective-1",
+  /* ========================================================
+     Objectives
+  ======================================================== */
 
-      title: "Objective Placeholder",
+  objectives: [],
 
-      description:
-        "Objective description placeholder. This area will contain a description of the objective and explain the intended outcome.",
-
-      weight: 30,
-
-      keyResults: [
-        {
-          id: "kr-1",
-
-          title: "Key Result Placeholder",
-
-          target: "—",
-
-          current: "—",
-
-          score: "—",
-
-          weight: 10,
-
-          initiatives: [],
-        },
-        {
-          id: "kr-2",
-
-          title: "Key Result Placeholder",
-
-          target: "—",
-
-          current: "—",
-
-          score: "—",
-
-          weight: 10,
-
-          initiatives: [],
-        },
-        {
-          id: "kr-3",
-
-          title: "Key Result Placeholder",
-
-          target: "—",
-
-          current: "—",
-
-          score: "—",
-
-          weight: 10,
-
-          initiatives: [],
-        },
-      ],
-    },
-  ],
+  /* ========================================================
+     Comments
+  ======================================================== */
 
   comments: {
     label: "Manager / Employee Comments",
 
-    placeholder: "Comments placeholder...",
+    placeholder:
+      "Enter comments...",
 
     helpText:
       "Comments provide additional context, coaching notes, observations, accomplishments, challenges, and discussion points related to the current performance period.",
