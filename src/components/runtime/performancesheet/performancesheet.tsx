@@ -1,5 +1,7 @@
 import { BuilderDocument } from "@/lib/types/builderdocument";
 
+import ObjectiveCard from "./objectivecard";
+
 interface PerformanceSheetProps {
   document: BuilderDocument;
 }
@@ -10,9 +12,9 @@ export default function PerformanceSheet({
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-8">
 
-      {/* ======================================================
+      {/* ==========================================
           Organization
-      ====================================================== */}
+      ========================================== */}
 
       <section className="rounded-lg border bg-white p-6 shadow-sm">
 
@@ -28,9 +30,9 @@ export default function PerformanceSheet({
 
       </section>
 
-      {/* ======================================================
+      {/* ==========================================
           Performance Header
-      ====================================================== */}
+      ========================================== */}
 
       <section className="rounded-lg border bg-white p-6 shadow-sm">
 
@@ -54,6 +56,7 @@ export default function PerformanceSheet({
               key={metric.id}
               className="rounded-md border p-4"
             >
+
               <p className="text-sm text-muted-foreground">
                 {metric.title}
               </p>
@@ -70,117 +73,22 @@ export default function PerformanceSheet({
 
       </section>
 
-      {/* ======================================================
+      {/* ==========================================
           Objectives
-      ====================================================== */}
+      ========================================== */}
 
       {document.objectives.map((objective) => (
 
-        <section
+        <ObjectiveCard
           key={objective.id}
-          className="rounded-lg border bg-white p-6 shadow-sm"
-        >
-
-          <div className="mb-6 flex items-center justify-between">
-
-            <div>
-
-              <h2 className="text-2xl font-semibold">
-                {objective.title}
-              </h2>
-
-              <p className="text-muted-foreground">
-                {objective.description}
-              </p>
-
-            </div>
-
-            <div className="rounded-md border px-4 py-2">
-
-              <p className="text-sm text-muted-foreground">
-                Weight
-              </p>
-
-              <p className="text-lg font-semibold">
-                {objective.weight}%
-              </p>
-
-            </div>
-
-          </div>
-
-          {/* ===============================================
-              Key Results
-          =============================================== */}
-
-          <div className="space-y-4">
-
-            {objective.keyResults.map((kr) => (
-
-              <div
-                key={kr.id}
-                className="rounded-md border p-4"
-              >
-
-                <div className="flex items-center justify-between">
-
-                  <h3 className="text-lg font-medium">
-                    {kr.title}
-                  </h3>
-
-                  <span className="text-sm text-muted-foreground">
-                    Weight {kr.weight}%
-                  </span>
-
-                </div>
-
-                <div className="mt-6 grid grid-cols-3 gap-6">
-
-                  <div>
-
-                    <p className="text-sm text-muted-foreground">
-                      Target
-                    </p>
-
-                    <p>{kr.target}</p>
-
-                  </div>
-
-                  <div>
-
-                    <p className="text-sm text-muted-foreground">
-                      Current
-                    </p>
-
-                    <p>{kr.current}</p>
-
-                  </div>
-
-                  <div>
-
-                    <p className="text-sm text-muted-foreground">
-                      Score
-                    </p>
-
-                    <p>{kr.score}</p>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        </section>
+          objective={objective}
+        />
 
       ))}
 
-      {/* ======================================================
+      {/* ==========================================
           Comments
-      ====================================================== */}
+      ========================================== */}
 
       <section className="rounded-lg border bg-white p-6 shadow-sm">
 
@@ -189,9 +97,9 @@ export default function PerformanceSheet({
         </h2>
 
         <textarea
+          readOnly
           placeholder={document.comments.placeholder}
           className="mt-4 min-h-[140px] w-full rounded-md border p-4"
-          readOnly
         />
 
         <p className="mt-2 text-sm text-muted-foreground">
