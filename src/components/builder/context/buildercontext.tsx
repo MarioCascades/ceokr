@@ -31,7 +31,7 @@ import {
   saveBuilderDocument,
   publishPerformanceSheet,
   createDraftRevision,
-} from "@/lib/repositories/performancesheet.repository";
+} from "@/lib/repositories/performancesheetrepository";
 
 import {
   validateBuilderDocument,
@@ -43,7 +43,7 @@ import {
 
 import type {
   PerformanceSheetStatus,
-} from "@/lib/repositories/performancesheet.repository";
+} from "@/lib/repositories/performancesheetrepository";
 
 import type {
   BuilderValidationResult,

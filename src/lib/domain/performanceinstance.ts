@@ -1,7 +1,9 @@
 import type { Assignment } from "./assignment";
+import type { PerformanceSheet } from "./performancesheet";
+import type { ReportingPeriod } from "./reportingperiod";
 
 /* ==========================================================
-   Performance Instance
+   Performance Instance Status
 ========================================================== */
 
 export type PerformanceInstanceStatus =
@@ -16,11 +18,33 @@ export type PerformanceInstanceStatus =
 ========================================================== */
 
 export interface PerformanceInstance {
+  /**
+   * Unique identifier.
+   */
   id: string;
 
+  /**
+   * Owning organization.
+   */
+  organizationId: string;
+
+  /**
+   * Assignment being executed.
+   */
   assignmentId: Assignment["id"];
 
-  /*
+  /**
+   * Exact published Performance Sheet version
+   * being executed.
+   */
+  performanceSheetId: PerformanceSheet["id"];
+
+  /**
+   * Reporting Period for this execution.
+   */
+  reportingPeriodId: ReportingPeriod["id"];
+
+  /**
    * Overall weighted performance score.
    *
    * Range:
@@ -28,7 +52,7 @@ export interface PerformanceInstance {
    */
   overallScore: number;
 
-  /*
+  /**
    * Overall completion percentage.
    *
    * Range:
@@ -36,17 +60,43 @@ export interface PerformanceInstance {
    */
   progress: number;
 
+  /**
+   * Performance lifecycle status.
+   */
   status: PerformanceInstanceStatus;
 
+  /**
+   * Comments entered by the employee/member.
+   */
   employeeComments?: string;
 
+  /**
+   * Comments entered by the manager.
+   */
   managerComments?: string;
 
+  /**
+   * Date/time the instance was created.
+   */
   createdAt: string;
 
+  /**
+   * Date/time performance work began.
+   */
+  startedAt?: string;
+
+  /**
+   * Date/time the instance was submitted.
+   */
   submittedAt?: string;
 
+  /**
+   * Date/time the instance was approved.
+   */
   approvedAt?: string;
 
+  /**
+   * Date/time the instance was completed.
+   */
   completedAt?: string;
 }
