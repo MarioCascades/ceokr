@@ -106,6 +106,134 @@ Deferred
 
 ---
 
+## Assignment subject validation
+
+Current
+
+Assignment uses:
+
+assignmentType + subjectId
+
+Future
+
+Validate that subjectId belongs to the entity represented by assignmentType.
+
+Reason
+
+Prevent invalid polymorphic assignment references.
+
+Priority
+
+Medium
+
+Status
+
+Deferred
+
+---
+
+## Performance Instance relationship integrity
+
+Current
+
+PerformanceInstance stores:
+
+assignmentId
+
+performanceSheetId
+
+reportingPeriodId
+
+Future
+
+Enforce consistency between the Performance Instance and its Assignment.
+
+Reason
+
+Prevent duplicated Runtime references from becoming inconsistent.
+
+Priority
+
+Medium
+
+Status
+
+Deferred
+
+---
+
+## Tenant authorization hardening
+
+Current
+
+Runtime persistence is being developed without production tenant authorization enforcement.
+
+Future
+
+Enforce organization-level authorization across Runtime repositories and services.
+
+Reason
+
+Ensure Runtime data cannot cross organization boundaries.
+
+Priority
+
+High
+
+Status
+
+Deferred
+
+---
+
+## Production Row Level Security
+
+Current
+
+RLS is intentionally OFF for the current Runtime persistence development phase.
+
+Future
+
+Implement and validate production-ready Supabase Row Level Security policies.
+
+Reason
+
+Protect tenant data and enforce database-level access boundaries before production release.
+
+Priority
+
+High
+
+Status
+
+Deferred
+
+---
+
+## Runtime security boundaries
+
+Current
+
+Runtime repositories are being implemented directly against Supabase during persistence development.
+
+Future
+
+Establish appropriate server-side service boundaries and authorization checks for production Runtime operations.
+
+Reason
+
+Prevent unauthorized direct access to Runtime persistence operations.
+
+Priority
+
+High
+
+Status
+
+Deferred
+
+---
+
 # Future Platform Features
 
 - Performance Sheet Library
