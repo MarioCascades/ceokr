@@ -414,3 +414,43 @@ export async function loadLatestPublishedForOrganization(
 
   return data as PerformanceSheetRecord;
 }
+/* ==========================================================
+   Load Published Performance Sheet By Id
+   ----------------------------------------------------------
+   Used by Runtime execution when an Assignment references
+   a specific published Performance Sheet version.
+========================================================== */
+
+export async function loadPublishedById(
+  organizationId: string,
+  performanceSheetId: string
+): Promise<PerformanceSheetRecord | null> {
+  const { data, error } = await supabase
+    .from("performance_sheets")
+    .select("*")
+    .eq(
+      "id",
+      performanceSheetId
+    )
+    .eq(
+      "organization_id",
+      organizationId
+    )
+    .eq(
+      "status",
+      "published"
+    )
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Failed to load published performance sheet: ${error.message}`
+    );
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return data as PerformanceSheetRecord;
+}
