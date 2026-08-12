@@ -1,13 +1,28 @@
-import { BuilderDocument } from "@/lib/types/builderdocument";
+import type {
+  BuilderDocument,
+} from "@/lib/types/builderdocument";
+
+import type {
+  KeyResultProgress,
+} from "@/lib/domain/keyresultprogress";
 
 import ObjectiveCard from "./objectivecard";
 
 interface PerformanceSheetProps {
   document: BuilderDocument;
+
+  keyResultProgress: KeyResultProgress[];
+
+  organizationId: string;
+
+  performanceInstanceId: string;
 }
 
 export default function PerformanceSheet({
   document,
+  keyResultProgress,
+  organizationId,
+  performanceInstanceId,
 }: PerformanceSheetProps) {
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-8">
@@ -50,24 +65,24 @@ export default function PerformanceSheet({
 
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
 
-          {document.performanceHeader.metrics.map((metric) => (
+          {document.performanceHeader.metrics.map(
+            (metric) => (
+              <div
+                key={metric.id}
+                className="rounded-md border p-4"
+              >
 
-            <div
-              key={metric.id}
-              className="rounded-md border p-4"
-            >
+                <p className="text-sm text-muted-foreground">
+                  {metric.title}
+                </p>
 
-              <p className="text-sm text-muted-foreground">
-                {metric.title}
-              </p>
+                <p className="mt-2 text-xl font-bold">
+                  {metric.value}
+                </p>
 
-              <p className="mt-2 text-xl font-bold">
-                {metric.value}
-              </p>
-
-            </div>
-
-          ))}
+              </div>
+            )
+          )}
 
         </div>
 
@@ -77,14 +92,23 @@ export default function PerformanceSheet({
           Objectives
       ========================================== */}
 
-      {document.objectives.map((objective) => (
-
-        <ObjectiveCard
-          key={objective.id}
-          objective={objective}
-        />
-
-      ))}
+      {document.objectives.map(
+        (objective) => (
+          <ObjectiveCard
+            key={objective.id}
+            objective={objective}
+            keyResultProgress={
+              keyResultProgress
+            }
+            organizationId={
+              organizationId
+            }
+            performanceInstanceId={
+              performanceInstanceId
+            }
+          />
+        )
+      )}
 
       {/* ==========================================
           Comments
@@ -98,7 +122,9 @@ export default function PerformanceSheet({
 
         <textarea
           readOnly
-          placeholder={document.comments.placeholder}
+          placeholder={
+            document.comments.placeholder
+          }
           className="mt-4 min-h-[140px] w-full rounded-md border p-4"
         />
 
