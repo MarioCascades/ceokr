@@ -14,6 +14,10 @@ import {
   loadAssignment,
 } from "@/lib/repositories/assignmentrepository";
 
+import {
+  findReportingPeriodById,
+} from "@/lib/repositories/reportingperiodrepository";
+
 /* ==========================================================
    Load Runtime Execution
    ----------------------------------------------------------
@@ -23,6 +27,8 @@ import {
    Performance Instance
         ↓
    Assignment
+        ↓
+   Reporting Period
         ↓
    Exact published Performance Sheet
         ↓
@@ -67,6 +73,24 @@ export async function loadRuntimeExecution(
   }
 
   /*
+   * Load the Reporting Period associated with
+   * this Performance Instance.
+   *
+   * The Performance Instance is the Runtime
+   * execution anchor, so its reportingPeriodId
+   * is authoritative for this execution.
+   */
+  const reportingPeriod =
+    await findReportingPeriodById(
+      organizationId,
+      performanceInstance.reportingPeriodId
+    );
+
+  if (!reportingPeriod) {
+    return null;
+  }
+
+  /*
    * Load the exact published Performance Sheet
    * referenced by the Assignment.
    *
@@ -93,6 +117,8 @@ export async function loadRuntimeExecution(
 
   return {
     assignment,
+
+    reportingPeriod,
 
     performanceSheet,
 

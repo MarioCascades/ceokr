@@ -76,6 +76,11 @@ export default async function RuntimePage() {
         runtimeExecution
           .performanceInstance
       }
+
+      reportingPeriod={
+        runtimeExecution
+          .reportingPeriod
+      }
     />
   );
 }

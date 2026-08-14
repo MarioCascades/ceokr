@@ -10,6 +10,10 @@ import type {
   PerformanceInstance,
 } from "@/lib/domain/performanceinstance";
 
+import type {
+  ReportingPeriod,
+} from "@/lib/domain/reportingperiod";
+
 import ObjectiveCard from "./objectivecard";
 
 import RuntimeSummary from "../shared/runtimesummary";
@@ -24,6 +28,8 @@ interface PerformanceSheetProps {
   performanceInstanceId: string;
 
   performanceInstance: PerformanceInstance;
+
+  reportingPeriod: ReportingPeriod;
 }
 
 export default function PerformanceSheet({
@@ -32,6 +38,7 @@ export default function PerformanceSheet({
   organizationId,
   performanceInstanceId,
   performanceInstance,
+  reportingPeriod,
 }: PerformanceSheetProps) {
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-8">
@@ -104,6 +111,10 @@ export default function PerformanceSheet({
       <RuntimeSummary
         performanceInstance={
           performanceInstance
+        }
+
+        reportingPeriod={
+          reportingPeriod
         }
       />
 
