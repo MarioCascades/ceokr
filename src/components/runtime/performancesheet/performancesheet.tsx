@@ -20,6 +20,8 @@ import RuntimeSummary from "../shared/runtimesummary";
 
 import EmployeeComments from "../shared/employeecomments";
 
+import ManagerComments from "../shared/managercomments";
+
 interface PerformanceSheetProps {
   document: BuilderDocument;
 
@@ -168,6 +170,30 @@ export default function PerformanceSheet({
         helpText={
           document.comments.helpText
         }
+      />
+
+      {/* ==========================================
+          Manager Comments
+      ========================================== */}
+
+      <ManagerComments
+        organizationId={
+          organizationId
+        }
+
+        performanceInstanceId={
+          performanceInstanceId
+        }
+
+        initialComments={
+          performanceInstance.managerComments
+        }
+
+        label="Manager Comments"
+
+        placeholder="Enter manager comments"
+
+        helpText="Manager comments are stored with this Performance Instance."
       />
 
     </main>

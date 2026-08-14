@@ -8,6 +8,10 @@ import {
   updateRuntimeEmployeeComments,
 } from "@/lib/runtime/updateemployeecomments";
 
+import {
+  updateRuntimeManagerComments,
+} from "@/lib/runtime/updatemanagercomments";
+
 import type {
   KeyResultProgress,
 } from "@/lib/domain/keyresultprogress";
@@ -76,6 +80,30 @@ export async function updateRuntimeEmployeeCommentsAction(
   input: UpdateRuntimeEmployeeCommentsActionInput
 ): Promise<PerformanceInstance> {
   return updateRuntimeEmployeeComments(
+    input
+  );
+}
+
+/* ==========================================================
+   Update Runtime Manager Comments
+========================================================== */
+
+export interface UpdateRuntimeManagerCommentsActionInput {
+  organizationId: string;
+
+  performanceInstanceId: string;
+
+  managerComments: string;
+}
+
+/* ==========================================================
+   Update Manager Comments
+========================================================== */
+
+export async function updateRuntimeManagerCommentsAction(
+  input: UpdateRuntimeManagerCommentsActionInput
+): Promise<PerformanceInstance> {
+  return updateRuntimeManagerComments(
     input
   );
 }
