@@ -18,6 +18,8 @@ import ObjectiveCard from "./objectivecard";
 
 import RuntimeSummary from "../shared/runtimesummary";
 
+import EmployeeComments from "../shared/employeecomments";
+
 interface PerformanceSheetProps {
   document: BuilderDocument;
 
@@ -141,28 +143,34 @@ export default function PerformanceSheet({
       )}
 
       {/* ==========================================
-          Comments
+          Employee Comments
       ========================================== */}
 
-      <section className="rounded-lg border bg-white p-6 shadow-sm">
+      <EmployeeComments
+        organizationId={
+          organizationId
+        }
 
-        <h2 className="text-xl font-semibold">
-          {document.comments.label}
-        </h2>
+        performanceInstanceId={
+          performanceInstanceId
+        }
 
-        <textarea
-          readOnly
-          placeholder={
-            document.comments.placeholder
-          }
-          className="mt-4 min-h-[140px] w-full rounded-md border p-4"
-        />
+        initialComments={
+          performanceInstance.employeeComments
+        }
 
-        <p className="mt-2 text-sm text-muted-foreground">
-          {document.comments.helpText}
-        </p>
+        label={
+          document.comments.label
+        }
 
-      </section>
+        placeholder={
+          document.comments.placeholder
+        }
+
+        helpText={
+          document.comments.helpText
+        }
+      />
 
     </main>
   );
