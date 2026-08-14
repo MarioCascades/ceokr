@@ -551,3 +551,18 @@ Next Milestone
 - AI insights
 - Predictive analytics
 - Dashboard builder
+### Deployment / Environment Configuration Hardening
+
+Status: Future
+
+Ensure deployment configuration is documented and validated consistently
+across development, preview, and production environments.
+
+Future considerations:
+
+- Environment variable validation
+- Missing environment variable detection
+- Production deployment health checks
+- Supabase connectivity verification
+- Clear deployment failure diagnostics
+- Separation of public configuration from server-only secrets

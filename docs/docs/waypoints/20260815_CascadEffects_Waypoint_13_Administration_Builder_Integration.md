@@ -505,3 +505,31 @@ Performance Instance
 Runtime
 
 This decision connects the existing platform capabilities without replacing or duplicating any existing architectural layer.
+## Deployment Verification
+
+The CEOKR Vercel production deployment initially failed because the required
+Supabase environment variables were not configured in Vercel.
+
+The application code expected:
+
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+The Vercel CEOKR project was subsequently configured with the corresponding
+CEOKR Supabase project values.
+
+After configuration, the production deployment completed successfully.
+
+### Verified
+
+- Vercel production deployment: PASS
+- Supabase environment configuration: PASS
+- Supabase client initialization: PASS
+- Production application load: PASS
+
+### Architectural Lesson
+
+Deployment configuration is part of the platform's operational architecture.
+
+A successful local development build does not guarantee a successful Vercel
+deployment when required environment variables are absent.
