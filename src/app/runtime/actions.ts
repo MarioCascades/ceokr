@@ -12,6 +12,14 @@ import {
   updateRuntimeManagerComments,
 } from "@/lib/runtime/updatemanagercomments";
 
+import {
+  transitionPerformanceInstance,
+} from "@/lib/runtime/transitionperformanceinstance";
+
+import type {
+  PerformanceInstanceTransition,
+} from "@/lib/runtime/transitionperformanceinstance";
+
 import type {
   KeyResultProgress,
 } from "@/lib/domain/keyresultprogress";
@@ -105,5 +113,31 @@ export async function updateRuntimeManagerCommentsAction(
 ): Promise<PerformanceInstance> {
   return updateRuntimeManagerComments(
     input
+  );
+}
+
+/* ==========================================================
+   Runtime Performance Instance Lifecycle
+========================================================== */
+
+export interface TransitionPerformanceInstanceActionInput {
+  organizationId: string;
+
+  performanceInstanceId: string;
+
+  transition: PerformanceInstanceTransition;
+}
+
+/* ==========================================================
+   Transition Performance Instance
+========================================================== */
+
+export async function transitionPerformanceInstanceAction(
+  input: TransitionPerformanceInstanceActionInput
+): Promise<PerformanceInstance> {
+  return transitionPerformanceInstance(
+    input.organizationId,
+    input.performanceInstanceId,
+    input.transition
   );
 }

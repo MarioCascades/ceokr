@@ -39,19 +39,31 @@ export async function loadRuntimeExecution(
   organizationId: string
 ) {
   /*
-   * Find the active/in-progress Performance Instance
+   * Find the Runtime Performance Instance
    * belonging to this organization.
+   *
+   * A Runtime execution remains accessible while
+   * it is actively being worked, submitted, or
+   * awaiting approval.
    */
   const performanceInstances =
     await findPerformanceInstancesByOrganization(
       organizationId
     );
 
+  const runtimeStatuses = [
+    "in_progress",
+    "submitted",
+    "approved",
+  ] as const;
+
   const performanceInstance =
     performanceInstances.find(
       (instance) =>
-        instance.status ===
-        "in_progress"
+        runtimeStatuses.includes(
+          instance.status as
+            (typeof runtimeStatuses)[number]
+        )
     );
 
   if (!performanceInstance) {

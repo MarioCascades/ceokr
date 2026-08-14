@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 import type {
   BuilderDocument,
 } from "@/lib/types/builderdocument";
@@ -14,13 +18,15 @@ import type {
   ReportingPeriod,
 } from "@/lib/domain/reportingperiod";
 
+import {
+  transitionPerformanceInstanceAction,
+} from "@/app/runtime/actions";
+
 import ObjectiveCard from "./objectivecard";
 
 import RuntimeSummary from "../shared/runtimesummary";
 
 import EmployeeComments from "../shared/employeecomments";
-
-import ManagerComments from "../shared/managercomments";
 
 interface PerformanceSheetProps {
   document: BuilderDocument;
@@ -44,6 +50,66 @@ export default function PerformanceSheet({
   performanceInstance,
   reportingPeriod,
 }: PerformanceSheetProps) {
+  const [
+    currentStatus,
+    setCurrentStatus,
+  ] = useState(
+    performanceInstance.status
+  );
+
+  const [transitioning, setTransitioning] =
+    useState(false);
+
+  const [transitionError, setTransitionError] =
+    useState<string | null>(null);
+
+  const [
+    transitionSaved,
+    setTransitionSaved,
+  ] = useState(false);
+
+  async function handleTransition(
+    transition:
+      | "start"
+      | "submit"
+      | "approve"
+      | "complete"
+  ) {
+    setTransitioning(true);
+    setTransitionError(null);
+    setTransitionSaved(false);
+
+    try {
+      const updated =
+        await transitionPerformanceInstanceAction({
+          organizationId,
+
+          performanceInstanceId,
+
+          transition,
+        });
+
+      setCurrentStatus(
+        updated.status
+      );
+
+      setTransitionSaved(true);
+    } catch (error) {
+      console.error(
+        "Failed to transition Performance Instance:",
+        error
+      );
+
+      setTransitionError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update Performance Instance status."
+      );
+    } finally {
+      setTransitioning(false);
+    }
+  }
+
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-8">
 
@@ -113,14 +179,143 @@ export default function PerformanceSheet({
       ========================================== */}
 
       <RuntimeSummary
-        performanceInstance={
-          performanceInstance
-        }
+        performanceInstance={{
+          ...performanceInstance,
+
+          status:
+            currentStatus,
+        }}
 
         reportingPeriod={
           reportingPeriod
         }
       />
+
+      {/* ==========================================
+          Runtime Lifecycle
+      ========================================== */}
+
+      <section className="rounded-lg border bg-white p-6 shadow-sm">
+
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+          <div>
+
+            <h2 className="text-xl font-semibold">
+              Performance Workflow
+            </h2>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Current status:{" "}
+              <span className="font-medium capitalize">
+                {currentStatus.replace(
+                  "_",
+                  " "
+                )}
+              </span>
+            </p>
+
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+
+            {currentStatus ===
+              "not_started" && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleTransition(
+                    "start"
+                  )
+                }
+                disabled={
+                  transitioning
+                }
+                className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {transitioning
+                  ? "Starting..."
+                  : "Start Performance"}
+              </button>
+            )}
+
+            {currentStatus ===
+              "in_progress" && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleTransition(
+                    "submit"
+                  )
+                }
+                disabled={
+                  transitioning
+                }
+                className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {transitioning
+                  ? "Submitting..."
+                  : "Submit Performance"}
+              </button>
+            )}
+
+            {currentStatus ===
+              "submitted" && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleTransition(
+                    "approve"
+                  )
+                }
+                disabled={
+                  transitioning
+                }
+                className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {transitioning
+                  ? "Approving..."
+                  : "Approve Performance"}
+              </button>
+            )}
+
+            {currentStatus ===
+              "approved" && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleTransition(
+                    "complete"
+                  )
+                }
+                disabled={
+                  transitioning
+                }
+                className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {transitioning
+                  ? "Completing..."
+                  : "Complete Performance"}
+              </button>
+            )}
+
+          </div>
+
+        </div>
+
+        {transitionSaved && (
+          <p className="mt-4 text-sm text-green-600">
+            Performance status updated.
+          </p>
+        )}
+
+        {transitionError && (
+          <p className="mt-4 text-sm text-red-600">
+            {transitionError}
+          </p>
+        )}
+
+      </section>
 
       {/* ==========================================
           Objectives
@@ -170,30 +365,6 @@ export default function PerformanceSheet({
         helpText={
           document.comments.helpText
         }
-      />
-
-      {/* ==========================================
-          Manager Comments
-      ========================================== */}
-
-      <ManagerComments
-        organizationId={
-          organizationId
-        }
-
-        performanceInstanceId={
-          performanceInstanceId
-        }
-
-        initialComments={
-          performanceInstance.managerComments
-        }
-
-        label="Manager Comments"
-
-        placeholder="Enter manager comments"
-
-        helpText="Manager comments are stored with this Performance Instance."
       />
 
     </main>
