@@ -68,6 +68,12 @@ export default function AdminPage() {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 
             <AdminCard
+              title="🧩 Performance Sheets"
+              description="Create, edit, validate and publish reusable Performance Sheet definitions."
+              href="/builder"
+            />
+
+            <AdminCard
               title="🎯 Objectives"
               description="Manage organizational objectives."
               href="/admin/objectives"
