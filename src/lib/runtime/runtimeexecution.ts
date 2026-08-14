@@ -3,7 +3,7 @@ import {
 } from "@/lib/repositories/performancesheetrepository";
 
 import {
-  findPerformanceInstancesByOrganization,
+  findPerformanceInstanceById,
 } from "@/lib/repositories/performanceinstancerepository";
 
 import {
@@ -17,7 +17,7 @@ import {
 /* ==========================================================
    Load Runtime Execution
    ----------------------------------------------------------
-   Runtime execution is resolved through the active
+   Runtime execution is resolved through a specific
    Performance Instance.
 
    Performance Instance
@@ -30,22 +30,17 @@ import {
 ========================================================== */
 
 export async function loadRuntimeExecution(
-  organizationId: string
+  organizationId: string,
+  performanceInstanceId: string
 ) {
   /*
-   * Find the active/in-progress Performance Instance
-   * belonging to this organization.
+   * Load the specific Performance Instance requested
+   * by the Runtime experience.
    */
-  const performanceInstances =
-    await findPerformanceInstancesByOrganization(
-      organizationId
-    );
-
   const performanceInstance =
-    performanceInstances.find(
-      (instance) =>
-        instance.status ===
-        "in_progress"
+    await findPerformanceInstanceById(
+      organizationId,
+      performanceInstanceId
     );
 
   if (!performanceInstance) {
