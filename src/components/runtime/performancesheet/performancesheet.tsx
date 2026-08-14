@@ -159,9 +159,7 @@ export default function PerformanceSheet({
           performanceInstance.employeeComments
         }
 
-        label={
-          document.comments.label
-        }
+        label="Employee Comments"
 
         placeholder={
           document.comments.placeholder
