@@ -71,6 +71,11 @@ export default async function RuntimePage() {
           .performanceInstance
           .id
       }
+
+      performanceInstance={
+        runtimeExecution
+          .performanceInstance
+      }
     />
   );
 }

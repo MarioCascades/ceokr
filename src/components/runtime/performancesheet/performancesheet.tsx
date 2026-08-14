@@ -6,7 +6,13 @@ import type {
   KeyResultProgress,
 } from "@/lib/domain/keyresultprogress";
 
+import type {
+  PerformanceInstance,
+} from "@/lib/domain/performanceinstance";
+
 import ObjectiveCard from "./objectivecard";
+
+import RuntimeSummary from "../shared/runtimesummary";
 
 interface PerformanceSheetProps {
   document: BuilderDocument;
@@ -16,6 +22,8 @@ interface PerformanceSheetProps {
   organizationId: string;
 
   performanceInstanceId: string;
+
+  performanceInstance: PerformanceInstance;
 }
 
 export default function PerformanceSheet({
@@ -23,6 +31,7 @@ export default function PerformanceSheet({
   keyResultProgress,
   organizationId,
   performanceInstanceId,
+  performanceInstance,
 }: PerformanceSheetProps) {
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-8">
@@ -87,6 +96,16 @@ export default function PerformanceSheet({
         </div>
 
       </section>
+
+      {/* ==========================================
+          Runtime Summary
+      ========================================== */}
+
+      <RuntimeSummary
+        performanceInstance={
+          performanceInstance
+        }
+      />
 
       {/* ==========================================
           Objectives
