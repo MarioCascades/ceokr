@@ -35,6 +35,11 @@ export default function KeyResultRow({
       progress?.currentValue ?? ""
     );
 
+  const [confidence, setConfidence] =
+    useState(
+      progress?.confidence ?? 0
+    );
+
   const [saving, setSaving] =
     useState(false);
 
@@ -71,8 +76,7 @@ export default function KeyResultRow({
         score:
           progress.score,
 
-        confidence:
-          progress.confidence,
+        confidence,
 
         employeeComment:
           progress.employeeComment,
@@ -133,7 +137,7 @@ export default function KeyResultRow({
           Runtime Values
       ========================================== */}
 
-      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4">
 
         {/* Target */}
 
@@ -188,6 +192,56 @@ export default function KeyResultRow({
           <p className="mt-2 text-xl font-semibold">
             {score}
           </p>
+
+        </div>
+
+        {/* Confidence */}
+
+        <div>
+
+          <label
+            htmlFor={`confidence-${keyResult.id}`}
+            className="text-xs uppercase tracking-wide text-gray-500"
+          >
+            Confidence
+          </label>
+
+          <div className="mt-2 flex items-center gap-3">
+
+            <input
+              id={`confidence-${keyResult.id}`}
+              type="number"
+              min={0}
+              max={100}
+              value={confidence}
+              onChange={(event) => {
+                const value =
+                  Number(
+                    event.target.value
+                  );
+
+                setConfidence(
+                  Math.min(
+                    Math.max(
+                      Number.isNaN(value)
+                        ? 0
+                        : value,
+                      0
+                    ),
+                    100
+                  )
+                );
+
+                setSaved(false);
+              }}
+              className="w-full rounded-md border bg-white px-3 py-2 text-xl font-semibold"
+            />
+
+            <span className="text-sm text-gray-500">
+              %
+            </span>
+
+          </div>
 
         </div>
 
