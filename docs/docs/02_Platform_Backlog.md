@@ -2,17 +2,269 @@
 
 # Platform Backlog
 
-This document tracks architectural improvements and future capabilities that have been intentionally deferred.
+**Document Status:** CURRENT  
+**Last Updated:** 2026-08-21
 
-Only items that are intentionally postponed belong here.
+This document tracks intentionally deferred architecture, product
+capabilities, and future platform work.
 
-Completed Runtime execution work is recorded in the appropriate Waypoint and is not duplicated here.
+It is not a historical development log.
+
+Completed work should be recorded in Waypoints.
+
+The latest Waypoint and current Platform Decisions take precedence when
+determining the current project state.
 
 ---
 
-# Architecture
+# 1. Current Development Phase
 
-## Organization table naming
+## Administration Completion
+
+Status
+
+IN PROGRESS
+
+The platform is currently completing the Administration management layer.
+
+Completed:
+
+- Organization
+- Departments
+- Teams
+
+Current next capability:
+
+- Users / Members
+
+Following capabilities:
+
+- Roles & Permissions
+- Performance Sheet Management
+- Assignment Management
+- Additional Administration capabilities
+
+The Builder and Runtime foundations already exist and should not be rebuilt
+during this Administration phase.
+
+---
+
+# 2. Administration Roadmap
+
+## Organization
+
+Status
+
+COMPLETE
+
+---
+
+## Departments
+
+Status
+
+COMPLETE
+
+---
+
+## Teams
+
+Status
+
+COMPLETE
+
+---
+
+## Users / Members
+
+Status
+
+NEXT MILESTONE
+
+The Users / Members capability should establish:
+
+- application user profile
+- organization membership
+- Department association
+- Team association
+- active / inactive state
+- future role compatibility
+- Supabase Auth relationship
+
+The identity architecture must be designed before implementation.
+
+---
+
+## Roles & Permissions
+
+Status
+
+FUTURE
+
+Future capability should support:
+
+- reusable roles
+- permissions
+- role assignment
+- permission management
+- organization-level access control
+
+This work should build on the User / Member architecture.
+
+---
+
+## Performance Sheet Management
+
+Status
+
+FUTURE / NEXT ADMIN PHASE
+
+Administration should eventually provide a true Performance Sheet
+management experience.
+
+Expected capabilities include:
+
+- Performance Sheet listing
+- create Performance Sheet
+- select Performance Sheet
+- open Builder
+- draft management
+- published version management
+- revision management
+- archive
+- duplicate
+- search
+- filtering
+- assignment
+
+Administration should manage the Performance Sheet lifecycle entry point.
+
+Builder remains responsible for Performance Sheet definition and editing.
+
+---
+
+## Assignment Management
+
+Status
+
+FUTURE
+
+Assignment management should connect published Performance Sheet versions
+to runtime subjects.
+
+Potential assignment subjects include:
+
+- individual
+- team
+- department
+- organization
+
+Assignment subject validation remains an architectural requirement.
+
+---
+
+# 3. Builder
+
+## Builder Definition Lifecycle
+
+Status
+
+ESTABLISHED
+
+The Builder already supports the core definition lifecycle.
+
+The Builder should not be rebuilt as part of Administration development.
+
+The established lifecycle is:
+
+Draft
+    ↓
+Validate
+    ↓
+Publish
+    ↓
+Published Version
+    ↓
+Create Revision
+    ↓
+New Draft
+
+Published definitions remain immutable.
+
+---
+
+## Multiple Performance Sheet Definitions
+
+Status
+
+DEFERRED
+
+Future organizations will manage multiple logical Performance Sheets.
+
+The platform should support:
+
+- sheet_key
+- Performance Sheet Library
+- multiple definitions
+- version selection
+- organization-scoped definitions
+
+Runtime assignments should continue referencing the exact published version.
+
+---
+
+# 4. Runtime
+
+## Runtime Execution Foundation
+
+Status
+
+ESTABLISHED
+
+The Runtime architecture has already established:
+
+- Performance Instance resolution
+- Assignment resolution
+- exact published Performance Sheet resolution
+- Key Result Progress
+- Current Value
+- Confidence
+- employee comments
+- manager comments
+- aggregate recalculation
+- Runtime lifecycle state
+
+Builder and Runtime remain separate architectural layers.
+
+---
+
+## Runtime Workspace Enhancements
+
+Status
+
+FUTURE
+
+The Runtime execution foundation is established.
+
+Future enhancements may include:
+
+- richer Runtime workspace presentation
+- weighted aggregation
+- additional KPI visualization
+- historical updates
+- expanded workflow controls
+- additional reporting context
+- improved member experience
+
+Runtime Workspace is NOT the current milestone.
+
+Administration completion takes priority.
+
+---
+
+# 5. Architecture
+
+## Organization Table Naming
 
 Current
 
@@ -24,7 +276,7 @@ organizations
 
 Reason
 
-Standardize naming across all database tables.
+Standardize naming across database tables.
 
 Priority
 
@@ -36,7 +288,7 @@ Deferred
 
 ---
 
-## Organization domain model
+## Organization Domain Model
 
 Current
 
@@ -46,9 +298,7 @@ Future
 
 src/lib/domain/organization.ts
 
-Introduce
-
-src/lib/supabase/types/organization.row.ts
+Introduce persistence row types separately where appropriate.
 
 Reason
 
@@ -64,13 +314,13 @@ Deferred
 
 ---
 
-## Repository row naming
+## Repository Row Naming
 
-Rename
+Rename:
 
 PerformanceSheetRecord
 
-to
+to:
 
 PerformanceSheetRow
 
@@ -88,9 +338,9 @@ Deferred
 
 ---
 
-## Repository mappers
+## Repository Mappers
 
-Create
+Create:
 
 src/lib/supabase/mappers/
 
@@ -108,15 +358,78 @@ Deferred
 
 ---
 
-## Assignment subject validation
+# 6. Security
 
-Current
+## Tenant Authorization Hardening
 
-Assignment uses:
+Status
 
-assignmentType + subjectId
+DEFERRED
 
-Future
+Production authorization must enforce Organization boundaries across
+repositories and services.
+
+Priority
+
+High
+
+---
+
+## Production Row Level Security
+
+Status
+
+DEFERRED
+
+Implement and validate production-ready Supabase RLS policies.
+
+Priority
+
+High
+
+---
+
+## Runtime Security Boundaries
+
+Status
+
+DEFERRED
+
+Establish appropriate server-side service boundaries and authorization
+checks for production Runtime operations.
+
+Priority
+
+High
+
+---
+
+## User / Role Authorization
+
+Status
+
+FUTURE
+
+After Users / Members and Roles / Permissions are established, implement
+consistent authorization across:
+
+- UI
+- server services
+- database / RLS
+
+Priority
+
+High
+
+---
+
+# 7. Runtime Data Architecture
+
+## Assignment Subject Validation
+
+Status
+
+DEFERRED
 
 Validate that subjectId belongs to the entity represented by assignmentType.
 
@@ -128,27 +441,15 @@ Priority
 
 Medium
 
-Status
-
-Deferred
-
 ---
 
-## Performance Instance relationship integrity
+## Performance Instance Relationship Integrity
 
-Current
+Status
 
-PerformanceInstance stores:
+DEFERRED
 
-assignmentId
-
-performanceSheetId
-
-reportingPeriodId
-
-Future
-
-Enforce consistency between the Performance Instance and its Assignment.
+Enforce consistency between Performance Instance and Assignment.
 
 Reason
 
@@ -158,140 +459,20 @@ Priority
 
 Medium
 
-Status
-
-Deferred
-
----
-
-## Tenant authorization hardening
-
-Current
-
-Runtime persistence is being developed without production tenant authorization enforcement.
-
-Future
-
-Enforce organization-level authorization across Runtime repositories and services.
-
-Reason
-
-Ensure Runtime data cannot cross organization boundaries.
-
-Priority
-
-High
-
-Status
-
-Deferred
-
----
-
-## Production Row Level Security
-
-Current
-
-RLS is intentionally OFF for the current Runtime persistence development phase.
-
-Future
-
-Implement and validate production-ready Supabase Row Level Security policies.
-
-Reason
-
-Protect tenant data and enforce database-level access boundaries before production release.
-
-Priority
-
-High
-
-Status
-
-Deferred
-
----
-
-## Runtime security boundaries
-
-Current
-
-Runtime repositories are being implemented directly against Supabase during persistence development.
-
-Future
-
-Establish appropriate server-side service boundaries and authorization checks for production Runtime operations.
-
-Reason
-
-Prevent unauthorized direct access to Runtime persistence operations.
-
-Priority
-
-High
-
-Status
-
-Deferred
-
----
-
-## KPI calculation engine
-
-Current
-
-Runtime can persist:
-
-- currentValue
-- score
-- confidence
-- status
-
-The Runtime score is currently treated as persisted Runtime state.
-
-Future
-
-Create a generalized KPI calculation engine that can calculate Runtime scores from KPI definitions, measurement types, targets, scoring rules, and current measurements.
-
-The engine should support future KPI types such as:
-
-- numeric
-- currency
-- percentage
-- time-bound
-- reverse-scoring
-- shared/team metrics
-- department metrics
-- organization metrics
-
-Reason
-
-Separate reusable KPI definitions from Runtime calculations and avoid hardcoding scoring logic into individual Runtime components.
-
-Priority
-
-High
-
-Status
-
-Deferred
-
 ---
 
 ## Historical KPI Updates
 
-Current
+Status
 
-Key Result Progress represents the current Runtime state.
-
-Future
+DEFERRED
 
 Create a durable time-series KPI Update model.
 
-KPI Updates should preserve:
+The model should preserve:
 
-- performance instance
-- key result
+- Performance Instance
+- Key Result
 - measured value
 - calculated score
 - timestamp
@@ -300,118 +481,50 @@ KPI Updates should preserve:
 
 Reason
 
-Current Runtime state alone is insufficient for historical reporting, trend analysis, auditability, and future predictive analytics.
+Support historical reporting, trend analysis, auditability, and future
+predictive analytics.
 
 Priority
 
 High
 
-Status
-
-Deferred
-
 ---
 
-## Runtime comments persistence
-
-Current
-
-The Runtime domain supports:
-
-- employee comments
-- manager comments
-
-The full interactive Runtime comment workflow is not yet implemented.
-
-Future
-
-Implement Runtime comment editing and persistence.
-
-Reason
-
-Comments are part of the operational performance experience and must belong to Runtime execution rather than Builder definitions.
-
-Priority
-
-Medium
+## KPI Calculation Engine
 
 Status
 
-Deferred
+DEFERRED
 
----
+Create a generalized KPI calculation engine supporting future KPI types such
+as:
 
-## Runtime confidence workflow
-
-Current
-
-Key Result Progress supports:
-
-confidence
-
-Future
-
-Expose confidence editing and persistence through the Runtime workspace.
+- numeric
+- currency
+- percentage
+- time-bound
+- reverse scoring
+- shared/team metrics
+- department metrics
+- organization metrics
 
 Reason
 
-Confidence is part of Runtime performance state and should be available to the employee/member and/or manager where appropriate.
-
-Priority
-
-Medium
-
-Status
-
-Deferred
-
----
-
-## Runtime status workflow
-
-Current
-
-Key Result Progress supports:
-
-- not_started
-- in_progress
-- completed
-
-Performance Instance supports its own lifecycle status.
-
-Future
-
-Define and implement the complete Runtime lifecycle and transition rules.
-
-Reason
-
-Performance execution requires controlled transitions between working, submitted, approved, and completed states.
+Separate reusable KPI definitions from Runtime calculations.
 
 Priority
 
 High
 
-Status
-
-Deferred
-
 ---
 
-## Performance Instance aggregate calculations
+## Weighted Aggregation
 
-Current
+Status
 
-Performance Instance aggregate values are recalculated from Runtime Key Result Progress records.
+DEFERRED
 
-Current aggregates include:
-
-- overallScore
-- progress
-- status
-
-Future
-
-Formalize weighted aggregation rules at:
+Formalize weighted aggregation at:
 
 - Key Result level
 - Objective level
@@ -419,150 +532,311 @@ Formalize weighted aggregation rules at:
 
 Reason
 
-Performance Sheet definitions already contain objective and Key Result weights. Runtime aggregation should eventually honor those weights rather than relying on a simple unweighted average.
+Runtime aggregation should eventually honor Performance Sheet weights.
 
 Priority
 
 High
 
+---
+
+# 8. Runtime Workflow
+
+## Runtime Lifecycle
+
 Status
 
-Deferred
+ESTABLISHED / FUTURE ENHANCEMENTS
+
+The core Runtime lifecycle has already been implemented and verified.
+
+Future work may refine transition rules and authorization.
+
+Potential lifecycle:
+
+In Progress
+    ↓
+Submitted
+    ↓
+Approved
+    ↓
+Completed
 
 ---
 
-## Assignment subject validation
+# 9. Historical Reporting
 
-Current
+## Historical Performance Reporting
 
-Assignment supports:
+Status
+
+FUTURE
+
+Support:
+
+- previous reporting periods
+- performance trends
+- team comparisons
+- department comparisons
+- organizational comparisons
+- historical performance records
+
+Priority
+
+High
+
+---
+
+# 10. Dashboards
+
+## Dynamic Dashboard System
+
+Status
+
+FUTURE
+
+Dashboards should be generated from platform data rather than custom-built
+for individual organizations.
+
+Potential dashboard levels:
 
 - individual
 - team
 - department
+- executive
 - organization
 
-Future
+---
 
-Validate polymorphic subject references against the actual entity represented by assignmentType.
+# 11. AI
 
-Reason
-
-Prevent invalid Runtime assignments.
-
-Priority
-
-Medium
+## AI-Assisted Planning
 
 Status
 
-Deferred
+FUTURE
+
+Potential capabilities:
+
+- objective generation
+- Key Result recommendations
+- KPI suggestions
+- goal quality analysis
+- initiative recommendations
+- performance insights
+- strategic planning assistance
+- automated reporting summaries
 
 ---
 
-## Multiple Performance Sheet definitions
-
-Current
-
-Some Builder paths still use the current single-active-sheet development assumption.
-
-Future
-
-Introduce Performance Sheet Library / selector functionality using:
-
-sheet_key
-
-to identify logical Performance Sheet definitions.
-
-Runtime assignments should continue referencing the exact published Performance Sheet version.
-
-Reason
-
-Organizations will eventually manage multiple performance systems rather than a single Performance Sheet.
-
-Priority
-
-Medium
+## Predictive Analytics
 
 Status
 
-Deferred
+FUTURE
+
+Potential capabilities:
+
+- performance trend analysis
+- risk detection
+- forecasting
+- organizational performance insights
 
 ---
 
-# Runtime Workspace
+# 12. Visual Design System
 
-## Runtime Workspace
-
-Current
-
-Runtime can now:
-
-- resolve a Performance Instance
-- resolve its Assignment
-- resolve the exact published Performance Sheet version
-- load Key Result Progress
-- edit Runtime Current Value
-- persist Runtime changes
-- recalculate Performance Instance aggregate state
-
-Future
-
-Build the complete Runtime performance workspace.
-
-The workspace should progressively support:
-
-- Runtime header
-- employee/member identity
-- reporting period
-- Performance Instance status
-- overall score
-- overall progress
-- objectives
-- weighted Key Results
-- current values
-- KPI scores
-- confidence
-- initiatives
-- employee comments
-- manager comments
-- Runtime status transitions
-
-Reason
-
-Move from the verified Runtime persistence foundation into the complete operational performance experience.
-
-Priority
-
-High
+## CascadEffects Design System
 
 Status
 
-Next Milestone
+FUTURE
+
+Create centralized design tokens for:
+
+- Deep Navy
+- Coral
+- White
+- light gray surfaces
+- typography
+- buttons
+- forms
+- cards
+- dialogs
+- tables
+- navigation
+- status indicators
+
+The design system should be reusable across:
+
+- Administration
+- Builder
+- Runtime
+- Dashboards
+- Reports
+
+Organization-specific branding should eventually be configurable through
+Administration.
 
 ---
 
-# Future Platform Features
+# 13. Deployment / Environment Configuration
 
-- Performance Sheet Library
-- Multi-tenant administration
-- Workflow engine
-- Notification engine
-- AI insights
-- Predictive analytics
-- Dashboard builder
-### Deployment / Environment Configuration Hardening
+## Environment Validation
 
-Status: Future
+Status
 
-Ensure deployment configuration is documented and validated consistently
-across development, preview, and production environments.
+FUTURE
 
-Future considerations:
+Future deployment hardening should include:
 
-- Environment variable validation
-- Missing environment variable detection
-- Production deployment health checks
+- environment variable validation
+- missing environment detection
+- production health checks
 - Supabase connectivity verification
-- Clear deployment failure diagnostics
-- Separation of public configuration from server-only secrets
+- clear deployment diagnostics
+- separation of public configuration from server-only secrets
+
+---
+
+# 14. Current Milestone Rule
+
+The current milestone must always be determined from:
+
+1. Latest Waypoint
+2. Platform Decisions
+3. Platform Backlog
+
+Historical Waypoints must not be treated as current task lists.
+
+If an older document says something is "Next Milestone" but a newer Waypoint
+shows that work has already progressed beyond it, the older statement is
+historical and must not redirect development.
+
+---
+
+# 15. Documentation Maintenance
+
+When a major milestone is completed:
+
+1. Update the relevant Platform Decisions if architecture changed.
+2. Update this Platform Backlog if roadmap status changed.
+3. Commit the implementation.
+4. Push to GitHub.
+5. Create a new Waypoint.
+6. Confirm the new Waypoint is the current project checkpoint.
+
+Do not modify historical Waypoints merely to make them current.
+
+---
+
+# 16. Current Project Position
+
+Builder
+
+COMPLETE / ESTABLISHED
+
+Runtime Execution Foundation
+
+COMPLETE / ESTABLISHED
+
+Administration
+
+IN PROGRESS
+
+Organization
+
+COMPLETE
+
+Departments
+
+COMPLETE
+
+Teams
+
+COMPLETE
+
+Users / Members
+
+NEXT MILESTONE
+
+Roles & Permissions
+
+FUTURE
+
+Performance Sheet Management
+
+FUTURE ADMIN PHASE
+
+Assignment Management
+
+FUTURE
+
+Dashboards
+
+FUTURE
+
+Reports
+
+FUTURE
+
+AI
+
+FUTURE
+
+Production Authorization / RLS
+
+OUTSTANDING
+
+---
+
+# 17. Next Development Session
+
+Start from the latest Waypoint.
+
+Review:
+
+1. Latest Waypoint
+2. Platform Decisions
+3. Platform Backlog
+
+Confirm:
+
+Users / Members
+
+as the next Administration milestone.
+
+Before creating the Users database schema, design:
+
+- Supabase Auth relationship
+- application user profile
+- Organization membership
+- Department relationship
+- Team relationship
+- active / inactive state
+- future role relationship
+- tenant boundaries
+
+Then implement incrementally:
+
+Architecture
+    ↓
+Database
+    ↓
+Domain model
+    ↓
+Service
+    ↓
+Admin UI
+    ↓
+CRUD verification
+    ↓
+Compile
+    ↓
+Commit
+    ↓
+Documentation
+    ↓
+Waypoint
+
+The repository remains the authoritative engineering record.

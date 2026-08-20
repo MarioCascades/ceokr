@@ -2,19 +2,88 @@
 
 # Platform Decisions
 
-This document records architectural decisions that have been intentionally adopted for the platform.
+**Document Status:** CURRENT  
+**Last Updated:** 2026-08-21
 
-These decisions are considered the current source of truth unless superseded by a future decision.
+This document records architectural decisions that have been intentionally
+adopted for the CascadEffects Performance Platform.
+
+These decisions are the current architectural source of truth unless
+superseded by a later decision or explicitly updated after a milestone.
 
 ---
 
-## Decision 001
+# 1. Documentation Authority
 
-### Builder owns definitions
+The repository documentation is the authoritative engineering record.
 
-The Builder is responsible for defining immutable Performance Sheet templates.
+The documentation hierarchy is:
 
-The Runtime never modifies Builder definitions.
+1. Latest Waypoint
+2. Platform Decisions
+3. Platform Backlog
+4. Historical Waypoints and development summaries
+
+The latest Waypoint represents the current implementation checkpoint.
+
+Platform Decisions represent architectural rules that remain active across
+milestones.
+
+Platform Backlog represents intentionally deferred work and the current
+forward-looking roadmap.
+
+Historical Waypoints must not be rewritten merely because the platform has
+advanced.
+
+If a historical Waypoint conflicts with the current project state, the latest
+Waypoint and current Platform Decisions take precedence.
+
+---
+
+# 2. Milestone Documentation Rule
+
+Every completed major milestone should:
+
+1. Compile successfully.
+2. Be tested.
+3. Be committed to Git.
+4. Be pushed to GitHub.
+5. Update relevant documentation.
+6. Create a new Waypoint.
+
+The latest Waypoint becomes the starting point for the next development
+session.
+
+Platform Decisions and Platform Backlog should be reviewed and updated when
+a milestone changes the architectural state or roadmap.
+
+This prevents old roadmap statements from being mistaken for current
+instructions.
+
+---
+
+# 3. Builder Owns Definitions
+
+The Builder is responsible for defining reusable Performance Sheet
+definitions.
+
+The Builder owns:
+
+- Performance Sheet structure
+- Organization presentation within the sheet
+- Navigation
+- Performance Header
+- Objectives
+- Key Results
+- Initiatives
+- Comments
+- Builder validation
+- Draft persistence
+- Publishing
+- Revision creation
+- Published version preservation
+
+The Builder is the reusable definition and construction engine.
 
 Status
 
@@ -22,16 +91,23 @@ Accepted
 
 ---
 
-## Decision 002
+# 4. Runtime Owns Execution
 
-### Runtime owns execution
+Runtime is responsible for operational performance execution.
 
-Performance execution is represented by:
+Runtime owns:
 
-- Assignment
-- Performance Instance
+- Performance Instance execution state
 - Key Result Progress
-- KPI Update
+- Current Value
+- Score
+- Confidence
+- Employee comments
+- Manager comments
+- Runtime status
+- Runtime aggregate state
+
+Runtime does not modify Builder definitions.
 
 Status
 
@@ -39,34 +115,23 @@ Accepted
 
 ---
 
-## Decision 003
+# 5. Builder and Runtime Separation
 
-### One business concept = one domain model
+The architectural boundary is:
 
-Every core business concept has a single domain model.
+Builder Definition
+        ↓
+Published Performance Sheet
+        ↓
+Assignment
+        ↓
+Performance Instance
+        ↓
+Runtime Execution
 
-Examples:
+Builder definitions remain separate from period-specific Runtime state.
 
-- PerformanceSheet
-- Assignment
-- ReportingPeriod
-- PerformanceInstance
-- KeyResultProgress
-- KPIUpdate
-
-Status
-
-Accepted
-
----
-
-## Decision 004
-
-### BuilderDocument is stored as JSONB
-
-The BuilderDocument is persisted as a JSONB document.
-
-This allows published Performance Sheets to remain immutable while supporting future Builder enhancements.
+Runtime values must not become a second source of truth inside BuilderDocument.
 
 Status
 
@@ -74,9 +139,26 @@ Accepted
 
 ---
 
-## Decision 005
+# 6. BuilderDocument is Stored as JSONB
 
-### Versioning model
+BuilderDocument is persisted as JSONB.
+
+This supports:
+
+- flexible Builder evolution
+- reusable Performance Sheet definitions
+- published version preservation
+- future Builder enhancements
+
+Published versions remain immutable.
+
+Status
+
+Accepted
+
+---
+
+# 7. Performance Sheet Versioning
 
 Performance Sheets support:
 
@@ -86,38 +168,57 @@ Performance Sheets support:
 
 Published versions are immutable.
 
-New changes are created as draft revisions.
+Changes to a published Performance Sheet create a new draft revision.
+
+The Runtime must reference the exact published Performance Sheet version
+associated with an Assignment.
 
 Status
 
 Accepted
+
 ---
 
-## Decision 006
+# 8. Administration Owns Organizational Management
 
-### Administration is the management entry point for Performance Sheets
+Administration is the organization's management entry point.
 
-The existing Administration area is the primary management interface for the organization's CascadEffects Performance Platform.
+Administration is responsible for organizational configuration and
+management capabilities such as:
 
-Performance Sheet management should be accessible from Administration.
+- Organization
+- Departments
+- Teams
+- Users / Members
+- Roles and Permissions
+- Performance management configuration
+- Dashboards
+- Reports
+- Settings
+- AI configuration
 
-The existing Builder remains the dedicated Performance Sheet definition and construction experience.
+Administration does not replace the Builder.
 
-Administration does not replace or duplicate the Builder.
+Administration provides management and navigation entry points into the
+Builder where appropriate.
 
-Instead, Administration provides the management and navigation entry point into the Builder.
+Status
 
-The intended product flow is:
+Accepted
 
-Organization Setup
-        ↓
+---
+
+# 9. Administration → Builder Boundary
+
+The intended relationship is:
+
 Administration
         ↓
 Performance Sheets
         ↓
 Builder
         ↓
-Draft / Publish / Revision
+Published Performance Sheet
         ↓
 Assignment
         ↓
@@ -125,73 +226,340 @@ Performance Instance
         ↓
 Runtime
 
-The responsibilities remain separated:
-
-Administration
-
-- manages organization configuration
-- manages organizational entities
-- provides access to Performance Sheet management
-
-Builder
-
-- defines Performance Sheet structure
-- manages Performance Sheet content
-- validates definitions
-- manages draft/published/revision lifecycle
-
-Assignment
-
-- connects a published Performance Sheet version to a runtime subject
-
-Performance Instance
-
-- represents the operational execution of an assigned Performance Sheet
-
-Runtime
-
-- executes the published Performance Sheet
-- owns period-specific performance state
+Administration should not duplicate Builder editing functionality.
 
 The existing `/builder` experience remains the Builder implementation.
-
-The Administration area should provide the entry point to that Builder rather than moving Builder functionality into the Administration page itself.
 
 Status
 
 Accepted
-## Vercel / Supabase Deployment Configuration
 
-The CascadEffects Performance Platform uses Vercel for application deployment
-and Supabase for PostgreSQL/database services.
+---
 
-The production Vercel project must define the Supabase client environment
-variables required by the application:
+# 10. Organization Hierarchy
+
+The organizational hierarchy currently being established is:
+
+Organization
+    ↓
+Department
+    ↓
+Team
+    ↓
+User / Member
+
+Organizations are the tenant boundary.
+
+Departments belong to Organizations.
+
+Teams belong to Departments and Organizations.
+
+Users / Members will belong to Organizations and may be associated with
+Departments and Teams.
+
+Status
+
+Accepted
+
+---
+
+# 11. Multi-Tenant Data Ownership
+
+Core business records must contain or resolve their Organization ownership.
+
+Relationships must use IDs rather than names.
+
+Application services should scope data operations to the current Organization.
+
+Database constraints should enforce important tenant relationships wherever
+practical.
+
+Status
+
+Accepted
+
+---
+
+# 12. Database Integrity
+
+The database remains the final integrity authority.
+
+Application validation exists primarily for user experience.
+
+PostgreSQL should enforce important rules such as:
+
+- primary keys
+- foreign keys
+- tenant relationships
+- uniqueness
+- required values
+- relationship integrity
+
+Status
+
+Accepted
+
+---
+
+# 13. One Business Concept = One Domain Model
+
+Every core business concept should have one authoritative domain model.
+
+Examples include:
+
+- Organization
+- Department
+- Team
+- User
+- Role
+- Permission
+- PerformanceSheet
+- Assignment
+- ReportingPeriod
+- PerformanceInstance
+- KeyResultProgress
+- KPIUpdate
+
+Persistence row types may exist separately from domain models when that
+separation provides architectural value.
+
+Status
+
+Accepted
+
+---
+
+# 14. Data-Driven Architecture
+
+The platform must favor data-driven configuration over hardcoded business
+structures.
+
+Avoid hardcoding:
+
+- Users
+- Departments
+- Teams
+- Objectives
+- Key Results
+- Dashboards
+- Reporting structures
+- KPI calculations
+
+Where practical, these should be represented by platform data and reusable
+configuration.
+
+Status
+
+Accepted
+
+---
+
+# 15. Users and Identity
+
+Users / Members are an Administration concern.
+
+The User architecture must distinguish:
+
+- Supabase authentication identity
+- Application user/member profile
+- Organization membership
+- Department association
+- Team association
+- Roles
+- Permissions
+
+User identity architecture must be designed before implementing the full
+Users CRUD workflow.
+
+The Organization remains the tenant boundary.
+
+Status
+
+Accepted
+
+---
+
+# 16. Roles and Permissions
+
+Roles and permissions are part of the Administration security model.
+
+The platform should support:
+
+- reusable roles
+- permissions
+- organization-level access
+- future role assignment to Users / Members
+
+Authorization should eventually be enforced consistently at:
+
+- UI
+- service
+- database / RLS
+
+The exact production authorization model remains a future security milestone.
+
+Status
+
+Accepted
+
+---
+
+# 17. Visual Design System
+
+CascadEffects will use a centralized design system rather than independently
+hardcoded page styling.
+
+The design system will eventually define:
+
+- brand colors
+- typography
+- buttons
+- inputs
+- cards
+- dialogs
+- tables
+- navigation
+- status indicators
+- Admin components
+
+The intended CascadEffects visual direction includes:
+
+- Deep Navy
+- Coral
+- White
+- light gray surfaces
+- modern SaaS styling
+- generous spacing
+- clean typography
+
+Brand configuration should eventually be manageable through Administration.
+
+Status
+
+Accepted
+
+---
+
+# 18. Runtime Historical Integrity
+
+Runtime execution must preserve the exact published Performance Sheet
+version used by an existing Performance Instance.
+
+A Runtime execution must not silently switch to a newer published version.
+
+This preserves historical execution integrity.
+
+Status
+
+Accepted
+
+---
+
+# 19. Deployment Configuration
+
+The platform uses:
+
+- Vercel
+- Supabase
+- PostgreSQL
+
+Supabase deployment configuration is supplied through environment
+variables rather than hardcoded credentials.
+
+Required public configuration includes:
 
 NEXT_PUBLIC_SUPABASE_URL
+
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-These variables must be configured for the appropriate Vercel deployment
-environments, including Production and Preview.
+Production deployment verification must include:
 
-The Supabase project URL and publishable key are deployment configuration,
-not application source code.
+1. Vercel environment configuration.
+2. Successful production deployment.
+3. Supabase client initialization.
+4. Application navigation verification.
+5. Supabase-backed functionality verification.
 
-A deployment that compiles successfully locally may still fail during Vercel
-server/page evaluation if the required Supabase environment variables are
-missing.
+Status
 
-The repository code should continue to consume these values through
-process.env rather than hardcoding Supabase credentials or URLs.
+Accepted
 
-### Deployment Verification Rule
+---
 
-Before considering a production deployment verified:
+# 20. Current Platform Position
 
-1. Vercel environment variables are configured.
-2. Production deployment completes successfully.
-3. The deployed application can initialize its Supabase client.
-4. The primary application navigation is verified.
-5. Supabase-backed functionality is tested from the deployed application.
+The major architectural layers currently established are:
 
-This configuration is infrastructure, not business logic.
+Builder
+    Established
+
+Runtime
+    Established
+
+Administration
+    In active development
+
+Current Administration hierarchy:
+
+Organization
+    ↓
+Departments
+    ↓
+Teams
+    ↓
+Users / Members
+    ↓
+Roles / Permissions
+
+The Builder and Runtime architectures should not be rebuilt as part of the
+current Administration completion phase.
+
+---
+
+# 21. Current Development Priority
+
+The current development phase is:
+
+Administration completion.
+
+Completed Administration foundation:
+
+- Organization
+- Departments
+- Teams
+
+Next Administration capability:
+
+- Users / Members
+
+After Users / Members:
+
+- Roles / Permissions
+- Performance Sheet management
+- Assignment management
+- Additional Administration capabilities
+
+The exact next milestone must always be confirmed against the latest
+Waypoint and Platform Backlog before implementation begins.
+
+Status
+
+Accepted
+
+---
+
+# 22. Historical Documentation Rule
+
+Historical Waypoints are permanent engineering records.
+
+Do not rewrite old Waypoints to make them appear current.
+
+When the project changes direction:
+
+- preserve the historical Waypoint
+- update current Platform Decisions if necessary
+- update Platform Backlog
+- create a new Waypoint at the next milestone
+
+This preserves the actual history of the platform while keeping current
+development instructions accurate.
