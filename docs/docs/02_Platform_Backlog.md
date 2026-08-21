@@ -2,8 +2,9 @@
 
 # Platform Backlog
 
-**Document Status:** CURRENT  
-**Last Updated:** 2026-08-21
+**Document Status:** CURRENT
+
+**Last Updated:** 2026-08-22
 
 This document tracks intentionally deferred architecture, product
 capabilities, and future platform work.
@@ -30,18 +31,25 @@ The platform is currently completing the Administration management layer.
 Completed:
 
 - Organization
+
 - Departments
+
 - Teams
 
-Current next capability:
+- Users / Members — Invitation Foundation
 
-- Users / Members
+- Roles & Permissions — Role Foundation
+
+Current Administration focus:
+
+- Complete Roles & Permissions
 
 Following capabilities:
 
-- Roles & Permissions
 - Performance Sheet Management
+
 - Assignment Management
+
 - Additional Administration capabilities
 
 The Builder and Runtime foundations already exist and should not be rebuilt
@@ -79,19 +87,57 @@ COMPLETE
 
 Status
 
-NEXT MILESTONE
+INVITATION FOUNDATION COMPLETE
 
-The Users / Members capability should establish:
+The Users / Members invitation foundation establishes:
 
 - application user profile
+
 - organization membership
+
 - Department association
+
 - Team association
+
 - active / inactive state
-- future role compatibility
+
 - Supabase Auth relationship
 
-The identity architecture must be designed before implementation.
+Completed:
+
+- User database foundation
+
+- Organization Membership database foundation
+
+- User domain model
+
+- Organization Membership domain model
+
+- User Management read model
+
+- User service
+
+- Users Administration page
+
+- Invite User workflow
+
+- Department → Team filtering
+
+- Server-side Supabase Admin workflow
+
+- Auth invitation
+
+- Organization Membership creation
+
+Remaining Users work:
+
+- User Edit workflow
+
+- User Deactivate workflow
+
+- Production tenant authorization
+
+- Production Row Level Security
 
 ---
 
@@ -99,17 +145,75 @@ The identity architecture must be designed before implementation.
 
 Status
 
-FUTURE
+ROLE FOUNDATION COMPLETE
 
-Future capability should support:
+The Roles & Permissions foundation establishes:
 
-- reusable roles
-- permissions
-- role assignment
-- permission management
-- organization-level access control
+- reusable global Permissions
 
-This work should build on the User / Member architecture.
+- organization-scoped Roles
+
+- Role Permissions
+
+- Membership Roles
+
+- organization-aware database integrity
+
+- Role domain model
+
+- Permission domain model
+
+- Role Permission domain model
+
+- Membership Role domain model
+
+- Role service
+
+- Permission service
+
+- Role Permission service
+
+- Membership Role service
+
+- Roles Administration UI
+
+Completed:
+
+- Permission database foundation
+
+- Permission catalog
+
+- Role database foundation
+
+- Role Permission database foundation
+
+- Membership Role database foundation
+
+- organization-aware integrity constraints
+
+- Role CRUD
+
+- TypeScript verification
+
+- real database CRUD verification
+
+Remaining Roles & Permissions work:
+
+- Permission assignment
+
+- Permission removal
+
+- Membership Role assignment
+
+- Membership Role removal
+
+- User / Membership Role Administration workflow
+
+- Production tenant authorization
+
+- Production Row Level Security
+
+- Full authorization enforcement across UI, services, APIs, and database/RLS
 
 ---
 
@@ -125,16 +229,27 @@ management experience.
 Expected capabilities include:
 
 - Performance Sheet listing
+
 - create Performance Sheet
+
 - select Performance Sheet
+
 - open Builder
+
 - draft management
+
 - published version management
+
 - revision management
+
 - archive
+
 - duplicate
+
 - search
+
 - filtering
+
 - assignment
 
 Administration should manage the Performance Sheet lifecycle entry point.
@@ -155,8 +270,11 @@ to runtime subjects.
 Potential assignment subjects include:
 
 - individual
+
 - team
+
 - department
+
 - organization
 
 Assignment subject validation remains an architectural requirement.
@@ -178,15 +296,25 @@ The Builder should not be rebuilt as part of Administration development.
 The established lifecycle is:
 
 Draft
+
     ↓
+
 Validate
+
     ↓
+
 Publish
+
     ↓
+
 Published Version
+
     ↓
+
 Create Revision
+
     ↓
+
 New Draft
 
 Published definitions remain immutable.
@@ -204,9 +332,13 @@ Future organizations will manage multiple logical Performance Sheets.
 The platform should support:
 
 - sheet_key
+
 - Performance Sheet Library
+
 - multiple definitions
+
 - version selection
+
 - organization-scoped definitions
 
 Runtime assignments should continue referencing the exact published version.
@@ -224,14 +356,23 @@ ESTABLISHED
 The Runtime architecture has already established:
 
 - Performance Instance resolution
+
 - Assignment resolution
+
 - exact published Performance Sheet resolution
+
 - Key Result Progress
+
 - Current Value
+
 - Confidence
+
 - employee comments
+
 - manager comments
+
 - aggregate recalculation
+
 - Runtime lifecycle state
 
 Builder and Runtime remain separate architectural layers.
@@ -249,11 +390,17 @@ The Runtime execution foundation is established.
 Future enhancements may include:
 
 - richer Runtime workspace presentation
+
 - weighted aggregation
+
 - additional KPI visualization
+
 - historical updates
+
 - expanded workflow controls
+
 - additional reporting context
+
 - improved member experience
 
 Runtime Workspace is NOT the current milestone.
@@ -408,13 +555,15 @@ High
 
 Status
 
-FUTURE
+DEFERRED
 
 After Users / Members and Roles / Permissions are established, implement
 consistent authorization across:
 
 - UI
+
 - server services
+
 - database / RLS
 
 Priority
@@ -472,11 +621,17 @@ Create a durable time-series KPI Update model.
 The model should preserve:
 
 - Performance Instance
+
 - Key Result
+
 - measured value
+
 - calculated score
+
 - timestamp
+
 - reporting context
+
 - update source where appropriate
 
 Reason
@@ -500,12 +655,19 @@ Create a generalized KPI calculation engine supporting future KPI types such
 as:
 
 - numeric
+
 - currency
+
 - percentage
+
 - time-bound
+
 - reverse scoring
+
 - shared/team metrics
+
 - department metrics
+
 - organization metrics
 
 Reason
@@ -527,7 +689,9 @@ DEFERRED
 Formalize weighted aggregation at:
 
 - Key Result level
+
 - Objective level
+
 - Performance Instance level
 
 Reason
@@ -555,11 +719,17 @@ Future work may refine transition rules and authorization.
 Potential lifecycle:
 
 In Progress
+
     ↓
+
 Submitted
+
     ↓
+
 Approved
+
     ↓
+
 Completed
 
 ---
@@ -575,10 +745,15 @@ FUTURE
 Support:
 
 - previous reporting periods
+
 - performance trends
+
 - team comparisons
+
 - department comparisons
+
 - organizational comparisons
+
 - historical performance records
 
 Priority
@@ -601,9 +776,13 @@ for individual organizations.
 Potential dashboard levels:
 
 - individual
+
 - team
+
 - department
+
 - executive
+
 - organization
 
 ---
@@ -619,12 +798,19 @@ FUTURE
 Potential capabilities:
 
 - objective generation
+
 - Key Result recommendations
+
 - KPI suggestions
+
 - goal quality analysis
+
 - initiative recommendations
+
 - performance insights
+
 - strategic planning assistance
+
 - automated reporting summaries
 
 ---
@@ -638,8 +824,11 @@ FUTURE
 Potential capabilities:
 
 - performance trend analysis
+
 - risk detection
+
 - forecasting
+
 - organizational performance insights
 
 ---
@@ -655,24 +844,39 @@ FUTURE
 Create centralized design tokens for:
 
 - Deep Navy
+
 - Coral
+
 - White
+
 - light gray surfaces
+
 - typography
+
 - buttons
+
 - forms
+
 - cards
+
 - dialogs
+
 - tables
+
 - navigation
+
 - status indicators
 
 The design system should be reusable across:
 
 - Administration
+
 - Builder
+
 - Runtime
+
 - Dashboards
+
 - Reports
 
 Organization-specific branding should eventually be configurable through
@@ -691,10 +895,15 @@ FUTURE
 Future deployment hardening should include:
 
 - environment variable validation
+
 - missing environment detection
+
 - production health checks
+
 - Supabase connectivity verification
+
 - clear deployment diagnostics
+
 - separation of public configuration from server-only secrets
 
 ---
@@ -704,7 +913,9 @@ Future deployment hardening should include:
 The current milestone must always be determined from:
 
 1. Latest Waypoint
+
 2. Platform Decisions
+
 3. Platform Backlog
 
 Historical Waypoints must not be treated as current task lists.
@@ -720,10 +931,15 @@ historical and must not redirect development.
 When a major milestone is completed:
 
 1. Update the relevant Platform Decisions if architecture changed.
+
 2. Update this Platform Backlog if roadmap status changed.
+
 3. Commit the implementation.
+
 4. Push to GitHub.
+
 5. Create a new Waypoint.
+
 6. Confirm the new Waypoint is the current project checkpoint.
 
 Do not modify historical Waypoints merely to make them current.
@@ -758,11 +974,11 @@ COMPLETE
 
 Users / Members
 
-NEXT MILESTONE
+INVITATION FOUNDATION COMPLETE
 
 Roles & Permissions
 
-FUTURE
+ROLE FOUNDATION COMPLETE
 
 Performance Sheet Management
 
@@ -797,46 +1013,79 @@ Start from the latest Waypoint.
 Review:
 
 1. Latest Waypoint
+
 2. Platform Decisions
+
 3. Platform Backlog
 
 Confirm:
 
-Users / Members
+Roles & Permissions
 
-as the next Administration milestone.
+as the current Administration milestone.
 
-Before creating the Users database schema, design:
+The Roles Foundation is complete.
 
-- Supabase Auth relationship
-- application user profile
-- Organization membership
-- Department relationship
-- Team relationship
-- active / inactive state
-- future role relationship
-- tenant boundaries
+The next implementation should continue incrementally with:
 
-Then implement incrementally:
+- Permission assignment
 
-Architecture
+- Permission removal
+
+- Membership Role assignment
+
+- Membership Role removal
+
+- Roles & Permissions verification
+
+Then evaluate the remaining Users / Members work:
+
+- User Edit
+
+- User Deactivate
+
+The exact ordering of remaining Administration capabilities must be confirmed
+from the latest Waypoint, Platform Decisions, and Platform Backlog before
+implementation.
+
+Production tenant authorization and Row Level Security remain separate
+security milestones and should not be treated as complete merely because the
+Roles and Permissions data foundation exists.
+
+Continue using the engineering workflow:
+
+Review Waypoint
+
     ↓
-Database
+
+Review Decisions
+
     ↓
-Domain model
+
+Review Backlog
+
     ↓
-Service
+
+Confirm Milestone
+
     ↓
-Admin UI
+
+Build
+
     ↓
-CRUD verification
-    ↓
+
 Compile
+
     ↓
+
 Commit
+
     ↓
-Documentation
+
+Update Documentation
+
     ↓
-Waypoint
+
+Create Waypoint
 
 The repository remains the authoritative engineering record.
