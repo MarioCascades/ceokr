@@ -1,0 +1,385 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
+
+import UsersList from "@/components/admin/users/userslist";
+
+import InviteUserDialog from "@/components/admin/users/inviteuserdialog";
+
+import {
+  listUserManagementRecords,
+} from "@/services/user.service";
+
+import {
+  getOrganization,
+} from "@/services/organization.service";
+
+import {
+  getDepartments,
+} from "@/services/department.service";
+
+import {
+  getTeams,
+} from "@/services/team.service";
+
+import type {
+  Organization,
+} from "@/lib/types/organization";
+
+import type {
+  UserManagementRecord,
+} from "@/lib/types/domain/usermanagement";
+
+import type {
+  Department,
+} from "@/lib/types/domain/department";
+
+import type {
+  Team,
+} from "@/lib/types/domain/team";
+
+import type {
+  UserFormValues,
+} from "@/components/admin/users/userform";
+
+export default function UsersPage() {
+  const [organization, setOrganization] =
+    useState<Organization | null>(null);
+
+  const [userRecords, setUserRecords] =
+    useState<UserManagementRecord[]>([]);
+
+  const [departments, setDepartments] =
+    useState<Department[]>([]);
+
+  const [teams, setTeams] =
+    useState<Team[]>([]);
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const [isInviteOpen, setIsInviteOpen] =
+    useState(false);
+
+  const [isSaving, setIsSaving] =
+    useState(false);
+
+  const [errorMessage, setErrorMessage] =
+    useState<string | null>(null);
+
+  async function loadUsers(
+    organizationId: string
+  ) {
+    const records =
+      await listUserManagementRecords(
+        organizationId
+      );
+
+    setUserRecords(records);
+  }
+
+  useEffect(() => {
+    async function initialize() {
+      try {
+        setErrorMessage(null);
+
+        const existingOrganization =
+          await getOrganization();
+
+        if (!existingOrganization) {
+          setErrorMessage(
+            "No organization has been configured yet."
+          );
+
+          return;
+        }
+
+        setOrganization(
+          existingOrganization
+        );
+
+        const [
+          records,
+          loadedDepartments,
+          loadedTeams,
+        ] = await Promise.all([
+          listUserManagementRecords(
+            existingOrganization.id
+          ),
+
+          getDepartments(
+            existingOrganization.id
+          ),
+
+          getTeams(
+            existingOrganization.id
+          ),
+        ]);
+
+        setUserRecords(records);
+        setDepartments(
+          loadedDepartments
+        );
+        setTeams(loadedTeams);
+      } catch (error) {
+        console.error(
+          "Failed to load users:",
+          error
+        );
+
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Failed to load users."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    initialize();
+  }, []);
+
+  async function handleInvite(
+    values: UserFormValues
+  ) {
+    if (!organization) {
+      throw new Error(
+        "No organization has been configured."
+      );
+    }
+
+    setIsSaving(true);
+    setErrorMessage(null);
+
+    try {
+      const response =
+        await fetch(
+          "/api/admin/users",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              organization_id:
+                organization.id,
+
+              first_name:
+                values.first_name,
+
+              last_name:
+                values.last_name,
+
+              display_name:
+                values.display_name,
+
+              email:
+                values.email,
+
+              department_id:
+                values.department_id,
+
+              team_id:
+                values.team_id,
+
+              is_active:
+                values.is_active,
+            }),
+          }
+        );
+
+      const result =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error ??
+            "Failed to invite user."
+        );
+      }
+
+      await loadUsers(
+        organization.id
+      );
+
+      setIsInviteOpen(false);
+    } catch (error) {
+      console.error(
+        "Failed to invite user:",
+        error
+      );
+
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function handleEdit(
+    record: UserManagementRecord
+  ) {
+    console.log(
+      "Edit user:",
+      record
+    );
+  }
+
+  function handleDeactivate(
+    record: UserManagementRecord
+  ) {
+    console.log(
+      "Deactivate user:",
+      record
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-50 px-8 py-10">
+      <div className="mx-auto max-w-5xl space-y-8">
+
+        {/* Header */}
+
+        <div className="flex items-start justify-between gap-6">
+
+          <div>
+            <h1 className="text-3xl font-bold">
+              Users
+            </h1>
+
+            <p className="mt-2 text-muted-foreground">
+              Create and manage users
+              within your organization.
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+
+            <Button
+              asChild
+              variant="outline"
+            >
+              <Link href="/admin">
+                Back to Administration
+              </Link>
+            </Button>
+
+            <Button
+              type="button"
+              onClick={() =>
+                setIsInviteOpen(true)
+              }
+              disabled={
+                isLoading ||
+                departments.length === 0 ||
+                isSaving
+              }
+            >
+              Invite User
+            </Button>
+
+          </div>
+
+        </div>
+
+        {/* Error */}
+
+        {errorMessage && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm text-red-700">
+              {errorMessage}
+            </p>
+          </div>
+        )}
+
+        {/* Loading */}
+
+        {isLoading && (
+          <section className="rounded-xl border bg-white p-6 shadow-sm">
+            <p className="text-sm text-muted-foreground">
+              Loading users...
+            </p>
+          </section>
+        )}
+
+        {/* Organization */}
+
+        {!isLoading &&
+          organization && (
+            <section className="rounded-xl border bg-white p-6 shadow-sm">
+
+              <div className="flex items-center justify-between gap-4">
+
+                <div>
+                  <h2 className="text-xl font-semibold">
+                    {organization.company_name}
+                  </h2>
+
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Organization Users
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-gray-100 px-3 py-2 text-sm">
+                  {userRecords.length}{" "}
+                  {userRecords.length === 1
+                    ? "user"
+                    : "users"}
+                </div>
+
+              </div>
+
+            </section>
+          )}
+
+        {/* Users */}
+
+        {!isLoading && (
+          <section className="rounded-xl border bg-white shadow-sm">
+
+            <div className="border-b p-6">
+              <h2 className="text-xl font-semibold">
+                Users
+              </h2>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                Organization users will
+                appear here.
+              </p>
+            </div>
+
+            <UsersList
+              records={userRecords}
+              onEdit={handleEdit}
+              onDeactivate={
+                handleDeactivate
+              }
+            />
+
+          </section>
+        )}
+
+      </div>
+
+      {/* Invite User Dialog */}
+
+      <InviteUserDialog
+        open={isInviteOpen}
+        departments={departments}
+        teams={teams}
+        onOpenChange={
+          setIsInviteOpen
+        }
+        onSubmit={handleInvite}
+        isSaving={isSaving}
+      />
+
+    </main>
+  );
+}
