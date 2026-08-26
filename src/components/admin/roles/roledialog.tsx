@@ -12,10 +12,16 @@ import RoleForm, {
   type RoleFormValues,
 } from "@/components/admin/roles/roleform";
 
+import RolePermissions from "@/components/admin/roles/rolepermissions";
+
 interface RoleDialogProps {
   open: boolean;
 
   mode: "create" | "edit";
+
+  roleId?: string;
+
+  organizationId?: string;
 
   initialValues?: RoleFormValues;
 
@@ -34,6 +40,10 @@ export default function RoleDialog({
   open,
 
   mode,
+
+  roleId,
+
+  organizationId,
 
   initialValues,
 
@@ -62,6 +72,11 @@ export default function RoleDialog({
   const isEdit =
     mode === "edit";
 
+  const canManagePermissions =
+    isEdit &&
+    Boolean(roleId) &&
+    Boolean(organizationId);
+
   return (
     <Dialog
       open={open}
@@ -73,7 +88,7 @@ export default function RoleDialog({
         }
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
 
         <DialogHeader>
           <DialogTitle>
@@ -84,7 +99,7 @@ export default function RoleDialog({
 
           <DialogDescription>
             {isEdit
-              ? "Update the role information."
+              ? "Update the role information and permissions."
               : "Create a role for your organization."}
           </DialogDescription>
         </DialogHeader>
@@ -118,6 +133,19 @@ export default function RoleDialog({
             isSaving
           }
         />
+
+        {canManagePermissions && (
+          <div className="border-t pt-6">
+            <RolePermissions
+              roleId={
+                roleId!
+              }
+              organizationId={
+                organizationId!
+              }
+            />
+          </div>
+        )}
 
       </DialogContent>
     </Dialog>

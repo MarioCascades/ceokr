@@ -1,10 +1,10 @@
-# CascadEffects Performance Platform
+CascadEffects Performance Platform
 
-# Platform Backlog
+Platform Backlog
 
-**Document Status:** CURRENT
+Document Status: CURRENT
 
-**Last Updated:** 2026-08-22
+Last Updated: 2026-08-26
 
 This document tracks intentionally deferred architecture, product
 capabilities, and future platform work.
@@ -16,208 +16,220 @@ Completed work should be recorded in Waypoints.
 The latest Waypoint and current Platform Decisions take precedence when
 determining the current project state.
 
----
+1. Current Development Phase
 
-# 1. Current Development Phase
-
-## Administration Completion
+Administration Completion
 
 Status
 
 IN PROGRESS
 
-The platform is currently completing the Administration management layer.
+The platform is currently completing the Administration management
+layer.
 
 Completed:
 
-- Organization
+Organization
 
-- Departments
+Departments
 
-- Teams
+Teams
 
-- Users / Members — Invitation Foundation
+Users / Members --- Invitation Foundation
 
-- Roles & Permissions — Role Foundation
+Users / Members --- User Edit
+
+Roles & Permissions --- Role Foundation
+
+Roles & Permissions --- Permission Assignment
+
+Roles & Permissions --- Permission Removal
+
+Roles & Permissions --- Membership Role Assignment
+
+Roles & Permissions --- Membership Role Removal
 
 Current Administration focus:
 
-- Complete Roles & Permissions
+Complete Users / Members management
 
 Following capabilities:
 
-- Performance Sheet Management
+User Deactivate
 
-- Assignment Management
+Performance Sheet Management
 
-- Additional Administration capabilities
+Assignment Management
 
-The Builder and Runtime foundations already exist and should not be rebuilt
-during this Administration phase.
+Additional Administration capabilities
 
----
+The Builder and Runtime foundations already exist and should not be
+rebuilt during this Administration phase.
 
-# 2. Administration Roadmap
+2. Administration Roadmap
 
-## Organization
-
-Status
-
-COMPLETE
-
----
-
-## Departments
+Organization
 
 Status
 
 COMPLETE
 
----
-
-## Teams
+Departments
 
 Status
 
 COMPLETE
 
----
-
-## Users / Members
+Teams
 
 Status
 
-INVITATION FOUNDATION COMPLETE
+COMPLETE
 
-The Users / Members invitation foundation establishes:
+Users / Members
 
-- application user profile
+Status
 
-- organization membership
+USER EDIT COMPLETE
 
-- Department association
+The Users / Members foundation establishes:
 
-- Team association
+application user profile
 
-- active / inactive state
+organization membership
 
-- Supabase Auth relationship
+Department association
+
+Team association
+
+active / inactive state
+
+Supabase Auth relationship
 
 Completed:
 
-- User database foundation
+User database foundation
 
-- Organization Membership database foundation
+Organization Membership database foundation
 
-- User domain model
+User domain model
 
-- Organization Membership domain model
+Organization Membership domain model
 
-- User Management read model
+User Management read model
 
-- User service
+User service
 
-- Users Administration page
+Users Administration page
 
-- Invite User workflow
+Invite User workflow
 
-- Department → Team filtering
+Department → Team filtering
 
-- Server-side Supabase Admin workflow
+Server-side Supabase Admin workflow
 
-- Auth invitation
+Auth invitation
 
-- Organization Membership creation
+Organization Membership creation
+
+User Edit workflow
+
+User profile editing
+
+Department editing
+
+Team editing
+
+Active / inactive state editing
+
+Membership Role management from User Edit
 
 Remaining Users work:
 
-- User Edit workflow
+User Deactivate workflow
 
-- User Deactivate workflow
+Production tenant authorization
 
-- Production tenant authorization
+Production Row Level Security
 
-- Production Row Level Security
-
----
-
-## Roles & Permissions
+Roles & Permissions
 
 Status
 
-ROLE FOUNDATION COMPLETE
+FUNCTIONAL FOUNDATION COMPLETE
 
 The Roles & Permissions foundation establishes:
 
-- reusable global Permissions
+reusable global Permissions
 
-- organization-scoped Roles
+organization-scoped Roles
 
-- Role Permissions
+Role Permissions
 
-- Membership Roles
+Membership Roles
 
-- organization-aware database integrity
+organization-aware database integrity
 
-- Role domain model
+Role domain model
 
-- Permission domain model
+Permission domain model
 
-- Role Permission domain model
+Role Permission domain model
 
-- Membership Role domain model
+Membership Role domain model
 
-- Role service
+Role service
 
-- Permission service
+Permission service
 
-- Role Permission service
+Role Permission service
 
-- Membership Role service
+Membership Role service
 
-- Roles Administration UI
+Roles Administration UI
 
 Completed:
 
-- Permission database foundation
+Permission database foundation
 
-- Permission catalog
+Permission catalog
 
-- Role database foundation
+Role database foundation
 
-- Role Permission database foundation
+Role Permission database foundation
 
-- Membership Role database foundation
+Membership Role database foundation
 
-- organization-aware integrity constraints
+organization-aware integrity constraints
 
-- Role CRUD
+Role CRUD
 
-- TypeScript verification
+Permission assignment
 
-- real database CRUD verification
+Permission removal
+
+Membership Role assignment
+
+Membership Role removal
+
+User / Membership Role Administration workflow
+
+TypeScript verification
+
+real database CRUD verification
+
+User Edit integration
 
 Remaining Roles & Permissions work:
 
-- Permission assignment
+Production tenant authorization
 
-- Permission removal
+Production Row Level Security
 
-- Membership Role assignment
+Full authorization enforcement across UI, services, APIs, and
+database/RLS
 
-- Membership Role removal
-
-- User / Membership Role Administration workflow
-
-- Production tenant authorization
-
-- Production Row Level Security
-
-- Full authorization enforcement across UI, services, APIs, and database/RLS
-
----
-
-## Performance Sheet Management
+Performance Sheet Management
 
 Status
 
@@ -228,62 +240,60 @@ management experience.
 
 Expected capabilities include:
 
-- Performance Sheet listing
+Performance Sheet listing
 
-- create Performance Sheet
+create Performance Sheet
 
-- select Performance Sheet
+select Performance Sheet
 
-- open Builder
+open Builder
 
-- draft management
+draft management
 
-- published version management
+published version management
 
-- revision management
+revision management
 
-- archive
+archive
 
-- duplicate
+duplicate
 
-- search
+search
 
-- filtering
+filtering
 
-- assignment
+assignment
 
-Administration should manage the Performance Sheet lifecycle entry point.
+Administration should manage the Performance Sheet lifecycle entry
+point.
 
-Builder remains responsible for Performance Sheet definition and editing.
+Builder remains responsible for Performance Sheet definition and
+editing.
 
----
-
-## Assignment Management
+Assignment Management
 
 Status
 
 FUTURE
 
-Assignment management should connect published Performance Sheet versions
-to runtime subjects.
+Assignment management should connect published Performance Sheet
+versions to runtime subjects.
 
 Potential assignment subjects include:
 
-- individual
+individual
 
-- team
+team
 
-- department
+department
 
-- organization
+organization
 
 Assignment subject validation remains an architectural requirement.
 
----
+3. Builder
 
-# 3. Builder
-
-## Builder Definition Lifecycle
+Builder Definition Lifecycle
 
 Status
 
@@ -297,31 +307,29 @@ The established lifecycle is:
 
 Draft
 
-    ↓
+↓
 
 Validate
 
-    ↓
+↓
 
 Publish
 
-    ↓
+↓
 
 Published Version
 
-    ↓
+↓
 
 Create Revision
 
-    ↓
+↓
 
 New Draft
 
 Published definitions remain immutable.
 
----
-
-## Multiple Performance Sheet Definitions
+Multiple Performance Sheet Definitions
 
 Status
 
@@ -331,23 +339,22 @@ Future organizations will manage multiple logical Performance Sheets.
 
 The platform should support:
 
-- sheet_key
+sheet_key
 
-- Performance Sheet Library
+Performance Sheet Library
 
-- multiple definitions
+multiple definitions
 
-- version selection
+version selection
 
-- organization-scoped definitions
+organization-scoped definitions
 
-Runtime assignments should continue referencing the exact published version.
+Runtime assignments should continue referencing the exact published
+version.
 
----
+4. Runtime
 
-# 4. Runtime
-
-## Runtime Execution Foundation
+Runtime Execution Foundation
 
 Status
 
@@ -355,31 +362,29 @@ ESTABLISHED
 
 The Runtime architecture has already established:
 
-- Performance Instance resolution
+Performance Instance resolution
 
-- Assignment resolution
+Assignment resolution
 
-- exact published Performance Sheet resolution
+exact published Performance Sheet resolution
 
-- Key Result Progress
+Key Result Progress
 
-- Current Value
+Current Value
 
-- Confidence
+Confidence
 
-- employee comments
+employee comments
 
-- manager comments
+manager comments
 
-- aggregate recalculation
+aggregate recalculation
 
-- Runtime lifecycle state
+Runtime lifecycle state
 
 Builder and Runtime remain separate architectural layers.
 
----
-
-## Runtime Workspace Enhancements
+Runtime Workspace Enhancements
 
 Status
 
@@ -389,29 +394,27 @@ The Runtime execution foundation is established.
 
 Future enhancements may include:
 
-- richer Runtime workspace presentation
+richer Runtime workspace presentation
 
-- weighted aggregation
+weighted aggregation
 
-- additional KPI visualization
+additional KPI visualization
 
-- historical updates
+historical updates
 
-- expanded workflow controls
+expanded workflow controls
 
-- additional reporting context
+additional reporting context
 
-- improved member experience
+improved member experience
 
 Runtime Workspace is NOT the current milestone.
 
 Administration completion takes priority.
 
----
+5. Architecture
 
-# 5. Architecture
-
-## Organization Table Naming
+Organization Table Naming
 
 Current
 
@@ -433,9 +436,7 @@ Status
 
 Deferred
 
----
-
-## Organization Domain Model
+Organization Domain Model
 
 Current
 
@@ -459,9 +460,7 @@ Status
 
 Deferred
 
----
-
-## Repository Row Naming
+Repository Row Naming
 
 Rename:
 
@@ -483,9 +482,7 @@ Status
 
 Deferred
 
----
-
-## Repository Mappers
+Repository Mappers
 
 Create:
 
@@ -503,11 +500,9 @@ Status
 
 Deferred
 
----
+6. Security
 
-# 6. Security
-
-## Tenant Authorization Hardening
+Tenant Authorization Hardening
 
 Status
 
@@ -520,9 +515,7 @@ Priority
 
 High
 
----
-
-## Production Row Level Security
+Production Row Level Security
 
 Status
 
@@ -534,9 +527,7 @@ Priority
 
 High
 
----
-
-## Runtime Security Boundaries
+Runtime Security Boundaries
 
 Status
 
@@ -549,9 +540,7 @@ Priority
 
 High
 
----
-
-## User / Role Authorization
+User / Role Authorization
 
 Status
 
@@ -560,27 +549,26 @@ DEFERRED
 After Users / Members and Roles / Permissions are established, implement
 consistent authorization across:
 
-- UI
+UI
 
-- server services
+server services
 
-- database / RLS
+database / RLS
 
 Priority
 
 High
 
----
+7. Runtime Data Architecture
 
-# 7. Runtime Data Architecture
-
-## Assignment Subject Validation
+Assignment Subject Validation
 
 Status
 
 DEFERRED
 
-Validate that subjectId belongs to the entity represented by assignmentType.
+Validate that subjectId belongs to the entity represented by
+assignmentType.
 
 Reason
 
@@ -590,9 +578,7 @@ Priority
 
 Medium
 
----
-
-## Performance Instance Relationship Integrity
+Performance Instance Relationship Integrity
 
 Status
 
@@ -608,9 +594,7 @@ Priority
 
 Medium
 
----
-
-## Historical KPI Updates
+Historical KPI Updates
 
 Status
 
@@ -620,19 +604,19 @@ Create a durable time-series KPI Update model.
 
 The model should preserve:
 
-- Performance Instance
+Performance Instance
 
-- Key Result
+Key Result
 
-- measured value
+measured value
 
-- calculated score
+calculated score
 
-- timestamp
+timestamp
 
-- reporting context
+reporting context
 
-- update source where appropriate
+update source where appropriate
 
 Reason
 
@@ -643,32 +627,30 @@ Priority
 
 High
 
----
-
-## KPI Calculation Engine
+KPI Calculation Engine
 
 Status
 
 DEFERRED
 
-Create a generalized KPI calculation engine supporting future KPI types such
-as:
+Create a generalized KPI calculation engine supporting future KPI types
+such as:
 
-- numeric
+numeric
 
-- currency
+currency
 
-- percentage
+percentage
 
-- time-bound
+time-bound
 
-- reverse scoring
+reverse scoring
 
-- shared/team metrics
+shared/team metrics
 
-- department metrics
+department metrics
 
-- organization metrics
+organization metrics
 
 Reason
 
@@ -678,9 +660,7 @@ Priority
 
 High
 
----
-
-## Weighted Aggregation
+Weighted Aggregation
 
 Status
 
@@ -688,11 +668,11 @@ DEFERRED
 
 Formalize weighted aggregation at:
 
-- Key Result level
+Key Result level
 
-- Objective level
+Objective level
 
-- Performance Instance level
+Performance Instance level
 
 Reason
 
@@ -702,11 +682,9 @@ Priority
 
 High
 
----
+8. Runtime Workflow
 
-# 8. Runtime Workflow
-
-## Runtime Lifecycle
+Runtime Lifecycle
 
 Status
 
@@ -720,23 +698,21 @@ Potential lifecycle:
 
 In Progress
 
-    ↓
+↓
 
 Submitted
 
-    ↓
+↓
 
 Approved
 
-    ↓
+↓
 
 Completed
 
----
+9. Historical Reporting
 
-# 9. Historical Reporting
-
-## Historical Performance Reporting
+Historical Performance Reporting
 
 Status
 
@@ -744,52 +720,48 @@ FUTURE
 
 Support:
 
-- previous reporting periods
+previous reporting periods
 
-- performance trends
+performance trends
 
-- team comparisons
+team comparisons
 
-- department comparisons
+department comparisons
 
-- organizational comparisons
+organizational comparisons
 
-- historical performance records
+historical performance records
 
 Priority
 
 High
 
----
+10. Dashboards
 
-# 10. Dashboards
-
-## Dynamic Dashboard System
+Dynamic Dashboard System
 
 Status
 
 FUTURE
 
-Dashboards should be generated from platform data rather than custom-built
-for individual organizations.
+Dashboards should be generated from platform data rather than
+custom-built for individual organizations.
 
 Potential dashboard levels:
 
-- individual
+individual
 
-- team
+team
 
-- department
+department
 
-- executive
+executive
 
-- organization
+organization
 
----
+11. AI
 
-# 11. AI
-
-## AI-Assisted Planning
+AI-Assisted Planning
 
 Status
 
@@ -797,25 +769,23 @@ FUTURE
 
 Potential capabilities:
 
-- objective generation
+objective generation
 
-- Key Result recommendations
+Key Result recommendations
 
-- KPI suggestions
+KPI suggestions
 
-- goal quality analysis
+goal quality analysis
 
-- initiative recommendations
+initiative recommendations
 
-- performance insights
+performance insights
 
-- strategic planning assistance
+strategic planning assistance
 
-- automated reporting summaries
+automated reporting summaries
 
----
-
-## Predictive Analytics
+Predictive Analytics
 
 Status
 
@@ -823,19 +793,17 @@ FUTURE
 
 Potential capabilities:
 
-- performance trend analysis
+performance trend analysis
 
-- risk detection
+risk detection
 
-- forecasting
+forecasting
 
-- organizational performance insights
+organizational performance insights
 
----
+12. Visual Design System
 
-# 12. Visual Design System
-
-## CascadEffects Design System
+CascadEffects Design System
 
 Status
 
@@ -843,50 +811,48 @@ FUTURE
 
 Create centralized design tokens for:
 
-- Deep Navy
+Deep Navy
 
-- Coral
+Coral
 
-- White
+White
 
-- light gray surfaces
+light gray surfaces
 
-- typography
+typography
 
-- buttons
+buttons
 
-- forms
+forms
 
-- cards
+cards
 
-- dialogs
+dialogs
 
-- tables
+tables
 
-- navigation
+navigation
 
-- status indicators
+status indicators
 
 The design system should be reusable across:
 
-- Administration
+Administration
 
-- Builder
+Builder
 
-- Runtime
+Runtime
 
-- Dashboards
+Dashboards
 
-- Reports
+Reports
 
 Organization-specific branding should eventually be configurable through
 Administration.
 
----
+13. Deployment / Environment Configuration
 
-# 13. Deployment / Environment Configuration
-
-## Environment Validation
+Environment Validation
 
 Status
 
@@ -894,59 +860,53 @@ FUTURE
 
 Future deployment hardening should include:
 
-- environment variable validation
+environment variable validation
 
-- missing environment detection
+missing environment detection
 
-- production health checks
+production health checks
 
-- Supabase connectivity verification
+Supabase connectivity verification
 
-- clear deployment diagnostics
+clear deployment diagnostics
 
-- separation of public configuration from server-only secrets
+separation of public configuration from server-only secrets
 
----
-
-# 14. Current Milestone Rule
+14. Current Milestone Rule
 
 The current milestone must always be determined from:
 
-1. Latest Waypoint
+Latest Waypoint
 
-2. Platform Decisions
+Platform Decisions
 
-3. Platform Backlog
+Platform Backlog
 
 Historical Waypoints must not be treated as current task lists.
 
-If an older document says something is "Next Milestone" but a newer Waypoint
-shows that work has already progressed beyond it, the older statement is
-historical and must not redirect development.
+If an older document says something is "Next Milestone" but a newer
+Waypoint shows that work has already progressed beyond it, the older
+statement is historical and must not redirect development.
 
----
-
-# 15. Documentation Maintenance
+15. Documentation Maintenance
 
 When a major milestone is completed:
 
-1. Update the relevant Platform Decisions if architecture changed.
+Update the relevant Platform Decisions if architecture changed.
 
-2. Update this Platform Backlog if roadmap status changed.
+Update this Platform Backlog if roadmap status changed.
 
-3. Commit the implementation.
+Commit the implementation.
 
-4. Push to GitHub.
+Push to GitHub.
 
-5. Create a new Waypoint.
+Create a new Waypoint.
 
-6. Confirm the new Waypoint is the current project checkpoint.
+Confirm the new Waypoint is the current project checkpoint.
 
 Do not modify historical Waypoints merely to make them current.
 
----
-
-# 16. Current Project Position
+16. Current Project Position
 
 Builder
 
@@ -974,11 +934,11 @@ COMPLETE
 
 Users / Members
 
-INVITATION FOUNDATION COMPLETE
+USER EDIT COMPLETE
 
 Roles & Permissions
 
-ROLE FOUNDATION COMPLETE
+FUNCTIONAL FOUNDATION COMPLETE
 
 Performance Sheet Management
 
@@ -1004,87 +964,77 @@ Production Authorization / RLS
 
 OUTSTANDING
 
----
-
-# 17. Next Development Session
+17. Next Development Session
 
 Start from the latest Waypoint.
 
 Review:
 
-1. Latest Waypoint
+Latest Waypoint
 
-2. Platform Decisions
+Platform Decisions
 
-3. Platform Backlog
+Platform Backlog
 
 Confirm:
 
-Roles & Permissions
+Administration --- Users / Members
 
 as the current Administration milestone.
 
-The Roles Foundation is complete.
+The Roles & Permissions functional foundation is complete.
+
+The User Edit workflow is complete.
 
 The next implementation should continue incrementally with:
 
-- Permission assignment
+User Deactivate
 
-- Permission removal
+Then evaluate:
 
-- Membership Role assignment
+Performance Sheet Management
 
-- Membership Role removal
+Assignment Management
 
-- Roles & Permissions verification
-
-Then evaluate the remaining Users / Members work:
-
-- User Edit
-
-- User Deactivate
-
-The exact ordering of remaining Administration capabilities must be confirmed
-from the latest Waypoint, Platform Decisions, and Platform Backlog before
-implementation.
+Additional Administration capabilities
 
 Production tenant authorization and Row Level Security remain separate
-security milestones and should not be treated as complete merely because the
-Roles and Permissions data foundation exists.
+security milestones and should not be treated as complete merely because
+the Roles and Permissions data foundation exists.
 
 Continue using the engineering workflow:
 
 Review Waypoint
 
-    ↓
+↓
 
 Review Decisions
 
-    ↓
+↓
 
 Review Backlog
 
-    ↓
+↓
 
 Confirm Milestone
 
-    ↓
+↓
 
 Build
 
-    ↓
+↓
 
 Compile
 
-    ↓
+↓
 
 Commit
 
-    ↓
+↓
 
 Update Documentation
 
-    ↓
+↓
 
 Create Waypoint
 

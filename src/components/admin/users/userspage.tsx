@@ -9,8 +9,12 @@ import UsersList from "@/components/admin/users/userslist";
 
 import InviteUserDialog from "@/components/admin/users/inviteuserdialog";
 
+import UserEditDialog from "@/components/admin/users/usereditdialog";
+
 import {
   listUserManagementRecords,
+  updateUser,
+  updateOrganizationMembership,
 } from "@/services/user.service";
 
 import {
@@ -63,6 +67,12 @@ export default function UsersPage() {
 
   const [isInviteOpen, setIsInviteOpen] =
     useState(false);
+
+  const [isEditOpen, setIsEditOpen] =
+    useState(false);
+
+  const [selectedUser, setSelectedUser] =
+    useState<UserManagementRecord | null>(null);
 
   const [isSaving, setIsSaving] =
     useState(false);
@@ -120,10 +130,14 @@ export default function UsersPage() {
         ]);
 
         setUserRecords(records);
+
         setDepartments(
           loadedDepartments
         );
-        setTeams(loadedTeams);
+
+        setTeams(
+          loadedTeams
+        );
       } catch (error) {
         console.error(
           "Failed to load users:",
@@ -225,10 +239,102 @@ export default function UsersPage() {
   function handleEdit(
     record: UserManagementRecord
   ) {
-    console.log(
-      "Edit user:",
+    setSelectedUser(
       record
     );
+
+    setIsEditOpen(
+      true
+    );
+  }
+
+  function handleEditOpenChange(
+    open: boolean
+  ) {
+    setIsEditOpen(
+      open
+    );
+
+    if (!open) {
+      setSelectedUser(
+        null
+      );
+    }
+  }
+
+  async function handleUpdateUser(
+    values: UserFormValues
+  ) {
+    if (
+      !organization ||
+      !selectedUser
+    ) {
+      throw new Error(
+        "No user is selected."
+      );
+    }
+
+    setIsSaving(true);
+    setErrorMessage(null);
+
+    try {
+      await updateUser(
+        selectedUser.user.id,
+        {
+          first_name:
+            values.first_name,
+
+          last_name:
+            values.last_name,
+
+          display_name:
+            values.display_name ||
+            null,
+
+          email:
+            values.email,
+
+          is_active:
+            values.is_active,
+        }
+      );
+
+      if (
+        selectedUser.membership
+      ) {
+        await updateOrganizationMembership(
+          selectedUser.membership.id,
+          {
+            department_id:
+              values.department_id,
+
+            team_id:
+              values.team_id,
+          }
+        );
+      }
+
+      await loadUsers(
+        organization.id
+      );
+
+      setIsEditOpen(
+        false
+      );
+
+      setSelectedUser(
+        null
+      );
+    } catch (error) {
+      console.error(
+        "Failed to update user:",
+        error
+      );
+
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function handleDeactivate(
@@ -356,7 +462,9 @@ export default function UsersPage() {
 
             <UsersList
               records={userRecords}
-              onEdit={handleEdit}
+              onEdit={
+                handleEdit
+              }
               onDeactivate={
                 handleDeactivate
               }
@@ -376,9 +484,41 @@ export default function UsersPage() {
         onOpenChange={
           setIsInviteOpen
         }
-        onSubmit={handleInvite}
-        isSaving={isSaving}
+        onSubmit={
+          handleInvite
+        }
+        isSaving={
+          isSaving
+        }
       />
+
+      {/* Edit User Dialog */}
+
+      {organization &&
+        selectedUser && (
+          <UserEditDialog
+            open={isEditOpen}
+            record={selectedUser}
+            organizationId={
+              organization.id
+            }
+            departments={
+              departments
+            }
+            teams={
+              teams
+            }
+            onOpenChange={
+              handleEditOpenChange
+            }
+            onSubmit={
+              handleUpdateUser
+            }
+            isSaving={
+              isSaving
+            }
+          />
+        )}
 
     </main>
   );

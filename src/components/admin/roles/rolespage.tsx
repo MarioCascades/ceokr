@@ -478,6 +478,12 @@ export default function RolesPage() {
               isEditDialogOpen
             }
             mode="edit"
+            roleId={
+              selectedRole.id
+            }
+            organizationId={
+              selectedRole.organization_id
+            }
             initialValues={{
               name:
                 selectedRole.name,
