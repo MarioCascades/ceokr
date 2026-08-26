@@ -161,9 +161,12 @@ export async function loadLatestDraft(
       "status",
       "draft"
     )
-    .order("updated_at", {
-      ascending: false,
-    })
+    .order(
+      "updated_at",
+      {
+        ascending: false,
+      }
+    )
     .limit(1)
     .maybeSingle();
 
@@ -533,6 +536,48 @@ export async function listPerformanceSheetDefinitions(
 
   return Array.from(
     latestBySheetKey.values()
+  );
+}
+
+/* ==========================================================
+   Find Performance Sheet Versions
+   ----------------------------------------------------------
+   Returns all preserved versions belonging to the same
+   logical Performance Sheet definition.
+
+   Versions are returned from newest to oldest.
+========================================================== */
+
+export async function findPerformanceSheetVersions(
+  organizationId: string,
+  sheetKey: string
+): Promise<PerformanceSheetRecord[]> {
+  const { data, error } = await supabase
+    .from("performance_sheets")
+    .select("*")
+    .eq(
+      "organization_id",
+      organizationId
+    )
+    .eq(
+      "sheet_key",
+      sheetKey
+    )
+    .order(
+      "version",
+      {
+        ascending: false,
+      }
+    );
+
+  if (error) {
+    throw new Error(
+      `Failed to load performance sheet versions: ${error.message}`
+    );
+  }
+
+  return (
+    (data ?? []) as PerformanceSheetRecord[]
   );
 }
 
