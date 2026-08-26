@@ -91,33 +91,77 @@ export default function PerformanceSheetsPage() {
     <main className="min-h-screen bg-gray-50 px-8 py-10">
       <div className="mx-auto max-w-6xl space-y-8">
 
-        {/* Header */}
+        {/* ==================================================
+            Header
+        ================================================== */}
 
-        <div className="flex items-start justify-between gap-6">
+        <div className="flex flex-col gap-6">
 
-          <div>
-            <h1 className="text-3xl font-bold">
-              Performance Sheets
-            </h1>
+          <div className="flex items-center justify-between gap-4">
 
-            <p className="mt-2 text-muted-foreground">
-              Manage Performance Sheet definitions,
-              versions and Builder access.
-            </p>
+            <div>
+              <h1 className="text-3xl font-bold">
+                Performance Sheets
+              </h1>
+
+              <p className="mt-2 text-muted-foreground">
+                Manage Performance Sheet definitions,
+                versions and Builder access.
+              </p>
+            </div>
+
+            <Button
+              asChild
+              variant="outline"
+            >
+              <Link href="/admin">
+                Back to Administration
+              </Link>
+            </Button>
+
           </div>
 
-          <Button
-            asChild
-            variant="outline"
+          {/* ==================================================
+              Management Navigation
+          ================================================== */}
+
+          <nav
+            aria-label="Performance Sheet management navigation"
+            className="flex flex-wrap gap-2"
           >
-            <Link href="/admin">
-              Back to Administration
-            </Link>
-          </Button>
+            <Button
+              asChild
+              variant="secondary"
+            >
+              <Link href="/admin/performancesheets">
+                Performance Sheets
+              </Link>
+            </Button>
+
+            <Button
+              asChild
+              variant="outline"
+            >
+              <Link href="/builder">
+                Builder
+              </Link>
+            </Button>
+
+            <Button
+              asChild
+              variant="outline"
+            >
+              <Link href="/admin">
+                Administration
+              </Link>
+            </Button>
+          </nav>
 
         </div>
 
-        {/* Error */}
+        {/* ==================================================
+            Error
+        ================================================== */}
 
         {errorMessage && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-4">
@@ -127,7 +171,9 @@ export default function PerformanceSheetsPage() {
           </div>
         )}
 
-        {/* Loading */}
+        {/* ==================================================
+            Loading
+        ================================================== */}
 
         {isLoading && (
           <section className="rounded-xl border bg-white p-6 shadow-sm">
@@ -137,7 +183,9 @@ export default function PerformanceSheetsPage() {
           </section>
         )}
 
-        {/* Organization */}
+        {/* ==================================================
+            Organization
+        ================================================== */}
 
         {!isLoading &&
           organization && (
@@ -167,10 +215,16 @@ export default function PerformanceSheetsPage() {
             </section>
           )}
 
-        {/* Performance Sheets */}
+        {/* ==================================================
+            Performance Sheets
+        ================================================== */}
 
         {!isLoading && (
           <section className="rounded-xl border bg-white shadow-sm">
+
+            {/* ==================================================
+                Section Header
+            ================================================== */}
 
             <div className="flex items-center justify-between gap-4 border-b p-6">
 
@@ -193,6 +247,10 @@ export default function PerformanceSheetsPage() {
 
             </div>
 
+            {/* ==================================================
+                Empty State
+            ================================================== */}
+
             {performanceSheets.length === 0 ? (
               <div className="p-6">
 
@@ -201,8 +259,20 @@ export default function PerformanceSheetsPage() {
                   created yet.
                 </p>
 
+                <div className="mt-4">
+                  <Button asChild>
+                    <Link href="/builder?new=true">
+                      Create Performance Sheet
+                    </Link>
+                  </Button>
+                </div>
+
               </div>
             ) : (
+              /* ==================================================
+                 Performance Sheet List
+              ================================================== */
+
               <div className="divide-y">
 
                 {performanceSheets.map(
@@ -212,7 +282,9 @@ export default function PerformanceSheetsPage() {
                       className="flex items-center justify-between gap-6 p-6"
                     >
 
-                      {/* Information */}
+                      {/* ==================================================
+                          Information
+                      ================================================== */}
 
                       <div className="min-w-0">
 
@@ -244,7 +316,9 @@ export default function PerformanceSheetsPage() {
 
                       </div>
 
-                      {/* Actions */}
+                      {/* ==================================================
+                          Actions
+                      ================================================== */}
 
                       <div className="flex shrink-0 gap-2">
 

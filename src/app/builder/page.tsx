@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -224,13 +225,27 @@ function BuilderContent() {
         description="Design your organization's performance sheet."
         rightContent={
           <>
-            <Button variant="outline">
-              Administration
+            {/* ================= Navigation ================= */}
+
+            <Button
+              asChild
+              variant="outline"
+            >
+              <Link href="/admin">
+                Administration
+              </Link>
             </Button>
 
-            <Button variant="outline">
-              Back to Main
+            <Button
+              asChild
+              variant="outline"
+            >
+              <Link href="/">
+                Back to Main
+              </Link>
             </Button>
+
+            {/* ================= Preview ================= */}
 
             <Button
               variant={
