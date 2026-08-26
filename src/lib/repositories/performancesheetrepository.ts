@@ -52,12 +52,18 @@ export async function saveBuilderDocument(
       .update({
         document,
       })
-      .eq("id", sheetId)
+      .eq(
+        "id",
+        sheetId
+      )
       .eq(
         "organization_id",
         organizationId
       )
-      .eq("status", "draft")
+      .eq(
+        "status",
+        "draft"
+      )
       .select()
       .single();
 
@@ -84,11 +90,14 @@ export async function saveBuilderDocument(
       organization_id:
         organizationId,
 
-      name: "Performance Sheet",
+      name:
+        "Performance Sheet",
 
-      status: "draft",
+      status:
+        "draft",
 
-      version: 1,
+      version:
+        1,
 
       document,
     })
@@ -115,7 +124,10 @@ export async function loadBuilderDocument(
   const { data, error } = await supabase
     .from("performance_sheets")
     .select("*")
-    .eq("id", sheetId)
+    .eq(
+      "id",
+      sheetId
+    )
     .eq(
       "organization_id",
       organizationId
@@ -145,7 +157,10 @@ export async function loadLatestDraft(
       "organization_id",
       organizationId
     )
-    .eq("status", "draft")
+    .eq(
+      "status",
+      "draft"
+    )
     .order("updated_at", {
       ascending: false,
     })
@@ -184,14 +199,21 @@ export async function publishPerformanceSheet(
   const { data, error } = await supabase
     .from("performance_sheets")
     .update({
-      status: "published",
+      status:
+        "published",
     })
-    .eq("id", sheetId)
+    .eq(
+      "id",
+      sheetId
+    )
     .eq(
       "organization_id",
       organizationId
     )
-    .eq("status", "draft")
+    .eq(
+      "status",
+      "draft"
+    )
     .select()
     .single();
 
@@ -258,7 +280,9 @@ export async function createDraftRevision(
     error: versionError,
   } = await supabase
     .from("performance_sheets")
-    .select("version")
+    .select(
+      "version"
+    )
     .eq(
       "organization_id",
       organizationId
@@ -267,9 +291,12 @@ export async function createDraftRevision(
       "sheet_key",
       source.sheet_key
     )
-    .order("version", {
-      ascending: false,
-    })
+    .order(
+      "version",
+      {
+        ascending: false,
+      }
+    )
     .limit(1)
     .single();
 
@@ -349,9 +376,12 @@ export async function loadLatestPublished(
       "status",
       "published"
     )
-    .order("version", {
-      ascending: false,
-    })
+    .order(
+      "version",
+      {
+        ascending: false,
+      }
+    )
     .limit(1)
     .maybeSingle();
 
@@ -396,9 +426,12 @@ export async function loadLatestPublishedForOrganization(
       "status",
       "published"
     )
-    .order("updated_at", {
-      ascending: false,
-    })
+    .order(
+      "updated_at",
+      {
+        ascending: false,
+      }
+    )
     .limit(1)
     .maybeSingle();
 
@@ -414,6 +447,95 @@ export async function loadLatestPublishedForOrganization(
 
   return data as PerformanceSheetRecord;
 }
+
+/* ==========================================================
+   List Performance Sheet Definitions
+   ----------------------------------------------------------
+   Returns the latest version of each logical Performance
+   Sheet definition for an organization.
+
+   A logical Performance Sheet is identified by sheet_key.
+
+   Example:
+
+   sheet_key = annual-performance
+   version   = 1
+   version   = 2
+   version   = 3
+
+   Administration should treat these as one logical
+   Performance Sheet definition.
+
+   The latest version is returned as the management
+   entry point while historical versions remain preserved
+   in the database.
+========================================================== */
+
+export async function listPerformanceSheetDefinitions(
+  organizationId: string
+): Promise<PerformanceSheetRecord[]> {
+  const { data, error } = await supabase
+    .from("performance_sheets")
+    .select("*")
+    .eq(
+      "organization_id",
+      organizationId
+    )
+    .order(
+      "sheet_key",
+      {
+        ascending: true,
+      }
+    )
+    .order(
+      "version",
+      {
+        ascending: false,
+      }
+    );
+
+  if (error) {
+    throw new Error(
+      `Failed to load performance sheet definitions: ${error.message}`
+    );
+  }
+
+  const records =
+    (data ?? []) as PerformanceSheetRecord[];
+
+  /*
+   * Because records are ordered by:
+   *
+   * sheet_key ASC
+   * version DESC
+   *
+   * the first record encountered for
+   * each sheet_key is the highest version.
+   */
+  const latestBySheetKey =
+    new Map<
+      string,
+      PerformanceSheetRecord
+    >();
+
+  for (const record of records) {
+    if (
+      !latestBySheetKey.has(
+        record.sheet_key
+      )
+    ) {
+      latestBySheetKey.set(
+        record.sheet_key,
+        record
+      );
+    }
+  }
+
+  return Array.from(
+    latestBySheetKey.values()
+  );
+}
+
 /* ==========================================================
    Load Published Performance Sheet By Id
    ----------------------------------------------------------

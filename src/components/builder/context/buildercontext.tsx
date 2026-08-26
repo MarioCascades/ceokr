@@ -8,6 +8,8 @@ import {
   ReactNode,
 } from "react";
 
+import { useSearchParams } from "next/navigation";
+
 import { initialBuilderDocument } from "@/lib/builder/builderdefaults";
 
 import {
@@ -26,6 +28,7 @@ import {
 } from "@/lib/builder/builderactions";
 
 import {
+  loadBuilderDocument,
   loadLatestDraft,
   loadLatestPublishedForOrganization,
   saveBuilderDocument,
@@ -182,6 +185,15 @@ export function BuilderProvider({
 }: {
   children: ReactNode;
 }) {
+  const searchParams =
+    useSearchParams();
+
+  const selectedSheetId =
+    searchParams.get("sheetId");
+
+  const createNewSheet =
+    searchParams.get("new") === "true";
+
   const [
     editMode,
     setEditMode,
@@ -274,7 +286,108 @@ export function BuilderProvider({
 
         /*
          * --------------------------------------------------
-         * 1. Prefer an existing draft.
+         * 1. Explicit New Performance Sheet Mode
+         *
+         * Administration uses:
+         *
+         * /builder?new=true
+         *
+         * This intentionally bypasses existing drafts and
+         * published sheets.
+         *
+         * The Builder starts with the default document.
+         *
+         * No database record is created until Save Builder
+         * is used. The existing saveBuilderDocument()
+         * function remains responsible for creating the
+         * first draft.
+         * --------------------------------------------------
+         */
+
+        if (createNewSheet) {
+          setPerformanceSheetId(
+            null
+          );
+
+          setPerformanceSheetKey(
+            null
+          );
+
+          setPerformanceSheetStatus(
+            "draft"
+          );
+
+          setPerformanceSheetVersion(
+            1
+          );
+
+          setBuilderDocument(
+            initialBuilderDocument
+          );
+
+          /*
+           * A new Performance Sheet is immediately editable.
+           */
+          setEditMode(true);
+
+          return;
+        }
+
+        /*
+         * --------------------------------------------------
+         * 2. If a sheetId was supplied in the URL,
+         *    load that exact Performance Sheet.
+         *
+         *    This is used by Administration when opening
+         *    a selected Performance Sheet in the Builder.
+         * --------------------------------------------------
+         */
+
+        if (selectedSheetId) {
+          const selectedSheet =
+            await loadBuilderDocument(
+              organization.id,
+              selectedSheetId
+            );
+
+          setPerformanceSheetId(
+            selectedSheet.id
+          );
+
+          setPerformanceSheetKey(
+            selectedSheet.sheet_key
+          );
+
+          setPerformanceSheetStatus(
+            selectedSheet.status
+          );
+
+          setPerformanceSheetVersion(
+            selectedSheet.version
+          );
+
+          setBuilderDocument(
+            selectedSheet.document
+          );
+
+          /*
+           * Published sheets are immutable and therefore
+           * always open in preview mode.
+           *
+           * Drafts also start in preview mode so the user
+           * must explicitly choose Edit.
+           */
+          setEditMode(false);
+
+          return;
+        }
+
+        /*
+         * --------------------------------------------------
+         * 3. No selected sheet.
+         *
+         * Preserve the existing Builder behavior:
+         * prefer the latest draft.
          * --------------------------------------------------
          */
 
@@ -311,9 +424,10 @@ export function BuilderProvider({
 
         /*
          * --------------------------------------------------
-         * 2. No draft exists.
+         * 4. No draft exists.
          *
          * Look for the latest published definition.
+         *
          * Published definitions load in locked/preview mode.
          * --------------------------------------------------
          */
@@ -351,22 +465,32 @@ export function BuilderProvider({
 
         /*
          * --------------------------------------------------
-         * 3. Nothing exists yet.
+         * 5. Nothing exists yet.
          *
          * Continue using initialBuilderDocument until the
          * administrator saves the first draft.
          * --------------------------------------------------
          */
 
-        setPerformanceSheetId(null);
+        setPerformanceSheetId(
+          null
+        );
 
-        setPerformanceSheetKey(null);
+        setPerformanceSheetKey(
+          null
+        );
 
         setPerformanceSheetStatus(
           "draft"
         );
 
-        setPerformanceSheetVersion(1);
+        setPerformanceSheetVersion(
+          1
+        );
+
+        setBuilderDocument(
+          initialBuilderDocument
+        );
 
         setEditMode(false);
       } catch (error) {
@@ -386,7 +510,10 @@ export function BuilderProvider({
     }
 
     initializeBuilder();
-  }, []);
+  }, [
+    selectedSheetId,
+    createNewSheet,
+  ]);
 
   /* ========================================================
      Save Builder

@@ -1,10 +1,13 @@
 import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
 
 export default function AdminPage() {
   return (
     <main className="min-h-screen bg-gray-50 px-8 py-10">
       <div className="mx-auto max-w-6xl space-y-10">
+
+        {/* Header */}
 
         <div>
           <h1 className="text-4xl font-bold">
@@ -69,8 +72,8 @@ export default function AdminPage() {
 
             <AdminCard
               title="🧩 Performance Sheets"
-              description="Create, edit, validate and publish reusable Performance Sheet definitions."
-              href="/builder"
+              description="Manage Performance Sheet definitions, versions and Builder access."
+              href="/admin/performancesheets"
             />
 
             <AdminCard
@@ -147,6 +150,10 @@ export default function AdminPage() {
   );
 }
 
+/* ==========================================================
+   Admin Card
+========================================================== */
+
 function AdminCard({
   title,
   description,
@@ -158,6 +165,7 @@ function AdminCard({
 }) {
   return (
     <div className="rounded-xl border bg-white p-6 shadow-sm transition hover:shadow-md">
+
       <h3 className="text-lg font-semibold">
         {title}
       </h3>
@@ -166,11 +174,15 @@ function AdminCard({
         {description}
       </p>
 
-      <Button asChild className="mt-6">
+      <Button
+        asChild
+        className="mt-6"
+      >
         <Link href={href}>
           Open
         </Link>
       </Button>
+
     </div>
   );
 }
