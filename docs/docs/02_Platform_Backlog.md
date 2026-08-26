@@ -39,6 +39,8 @@ Users / Members --- Invitation Foundation
 
 Users / Members --- User Edit
 
+Users / Members --- User Deactivate
+
 Roles & Permissions --- Role Foundation
 
 Roles & Permissions --- Permission Assignment
@@ -51,13 +53,9 @@ Roles & Permissions --- Membership Role Removal
 
 Current Administration focus:
 
-Complete Users / Members management
+Performance Sheet Management
 
 Following capabilities:
-
-User Deactivate
-
-Performance Sheet Management
 
 Assignment Management
 
@@ -90,7 +88,7 @@ Users / Members
 
 Status
 
-USER EDIT COMPLETE
+COMPLETE
 
 The Users / Members foundation establishes:
 
@@ -142,11 +140,11 @@ Team editing
 
 Active / inactive state editing
 
+User Deactivate workflow
+
 Membership Role management from User Edit
 
 Remaining Users work:
-
-User Deactivate workflow
 
 Production tenant authorization
 
@@ -233,7 +231,7 @@ Performance Sheet Management
 
 Status
 
-FUTURE / NEXT ADMIN PHASE
+NEXT ADMIN PHASE
 
 Administration should eventually provide a true Performance Sheet
 management experience.
@@ -409,8 +407,6 @@ additional reporting context
 improved member experience
 
 Runtime Workspace is NOT the current milestone.
-
-Administration completion takes priority.
 
 5. Architecture
 
@@ -934,7 +930,7 @@ COMPLETE
 
 Users / Members
 
-USER EDIT COMPLETE
+COMPLETE
 
 Roles & Permissions
 
@@ -942,7 +938,7 @@ FUNCTIONAL FOUNDATION COMPLETE
 
 Performance Sheet Management
 
-FUTURE ADMIN PHASE
+NEXT ADMIN PHASE
 
 Assignment Management
 
@@ -978,25 +974,15 @@ Platform Backlog
 
 Confirm:
 
-Administration --- Users / Members
+Administration --- Performance Sheet Management
 
-as the current Administration milestone.
+as the next Administration milestone.
+
+The Users / Members workflow is complete.
 
 The Roles & Permissions functional foundation is complete.
 
-The User Edit workflow is complete.
-
-The next implementation should continue incrementally with:
-
-User Deactivate
-
-Then evaluate:
-
-Performance Sheet Management
-
-Assignment Management
-
-Additional Administration capabilities
+The next implementation should begin with Performance Sheet Management.
 
 Production tenant authorization and Row Level Security remain separate
 security milestones and should not be treated as complete merely because

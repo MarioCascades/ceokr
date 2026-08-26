@@ -11,10 +11,13 @@ import InviteUserDialog from "@/components/admin/users/inviteuserdialog";
 
 import UserEditDialog from "@/components/admin/users/usereditdialog";
 
+import DeactivateUserDialog from "@/components/admin/users/deactivateuserdialog";
+
 import {
   listUserManagementRecords,
   updateUser,
   updateOrganizationMembership,
+  deactivateUser,
 } from "@/services/user.service";
 
 import {
@@ -71,10 +74,16 @@ export default function UsersPage() {
   const [isEditOpen, setIsEditOpen] =
     useState(false);
 
+  const [isDeactivateOpen, setIsDeactivateOpen] =
+    useState(false);
+
   const [selectedUser, setSelectedUser] =
     useState<UserManagementRecord | null>(null);
 
   const [isSaving, setIsSaving] =
+    useState(false);
+
+  const [isDeactivating, setIsDeactivating] =
     useState(false);
 
   const [errorMessage, setErrorMessage] =
@@ -129,7 +138,9 @@ export default function UsersPage() {
           ),
         ]);
 
-        setUserRecords(records);
+        setUserRecords(
+          records
+        );
 
         setDepartments(
           loadedDepartments
@@ -223,7 +234,9 @@ export default function UsersPage() {
         organization.id
       );
 
-      setIsInviteOpen(false);
+      setIsInviteOpen(
+        false
+      );
     } catch (error) {
       console.error(
         "Failed to invite user:",
@@ -232,7 +245,9 @@ export default function UsersPage() {
 
       throw error;
     } finally {
-      setIsSaving(false);
+      setIsSaving(
+        false
+      );
     }
   }
 
@@ -333,17 +348,92 @@ export default function UsersPage() {
 
       throw error;
     } finally {
-      setIsSaving(false);
+      setIsSaving(
+        false
+      );
     }
   }
 
   function handleDeactivate(
     record: UserManagementRecord
   ) {
-    console.log(
-      "Deactivate user:",
+    setSelectedUser(
       record
     );
+
+    setIsDeactivateOpen(
+      true
+    );
+  }
+
+  function handleDeactivateOpenChange(
+    open: boolean
+  ) {
+    if (isDeactivating) {
+      return;
+    }
+
+    setIsDeactivateOpen(
+      open
+    );
+
+    if (!open) {
+      setSelectedUser(
+        null
+      );
+    }
+  }
+
+  async function handleConfirmDeactivate() {
+    if (
+      !organization ||
+      !selectedUser
+    ) {
+      throw new Error(
+        "No user is selected."
+      );
+    }
+
+    setIsDeactivating(
+      true
+    );
+
+    setErrorMessage(
+      null
+    );
+
+    try {
+      await deactivateUser(
+        selectedUser.user.id
+      );
+
+      await loadUsers(
+        organization.id
+      );
+
+      setIsDeactivateOpen(
+        false
+      );
+
+      setSelectedUser(
+        null
+      );
+    } catch (error) {
+      console.error(
+        "Failed to deactivate user:",
+        error
+      );
+
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to deactivate user."
+      );
+    } finally {
+      setIsDeactivating(
+        false
+      );
+    }
   }
 
   return (
@@ -379,12 +469,15 @@ export default function UsersPage() {
             <Button
               type="button"
               onClick={() =>
-                setIsInviteOpen(true)
+                setIsInviteOpen(
+                  true
+                )
               }
               disabled={
                 isLoading ||
                 departments.length === 0 ||
-                isSaving
+                isSaving ||
+                isDeactivating
               }
             >
               Invite User
@@ -461,7 +554,9 @@ export default function UsersPage() {
             </div>
 
             <UsersList
-              records={userRecords}
+              records={
+                userRecords
+              }
               onEdit={
                 handleEdit
               }
@@ -478,9 +573,15 @@ export default function UsersPage() {
       {/* Invite User Dialog */}
 
       <InviteUserDialog
-        open={isInviteOpen}
-        departments={departments}
-        teams={teams}
+        open={
+          isInviteOpen
+        }
+        departments={
+          departments
+        }
+        teams={
+          teams
+        }
         onOpenChange={
           setIsInviteOpen
         }
@@ -497,8 +598,12 @@ export default function UsersPage() {
       {organization &&
         selectedUser && (
           <UserEditDialog
-            open={isEditOpen}
-            record={selectedUser}
+            open={
+              isEditOpen
+            }
+            record={
+              selectedUser
+            }
             organizationId={
               organization.id
             }
@@ -519,6 +624,29 @@ export default function UsersPage() {
             }
           />
         )}
+
+      {/* Deactivate User Dialog */}
+
+      {selectedUser && (
+        <DeactivateUserDialog
+          open={
+            isDeactivateOpen
+          }
+          userName={
+            selectedUser.user.display_name ||
+            `${selectedUser.user.first_name} ${selectedUser.user.last_name}`
+          }
+          onOpenChange={
+            handleDeactivateOpenChange
+          }
+          onConfirm={
+            handleConfirmDeactivate
+          }
+          isDeactivating={
+            isDeactivating
+          }
+        />
+      )}
 
     </main>
   );
