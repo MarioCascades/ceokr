@@ -14,6 +14,10 @@ import {
   updateRuntimeKeyResultProgressAction,
 } from "@/app/runtime/actions";
 
+import {
+  calculatePercentageOfTarget,
+} from "@/lib/runtime/keyresultscoring";
+
 interface KeyResultRowProps {
   keyResult: BuilderKeyResult;
 
@@ -35,11 +39,6 @@ export default function KeyResultRow({
       progress?.currentValue ?? ""
     );
 
-  const [confidence, setConfidence] =
-    useState(
-      progress?.confidence ?? 0
-    );
-
   const [saving, setSaving] =
     useState(false);
 
@@ -48,6 +47,17 @@ export default function KeyResultRow({
 
   const [error, setError] =
     useState<string | null>(null);
+
+  /*
+   * Calculate the Runtime Key Result score
+   * from the current execution value and the
+   * immutable Builder target.
+   */
+  const calculatedScore =
+    calculatePercentageOfTarget(
+      currentValue,
+      keyResult.target
+    );
 
   async function handleSave() {
     if (!progress) {
@@ -74,9 +84,7 @@ export default function KeyResultRow({
         currentValue,
 
         score:
-          progress.score,
-
-        confidence,
+          calculatedScore,
 
         employeeComment:
           progress.employeeComment,
@@ -85,7 +93,9 @@ export default function KeyResultRow({
           progress.managerComment,
 
         status:
-          progress.status,
+          currentValue === ""
+            ? "not_started"
+            : "in_progress",
       });
 
       setSaved(true);
@@ -106,13 +116,18 @@ export default function KeyResultRow({
   }
 
   const score =
-    progress?.score ?? 0;
+    calculatedScore;
 
   const progressWidth =
     Math.min(
       Math.max(score, 0),
       100
     );
+
+  const runtimeStatus =
+    currentValue === ""
+      ? "not_started"
+      : "in_progress";
 
   return (
     <div className="rounded-lg border bg-gray-50 p-5">
@@ -137,7 +152,7 @@ export default function KeyResultRow({
           Runtime Values
       ========================================== */}
 
-      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4">
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
 
         {/* Target */}
 
@@ -190,58 +205,8 @@ export default function KeyResultRow({
           </p>
 
           <p className="mt-2 text-xl font-semibold">
-            {score}
+            {score}%
           </p>
-
-        </div>
-
-        {/* Confidence */}
-
-        <div>
-
-          <label
-            htmlFor={`confidence-${keyResult.id}`}
-            className="text-xs uppercase tracking-wide text-gray-500"
-          >
-            Confidence
-          </label>
-
-          <div className="mt-2 flex items-center gap-3">
-
-            <input
-              id={`confidence-${keyResult.id}`}
-              type="number"
-              min={0}
-              max={100}
-              value={confidence}
-              onChange={(event) => {
-                const value =
-                  Number(
-                    event.target.value
-                  );
-
-                setConfidence(
-                  Math.min(
-                    Math.max(
-                      Number.isNaN(value)
-                        ? 0
-                        : value,
-                      0
-                    ),
-                    100
-                  )
-                );
-
-                setSaved(false);
-              }}
-              className="w-full rounded-md border bg-white px-3 py-2 text-xl font-semibold"
-            />
-
-            <span className="text-sm text-gray-500">
-              %
-            </span>
-
-          </div>
 
         </div>
 
@@ -258,7 +223,7 @@ export default function KeyResultRow({
         </p>
 
         <p className="mt-1 text-sm font-medium">
-          {progress?.status ?? "not_started"}
+          {runtimeStatus}
         </p>
 
       </div>

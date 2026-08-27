@@ -77,6 +77,12 @@ export default function AdminPage() {
             />
 
             <AdminCard
+              title="📋 Assignments"
+              description="Assign published Performance Sheets to users, teams, departments or the organization."
+              href="/admin/assignments"
+            />
+
+            <AdminCard
               title="🎯 Objectives"
               description="Manage organizational objectives."
               href="/admin/objectives"

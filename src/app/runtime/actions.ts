@@ -43,8 +43,6 @@ export interface UpdateRuntimeKeyResultProgressActionInput {
 
   score: number;
 
-  confidence?: number;
-
   employeeComment?: string;
 
   managerComment?: string;

@@ -81,9 +81,6 @@ export default async function RuntimeTestPage() {
         score:
           75,
 
-        confidence:
-          90,
-
         employeeComment:
           "Development Runtime update test.",
 

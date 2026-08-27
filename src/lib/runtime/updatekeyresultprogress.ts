@@ -4,6 +4,7 @@ import type { KeyResultProgress } from "@/lib/domain/keyresultprogress";
 import {
   findKeyResultProgressById,
   updateKeyResultProgress,
+  findKeyResultProgressByPerformanceInstance,
 } from "@/lib/repositories/keyresultprogressrepository";
 
 import {
@@ -24,7 +25,6 @@ import {
  *
  * - currentValue
  * - score
- * - confidence
  * - comments
  * - status
  *
@@ -42,8 +42,6 @@ export interface UpdateKeyResultProgressInput {
   currentValue: number | string;
 
   score: number;
-
-  confidence?: number;
 
   employeeComment?: string;
 
@@ -120,22 +118,6 @@ export async function updateRuntimeKeyResultProgress(
   }
 
   /* ========================================================
-     Validate Confidence
-  ======================================================== */
-
-  if (
-    input.confidence !== undefined &&
-    (
-      input.confidence < 0 ||
-      input.confidence > 100
-    )
-  ) {
-    throw new Error(
-      "Confidence must be between 0 and 100."
-    );
-  }
-
-  /* ========================================================
      Update Key Result Progress
   ======================================================== */
 
@@ -149,8 +131,16 @@ export async function updateRuntimeKeyResultProgress(
       score:
         input.score,
 
+      /*
+       * Confidence is intentionally no longer
+       * part of the active Runtime workflow.
+       *
+       * Preserve the existing stored value until
+       * the broader domain/database cleanup is
+       * addressed separately.
+       */
       confidence:
-        input.confidence,
+        existingProgress.confidence,
 
       employeeComment:
         input.employeeComment,
@@ -166,19 +156,6 @@ export async function updateRuntimeKeyResultProgress(
      Load All Runtime Key Results
   ======================================================== */
 
-  /*
-   * We need the complete Runtime state in order
-   * to calculate the Performance Instance aggregate.
-   *
-   * This intentionally operates on Runtime records,
-   * not the Builder definition.
-   */
-
-  const { findKeyResultProgressByPerformanceInstance } =
-    await import(
-      "@/lib/repositories/keyresultprogressrepository"
-    );
-
   const progressRecords =
     await findKeyResultProgressByPerformanceInstance(
       performanceInstance.id
@@ -190,7 +167,9 @@ export async function updateRuntimeKeyResultProgress(
 
   let overallScore = 0;
 
-  if (progressRecords.length > 0) {
+  if (
+    progressRecords.length > 0
+  ) {
     const totalScore =
       progressRecords.reduce(
         (total, progress) =>
@@ -209,7 +188,9 @@ export async function updateRuntimeKeyResultProgress(
 
   let progressPercentage = 0;
 
-  if (progressRecords.length > 0) {
+  if (
+    progressRecords.length > 0
+  ) {
     const completedCount =
       progressRecords.filter(
         (progress) =>

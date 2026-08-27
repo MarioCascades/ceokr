@@ -18,6 +18,10 @@ import type {
   ReportingPeriod,
 } from "@/lib/domain/reportingperiod";
 
+import type {
+  RuntimeSubject,
+} from "@/lib/runtime/runtimeexecution";
+
 import {
   transitionPerformanceInstanceAction,
 } from "@/app/runtime/actions";
@@ -40,6 +44,8 @@ interface PerformanceSheetProps {
   performanceInstance: PerformanceInstance;
 
   reportingPeriod: ReportingPeriod;
+
+  subject: RuntimeSubject | null;
 }
 
 export default function PerformanceSheet({
@@ -49,6 +55,7 @@ export default function PerformanceSheet({
   performanceInstanceId,
   performanceInstance,
   reportingPeriod,
+  subject,
 }: PerformanceSheetProps) {
   const [
     currentStatus,
@@ -110,6 +117,18 @@ export default function PerformanceSheet({
     }
   }
 
+  /*
+   * Runtime identity comes from the Assignment subject,
+   * not from the immutable Builder document.
+   *
+   * The Builder document may still contain placeholder
+   * presentation data because it represents the reusable
+   * Performance Sheet definition.
+   */
+  const runtimeDisplayName =
+    subject?.displayName ??
+    document.performanceHeader.employeeName;
+
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-8">
 
@@ -138,7 +157,7 @@ export default function PerformanceSheet({
       <section className="rounded-lg border bg-white p-6 shadow-sm">
 
         <h2 className="text-2xl font-semibold">
-          {document.performanceHeader.employeeName}
+          {runtimeDisplayName}
         </h2>
 
         <p className="text-muted-foreground">

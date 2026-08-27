@@ -582,6 +582,55 @@ export async function findPerformanceSheetVersions(
 }
 
 /* ==========================================================
+   Find Published Performance Sheets By Organization
+   ----------------------------------------------------------
+   Used by Administration Assignment Management.
+
+   Assignments may only reference exact published
+   Performance Sheet versions.
+
+   Draft and archived versions are intentionally excluded.
+========================================================== */
+
+export async function findPublishedPerformanceSheetsByOrganization(
+  organizationId: string
+): Promise<PerformanceSheetRecord[]> {
+  const { data, error } = await supabase
+    .from("performance_sheets")
+    .select("*")
+    .eq(
+      "organization_id",
+      organizationId
+    )
+    .eq(
+      "status",
+      "published"
+    )
+    .order(
+      "name",
+      {
+        ascending: true,
+      }
+    )
+    .order(
+      "version",
+      {
+        ascending: false,
+      }
+    );
+
+  if (error) {
+    throw new Error(
+      `Failed to load published performance sheets: ${error.message}`
+    );
+  }
+
+  return (
+    (data ?? []) as PerformanceSheetRecord[]
+  );
+}
+
+/* ==========================================================
    Load Published Performance Sheet By Id
    ----------------------------------------------------------
    Used by Runtime execution when an Assignment references

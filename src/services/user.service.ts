@@ -155,120 +155,264 @@ export async function deactivateUser(
  * Loads users belonging to the supplied organization and
  * resolves their organization membership, department, and
  * team.
+ *
+ * Organization membership is treated as the authoritative
+ * tenant relationship.
  */
 export async function listUserManagementRecords(
   organizationId: string
 ): Promise<UserManagementRecord[]> {
-  const { data, error } = await supabase
-    .from("users")
-    .select(`
-      *,
-      organization_memberships!organization_memberships_user_fkey (
-        id,
-        user_id,
-        organization_id,
-        department_id,
-        team_id,
-        created_at,
-        updated_at
-      )
-    `)
+
+  /* ========================================================
+     Load Organization Memberships
+  ======================================================== */
+
+  const {
+    data: membershipData,
+    error: membershipError,
+  } = await supabase
+    .from("organization_memberships")
+    .select("*")
     .eq(
-      "organization_memberships.organization_id",
+      "organization_id",
       organizationId
     )
     .order("created_at", {
       ascending: true,
     });
 
-  if (error) {
+  if (membershipError) {
     throw new Error(
-      `Failed to load user management records: ${error.message}`
+      `Failed to load organization memberships: ${membershipError.message}`
     );
   }
 
-  const records: UserManagementRecord[] = [];
+  const memberships =
+    (membershipData ?? []) as OrganizationMembership[];
 
-  for (const row of data ?? []) {
-    const rawMemberships =
-      (
-        row as User & {
-          organization_memberships?:
-            | OrganizationMembership[]
-            | null;
-        }
-      ).organization_memberships;
 
-    const membership =
-      rawMemberships?.[0] ?? null;
+  /* ========================================================
+     No Organization Members
+  ======================================================== */
 
-    let department:
-      | Department
-      | null = null;
+  if (memberships.length === 0) {
+    return [];
+  }
 
-    let team:
-      | Team
-      | null = null;
 
-    if (membership?.department_id) {
-      const {
-        data: departmentData,
-        error: departmentError,
-      } = await supabase
-        .from("departments")
-        .select("*")
-        .eq(
-          "id",
-          membership.department_id
-        )
-        .maybeSingle();
+  /* ========================================================
+     Load Users
+  ======================================================== */
 
-      if (departmentError) {
-        throw new Error(
-          `Failed to load department: ${departmentError.message}`
-        );
-      }
+  const userIds =
+    memberships.map(
+      (membership) =>
+        membership.user_id
+    );
 
-      department =
-        departmentData as Department | null;
-    }
+  const {
+    data: userData,
+    error: userError,
+  } = await supabase
+    .from("users")
+    .select("*")
+    .in(
+      "id",
+      userIds
+    )
+    .order("created_at", {
+      ascending: true,
+    });
 
-    if (membership?.team_id) {
-      const {
-        data: teamData,
-        error: teamError,
-      } = await supabase
-        .from("teams")
-        .select("*")
-        .eq(
-          "id",
-          membership.team_id
-        )
-        .maybeSingle();
+  if (userError) {
+    throw new Error(
+      `Failed to load organization users: ${userError.message}`
+    );
+  }
 
-      if (teamError) {
-        throw new Error(
-          `Failed to load team: ${teamError.message}`
-        );
-      }
+  const users =
+    (userData ?? []) as User[];
 
-      team =
-        teamData as Team | null;
-    }
 
+  /* ========================================================
+     Create User Map
+  ======================================================== */
+
+  const userMap =
+    new Map<string, User>(
+      users.map(
+        (user) => [
+          user.id,
+          user,
+        ]
+      )
+    );
+
+
+  /* ========================================================
+     Load Departments
+  ======================================================== */
+
+  const departmentIds =
+    Array.from(
+      new Set(
+        memberships
+          .map(
+            (membership) =>
+              membership.department_id
+          )
+          .filter(
+            (
+              id
+            ): id is string =>
+              Boolean(id)
+          )
+      )
+    );
+
+  const departmentMap =
+    new Map<string, Department>();
+
+  if (
+    departmentIds.length > 0
+  ) {
     const {
-      organization_memberships,
-      ...user
-    } = row as User & {
-      organization_memberships?:
-        | OrganizationMembership[]
-        | null;
-    };
+      data: departmentData,
+      error: departmentError,
+    } = await supabase
+      .from("departments")
+      .select("*")
+      .in(
+        "id",
+        departmentIds
+      )
+      .eq(
+        "organization_id",
+        organizationId
+      );
+
+    if (departmentError) {
+      throw new Error(
+        `Failed to load departments: ${departmentError.message}`
+      );
+    }
+
+    for (
+      const department of
+        (departmentData ?? []) as Department[]
+    ) {
+      departmentMap.set(
+        department.id,
+        department
+      );
+    }
+  }
+
+
+  /* ========================================================
+     Load Teams
+  ======================================================== */
+
+  const teamIds =
+    Array.from(
+      new Set(
+        memberships
+          .map(
+            (membership) =>
+              membership.team_id
+          )
+          .filter(
+            (
+              id
+            ): id is string =>
+              Boolean(id)
+          )
+      )
+    );
+
+  const teamMap =
+    new Map<string, Team>();
+
+  if (
+    teamIds.length > 0
+  ) {
+    const {
+      data: teamData,
+      error: teamError,
+    } = await supabase
+      .from("teams")
+      .select("*")
+      .in(
+        "id",
+        teamIds
+      )
+      .eq(
+        "organization_id",
+        organizationId
+      );
+
+    if (teamError) {
+      throw new Error(
+        `Failed to load teams: ${teamError.message}`
+      );
+    }
+
+    for (
+      const team of
+        (teamData ?? []) as Team[]
+    ) {
+      teamMap.set(
+        team.id,
+        team
+      );
+    }
+  }
+
+
+  /* ========================================================
+     Build User Management Records
+  ======================================================== */
+
+  const records:
+    UserManagementRecord[] = [];
+
+  for (
+    const membership of memberships
+  ) {
+    const user =
+      userMap.get(
+        membership.user_id
+      );
+
+    /*
+     * A membership without a corresponding application
+     * User record is not usable by the management layer.
+     */
+    if (!user) {
+      continue;
+    }
+
+    const department =
+      membership.department_id
+        ? departmentMap.get(
+            membership.department_id
+          ) ?? null
+        : null;
+
+    const team =
+      membership.team_id
+        ? teamMap.get(
+            membership.team_id
+          ) ?? null
+        : null;
 
     records.push({
       user,
+
       membership,
+
       department,
+
       team,
     });
   }

@@ -81,6 +81,11 @@ export default async function RuntimePage() {
         runtimeExecution
           .reportingPeriod
       }
+
+      subject={
+        runtimeExecution
+          .subject
+      }
     />
   );
 }

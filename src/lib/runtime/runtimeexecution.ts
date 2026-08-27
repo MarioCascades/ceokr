@@ -18,6 +18,32 @@ import {
   findReportingPeriodById,
 } from "@/lib/repositories/reportingperiodrepository";
 
+import {
+  getUser,
+} from "@/services/user.service";
+
+/* ==========================================================
+   Runtime Subject
+   ----------------------------------------------------------
+   Represents the entity currently executing the Performance
+   Instance.
+
+   The Builder document remains immutable.
+
+   Runtime resolves the actual execution subject from the
+   Assignment.
+========================================================== */
+
+export interface RuntimeSubject {
+  type: "individual";
+
+  id: string;
+
+  displayName: string;
+
+  email: string;
+}
+
 /* ==========================================================
    Load Runtime Execution
    ----------------------------------------------------------
@@ -28,11 +54,17 @@ import {
         ↓
    Assignment
         ↓
+   Runtime Subject
+        ↓
    Reporting Period
         ↓
    Exact published Performance Sheet
         ↓
    Key Result Progress
+
+   The Performance Sheet remains the immutable definition.
+
+   Assignment determines who or what is executing it.
 ========================================================== */
 
 export async function loadRuntimeExecution(
@@ -85,6 +117,48 @@ export async function loadRuntimeExecution(
   }
 
   /*
+   * Resolve the Runtime subject.
+   *
+   * The current Runtime header is employee-oriented,
+   * so Individual assignments resolve to the assigned
+   * User.
+   *
+   * Team, Department, and Organization presentation will
+   * be handled separately when their Runtime UX is defined.
+   */
+  let subject: RuntimeSubject | null =
+    null;
+
+  if (
+    assignment.assignmentType ===
+    "individual"
+  ) {
+    const user =
+  await getUser(
+    assignment.subjectId
+  );
+
+    if (!user) {
+      return null;
+    }
+
+    const displayName =
+      user.display_name?.trim() ||
+      `${user.first_name} ${user.last_name}`.trim() ||
+      user.email;
+
+    subject = {
+      type: "individual",
+
+      id: user.id,
+
+      displayName,
+
+      email: user.email,
+    };
+  }
+
+  /*
    * Load the Reporting Period associated with
    * this Performance Instance.
    *
@@ -129,6 +203,8 @@ export async function loadRuntimeExecution(
 
   return {
     assignment,
+
+    subject,
 
     reportingPeriod,
 

@@ -36,6 +36,10 @@ interface AssignmentRow {
   activated_at: string | null;
 
   completed_at: string | null;
+
+  created_at?: string;
+
+  updated_at?: string;
 }
 
 /* ==========================================================
@@ -83,6 +87,117 @@ function toAssignment(
 }
 
 /* ==========================================================
+   Create Assignment
+========================================================== */
+
+export async function createAssignment(
+  assignment: Omit<
+    Assignment,
+    | "id"
+    | "assignedAt"
+    | "activatedAt"
+    | "completedAt"
+  >
+): Promise<Assignment> {
+  const { data, error } =
+    await supabase
+      .from("assignments")
+      .insert({
+        organization_id:
+          assignment.organizationId,
+
+        performance_sheet_id:
+          assignment.performanceSheetId,
+
+        reporting_period_id:
+          assignment.reportingPeriodId,
+
+        assignment_type:
+          assignment.assignmentType,
+
+        subject_id:
+          assignment.subjectId,
+
+        status:
+          assignment.status,
+
+        assigned_by:
+          assignment.assignedBy,
+      })
+      .select()
+      .single();
+
+  if (error) {
+    throw new Error(
+      `Failed to create assignment: ${error.message}`
+    );
+  }
+
+  return toAssignment(
+    data as AssignmentRow
+  );
+}
+
+/* ==========================================================
+   Update Assignment
+========================================================== */
+
+export async function updateAssignment(
+  assignment: Assignment
+): Promise<Assignment> {
+  const { data, error } =
+    await supabase
+      .from("assignments")
+      .update({
+        performance_sheet_id:
+          assignment.performanceSheetId,
+
+        reporting_period_id:
+          assignment.reportingPeriodId,
+
+        assignment_type:
+          assignment.assignmentType,
+
+        subject_id:
+          assignment.subjectId,
+
+        status:
+          assignment.status,
+
+        assigned_by:
+          assignment.assignedBy,
+
+        activated_at:
+          assignment.activatedAt ??
+          null,
+
+        completed_at:
+          assignment.completedAt ??
+          null,
+      })
+      .eq(
+        "id",
+        assignment.id
+      )
+      .eq(
+        "organization_id",
+        assignment.organizationId
+      )
+      .select()
+      .single();
+
+  if (error) {
+    throw new Error(
+      `Failed to update assignment: ${error.message}`
+    );
+  }
+
+  return toAssignment(
+    data as AssignmentRow
+  );
+}
+
+/* ==========================================================
    Load Assignment
 ========================================================== */
 
@@ -90,18 +205,19 @@ export async function loadAssignment(
   organizationId: string,
   assignmentId: string
 ): Promise<Assignment | null> {
-  const { data, error } = await supabase
-    .from("assignments")
-    .select("*")
-    .eq(
-      "id",
-      assignmentId
-    )
-    .eq(
-      "organization_id",
-      organizationId
-    )
-    .maybeSingle();
+  const { data, error } =
+    await supabase
+      .from("assignments")
+      .select("*")
+      .eq(
+        "id",
+        assignmentId
+      )
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .maybeSingle();
 
   if (error) {
     throw new Error(
@@ -119,6 +235,41 @@ export async function loadAssignment(
 }
 
 /* ==========================================================
+   Find Assignments By Organization
+========================================================== */
+
+export async function findAssignmentsByOrganization(
+  organizationId: string
+): Promise<Assignment[]> {
+  const { data, error } =
+    await supabase
+      .from("assignments")
+      .select("*")
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .order(
+        "assigned_at",
+        {
+          ascending: false,
+        }
+      );
+
+  if (error) {
+    throw new Error(
+      `Failed to load assignments: ${error.message}`
+    );
+  }
+
+  return (
+    data as AssignmentRow[]
+  ).map(
+    toAssignment
+  );
+}
+
+/* ==========================================================
    Load Active Assignment
    ----------------------------------------------------------
    Used by Runtime when resolving the current
@@ -129,26 +280,30 @@ export async function loadActiveAssignment(
   organizationId: string,
   subjectId: string
 ): Promise<Assignment | null> {
-  const { data, error } = await supabase
-    .from("assignments")
-    .select("*")
-    .eq(
-      "organization_id",
-      organizationId
-    )
-    .eq(
-      "subject_id",
-      subjectId
-    )
-    .eq(
-      "status",
-      "active"
-    )
-    .order("assigned_at", {
-      ascending: false,
-    })
-    .limit(1)
-    .maybeSingle();
+  const { data, error } =
+    await supabase
+      .from("assignments")
+      .select("*")
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .eq(
+        "subject_id",
+        subjectId
+      )
+      .eq(
+        "status",
+        "active"
+      )
+      .order(
+        "assigned_at",
+        {
+          ascending: false,
+        }
+      )
+      .limit(1)
+      .maybeSingle();
 
   if (error) {
     throw new Error(
