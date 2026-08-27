@@ -1,10 +1,10 @@
-CascadEffects Performance Platform
+# CascadEffects Performance Platform
 
-Platform Backlog
+# Platform Backlog
 
 Document Status: CURRENT
 
-Last Updated: 2026-08-26
+Last Updated: 2026-08-28
 
 This document tracks intentionally deferred architecture, product
 capabilities, and future platform work.
@@ -16,7 +16,9 @@ Completed work should be recorded in Waypoints.
 The latest Waypoint and current Platform Decisions take precedence when
 determining the current project state.
 
-1. Current Development Phase
+---
+
+# 1. Current Development Phase
 
 Administration Completion
 
@@ -24,8 +26,7 @@ Status
 
 IN PROGRESS
 
-The platform is currently completing the Administration management
-layer.
+The platform is currently completing the Administration management layer.
 
 Completed:
 
@@ -51,40 +52,49 @@ Roles & Permissions --- Membership Role Assignment
 
 Roles & Permissions --- Membership Role Removal
 
-Current Administration focus:
-
 Performance Sheet Management
-
-Following capabilities:
 
 Assignment Management
 
+Current Administration focus:
+
 Additional Administration capabilities
+
+Production authorization and security hardening remain separate
+architecture milestones.
 
 The Builder and Runtime foundations already exist and should not be
 rebuilt during this Administration phase.
 
-2. Administration Roadmap
+---
 
-Organization
+# 2. Administration Roadmap
 
-Status
-
-COMPLETE
-
-Departments
+## Organization
 
 Status
 
 COMPLETE
 
-Teams
+---
+
+## Departments
 
 Status
 
 COMPLETE
 
-Users / Members
+---
+
+## Teams
+
+Status
+
+COMPLETE
+
+---
+
+## Users / Members
 
 Status
 
@@ -136,7 +146,7 @@ User profile editing
 
 Department editing
 
-Team editing
+Team association editing
 
 Active / inactive state editing
 
@@ -150,7 +160,9 @@ Production tenant authorization
 
 Production Row Level Security
 
-Roles & Permissions
+---
+
+## Roles & Permissions
 
 Status
 
@@ -227,71 +239,136 @@ Production Row Level Security
 Full authorization enforcement across UI, services, APIs, and
 database/RLS
 
-Performance Sheet Management
+---
+
+## Performance Sheet Management
 
 Status
 
-NEXT ADMIN PHASE
+COMPLETE
 
-Administration should eventually provide a true Performance Sheet
-management experience.
+The Administration Performance Sheet management workflow is complete.
 
-Expected capabilities include:
+Completed:
 
 Performance Sheet listing
 
-create Performance Sheet
+Create Performance Sheet
 
-select Performance Sheet
+Select Performance Sheet
 
-open Builder
+Open Builder
 
-draft management
+Draft management
 
-published version management
+Published version management
 
-revision management
+Exact version selection
 
-archive
+Version history
 
-duplicate
+Published version navigation
 
-search
+Draft revision navigation
 
-filtering
+Builder navigation
 
-assignment
+Administration navigation
 
-Administration should manage the Performance Sheet lifecycle entry
-point.
+Published → Revision workflow
 
-Builder remains responsible for Performance Sheet definition and
-editing.
+Performance Sheet lifecycle entry point
 
-Assignment Management
+Builder remains responsible for Performance Sheet definition and editing.
+
+Published versions remain immutable.
+
+The existing performance_sheets records provide version history.
+
+Deferred:
+
+Archive
+
+Duplicate
+
+Search
+
+Filtering
+
+Advanced Performance Sheet management
+
+---
+
+## Assignment Management
 
 Status
 
-FUTURE
+COMPLETE
 
-Assignment management should connect published Performance Sheet
-versions to runtime subjects.
+Assignment Management connects published Performance Sheet versions to
+Runtime subjects.
 
-Potential assignment subjects include:
+Completed:
 
-individual
+Assignment listing
 
-team
+Assignment creation
 
-department
+Assignment subject selection
 
-organization
+Individual assignments
 
-Assignment subject validation remains an architectural requirement.
+Team assignments
 
-3. Builder
+Department assignments
 
-Builder Definition Lifecycle
+Organization assignments
+
+Assignment lifecycle
+
+Draft state
+
+Active state
+
+Completed state
+
+Cancelled state
+
+Published Performance Sheet association
+
+Reporting Period association
+
+Assignment → Performance Instance integration
+
+Runtime subject resolution
+
+Individual User identity resolution
+
+Assignment Management remains an Administration capability.
+
+Builder remains responsible for Performance Sheet definition.
+
+Runtime remains responsible for Performance Instance execution.
+
+Assignments reference exact published Performance Sheet versions.
+
+Deferred hardening:
+
+Assignment Subject Validation
+
+Performance Instance Relationship Integrity
+
+Production authorization
+
+Production Row Level Security
+
+Runtime security boundaries
+
+---
+
+# 3. Builder
+
+## Builder Definition Lifecycle
 
 Status
 
@@ -327,7 +404,9 @@ New Draft
 
 Published definitions remain immutable.
 
-Multiple Performance Sheet Definitions
+---
+
+## Multiple Performance Sheet Definitions
 
 Status
 
@@ -350,15 +429,17 @@ organization-scoped definitions
 Runtime assignments should continue referencing the exact published
 version.
 
-4. Runtime
+---
 
-Runtime Execution Foundation
+# 4. Runtime
+
+## Runtime Execution Foundation
 
 Status
 
 ESTABLISHED
 
-The Runtime architecture has already established:
+The Runtime architecture has established:
 
 Performance Instance resolution
 
@@ -366,11 +447,15 @@ Assignment resolution
 
 exact published Performance Sheet resolution
 
+Reporting Period resolution
+
+Runtime subject resolution
+
 Key Result Progress
 
 Current Value
 
-Confidence
+Score
 
 employee comments
 
@@ -382,13 +467,39 @@ Runtime lifecycle state
 
 Builder and Runtime remain separate architectural layers.
 
-Runtime Workspace Enhancements
+Confidence is not part of the current Runtime Key Result update workflow.
+
+---
+
+## Runtime Scoring Utility
+
+Status
+
+ESTABLISHED
+
+The Runtime currently includes a small scoring utility.
+
+Current scoring method:
+
+Percentage of Target
+
+current value ÷ target value × 100
+
+Scores are stored internally on a 0–100 scale.
+
+The Runtime UI displays the score as a percentage.
+
+The current scoring utility intentionally remains small.
+
+A generalized KPI Calculation Engine remains future platform work.
+
+---
+
+## Runtime Workspace Enhancements
 
 Status
 
 FUTURE
-
-The Runtime execution foundation is established.
 
 Future enhancements may include:
 
@@ -408,9 +519,11 @@ improved member experience
 
 Runtime Workspace is NOT the current milestone.
 
-5. Architecture
+---
 
-Organization Table Naming
+# 5. Architecture
+
+## Organization Table Naming
 
 Current
 
@@ -432,7 +545,9 @@ Status
 
 Deferred
 
-Organization Domain Model
+---
+
+## Organization Domain Model
 
 Current
 
@@ -456,7 +571,9 @@ Status
 
 Deferred
 
-Repository Row Naming
+---
+
+## Repository Row Naming
 
 Rename:
 
@@ -478,7 +595,9 @@ Status
 
 Deferred
 
-Repository Mappers
+---
+
+## Repository Mappers
 
 Create:
 
@@ -496,9 +615,11 @@ Status
 
 Deferred
 
-6. Security
+---
 
-Tenant Authorization Hardening
+# 6. Security
+
+## Tenant Authorization Hardening
 
 Status
 
@@ -511,7 +632,9 @@ Priority
 
 High
 
-Production Row Level Security
+---
+
+## Production Row Level Security
 
 Status
 
@@ -523,7 +646,9 @@ Priority
 
 High
 
-Runtime Security Boundaries
+---
+
+## Runtime Security Boundaries
 
 Status
 
@@ -536,7 +661,9 @@ Priority
 
 High
 
-User / Role Authorization
+---
+
+## User / Role Authorization
 
 Status
 
@@ -555,9 +682,11 @@ Priority
 
 High
 
-7. Runtime Data Architecture
+---
 
-Assignment Subject Validation
+# 7. Runtime Data Architecture
+
+## Assignment Subject Validation
 
 Status
 
@@ -565,6 +694,16 @@ DEFERRED
 
 Validate that subjectId belongs to the entity represented by
 assignmentType.
+
+Examples:
+
+individual → valid User
+
+team → valid Team
+
+department → valid Department
+
+organization → valid Organization
 
 Reason
 
@@ -574,13 +713,25 @@ Priority
 
 Medium
 
-Performance Instance Relationship Integrity
+---
+
+## Performance Instance Relationship Integrity
 
 Status
 
 DEFERRED
 
 Enforce consistency between Performance Instance and Assignment.
+
+The Performance Instance should remain consistent with:
+
+Assignment
+
+Organization
+
+Reporting Period
+
+Exact Performance Sheet version
 
 Reason
 
@@ -590,7 +741,9 @@ Priority
 
 Medium
 
-Historical KPI Updates
+---
+
+## Historical KPI Updates
 
 Status
 
@@ -623,7 +776,9 @@ Priority
 
 High
 
-KPI Calculation Engine
+---
+
+## KPI Calculation Engine
 
 Status
 
@@ -656,7 +811,9 @@ Priority
 
 High
 
-Weighted Aggregation
+---
+
+## Weighted Aggregation
 
 Status
 
@@ -678,19 +835,19 @@ Priority
 
 High
 
-8. Runtime Workflow
+---
 
-Runtime Lifecycle
+# 8. Runtime Workflow
+
+## Runtime Lifecycle
 
 Status
 
 ESTABLISHED / FUTURE ENHANCEMENTS
 
-The core Runtime lifecycle has already been implemented and verified.
+The core Runtime lifecycle has been implemented and verified.
 
-Future work may refine transition rules and authorization.
-
-Potential lifecycle:
+Current lifecycle:
 
 In Progress
 
@@ -706,9 +863,21 @@ Approved
 
 Completed
 
-9. Historical Reporting
+Future work may refine:
 
-Historical Performance Reporting
+transition rules
+
+authorization
+
+workflow controls
+
+manager approval behavior
+
+---
+
+# 9. Historical Reporting
+
+## Historical Performance Reporting
 
 Status
 
@@ -732,9 +901,11 @@ Priority
 
 High
 
-10. Dashboards
+---
 
-Dynamic Dashboard System
+# 10. Dashboards
+
+## Dynamic Dashboard System
 
 Status
 
@@ -755,9 +926,11 @@ executive
 
 organization
 
-11. AI
+---
 
-AI-Assisted Planning
+# 11. AI
+
+## AI-Assisted Planning
 
 Status
 
@@ -781,7 +954,9 @@ strategic planning assistance
 
 automated reporting summaries
 
-Predictive Analytics
+---
+
+## Predictive Analytics
 
 Status
 
@@ -797,9 +972,11 @@ forecasting
 
 organizational performance insights
 
-12. Visual Design System
+---
 
-CascadEffects Design System
+# 12. Visual Design System
+
+## CascadEffects Design System
 
 Status
 
@@ -846,9 +1023,11 @@ Reports
 Organization-specific branding should eventually be configurable through
 Administration.
 
-13. Deployment / Environment Configuration
+---
 
-Environment Validation
+# 13. Deployment / Environment Configuration
+
+## Environment Validation
 
 Status
 
@@ -868,7 +1047,9 @@ clear deployment diagnostics
 
 separation of public configuration from server-only secrets
 
-14. Current Milestone Rule
+---
+
+# 14. Current Milestone Rule
 
 The current milestone must always be determined from:
 
@@ -884,13 +1065,19 @@ If an older document says something is "Next Milestone" but a newer
 Waypoint shows that work has already progressed beyond it, the older
 statement is historical and must not redirect development.
 
-15. Documentation Maintenance
+---
+
+# 15. Documentation Maintenance
 
 When a major milestone is completed:
 
 Update the relevant Platform Decisions if architecture changed.
 
 Update this Platform Backlog if roadmap status changed.
+
+Compile successfully.
+
+Test the implementation.
 
 Commit the implementation.
 
@@ -902,7 +1089,9 @@ Confirm the new Waypoint is the current project checkpoint.
 
 Do not modify historical Waypoints merely to make them current.
 
-16. Current Project Position
+---
+
+# 16. Current Project Position
 
 Builder
 
@@ -938,11 +1127,11 @@ FUNCTIONAL FOUNDATION COMPLETE
 
 Performance Sheet Management
 
-NEXT ADMIN PHASE
+COMPLETE
 
 Assignment Management
 
-FUTURE
+COMPLETE
 
 Dashboards
 
@@ -960,7 +1149,9 @@ Production Authorization / RLS
 
 OUTSTANDING
 
-17. Next Development Session
+---
+
+# 17. Next Development Session
 
 Start from the latest Waypoint.
 
@@ -972,56 +1163,115 @@ Platform Decisions
 
 Platform Backlog
 
-Confirm:
+Confirm the next Administration milestone before implementation.
 
-Administration --- Performance Sheet Management
+The following Administration capabilities are functionally established:
 
-as the next Administration milestone.
+Organization
 
-The Users / Members workflow is complete.
+Departments
 
-The Roles & Permissions functional foundation is complete.
+Teams
 
-The next implementation should begin with Performance Sheet Management.
+Users / Members
 
-Production tenant authorization and Row Level Security remain separate
-security milestones and should not be treated as complete merely because
-the Roles and Permissions data foundation exists.
+Roles & Permissions
 
-Continue using the engineering workflow:
+Performance Sheet Management
 
-Review Waypoint
+Assignment Management
 
-↓
+The next development phase should be selected based on platform value,
+architectural priority, and the current documented roadmap.
 
-Review Decisions
+High-priority architectural hardening remains:
 
-↓
+Production Tenant Authorization
 
-Review Backlog
+Production Row Level Security
 
-↓
+Runtime Security Boundaries
 
-Confirm Milestone
+Assignment Subject Validation
 
-↓
+Performance Instance Relationship Integrity
 
-Build
+Other future Administration capabilities may include:
 
-↓
+advanced Performance Sheet management
 
-Compile
+additional management workflows
 
-↓
+Dashboards
 
-Commit
+Reports
 
-↓
+AI configuration
 
-Update Documentation
+Do not rebuild Builder.
 
-↓
-
-Create Waypoint
+Do not duplicate Runtime execution logic.
 
 The repository remains the authoritative engineering record.
+
+---
+
+# 18. Current Deferred Priorities
+
+Priority: High
+
+Production Tenant Authorization
+
+Production Row Level Security
+
+Runtime Security Boundaries
+
+Historical KPI Updates
+
+KPI Calculation Engine
+
+Weighted Aggregation
+
+Historical Performance Reporting
+
+---
+
+Priority: Medium
+
+Assignment Subject Validation
+
+Performance Instance Relationship Integrity
+
+Organization Domain Model
+
+Repository Mappers
+
+Organization table naming standardization
+
+---
+
+Priority: Future Product
+
+Multiple Performance Sheet Definitions
+
+Performance Sheet Library
+
+Archive
+
+Duplicate
+
+Search
+
+Filtering
+
+Dashboards
+
+Reports
+
+AI-Assisted Planning
+
+Predictive Analytics
+
+CascadEffects Design System
+
+Environment Validation
