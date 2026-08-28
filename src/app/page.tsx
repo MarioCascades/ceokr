@@ -1,91 +1,25 @@
-import PerformanceSheet from "@/components/runtime/performancesheet/performancesheet";
+import Link from "next/link";
 
-import {
-  loadRuntimeExecution,
-} from "@/lib/runtime/runtimeexecution";
+import { Button } from "@/components/ui/button";
 
-import {
-  getOrganization,
-} from "@/services/organization.service";
-
-export default async function RuntimePage() {
-  const organization =
-    await getOrganization();
-
-  if (!organization) {
-    return (
-      <main className="mx-auto max-w-7xl p-8">
-
-        <h1 className="text-2xl font-semibold">
-          No organization found
-        </h1>
-
-        <p className="mt-2 text-muted-foreground">
-          Create an organization before opening Runtime.
-        </p>
-
-      </main>
-    );
-  }
-
-  const runtimeExecution =
-    await loadRuntimeExecution(
-      organization.id
-    );
-
-  if (!runtimeExecution) {
-    return (
-      <main className="mx-auto max-w-7xl p-8">
-
-        <h1 className="text-2xl font-semibold">
-          No active performance instance
-        </h1>
-
-        <p className="mt-2 text-muted-foreground">
-          Create an active assignment and Performance Instance before opening Runtime.
-        </p>
-
-      </main>
-    );
-  }
-
+export default function Home() {
   return (
-    <PerformanceSheet
-      document={
-        runtimeExecution
-          .performanceSheet
-          .document
-      }
+    <main className="min-h-screen flex items-center justify-center px-6">
+      <div className="max-w-3xl text-center space-y-6">
+        <h1 className="text-5xl font-bold">
+          Welcome to CascadEffects
+        </h1>
 
-      keyResultProgress={
-        runtimeExecution
-          .keyResultProgress
-      }
+        <p className="text-xl text-muted-foreground">
+          Manage and scale your organization's performance system.
+        </p>
 
-      organizationId={
-        organization.id
-      }
-
-      performanceInstanceId={
-        runtimeExecution
-          .performanceInstance
-          .id
-      }
-
-      performanceInstance={
-        runtimeExecution
-          .performanceInstance
-      }
-
-      reportingPeriod={
-        runtimeExecution
-          .reportingPeriod
-      }
-
-      subject={
-        runtimeExecution
-          .subject
-      }
-    />
+        <Button asChild size="lg">
+          <Link href="/admin">
+            Administer Your Organization
+          </Link>
+        </Button>
+      </div>
+    </main>
   );
 }

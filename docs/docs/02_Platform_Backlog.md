@@ -4,9 +4,10 @@
 
 Document Status: CURRENT
 
-Last Updated: 2026-08-28
+Last Updated: 2026-08-29
 
 This document tracks intentionally deferred architecture, product
+
 capabilities, and future platform work.
 
 It is not a historical development log.
@@ -14,6 +15,7 @@ It is not a historical development log.
 Completed work should be recorded in Waypoints.
 
 The latest Waypoint and current Platform Decisions take precedence when
+
 determining the current project state.
 
 ---
@@ -61,9 +63,11 @@ Current Administration focus:
 Additional Administration capabilities
 
 Production authorization and security hardening remain separate
+
 architecture milestones.
 
 The Builder and Runtime foundations already exist and should not be
+
 rebuilt during this Administration phase.
 
 ---
@@ -162,6 +166,48 @@ Production Row Level Security
 
 ---
 
+## Platform Authority
+
+Status
+
+FOUNDATION COMPLETE
+
+The platform-level administrative authority foundation is established.
+
+Completed:
+
+Platform Membership database foundation
+
+Platform Super Admin role model
+
+Platform Super Admin persistence
+
+Server-side Platform Super Admin resolution
+
+Platform Super Admin authorization boundary
+
+Platform Super Admin authority above Organization Roles
+
+A Platform Super Admin does not require an Organization Membership in every
+
+Organization they administer.
+
+Platform Super Admins are not Organization Roles.
+
+Remaining Platform Authority work:
+
+Platform Administration UI
+
+Super Admin assignment workflow
+
+Super Admin management workflow
+
+Production platform authorization enforcement
+
+Production Row Level Security
+
+---
+
 ## Roles & Permissions
 
 Status
@@ -237,7 +283,10 @@ Production tenant authorization
 Production Row Level Security
 
 Full authorization enforcement across UI, services, APIs, and
+
 database/RLS
+
+Platform-level authorization integration
 
 ---
 
@@ -306,6 +355,7 @@ Status
 COMPLETE
 
 Assignment Management connects published Performance Sheet versions to
+
 Runtime subjects.
 
 Completed:
@@ -427,6 +477,7 @@ version selection
 organization-scoped definitions
 
 Runtime assignments should continue referencing the exact published
+
 version.
 
 ---
@@ -626,6 +677,7 @@ Status
 DEFERRED
 
 Production authorization must enforce Organization boundaries across
+
 repositories and services.
 
 Priority
@@ -655,6 +707,7 @@ Status
 DEFERRED
 
 Establish appropriate server-side service boundaries and authorization
+
 checks for production Runtime operations.
 
 Priority
@@ -670,6 +723,7 @@ Status
 DEFERRED
 
 After Users / Members and Roles / Permissions are established, implement
+
 consistent authorization across:
 
 UI
@@ -693,6 +747,7 @@ Status
 DEFERRED
 
 Validate that subjectId belongs to the entity represented by
+
 assignmentType.
 
 Examples:
@@ -770,6 +825,7 @@ update source where appropriate
 Reason
 
 Support historical reporting, trend analysis, auditability, and future
+
 predictive analytics.
 
 Priority
@@ -785,6 +841,7 @@ Status
 DEFERRED
 
 Create a generalized KPI calculation engine supporting future KPI types
+
 such as:
 
 numeric
@@ -912,6 +969,7 @@ Status
 FUTURE
 
 Dashboards should be generated from platform data rather than
+
 custom-built for individual organizations.
 
 Potential dashboard levels:
@@ -1021,6 +1079,7 @@ Dashboards
 Reports
 
 Organization-specific branding should eventually be configurable through
+
 Administration.
 
 ---
@@ -1062,7 +1121,9 @@ Platform Backlog
 Historical Waypoints must not be treated as current task lists.
 
 If an older document says something is "Next Milestone" but a newer
+
 Waypoint shows that work has already progressed beyond it, the older
+
 statement is historical and must not redirect development.
 
 ---
@@ -1125,6 +1186,18 @@ Roles & Permissions
 
 FUNCTIONAL FOUNDATION COMPLETE
 
+Platform Authority
+
+FOUNDATION COMPLETE
+
+Platform Memberships
+
+COMPLETE
+
+Platform Super Admin authorization foundation
+
+COMPLETE
+
 Performance Sheet Management
 
 COMPLETE
@@ -1182,13 +1255,20 @@ Performance Sheet Management
 Assignment Management
 
 The next development phase should be selected based on platform value,
+
 architectural priority, and the current documented roadmap.
+
+The Platform Membership / Super Admin foundation is complete but is not
+
+yet production security hardening.
 
 High-priority architectural hardening remains:
 
 Production Tenant Authorization
 
 Production Row Level Security
+
+Platform Administration UI / Super Admin Management
 
 Runtime Security Boundaries
 

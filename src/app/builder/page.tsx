@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import CEPageHeader from "@/components/ui/cepageheader";
@@ -418,13 +418,33 @@ function BuilderContent() {
 }
 
 /* ==========================================================
+   Builder Loading Fallback
+========================================================== */
+
+function BuilderLoadingFallback() {
+  return (
+    <main className="min-h-screen bg-slate-100">
+      <div className="mx-auto max-w-7xl px-8 py-12">
+        <div className="rounded-xl border bg-white p-6 shadow-sm">
+          <p className="text-sm text-slate-600">
+            Loading Performance Sheet Builder...
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/* ==========================================================
    Builder Page
 ========================================================== */
 
 export default function BuilderPage() {
   return (
-    <BuilderProvider>
-      <BuilderContent />
-    </BuilderProvider>
+    <Suspense fallback={<BuilderLoadingFallback />}>
+      <BuilderProvider>
+        <BuilderContent />
+      </BuilderProvider>
+    </Suspense>
   );
 }
