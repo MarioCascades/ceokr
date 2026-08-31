@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requirePermission } from "@/lib/auth/authorization";
 
 interface InviteUserRequest {
   organization_id: string;
@@ -57,6 +58,34 @@ export async function POST(request: Request) {
       },
       {
         status: 400,
+      }
+    );
+  }
+
+  /* ========================================================
+     Authorization
+  ======================================================== */
+
+  try {
+    await requirePermission(
+      organizationId,
+      "users.create"
+    );
+  } catch (error) {
+    console.error(
+      "Authorization failed:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "You do not have permission to perform this action.",
+      },
+      {
+        status: 403,
       }
     );
   }

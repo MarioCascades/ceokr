@@ -56,109 +56,27 @@
  */
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getCurrentServerUser } from "@/lib/auth/currentserveruser";
 
 
 /* ==========================================================
-   Get Authenticated Application User
+   Platform Super Admin — Internal Resolution
 ========================================================== */
 
 /**
- * Resolves the currently authenticated Supabase Auth user
- * to the corresponding CascadEffects application user id.
+ * Determines whether the supplied application User has an
+ * active platform-level Super Admin membership.
  *
- * Returns:
+ * This internal helper accepts an already-resolved
+ * application User id so authorization operations do not
+ * repeatedly resolve Supabase Auth → application User.
  *
- * string
- *   Application user id.
- *
- * null
- *   No authenticated application user exists.
- */
-async function getAuthenticatedApplicationUserId(): Promise<
-  string | null
-> {
-
-  const supabaseServer =
-    await createSupabaseServerClient();
-
-  const {
-    data: {
-      user: authUser,
-    },
-    error: authError,
-  } = await supabaseServer.auth.getUser();
-
-  if (authError) {
-
-    console.error(
-      "Error loading authenticated user:",
-      authError
-    );
-
-    throw new Error(
-      `Failed to load authenticated user: ${authError.message}`
-    );
-  }
-
-  if (!authUser) {
-    return null;
-  }
-
-  const {
-    data,
-    error,
-  } = await supabaseServer
-    .from("users")
-    .select("id")
-    .eq(
-      "auth_user_id",
-      authUser.id
-    )
-    .maybeSingle();
-
-  if (error) {
-
-    console.error(
-      "Error loading application user:",
-      error
-    );
-
-    throw new Error(
-      `Failed to load application user: ${error.message}`
-    );
-  }
-
-  if (!data) {
-    return null;
-  }
-
-  return data.id;
-}
-
-
-/* ==========================================================
-   Check Platform Super Admin
-========================================================== */
-
-/**
- * Determines whether the authenticated application user
- * has an active platform-level Super Admin membership.
- *
- * Platform Super Admin authority exists ABOVE the
+ * Platform Super Admin authority exists above the
  * organization membership / organization role hierarchy.
- *
- * A Super Admin therefore does not require an
- * organization_memberships record for the organization
- * being administered.
  */
-export async function isPlatformSuperAdmin(): Promise<boolean> {
-
-  const applicationUserId =
-    await getAuthenticatedApplicationUserId();
-
-  if (!applicationUserId) {
-    return false;
-  }
+async function isApplicationUserPlatformSuperAdmin(
+  applicationUserId: string
+): Promise<boolean> {
 
   const supabaseServer =
     await createSupabaseServerClient();
@@ -196,6 +114,39 @@ export async function isPlatformSuperAdmin(): Promise<boolean> {
   }
 
   return !!data;
+}
+
+
+/* ==========================================================
+   Check Platform Super Admin
+========================================================== */
+
+/**
+ * Determines whether the currently authenticated
+ * application User has an active platform-level
+ * Super Admin membership.
+ *
+ * Returns:
+ *
+ * true
+ *   Active Platform Super Admin.
+ *
+ * false
+ *   No authenticated user or no active Platform
+ *   Super Admin membership.
+ */
+export async function isPlatformSuperAdmin(): Promise<boolean> {
+
+  const currentUser =
+    await getCurrentServerUser();
+
+  if (!currentUser) {
+    return false;
+  }
+
+  return isApplicationUserPlatformSuperAdmin(
+    currentUser.id
+  );
 }
 
 
@@ -241,7 +192,7 @@ export async function requirePlatformSuperAdmin(): Promise<void> {
  *
  * Authorization order:
  *
- * 1. Resolve authenticated application user.
+ * 1. Resolve authenticated application User.
  *
  * 2. Check active Platform Super Admin authority.
  *
@@ -261,11 +212,26 @@ export async function requirePlatformSuperAdmin(): Promise<void> {
  * Platform Super Admins operate above the organization
  * membership boundary and therefore do not need membership
  * in the requested organization.
+ *
+ * IMPORTANT:
+ *
+ * The current platform stage intentionally allows an active
+ * Platform Super Admin to satisfy organization-scoped
+ * permission checks.
+ *
+ * This is part of the Platform Authorization Foundation.
+ *
+ * More granular production authorization and resource
+ * ownership checks remain future security work.
  */
 export async function hasPermission(
   organizationId: string,
   permissionKey: string
 ): Promise<boolean> {
+
+  /* ========================================================
+     Validate Inputs
+  ======================================================== */
 
   if (!organizationId) {
 
@@ -286,12 +252,20 @@ export async function hasPermission(
     );
   }
 
-  const applicationUserId =
-    await getAuthenticatedApplicationUserId();
 
-  if (!applicationUserId) {
+  /* ========================================================
+     Resolve Authenticated Application User
+  ======================================================== */
+
+  const currentUser =
+    await getCurrentServerUser();
+
+  if (!currentUser) {
     return false;
   }
+
+  const applicationUserId =
+    currentUser.id;
 
 
   /* ========================================================
@@ -309,7 +283,9 @@ export async function hasPermission(
    */
 
   const platformSuperAdmin =
-    await isPlatformSuperAdmin();
+    await isApplicationUserPlatformSuperAdmin(
+      applicationUserId
+    );
 
   if (platformSuperAdmin) {
     return true;
