@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+
+import AdminPageHeader from "@/components/admin/shared/adminpageheader";
 
 import DepartmentDialog from "@/components/admin/departments/departmentdialog";
 import DeleteDepartmentDialog from "@/components/admin/departments/deletedepartmentdialog";
@@ -349,29 +350,10 @@ export default function DepartmentsPage() {
 
         {/* Header */}
 
-        <div className="flex items-start justify-between gap-6">
-
-          <div>
-            <h1 className="text-3xl font-bold">
-              Departments
-            </h1>
-
-            <p className="mt-2 text-muted-foreground">
-              Create and manage departments
-              within your organization.
-            </p>
-          </div>
-
-          <Button
-            asChild
-            variant="outline"
-          >
-            <Link href="/admin">
-              Back to Administration
-            </Link>
-          </Button>
-
-        </div>
+        <AdminPageHeader
+          title="Departments"
+          description="Create and manage departments within your organization."
+        />
 
         {/* Error */}
 

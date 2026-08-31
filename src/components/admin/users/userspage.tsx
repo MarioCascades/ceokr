@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+
+import AdminPageHeader from "@/components/admin/shared/adminpageheader";
 
 import UsersList from "@/components/admin/users/userslist";
 
@@ -442,30 +443,10 @@ export default function UsersPage() {
 
         {/* Header */}
 
-        <div className="flex items-start justify-between gap-6">
-
-          <div>
-            <h1 className="text-3xl font-bold">
-              Users
-            </h1>
-
-            <p className="mt-2 text-muted-foreground">
-              Create and manage users
-              within your organization.
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-
-            <Button
-              asChild
-              variant="outline"
-            >
-              <Link href="/admin">
-                Back to Administration
-              </Link>
-            </Button>
-
+        <AdminPageHeader
+          title="Users"
+          description="Create and manage users within your organization."
+          actions={
             <Button
               type="button"
               onClick={() =>
@@ -482,10 +463,8 @@ export default function UsersPage() {
             >
               Invite User
             </Button>
-
-          </div>
-
-        </div>
+          }
+        />
 
         {/* Error */}
 

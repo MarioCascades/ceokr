@@ -7,9 +7,9 @@ import {
   useState,
 } from "react";
 
-import Link from "next/link";
-
 import { Button } from "@/components/ui/button";
+
+import AdminPageHeader from "@/components/admin/shared/adminpageheader";
 
 import {
   getOrganization,
@@ -755,29 +755,10 @@ export default function AssignmentsPage() {
             Header
         ================================================== */}
 
-        <div className="flex items-start justify-between gap-6">
-
-          <div>
-            <h1 className="text-3xl font-bold">
-              Assignments
-            </h1>
-
-            <p className="mt-2 text-muted-foreground">
-              Manage Performance Sheet assignments
-              across your organization.
-            </p>
-          </div>
-
-          <Button
-            asChild
-            variant="outline"
-          >
-            <Link href="/admin">
-              Back to Administration
-            </Link>
-          </Button>
-
-        </div>
+        <AdminPageHeader
+          title="Assignments"
+          description="Manage Performance Sheet assignments across your organization."
+        />
 
         {/* ==================================================
             Error

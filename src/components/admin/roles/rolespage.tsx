@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+
+import AdminPageHeader from "@/components/admin/shared/adminpageheader";
 
 import RoleDialog from "@/components/admin/roles/roledialog";
 import DeleteRoleDialog from "@/components/admin/roles/deleteroledialog";
@@ -337,29 +338,10 @@ export default function RolesPage() {
 
         {/* Header */}
 
-        <div className="flex items-start justify-between gap-6">
-
-          <div>
-            <h1 className="text-3xl font-bold">
-              Roles
-            </h1>
-
-            <p className="mt-2 text-muted-foreground">
-              Create and manage roles within your
-              organization.
-            </p>
-          </div>
-
-          <Button
-            asChild
-            variant="outline"
-          >
-            <Link href="/admin">
-              Back to Administration
-            </Link>
-          </Button>
-
-        </div>
+        <AdminPageHeader
+          title="Roles"
+          description="Create and manage roles within your organization."
+        />
 
         {/* Error */}
 
