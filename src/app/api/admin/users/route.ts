@@ -1,7 +1,48 @@
+/**
+ * ==========================================================
+ * CascadEffects Performance Platform
+ * Administration Users API
+ * ----------------------------------------------------------
+ * Creates an invited User and Organization Membership.
+ *
+ * Authorization boundary:
+ *
+ * Request
+ *      ↓
+ * Authenticated Application User
+ *      ↓
+ * Authorization Context
+ *      ↓
+ * Organization Permission
+ *      ↓
+ * Organization Resource Validation
+ *      ↓
+ * Privileged Server Operation
+ *
+ * IMPORTANT:
+ *
+ * This route is SERVER-SIDE infrastructure.
+ *
+ * The Supabase service-role client is only used after the
+ * authenticated caller has passed the authorization boundary.
+ *
+ * The organization_id supplied by the caller identifies the
+ * requested tenant context, but does not itself establish
+ * authorization.
+ * ==========================================================
+ */
+
 import { NextResponse } from "next/server";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { requirePermission } from "@/lib/auth/authorization";
+import {
+  requirePermission,
+} from "@/lib/auth/authorization";
+
+
+/* ==========================================================
+   Request Type
+========================================================== */
 
 interface InviteUserRequest {
   organization_id: string;
@@ -14,21 +55,44 @@ interface InviteUserRequest {
   is_active?: boolean;
 }
 
-export async function POST(request: Request) {
+
+/* ==========================================================
+   POST
+========================================================== */
+
+export async function POST(
+  request: Request
+) {
+
   let input: InviteUserRequest;
 
+
+  /* ========================================================
+     Parse Request
+  ======================================================== */
+
   try {
-    input = await request.json();
+
+    input =
+      await request.json();
+
   } catch {
+
     return NextResponse.json(
       {
-        error: "Invalid request body.",
+        error:
+          "Invalid request body.",
       },
       {
         status: 400,
       }
     );
   }
+
+
+  /* ========================================================
+     Normalize Input
+  ======================================================== */
 
   const organizationId =
     input.organization_id?.trim();
@@ -51,10 +115,17 @@ export async function POST(request: Request) {
   const teamId =
     input.team_id?.trim();
 
+
+  /* ========================================================
+     Organization Context
+  ======================================================== */
+
   if (!organizationId) {
+
     return NextResponse.json(
       {
-        error: "Organization is required.",
+        error:
+          "Organization is required.",
       },
       {
         status: 400,
@@ -62,16 +133,45 @@ export async function POST(request: Request) {
     );
   }
 
+
   /* ========================================================
-     Authorization
+     Authorization Boundary
   ======================================================== */
 
+  /*
+   * The organization_id is only requested context.
+   *
+   * It is NOT trusted as proof that the caller belongs to
+   * the organization.
+   *
+   * requirePermission() resolves the authenticated
+   * application User and verifies:
+   *
+   * Platform Super Admin
+   * OR
+   * Organization Membership
+   *      ↓
+   * Membership Roles
+   *      ↓
+   * Roles
+   *      ↓
+   * Role Permissions
+   *      ↓
+   * Requested Permission
+   *
+   * No privileged database mutation occurs before this
+   * authorization boundary succeeds.
+   */
+
   try {
+
     await requirePermission(
       organizationId,
       "users.create"
     );
+
   } catch (error) {
+
     console.error(
       "Authorization failed:",
       error
@@ -90,10 +190,17 @@ export async function POST(request: Request) {
     );
   }
 
+
+  /* ========================================================
+     Validate User Fields
+  ======================================================== */
+
   if (!firstName) {
+
     return NextResponse.json(
       {
-        error: "First name is required.",
+        error:
+          "First name is required.",
       },
       {
         status: 400,
@@ -102,9 +209,11 @@ export async function POST(request: Request) {
   }
 
   if (!lastName) {
+
     return NextResponse.json(
       {
-        error: "Last name is required.",
+        error:
+          "Last name is required.",
       },
       {
         status: 400,
@@ -113,9 +222,11 @@ export async function POST(request: Request) {
   }
 
   if (!email) {
+
     return NextResponse.json(
       {
-        error: "Email is required.",
+        error:
+          "Email is required.",
       },
       {
         status: 400,
@@ -124,9 +235,11 @@ export async function POST(request: Request) {
   }
 
   if (!departmentId) {
+
     return NextResponse.json(
       {
-        error: "Department is required.",
+        error:
+          "Department is required.",
       },
       {
         status: 400,
@@ -135,9 +248,11 @@ export async function POST(request: Request) {
   }
 
   if (!teamId) {
+
     return NextResponse.json(
       {
-        error: "Team is required.",
+        error:
+          "Team is required.",
       },
       {
         status: 400,
@@ -145,17 +260,46 @@ export async function POST(request: Request) {
     );
   }
 
+
+  /* ========================================================
+     Validate Department Tenant Ownership
+  ======================================================== */
+
+  /*
+   * The department must belong to the requested
+   * organization.
+   *
+   * This is resource validation.
+   *
+   * Authorization answers:
+   *
+   * "Can this caller create users in this organization?"
+   *
+   * Resource validation answers:
+   *
+   * "Does this department actually belong to this
+   * organization?"
+   */
+
   const {
     data: department,
     error: departmentError,
-  } = await supabaseAdmin
-    .from("departments")
-    .select("id")
-    .eq("id", departmentId)
-    .eq("organization_id", organizationId)
-    .maybeSingle();
+  } =
+    await supabaseAdmin
+      .from("departments")
+      .select("id")
+      .eq(
+        "id",
+        departmentId
+      )
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .maybeSingle();
 
   if (departmentError) {
+
     console.error(
       "Failed to verify department:",
       departmentError
@@ -163,7 +307,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        error: "Failed to verify department.",
+        error:
+          "Failed to verify department.",
       },
       {
         status: 500,
@@ -172,6 +317,7 @@ export async function POST(request: Request) {
   }
 
   if (!department) {
+
     return NextResponse.json(
       {
         error:
@@ -183,18 +329,42 @@ export async function POST(request: Request) {
     );
   }
 
+
+  /* ========================================================
+     Validate Team Tenant Ownership
+  ======================================================== */
+
+  /*
+   * The team must belong to:
+   *
+   * requested organization
+   * AND
+   * requested department
+   */
+
   const {
     data: team,
     error: teamError,
-  } = await supabaseAdmin
-    .from("teams")
-    .select("id")
-    .eq("id", teamId)
-    .eq("organization_id", organizationId)
-    .eq("department_id", departmentId)
-    .maybeSingle();
+  } =
+    await supabaseAdmin
+      .from("teams")
+      .select("id")
+      .eq(
+        "id",
+        teamId
+      )
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .eq(
+        "department_id",
+        departmentId
+      )
+      .maybeSingle();
 
   if (teamError) {
+
     console.error(
       "Failed to verify team:",
       teamError
@@ -202,7 +372,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        error: "Failed to verify team.",
+        error:
+          "Failed to verify team.",
       },
       {
         status: 500,
@@ -211,6 +382,7 @@ export async function POST(request: Request) {
   }
 
   if (!team) {
+
     return NextResponse.json(
       {
         error:
@@ -221,6 +393,16 @@ export async function POST(request: Request) {
       }
     );
   }
+
+
+  /* ========================================================
+     Create Supabase Auth User
+  ======================================================== */
+
+  /*
+   * From this point forward we are inside the trusted
+   * server-side privileged operation boundary.
+   */
 
   const {
     data: authData,
@@ -238,6 +420,7 @@ export async function POST(request: Request) {
     );
 
   if (authError) {
+
     console.error(
       "Failed to invite Auth user:",
       authError
@@ -245,7 +428,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        error: authError.message,
+        error:
+          authError.message,
       },
       {
         status: 400,
@@ -253,9 +437,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const authUser = authData.user;
+  const authUser =
+    authData.user;
 
   if (!authUser) {
+
     return NextResponse.json(
       {
         error:
@@ -267,28 +453,52 @@ export async function POST(request: Request) {
     );
   }
 
+
+  /* ========================================================
+     Create Application User
+  ======================================================== */
+
   const {
     data: platformUser,
     error: userError,
-  } = await supabaseAdmin
-    .from("users")
-    .insert({
-      auth_user_id: authUser.id,
-      first_name: firstName,
-      last_name: lastName,
-      display_name: displayName,
-      email,
-      is_active:
-        input.is_active ?? true,
-    })
-    .select("*")
-    .single();
+  } =
+    await supabaseAdmin
+      .from("users")
+      .insert({
+        auth_user_id:
+          authUser.id,
+
+        first_name:
+          firstName,
+
+        last_name:
+          lastName,
+
+        display_name:
+          displayName,
+
+        email,
+
+        is_active:
+          input.is_active ?? true,
+      })
+      .select("*")
+      .single();
 
   if (userError) {
+
     console.error(
       "Failed to create platform user:",
       userError
     );
+
+    /*
+     * Compensating cleanup:
+     *
+     * If the application User cannot be created,
+     * remove the newly-created Auth identity so the
+     * operation does not leave an orphaned Auth user.
+     */
 
     await supabaseAdmin.auth.admin.deleteUser(
       authUser.id
@@ -305,30 +515,58 @@ export async function POST(request: Request) {
     );
   }
 
+
+  /* ========================================================
+     Create Organization Membership
+  ======================================================== */
+
   const {
     data: membership,
     error: membershipError,
-  } = await supabaseAdmin
-    .from("organization_memberships")
-    .insert({
-      user_id: platformUser.id,
-      organization_id: organizationId,
-      department_id: departmentId,
-      team_id: teamId,
-    })
-    .select("*")
-    .single();
+  } =
+    await supabaseAdmin
+      .from("organization_memberships")
+      .insert({
+        user_id:
+          platformUser.id,
+
+        organization_id:
+          organizationId,
+
+        department_id:
+          departmentId,
+
+        team_id:
+          teamId,
+      })
+      .select("*")
+      .single();
 
   if (membershipError) {
+
     console.error(
       "Failed to create organization membership:",
       membershipError
     );
 
+    /*
+     * Compensating cleanup:
+     *
+     * The Auth identity and application User were both
+     * created successfully, but the Organization Membership
+     * failed.
+     *
+     * Remove both records to avoid an incomplete user
+     * provisioning operation.
+     */
+
     await supabaseAdmin
       .from("users")
       .delete()
-      .eq("id", platformUser.id);
+      .eq(
+        "id",
+        platformUser.id
+      );
 
     await supabaseAdmin.auth.admin.deleteUser(
       authUser.id
@@ -345,9 +583,16 @@ export async function POST(request: Request) {
     );
   }
 
+
+  /* ========================================================
+     Success
+  ======================================================== */
+
   return NextResponse.json(
     {
-      user: platformUser,
+      user:
+        platformUser,
+
       membership,
     },
     {

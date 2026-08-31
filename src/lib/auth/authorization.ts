@@ -3,13 +3,15 @@
  * CascadEffects Performance Platform
  * Authorization
  * ----------------------------------------------------------
- * Resolves permissions for the authenticated user.
+ * Central server-side authorization boundary.
  *
  * Authorization hierarchy:
  *
  * Supabase Auth
  *      ↓
- * Application User
+ * Current Server User
+ *      ↓
+ * Authorization Context
  *      ↓
  * ┌──────────────────────────────────────────────┐
  * │                                              │
@@ -17,7 +19,7 @@
  * │                                              │
  * │ OR                                           │
  * │                                              │
- * │ Organization Membership                      │
+ * │ Active Organization Membership               │
  * │      ↓                                       │
  * │ Membership Roles                             │
  * │      ↓                                       │
@@ -25,43 +27,41 @@
  * │      ↓                                       │
  * │ Role Permissions                             │
  * │      ↓                                       │
- * │ Global Permissions                           │
+ * │ Permission                                   │
  * │                                              │
  * └──────────────────────────────────────────────┘
  *
  * Platform Super Admins exist above the organization
- * role hierarchy.
+ * membership / role hierarchy.
  *
  * A Platform Super Admin does NOT require an
- * organization_memberships record for every organization
- * they administer.
- *
- * This module provides the central server-side authorization
- * boundary for organization-scoped permission checks.
+ * organization_memberships record for the organization
+ * being administered.
  *
  * IMPORTANT:
  *
- * This module must not be imported by Client Components.
+ * This module is SERVER-SIDE infrastructure.
  *
- * It intentionally does NOT:
+ * It must not be imported by Client Components.
  *
- * - manage authentication
+ * This module does NOT:
+ *
+ * - authenticate users
+ * - create users
  * - create roles
  * - create permissions
  * - assign roles
  * - assign permissions
  * - manage platform memberships
+ * - perform resource ownership checks
  * - mutate application data
  *
  * Those responsibilities remain in their respective
- * services and administration workflows.
+ * services and workflows.
  * ==========================================================
  */
 
-import {
-  createSupabaseServerClient,
-} from "@/lib/supabase/server";
-
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getAuthorizationContext,
   type AuthorizationContext,
@@ -69,71 +69,62 @@ import {
 
 
 /* ==========================================================
-   Organization Permission Context
+   Permission Result
 ========================================================== */
 
 /**
- * Resolves the server-side authorization context for the
- * requested Organization.
+ * Represents the result of resolving a permission.
  *
- * This is the reusable security context used by the
- * authorization layer.
- *
- * Platform Super Admins receive a valid context without
- * requiring organization membership.
- *
- * Organization users receive a valid context only when
- * they have membership in the requested Organization.
+ * Keeping this internal allows the public authorization
+ * helpers to remain simple while preserving the ability
+ * to expand authorization behavior later.
  */
-export async function getOrganizationAuthorizationContext(
-  organizationId: string
-): Promise<AuthorizationContext | null> {
+type PermissionResolution = {
 
-  return getAuthorizationContext(
-    organizationId
-  );
-}
+  context: AuthorizationContext;
+
+  allowed: boolean;
+
+};
 
 
 /* ==========================================================
-   Permission Check
+   Resolve Permission
 ========================================================== */
 
 /**
- * Determines whether the authenticated user can perform
- * an organization-scoped action.
+ * Resolves whether the currently authenticated user has a
+ * specific permission within the requested Organization.
  *
- * Authorization order:
+ * Authorization flow:
  *
- * 1. Resolve server-side AuthorizationContext.
+ * 1. Resolve Authorization Context.
  *
  * 2. If no context exists:
- *      return false.
+ *      deny access.
  *
  * 3. If Platform Super Admin:
- *      authorize the organization-scoped action.
+ *      allow organization-scoped authority.
  *
- * 4. Otherwise:
- *      resolve Membership Roles.
+ * 4. Otherwise resolve Membership Roles.
  *
  * 5. Resolve active Organization Roles.
  *
  * 6. Resolve Role Permissions.
  *
- * 7. Resolve the requested Global Permission.
+ * 7. Resolve the requested Permission.
  *
- * The AuthorizationContext is always established server-side
- * from the authenticated request session.
- *
- * Callers must not construct or supply their own context.
+ * The Authorization Context is intentionally resolved first
+ * so authenticated identity and organization membership are
+ * established by one central server-side boundary.
  */
-export async function hasPermission(
+async function resolvePermission(
   organizationId: string,
   permissionKey: string
-): Promise<boolean> {
+): Promise<PermissionResolution | null> {
 
   /* ========================================================
-     Validate Inputs
+     Validate Organization
   ======================================================== */
 
   if (!organizationId) {
@@ -142,6 +133,11 @@ export async function hasPermission(
       "Organization is required."
     );
   }
+
+
+  /* ========================================================
+     Normalize Permission
+  ======================================================== */
 
   const normalizedPermissionKey =
     permissionKey
@@ -160,24 +156,13 @@ export async function hasPermission(
      Authorization Context
   ======================================================== */
 
-  /*
-   * AuthorizationContext is resolved entirely on the server
-   * from the authenticated request.
-   *
-   * This prevents callers from supplying arbitrary:
-   *
-   * - user ids
-   * - membership ids
-   * - organization ids
-   * - platform authority
-   */
-  const authorizationContext =
+  const context =
     await getAuthorizationContext(
       organizationId
     );
 
-  if (!authorizationContext) {
-    return false;
+  if (!context) {
+    return null;
   }
 
 
@@ -189,17 +174,22 @@ export async function hasPermission(
    * Platform Super Admin authority exists above the
    * organization role hierarchy.
    *
-   * At the current platform stage, an active Platform Super
-   * Admin satisfies organization-scoped permission checks.
+   * An active Platform Super Admin therefore satisfies
+   * organization-scoped authorization without requiring
+   * an organization membership.
    *
-   * The requested organizationId remains part of the
-   * authorization context even though membershipId is null.
+   * Resource ownership remains a separate concern.
    */
 
-  if (
-    authorizationContext.isPlatformSuperAdmin
-  ) {
-    return true;
+  if (context.isPlatformSuperAdmin) {
+
+    return {
+
+      context,
+
+      allowed: true,
+
+    };
   }
 
 
@@ -208,18 +198,21 @@ export async function hasPermission(
   ======================================================== */
 
   /*
-   * A non-platform authorization context must contain an
-   * organization membership.
+   * The Authorization Context guarantees that a membership
+   * exists for a non-platform user.
    *
-   * This should already be guaranteed by
-   * getAuthorizationContext(), but the explicit check keeps
-   * the permission boundary defensive.
+   * membershipId is therefore required here.
    */
 
-  if (
-    !authorizationContext.membershipId
-  ) {
-    return false;
+  if (!context.membershipId) {
+
+    return {
+
+      context,
+
+      allowed: false,
+
+    };
   }
 
 
@@ -245,11 +238,11 @@ export async function hasPermission(
     )
     .eq(
       "organization_membership_id",
-      authorizationContext.membershipId
+      context.membershipId
     )
     .eq(
       "organization_id",
-      authorizationContext.organizationId
+      context.organizationId
     );
 
   if (membershipRoleError) {
@@ -268,7 +261,14 @@ export async function hasPermission(
     !membershipRoles ||
     membershipRoles.length === 0
   ) {
-    return false;
+
+    return {
+
+      context,
+
+      allowed: false,
+
+    };
   }
 
 
@@ -276,138 +276,261 @@ export async function hasPermission(
      Organization Roles
   ======================================================== */
 
-  for (
-    const membershipRole
-    of membershipRoles
+  const roleIds =
+    membershipRoles
+      .map(
+        (membershipRole) =>
+          membershipRole.role_id
+      )
+      .filter(
+        (roleId): roleId is string =>
+          Boolean(roleId)
+      );
+
+  if (roleIds.length === 0) {
+
+    return {
+
+      context,
+
+      allowed: false,
+
+    };
+  }
+
+
+  const {
+    data: roles,
+    error: roleError,
+  } = await supabaseServer
+    .from("roles")
+    .select(
+      "id, is_active"
+    )
+    .eq(
+      "organization_id",
+      context.organizationId
+    )
+    .in(
+      "id",
+      roleIds
+    );
+
+  if (roleError) {
+
+    console.error(
+      "Error loading organization roles:",
+      roleError
+    );
+
+    throw new Error(
+      `Failed to load organization roles: ${roleError.message}`
+    );
+  }
+
+  if (
+    !roles ||
+    roles.length === 0
   ) {
 
-    const {
-      data: role,
-      error: roleError,
-    } = await supabaseServer
-      .from("roles")
-      .select(
-        "id, is_active"
-      )
-      .eq(
-        "id",
-        membershipRole.role_id
-      )
-      .eq(
-        "organization_id",
-        authorizationContext.organizationId
-      )
-      .maybeSingle();
+    return {
 
-    if (roleError) {
+      context,
 
-      console.error(
-        "Error loading role:",
-        roleError
-      );
+      allowed: false,
 
-      throw new Error(
-        `Failed to load role: ${roleError.message}`
-      );
-    }
-
-    if (!role) {
-      continue;
-    }
-
-    if (!role.is_active) {
-      continue;
-    }
-
-
-    /* ======================================================
-       Role Permissions
-    ====================================================== */
-
-    const {
-      data: rolePermissions,
-      error: rolePermissionError,
-    } = await supabaseServer
-      .from("role_permissions")
-      .select(
-        "permission_id"
-      )
-      .eq(
-        "role_id",
-        role.id
-      );
-
-    if (rolePermissionError) {
-
-      console.error(
-        "Error loading role permissions:",
-        rolePermissionError
-      );
-
-      throw new Error(
-        `Failed to load role permissions: ${rolePermissionError.message}`
-      );
-    }
-
-    if (
-      !rolePermissions ||
-      rolePermissions.length === 0
-    ) {
-      continue;
-    }
-
-
-    /* ======================================================
-       Global Permission Catalog
-    ====================================================== */
-
-    for (
-      const rolePermission
-      of rolePermissions
-    ) {
-
-      const {
-        data: permission,
-        error: permissionError,
-      } = await supabaseServer
-        .from("permissions")
-        .select(
-          "id, key"
-        )
-        .eq(
-          "id",
-          rolePermission.permission_id
-        )
-        .eq(
-          "key",
-          normalizedPermissionKey
-        )
-        .maybeSingle();
-
-      if (permissionError) {
-
-        console.error(
-          "Error loading permission:",
-          permissionError
-        );
-
-        throw new Error(
-          `Failed to load permission: ${permissionError.message}`
-        );
-      }
-
-      if (permission) {
-        return true;
-      }
-    }
+    };
   }
 
 
   /* ========================================================
-     Permission Denied
+     Active Role IDs
   ======================================================== */
 
-  return false;
+  const activeRoleIds =
+    roles
+      .filter(
+        (role) =>
+          role.is_active
+      )
+      .map(
+        (role) =>
+          role.id
+      );
+
+  if (activeRoleIds.length === 0) {
+
+    return {
+
+      context,
+
+      allowed: false,
+
+    };
+  }
+
+
+  /* ========================================================
+     Role Permissions
+  ======================================================== */
+
+  const {
+    data: rolePermissions,
+    error: rolePermissionError,
+  } = await supabaseServer
+    .from("role_permissions")
+    .select(
+      "role_id, permission_id"
+    )
+    .in(
+      "role_id",
+      activeRoleIds
+    );
+
+  if (rolePermissionError) {
+
+    console.error(
+      "Error loading role permissions:",
+      rolePermissionError
+    );
+
+    throw new Error(
+      `Failed to load role permissions: ${rolePermissionError.message}`
+    );
+  }
+
+  if (
+    !rolePermissions ||
+    rolePermissions.length === 0
+  ) {
+
+    return {
+
+      context,
+
+      allowed: false,
+
+    };
+  }
+
+
+  /* ========================================================
+     Permission IDs
+  ======================================================== */
+
+  const permissionIds =
+    rolePermissions
+      .map(
+        (rolePermission) =>
+          rolePermission.permission_id
+      )
+      .filter(
+        (permissionId): permissionId is string =>
+          Boolean(permissionId)
+      );
+
+  if (permissionIds.length === 0) {
+
+    return {
+
+      context,
+
+      allowed: false,
+
+    };
+  }
+
+
+  /* ========================================================
+     Permission Catalog
+  ======================================================== */
+
+  const {
+    data: permissions,
+    error: permissionError,
+  } = await supabaseServer
+    .from("permissions")
+    .select(
+      "id, key"
+    )
+    .in(
+      "id",
+      permissionIds
+    );
+
+  if (permissionError) {
+
+    console.error(
+      "Error loading permissions:",
+      permissionError
+    );
+
+    throw new Error(
+      `Failed to load permissions: ${permissionError.message}`
+    );
+  }
+
+
+  /* ========================================================
+     Requested Permission
+  ======================================================== */
+
+  const permissionExists =
+    Boolean(
+      permissions?.some(
+        (permission) =>
+          permission.key
+            .trim()
+            .toLowerCase() ===
+          normalizedPermissionKey
+      )
+    );
+
+
+  return {
+
+    context,
+
+    allowed: permissionExists,
+
+  };
+}
+
+
+/* ==========================================================
+   Has Permission
+========================================================== */
+
+/**
+ * Determines whether the currently authenticated user has
+ * the requested organization-scoped permission.
+ *
+ * Returns false when:
+ *
+ * - the user is not authenticated
+ * - the user does not belong to the organization
+ * - the user has no active roles
+ * - the user has no matching permission
+ *
+ * Platform Super Admins are authorized through their
+ * platform-level authority.
+ */
+export async function hasPermission(
+  organizationId: string,
+  permissionKey: string
+): Promise<boolean> {
+
+  const resolution =
+    await resolvePermission(
+      organizationId,
+      permissionKey
+    );
+
+  if (!resolution) {
+    return false;
+  }
+
+  return resolution.allowed;
 }
 
 
@@ -416,14 +539,19 @@ export async function hasPermission(
 ========================================================== */
 
 /**
- * Requires the authenticated user to have the requested
- * organization-scoped permission.
+ * Requires the currently authenticated user to have the
+ * requested organization-scoped permission.
  *
- * Platform Super Admins satisfy the requirement through
- * their platform-level authority.
+ * Throws when authorization fails.
  *
- * Organization users must satisfy the requested permission
- * through their organization membership and assigned roles.
+ * Intended for server-side:
+ *
+ * - API routes
+ * - Server Actions
+ * - server services
+ * - administrative workflows
+ *
+ * Resource ownership must still be validated separately.
  */
 export async function requirePermission(
   organizationId: string,
@@ -442,4 +570,179 @@ export async function requirePermission(
       "You do not have permission to perform this action."
     );
   }
+}
+
+
+/* ==========================================================
+   Require Platform Super Admin
+========================================================== */
+
+/**
+ * Requires the authenticated user to have active
+ * Platform Super Admin authority.
+ *
+ * This remains separate from organization permission
+ * evaluation because Platform Super Admin is a platform-level
+ * authority rather than an organization role.
+ */
+export async function requirePlatformSuperAdmin(): Promise<void> {
+
+  const supabaseServer =
+    await createSupabaseServerClient();
+
+
+  /* ========================================================
+     Authorization Context Is Not Appropriate Here
+  ======================================================== */
+
+  /*
+   * Platform authority is global and does not require an
+   * organizationId.
+   *
+   * Therefore this function resolves the authenticated
+   * application User directly through the existing server
+   * authorization infrastructure.
+   */
+
+  const {
+    data: {
+      user: authUser,
+    },
+    error: authError,
+  } = await supabaseServer.auth.getUser();
+
+  if (authError) {
+
+    console.error(
+      "Error loading authenticated user:",
+      authError
+    );
+
+    throw new Error(
+      `Failed to load authenticated user: ${authError.message}`
+    );
+  }
+
+  if (!authUser) {
+
+    throw new Error(
+      "Platform Super Admin access is required."
+    );
+  }
+
+
+  /* ========================================================
+     Application User
+  ======================================================== */
+
+  const {
+    data: applicationUser,
+    error: userError,
+  } = await supabaseServer
+    .from("users")
+    .select(
+      "id"
+    )
+    .eq(
+      "auth_user_id",
+      authUser.id
+    )
+    .maybeSingle();
+
+  if (userError) {
+
+    console.error(
+      "Error loading application user:",
+      userError
+    );
+
+    throw new Error(
+      `Failed to load application user: ${userError.message}`
+    );
+  }
+
+  if (!applicationUser) {
+
+    throw new Error(
+      "Platform Super Admin access is required."
+    );
+  }
+
+
+  /* ========================================================
+     Platform Membership
+  ======================================================== */
+
+  const {
+    data: platformMembership,
+    error: platformMembershipError,
+  } = await supabaseServer
+    .from("platform_memberships")
+    .select(
+      "id"
+    )
+    .eq(
+      "user_id",
+      applicationUser.id
+    )
+    .eq(
+      "platform_role",
+      "super_admin"
+    )
+    .eq(
+      "is_active",
+      true
+    )
+    .maybeSingle();
+
+  if (platformMembershipError) {
+
+    console.error(
+      "Error loading platform membership:",
+      platformMembershipError
+    );
+
+    throw new Error(
+      `Failed to load platform membership: ${platformMembershipError.message}`
+    );
+  }
+
+  if (!platformMembership) {
+
+    throw new Error(
+      "Platform Super Admin access is required."
+    );
+  }
+}
+
+
+/* ==========================================================
+   Require Authorization Context
+========================================================== */
+
+/**
+ * Requires the authenticated user to have a valid
+ * authorization context for the requested Organization.
+ *
+ * This is useful when a server operation needs authenticated
+ * organization context but does not yet require a specific
+ * permission.
+ */
+export async function requireAuthorizationContext(
+  organizationId: string
+): Promise<AuthorizationContext> {
+
+  const context =
+    await getAuthorizationContext(
+      organizationId
+    );
+
+  if (!context) {
+
+    throw new Error(
+      "You are not authorized to access this organization."
+    );
+  }
+
+  return context;
 }
