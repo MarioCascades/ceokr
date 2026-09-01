@@ -31,7 +31,16 @@ export default function AdminLayout({
 
           <nav className="px-3 py-5">
 
+            {/* Overview */}
+
+            <AdminNavLink
+              href="/admin"
+              label="Overview"
+            />
+
             {/* Organization */}
+
+            <AdminNavSection title="Organization" />
 
             <AdminNavLink
               href="/admin/organization"
@@ -60,11 +69,7 @@ export default function AdminLayout({
 
             {/* Performance */}
 
-            <div className="mb-2 mt-7 px-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                Performance
-              </p>
-            </div>
+            <AdminNavSection title="Performance" />
 
             <AdminNavLink
               href="/admin/performancesheets"
@@ -82,7 +87,7 @@ export default function AdminLayout({
             />
 
             <AdminNavLink
-              href="/admin/key-results"
+              href="/admin/keyresults"
               label="Key Results"
             />
 
@@ -93,11 +98,7 @@ export default function AdminLayout({
 
             {/* Analytics */}
 
-            <div className="mb-2 mt-7 px-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                Analytics
-              </p>
-            </div>
+            <AdminNavSection title="Analytics" />
 
             <AdminNavLink
               href="/admin/dashboards"
@@ -111,15 +112,16 @@ export default function AdminLayout({
 
             {/* Platform */}
 
-            <div className="mb-2 mt-7 px-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                Platform
-              </p>
-            </div>
+            <AdminNavSection title="Platform" />
 
             <AdminNavLink
               href="/admin/settings"
               label="Settings"
+            />
+
+            <AdminNavLink
+              href="/admin/ai"
+              label="AI Configuration"
             />
 
           </nav>
@@ -136,6 +138,24 @@ export default function AdminLayout({
 
       </div>
     </main>
+  );
+}
+
+/* ==========================================================
+   Administration Navigation Section
+========================================================== */
+
+function AdminNavSection({
+  title,
+}: {
+  title: string;
+}) {
+  return (
+    <div className="mb-2 mt-7 px-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+        {title}
+      </p>
+    </div>
   );
 }
 
