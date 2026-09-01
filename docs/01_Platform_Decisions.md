@@ -1385,3 +1385,38 @@ Status
 Accepted
 
 ---
+# 31. Organization-Scoped Administration vs Platform Authority
+
+Organization Admin authority is organization-scoped.
+
+An Organization Admin may administer resources belonging to the
+Organization to which their Organization Membership belongs, subject to
+their assigned Organization Roles and Permissions.
+
+An Organization Admin must not administer resources belonging to another
+Organization.
+
+Platform Super Admin authority operates above the Organization tenant
+boundary.
+
+A Platform Super Admin may administer the same organization-owned
+resources across Organizations on behalf of the Organization, subject to
+platform-level authorization.
+
+This means:
+
+Organization Admin
+    → own Organization resources only
+
+Platform Super Admin
+    → resources across Organizations
+
+The distinction is an authorization boundary, not merely a UI/navigation
+restriction.
+
+Authorization must enforce the requested Organization context and
+resource ownership server-side and ultimately through production RLS.
+
+Status
+
+Accepted

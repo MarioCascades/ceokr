@@ -1,10 +1,10 @@
-# CascadEffects Performance Platform
+CascadEffects Performance Platform
 
-# Platform Backlog
+Platform Backlog
 
 Document Status: CURRENT
 
-Last Updated: 2026-08-29
+Last Updated: 2026-09-01
 
 This document tracks intentionally deferred architecture, product
 
@@ -18,9 +18,7 @@ The latest Waypoint and current Platform Decisions take precedence when
 
 determining the current project state.
 
----
-
-# 1. Current Development Phase
+1. Current Development Phase
 
 Administration Completion
 
@@ -58,6 +56,8 @@ Performance Sheet Management
 
 Assignment Management
 
+Administration Page Structure / Shared Header Standardization
+
 Current Administration focus:
 
 Additional Administration capabilities
@@ -70,35 +70,27 @@ The Builder and Runtime foundations already exist and should not be
 
 rebuilt during this Administration phase.
 
----
+2. Administration Roadmap
 
-# 2. Administration Roadmap
-
-## Organization
+Organization
 
 Status
 
 COMPLETE
 
----
-
-## Departments
+Departments
 
 Status
 
 COMPLETE
 
----
-
-## Teams
+Teams
 
 Status
 
 COMPLETE
 
----
-
-## Users / Members
+Users / Members
 
 Status
 
@@ -164,9 +156,7 @@ Production tenant authorization
 
 Production Row Level Security
 
----
-
-## Platform Authority
+Platform Authority
 
 Status
 
@@ -194,6 +184,14 @@ Organization they administer.
 
 Platform Super Admins are not Organization Roles.
 
+Platform Super Admins can administer organization-owned resources across
+
+Organizations on behalf of those Organizations.
+
+Organization Admins remain restricted to resources belonging to their own
+
+Organization.
+
 Remaining Platform Authority work:
 
 Platform Administration UI
@@ -206,9 +204,7 @@ Production platform authorization enforcement
 
 Production Row Level Security
 
----
-
-## Roles & Permissions
+Roles & Permissions
 
 Status
 
@@ -288,9 +284,7 @@ database/RLS
 
 Platform-level authorization integration
 
----
-
-## Performance Sheet Management
+Performance Sheet Management
 
 Status
 
@@ -346,9 +340,7 @@ Filtering
 
 Advanced Performance Sheet management
 
----
-
-## Assignment Management
+Assignment Management
 
 Status
 
@@ -414,11 +406,9 @@ Production Row Level Security
 
 Runtime security boundaries
 
----
+3. Builder
 
-# 3. Builder
-
-## Builder Definition Lifecycle
+Builder Definition Lifecycle
 
 Status
 
@@ -454,9 +444,7 @@ New Draft
 
 Published definitions remain immutable.
 
----
-
-## Multiple Performance Sheet Definitions
+Multiple Performance Sheet Definitions
 
 Status
 
@@ -480,11 +468,9 @@ Runtime assignments should continue referencing the exact published
 
 version.
 
----
+4. Runtime
 
-# 4. Runtime
-
-## Runtime Execution Foundation
+Runtime Execution Foundation
 
 Status
 
@@ -520,9 +506,7 @@ Builder and Runtime remain separate architectural layers.
 
 Confidence is not part of the current Runtime Key Result update workflow.
 
----
-
-## Runtime Scoring Utility
+Runtime Scoring Utility
 
 Status
 
@@ -544,9 +528,7 @@ The current scoring utility intentionally remains small.
 
 A generalized KPI Calculation Engine remains future platform work.
 
----
-
-## Runtime Workspace Enhancements
+Runtime Workspace Enhancements
 
 Status
 
@@ -570,11 +552,9 @@ improved member experience
 
 Runtime Workspace is NOT the current milestone.
 
----
+5. Architecture
 
-# 5. Architecture
-
-## Organization Table Naming
+Organization Table Naming
 
 Current
 
@@ -596,9 +576,7 @@ Status
 
 Deferred
 
----
-
-## Organization Domain Model
+Organization Domain Model
 
 Current
 
@@ -622,9 +600,7 @@ Status
 
 Deferred
 
----
-
-## Repository Row Naming
+Repository Row Naming
 
 Rename:
 
@@ -646,9 +622,7 @@ Status
 
 Deferred
 
----
-
-## Repository Mappers
+Repository Mappers
 
 Create:
 
@@ -666,11 +640,9 @@ Status
 
 Deferred
 
----
+6. Security
 
-# 6. Security
-
-## Tenant Authorization Hardening
+Tenant Authorization Hardening
 
 Status
 
@@ -680,13 +652,23 @@ Production authorization must enforce Organization boundaries across
 
 repositories and services.
 
+Organization Admin authorization is restricted to resources belonging to
+
+their own Organization.
+
+Platform Super Admin authorization may administer organization-owned
+
+resources across Organizations on behalf of those Organizations.
+
+The authorization boundary must be enforced server-side and through
+
+production RLS rather than relying only on UI visibility.
+
 Priority
 
 High
 
----
-
-## Production Row Level Security
+Production Row Level Security
 
 Status
 
@@ -694,13 +676,15 @@ DEFERRED
 
 Implement and validate production-ready Supabase RLS policies.
 
+RLS must preserve Organization tenant isolation while allowing the
+
+platform-level Super Admin authority defined by Platform Decisions.
+
 Priority
 
 High
 
----
-
-## Runtime Security Boundaries
+Runtime Security Boundaries
 
 Status
 
@@ -714,9 +698,7 @@ Priority
 
 High
 
----
-
-## User / Role Authorization
+User / Role Authorization
 
 Status
 
@@ -732,15 +714,19 @@ server services
 
 database / RLS
 
+Organization Admin access must remain organization-scoped.
+
+Platform Super Admin access must support platform-level administration
+
+across Organizations.
+
 Priority
 
 High
 
----
+7. Runtime Data Architecture
 
-# 7. Runtime Data Architecture
-
-## Assignment Subject Validation
+Assignment Subject Validation
 
 Status
 
@@ -768,9 +754,7 @@ Priority
 
 Medium
 
----
-
-## Performance Instance Relationship Integrity
+Performance Instance Relationship Integrity
 
 Status
 
@@ -796,9 +780,7 @@ Priority
 
 Medium
 
----
-
-## Historical KPI Updates
+Historical KPI Updates
 
 Status
 
@@ -832,9 +814,7 @@ Priority
 
 High
 
----
-
-## KPI Calculation Engine
+KPI Calculation Engine
 
 Status
 
@@ -868,9 +848,7 @@ Priority
 
 High
 
----
-
-## Weighted Aggregation
+Weighted Aggregation
 
 Status
 
@@ -892,11 +870,9 @@ Priority
 
 High
 
----
+8. Runtime Workflow
 
-# 8. Runtime Workflow
-
-## Runtime Lifecycle
+Runtime Lifecycle
 
 Status
 
@@ -930,11 +906,9 @@ workflow controls
 
 manager approval behavior
 
----
+9. Historical Reporting
 
-# 9. Historical Reporting
-
-## Historical Performance Reporting
+Historical Performance Reporting
 
 Status
 
@@ -958,11 +932,9 @@ Priority
 
 High
 
----
+10. Dashboards
 
-# 10. Dashboards
-
-## Dynamic Dashboard System
+Dynamic Dashboard System
 
 Status
 
@@ -984,11 +956,9 @@ executive
 
 organization
 
----
+11. AI
 
-# 11. AI
-
-## AI-Assisted Planning
+AI-Assisted Planning
 
 Status
 
@@ -1012,9 +982,7 @@ strategic planning assistance
 
 automated reporting summaries
 
----
-
-## Predictive Analytics
+Predictive Analytics
 
 Status
 
@@ -1030,11 +998,9 @@ forecasting
 
 organizational performance insights
 
----
+12. Visual Design System
 
-# 12. Visual Design System
-
-## CascadEffects Design System
+CascadEffects Design System
 
 Status
 
@@ -1082,11 +1048,9 @@ Organization-specific branding should eventually be configurable through
 
 Administration.
 
----
+13. Deployment / Environment Configuration
 
-# 13. Deployment / Environment Configuration
-
-## Environment Validation
+Environment Validation
 
 Status
 
@@ -1106,9 +1070,7 @@ clear deployment diagnostics
 
 separation of public configuration from server-only secrets
 
----
-
-# 14. Current Milestone Rule
+14. Current Milestone Rule
 
 The current milestone must always be determined from:
 
@@ -1126,9 +1088,7 @@ Waypoint shows that work has already progressed beyond it, the older
 
 statement is historical and must not redirect development.
 
----
-
-# 15. Documentation Maintenance
+15. Documentation Maintenance
 
 When a major milestone is completed:
 
@@ -1150,9 +1110,7 @@ Confirm the new Waypoint is the current project checkpoint.
 
 Do not modify historical Waypoints merely to make them current.
 
----
-
-# 16. Current Project Position
+16. Current Project Position
 
 Builder
 
@@ -1206,6 +1164,10 @@ Assignment Management
 
 COMPLETE
 
+Administration Page Structure / Shared Header Standardization
+
+COMPLETE
+
 Dashboards
 
 FUTURE
@@ -1222,9 +1184,7 @@ Production Authorization / RLS
 
 OUTSTANDING
 
----
-
-# 17. Next Development Session
+17. Next Development Session
 
 Start from the latest Waypoint.
 
@@ -1253,6 +1213,8 @@ Roles & Permissions
 Performance Sheet Management
 
 Assignment Management
+
+Administration Page Structure / Shared Header Standardization
 
 The next development phase should be selected based on platform value,
 
@@ -1294,9 +1256,7 @@ Do not duplicate Runtime execution logic.
 
 The repository remains the authoritative engineering record.
 
----
-
-# 18. Current Deferred Priorities
+18. Current Deferred Priorities
 
 Priority: High
 
@@ -1314,8 +1274,6 @@ Weighted Aggregation
 
 Historical Performance Reporting
 
----
-
 Priority: Medium
 
 Assignment Subject Validation
@@ -1327,8 +1285,6 @@ Organization Domain Model
 Repository Mappers
 
 Organization table naming standardization
-
----
 
 Priority: Future Product
 
