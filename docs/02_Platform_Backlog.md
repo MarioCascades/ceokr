@@ -4,7 +4,7 @@ Platform Backlog
 
 Document Status: CURRENT
 
-Last Updated: 2026-09-01
+Last Updated: 2026-09-02
 
 This document tracks intentionally deferred architecture, product
 
@@ -18,7 +18,7 @@ The latest Waypoint and current Platform Decisions take precedence when
 
 determining the current project state.
 
-1. Current Development Phase
+Current Development Phase
 
 Administration Completion
 
@@ -58,6 +58,74 @@ Assignment Management
 
 Administration Page Structure / Shared Header Standardization
 
+Administration Organization Context / Cascading Selection
+
+Status
+
+RECONCILIATION REQUIRED
+
+The Super Admin Administration experience must preserve an explicit
+Organization context across child Administration pages.
+
+The required product pattern is:
+
+Organization
+↓
+Department
+↓
+Team
+
+The Organization page is the top-level tenant-management page and does not
+require an Organization selector above it.
+
+Child Administration pages must allow the Super Admin to select the
+Organization being administered where applicable.
+
+Department and Team selectors must be dependent on the selected parent
+Organization.
+
+Changing the selected Organization must reset dependent Department and Team
+context.
+
+The selected Organization ID is navigation and query context only.
+
+It is not the authorization boundary.
+
+Server-side authorization and eventual production RLS remain authoritative.
+
+The same Organization context pattern applies to:
+
+Users / Members
+
+Roles & Permissions
+
+Performance Sheets
+
+Assignments
+
+Objectives
+
+Key Results
+
+Initiatives
+
+Dashboards
+
+Reports
+
+Settings
+
+Organization Admin context is different.
+
+An Organization Admin operates within their authorized Organization and
+does not require an Organization-switching selector.
+
+The Builder remains one shared engine for both administrative entry
+contexts.
+
+This work is a product/UX continuity requirement and must be completed
+before additional Administration page expansion is treated as stable.
+
 Current Administration focus:
 
 Additional Administration capabilities
@@ -70,7 +138,7 @@ The Builder and Runtime foundations already exist and should not be
 
 rebuilt during this Administration phase.
 
-2. Administration Roadmap
+Administration Roadmap
 
 Organization
 
@@ -378,7 +446,7 @@ Cancelled state
 
 Published Performance Sheet association
 
-Reporting Period association
+Performance timeframe / monthly cadence context
 
 Assignment → Performance Instance integration
 
@@ -406,7 +474,7 @@ Production Row Level Security
 
 Runtime security boundaries
 
-3. Builder
+Builder
 
 Builder Definition Lifecycle
 
@@ -468,7 +536,72 @@ Runtime assignments should continue referencing the exact published
 
 version.
 
-4. Runtime
+3A. Administrative Entry Contexts
+
+Platform Super Admin Administration Context
+
+Status
+
+RECONCILIATION REQUIRED
+
+The Super Admin Administration experience is platform-level and must support
+administration across Organizations through explicit Organization context.
+
+The selected Organization is a UI/query context and must not replace
+server-side authorization.
+
+Organization Admin Workspace
+
+Status
+
+FUTURE
+
+Create a separate Organization Admin workspace after the Super Admin
+Administration context is stable.
+
+The Organization Admin workspace must:
+
+operate on the Organization determined by the authenticated user's
+organization authorization
+
+not provide cross-Organization switching
+
+provide access to organization configuration and Builder capabilities
+according to Organization Roles and Permissions
+
+use the same underlying Builder engine as the Super Admin experience
+
+Do not create a second Builder.
+
+Priority
+
+High
+
+3B. Administration Context Components
+
+Status
+
+RECONCILIATION REQUIRED
+
+Standardize reusable Administration context components for:
+
+Organization selection
+
+Department selection
+
+Team selection
+
+The component pattern should reset dependent selections when a parent
+context changes and should pass IDs rather than names.
+
+These components are UX/navigation context helpers, not authorization
+mechanisms.
+
+Priority
+
+High
+
+Runtime
 
 Runtime Execution Foundation
 
@@ -484,7 +617,7 @@ Assignment resolution
 
 exact published Performance Sheet resolution
 
-Reporting Period resolution
+time-bound execution context / monthly cadence
 
 Runtime subject resolution
 
@@ -552,7 +685,7 @@ improved member experience
 
 Runtime Workspace is NOT the current milestone.
 
-5. Architecture
+Architecture
 
 Organization Table Naming
 
@@ -640,7 +773,7 @@ Status
 
 Deferred
 
-6. Security
+Security
 
 Tenant Authorization Hardening
 
@@ -724,7 +857,7 @@ Priority
 
 High
 
-7. Runtime Data Architecture
+Runtime Data Architecture
 
 Assignment Subject Validation
 
@@ -768,7 +901,7 @@ Assignment
 
 Organization
 
-Reporting Period
+time-bound execution context / monthly cadence
 
 Exact Performance Sheet version
 
@@ -779,6 +912,28 @@ Prevent duplicated Runtime references from becoming inconsistent.
 Priority
 
 Medium
+
+Reporting Cadence / Historical Time Model
+
+Status
+
+ESTABLISHED PRODUCT RULE / ARCHITECTURAL HARDENING FUTURE
+
+Monthly performance is a product cadence, not an administrator-managed
+Reporting Period entity.
+
+The platform should derive time-bound performance context from assignment,
+performance instance, and dated Runtime records.
+
+Do not reintroduce reportingPeriodId into Assignment or PerformanceInstance
+unless a future product decision explicitly changes this rule.
+
+Historical KPI Updates remain responsible for durable time-series records
+needed for reporting, trends, auditability, and future analytics.
+
+Priority
+
+High
 
 Historical KPI Updates
 
@@ -870,7 +1025,7 @@ Priority
 
 High
 
-8. Runtime Workflow
+Runtime Workflow
 
 Runtime Lifecycle
 
@@ -906,7 +1061,7 @@ workflow controls
 
 manager approval behavior
 
-9. Historical Reporting
+Historical Reporting
 
 Historical Performance Reporting
 
@@ -932,7 +1087,7 @@ Priority
 
 High
 
-10. Dashboards
+Dashboards
 
 Dynamic Dashboard System
 
@@ -956,7 +1111,7 @@ executive
 
 organization
 
-11. AI
+AI
 
 AI-Assisted Planning
 
@@ -998,7 +1153,7 @@ forecasting
 
 organizational performance insights
 
-12. Visual Design System
+Visual Design System
 
 CascadEffects Design System
 
@@ -1048,7 +1203,7 @@ Organization-specific branding should eventually be configurable through
 
 Administration.
 
-13. Deployment / Environment Configuration
+Deployment / Environment Configuration
 
 Environment Validation
 
@@ -1070,7 +1225,7 @@ clear deployment diagnostics
 
 separation of public configuration from server-only secrets
 
-14. Current Milestone Rule
+Current Milestone Rule
 
 The current milestone must always be determined from:
 
@@ -1088,7 +1243,7 @@ Waypoint shows that work has already progressed beyond it, the older
 
 statement is historical and must not redirect development.
 
-15. Documentation Maintenance
+Documentation Maintenance
 
 When a major milestone is completed:
 
@@ -1110,7 +1265,7 @@ Confirm the new Waypoint is the current project checkpoint.
 
 Do not modify historical Waypoints merely to make them current.
 
-16. Current Project Position
+Current Project Position
 
 Builder
 
@@ -1170,7 +1325,7 @@ COMPLETE
 
 Dashboards
 
-FUTURE
+V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
 
 Reports
 
@@ -1184,7 +1339,7 @@ Production Authorization / RLS
 
 OUTSTANDING
 
-17. Next Development Session
+Next Development Session
 
 Start from the latest Waypoint.
 
@@ -1215,6 +1370,22 @@ Performance Sheet Management
 Assignment Management
 
 Administration Page Structure / Shared Header Standardization
+
+The following Administration continuity work must be reconciled and verified:
+
+Super Admin Organization context
+
+Organization → Department → Team cascading selection
+
+Organization context across child Administration pages
+
+Organization Admin fixed Organization context
+
+One Builder / two administrative entry contexts
+
+Objectives / Key Results / Initiatives remaining Builder-owned
+
+Monthly cadence without an administrator-managed Reporting Period entity
 
 The next development phase should be selected based on platform value,
 
@@ -1256,9 +1427,13 @@ Do not duplicate Runtime execution logic.
 
 The repository remains the authoritative engineering record.
 
-18. Current Deferred Priorities
+Current Deferred Priorities
 
 Priority: High
+
+Administration Organization Context / Cascading Selection
+
+Organization Admin Workspace Foundation
 
 Production Tenant Authorization
 

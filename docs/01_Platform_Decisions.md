@@ -458,7 +458,7 @@ Examples include:
 
 - Assignment
 
-- ReportingPeriod
+- Execution Timeframe / Monthly Cadence
 
 - PerformanceInstance
 
@@ -692,7 +692,7 @@ Published Performance Sheet Version
 
 ↓
 
-Reporting Period
+Execution Timeframe / Monthly Cadence
 
 ↓
 
@@ -712,7 +712,7 @@ An Assignment contains:
 
 - performanceSheetId
 
-- reportingPeriodId
+- execution timeframe / monthly cadence context
 
 - assignmentType
 
@@ -814,7 +814,7 @@ The Performance Instance references:
 
 - exact published Performance Sheet version
 
-- Reporting Period
+- Execution Timeframe / Monthly Cadence
 
 - Runtime aggregate state
 
@@ -1385,37 +1385,286 @@ Status
 Accepted
 
 ---
+
 # 31. Organization-Scoped Administration vs Platform Authority
 
 Organization Admin authority is organization-scoped.
 
 An Organization Admin may administer resources belonging to the
+
 Organization to which their Organization Membership belongs, subject to
+
 their assigned Organization Roles and Permissions.
 
 An Organization Admin must not administer resources belonging to another
+
 Organization.
 
 Platform Super Admin authority operates above the Organization tenant
+
 boundary.
 
 A Platform Super Admin may administer the same organization-owned
+
 resources across Organizations on behalf of the Organization, subject to
+
 platform-level authorization.
 
 This means:
 
 Organization Admin
-    → own Organization resources only
+
+    → own Organization resources only
 
 Platform Super Admin
-    → resources across Organizations
+
+    → resources across Organizations
 
 The distinction is an authorization boundary, not merely a UI/navigation
+
 restriction.
 
 Authorization must enforce the requested Organization context and
+
 resource ownership server-side and ultimately through production RLS.
+
+Status
+
+Accepted
+
+32. Super Admin Organization Context
+
+The Super Admin Administration experience is cross-tenant.
+
+Because a Platform Super Admin may administer multiple Organizations, every
+Organization-scoped Administration page must establish an explicit
+Organization context before operating on Organization-owned data.
+
+The Organization page is the exception.
+
+The Organization page is the top-level tenant management surface and may
+display and manage all Organizations available to the Platform Super Admin.
+
+For child Administration areas, the intended context model is:
+
+Organization
+↓
+Selected Organization
+↓
+Organization-scoped Administration
+
+The selected Organization ID is the context for data loading and mutation.
+
+The UI must not use organization names as the source of truth for
+relationships.
+
+Changing the selected Organization must refresh the Organization-scoped
+data and reset dependent selections such as Department and Team.
+
+Status
+
+Accepted
+
+33. Organization Admin Context
+
+An Organization Admin operates within the Organization authorized by their
+Organization Membership and permissions.
+
+The Organization Admin experience is therefore different from the Platform
+Super Admin Administration experience.
+
+Organization Admin pages do not require an Organization switcher for
+Organizations outside the Admin's authorized scope.
+
+The Organization context is established from the authenticated actor's
+authorized Organization.
+
+The authorization boundary is:
+
+Platform Super Admin
+→ may select and administer Organizations
+
+Organization Admin
+→ operates within the authorized Organization
+
+The Organization Admin experience must never rely on a hidden client-side
+organization choice as its security boundary.
+
+Server-side authorization must validate the Organization context.
+
+Status
+
+Accepted
+
+34. One Builder, Two Administrative Entry Contexts
+
+CascadEffects has one Builder engine.
+
+The Builder must not be duplicated for Platform Super Admin and
+Organization Admin experiences.
+
+The two administrative entry contexts are:
+
+Platform Super Admin
+↓
+Administration
+↓
+Select Organization
+↓
+Performance Sheets
+↓
+Builder
+
+Organization Admin
+↓
+Organization Workspace
+↓
+Authorized Organization
+↓
+Builder
+
+Both paths use the same underlying Builder definitions, services,
+validation, publishing, versioning, and Runtime handoff.
+
+The difference is the administrative context and authorization scope.
+
+This is an architectural reuse requirement.
+
+Status
+
+Accepted
+
+35. Administration Context Contract
+
+Organization-scoped Administration pages must follow a consistent context
+pattern.
+
+The standard Super Admin pattern is:
+
+Display ← Back to Administration.
+
+Establish the selected Organization.
+
+Load Organization-owned data using the Organization ID.
+
+Where required, establish dependent Department context.
+
+Where required, establish dependent Team context.
+
+Reset dependent context when a parent context changes.
+
+Perform mutations against IDs and server-side Organization ownership.
+
+Never treat a display name or client-side selection as authorization.
+
+The intended cascading pattern is:
+
+Organization
+↓
+Department
+↓
+Team
+
+This pattern applies wherever the page needs hierarchical context.
+
+Examples include:
+
+Departments
+→ Organization
+
+Teams
+→ Organization → Department
+
+Users / Members
+→ Organization
+
+Roles & Permissions
+→ Organization
+
+Performance Sheets
+→ Organization
+
+Assignments
+→ Organization
+
+Objectives
+→ Organization → Builder-owned Performance Sheets
+
+Key Results
+→ Organization → Builder-owned Performance Sheets
+
+Initiatives
+→ Organization → Builder-owned Performance Sheets
+
+Dashboards
+→ Organization
+
+Reports
+→ Organization
+
+Settings
+→ Organization
+
+The exact UI component implementation may evolve, but the context contract
+must remain stable.
+
+Status
+
+Accepted
+
+36. Reporting Cadence Is Product Behavior
+
+The platform supports time-bound performance and historical reporting.
+
+Monthly performance is a product cadence.
+
+The current architecture must not introduce an administrator-managed
+arbitrary ReportingPeriod entity solely to represent the monthly cadence.
+
+Assignments and Performance Instances must use their execution timeframe,
+dates, lifecycle state, and Runtime records to establish the relevant
+performance context.
+
+Historical reporting must be derived from dated performance execution data.
+
+If a future product requirement introduces additional cadence models,
+those models must be explicitly designed and documented before adding a new
+domain entity.
+
+Status
+
+Accepted
+
+37. Documentation Continuity Is an Architectural Requirement
+
+Changes to the following are documentation-significant architectural
+changes:
+
+administrative actor model
+
+Organization context model
+
+Builder / Runtime ownership
+
+source-of-truth ownership
+
+tenant boundaries
+
+authorization boundaries
+
+reporting cadence
+
+major Administration navigation patterns
+
+When such a decision changes, the corresponding current documentation must
+be updated before or as part of the milestone.
+
+The implementation is not considered architecturally complete until the
+relevant documentation reflects the implemented model.
+
+A future development session must be able to reconstruct the intended
+architecture from the repository documentation without relying on
+conversation history.
 
 Status
 

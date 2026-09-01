@@ -2,7 +2,7 @@ CascadEffects Performance Platform
 
 Engineering Process
 
-Version: 1.1
+Version: 1.2
 
 Status: Active
 
@@ -16,25 +16,25 @@ This process is considered part of the platform.
 
 Core Principles
 
-1. Build before optimizing.
+Build before optimizing.
 
-2. Avoid over-engineering.
+Avoid over-engineering.
 
-3. One business concept = one domain model.
+One business concept = one domain model.
 
-4. Builder defines.
+Builder defines.
 
-5. Runtime executes.
+Runtime executes.
 
-6. Repositories persist.
+Repositories persist.
 
-7. Every major decision is documented.
+Every major decision is documented.
 
-8. Every deferred improvement is tracked.
+Every deferred improvement is tracked.
 
-9. Never rely on memory.
+Never rely on memory.
 
-10. The project documentation is the source of truth.
+The project documentation is the source of truth.
 
 Starting Every Development Session
 
@@ -42,67 +42,74 @@ Before writing code:
 
 Step 1
 
+Review the Product North Star.
+
+Confirm that the proposed work supports the current product direction and
+does not reintroduce a previously rejected or superseded product model.
+
+Step 2
+
 Review the latest Waypoint.
 
 This becomes the official checkpoint for resuming development.
 
-Step 2
+Step 3
 
 Review:
 
-- Platform Decisions
+Platform Decisions
 
-- Platform Backlog
+Platform Backlog
 
 These documents establish the current architectural rules and forward-looking roadmap.
 
 Review them before implementation begins, especially when the current milestone may have changed or when the work affects architecture, data relationships, security, or roadmap status.
 
-Step 3
+Step 4
 
 Confirm today's milestone.
 
 Example:
 
-- Runtime
+Runtime
 
-- Persistence
+Persistence
 
-- Builder
+Builder
 
-- Administration
+Administration
 
-- Dashboards
+Dashboards
 
-- AI
+AI
 
 Development should remain focused on one milestone at a time.
 
-Step 4
+Step 5
 
 Inspect the existing architecture relevant to the milestone.
 
 Before implementing changes, review the existing:
 
-- domain models
+domain models
 
-- repositories
+repositories
 
-- services
+services
 
-- Runtime components
+Runtime components
 
-- Builder components
+Builder components
 
-- Administration components
+Administration components
 
-- database relationships
+database relationships
 
 Avoid duplicating existing business logic.
 
 Prefer extending established platform capabilities when appropriate.
 
-Step 5
+Step 6
 
 Begin implementation.
 
@@ -120,17 +127,17 @@ Perform appropriate functional verification.
 
 Depending on the milestone, this may include:
 
-- browser verification
+browser verification
 
-- database verification
+database verification
 
-- Runtime verification
+Runtime verification
 
-- Builder verification
+Builder verification
 
-- Administration verification
+Administration verification
 
-- workflow verification
+workflow verification
 
 Commit
 
@@ -144,9 +151,9 @@ Documentation
 
 Update if necessary:
 
-- Platform Decisions
+Platform Decisions
 
-- Platform Backlog
+Platform Backlog
 
 Documentation should be updated when the implementation changes the architectural state, roadmap status, or important engineering decisions.
 
@@ -160,11 +167,11 @@ Confirm Repository State
 
 After completing the milestone:
 
-- confirm the intended changes are committed
+confirm the intended changes are committed
 
-- confirm no unintended files remain staged
+confirm no unintended files remain staged
 
-- confirm the working tree is clean
+confirm the working tree is clean
 
 The repository should represent the documented engineering checkpoint.
 
@@ -172,37 +179,37 @@ Waypoint Template
 
 Every Waypoint should include:
 
-- Overview
+Overview
 
-- Completed Work
+Completed Work
 
-- Architecture Decisions
+Architecture Decisions
 
-- Files Added
+Files Added
 
-- Files Modified
+Files Modified
 
-- Files Removed
+Files Removed
 
-- Database Changes
+Database Changes
 
-- Documentation Updated
+Documentation Updated
 
-- Technical Debt
+Technical Debt
 
-- Next Session
+Next Session
 
-- Milestone Status
+Milestone Status
 
 Technical Debt
 
 Technical debt may only be deferred when:
 
-- It does not change the business domain.
+It does not change the business domain.
 
-- It does not change database relationships.
+It does not change database relationships.
 
-- It is documented in Platform_Backlog.md.
+It is documented in Platform_Backlog.md.
 
 If these conditions are not met, the work should be completed immediately.
 
@@ -216,13 +223,13 @@ docs/
 
 Current documents include:
 
-- Engineering Process
+Engineering Process
 
-- Platform Decisions
+Platform Decisions
 
-- Platform Backlog
+Platform Backlog
 
-- Waypoints
+Waypoints
 
 Additional documents may be introduced as the platform evolves.
 
@@ -232,13 +239,13 @@ The repository documentation is the authoritative engineering record.
 
 The documentation hierarchy is:
 
-1. Latest Waypoint
+Latest Waypoint
 
-2. Platform Decisions
+Platform Decisions
 
-3. Platform Backlog
+Platform Backlog
 
-4. Historical Waypoints and development summaries
+Historical Waypoints and development summaries
 
 The latest Waypoint represents the current implementation checkpoint.
 
@@ -250,49 +257,53 @@ Historical Waypoints are permanent engineering records and should not be rewritt
 
 Development Workflow
 
+Review Product North Star
+
+    ↓
+
 Review Waypoint
 
-        ↓
+    ↓
 
 Review Decisions
 
-        ↓
+    ↓
 
 Review Backlog
 
-        ↓
+    ↓
 
 Confirm Milestone
 
-        ↓
+    ↓
 
 Inspect Existing Architecture
 
-        ↓
+    ↓
 
 Build
 
-        ↓
+    ↓
 
 Compile
 
-        ↓
+    ↓
 
 Browser / Functional Verification
 
-        ↓
+    ↓
 
 Commit
 
-        ↓
+    ↓
 
 Update Documentation
 
-        ↓
+    ↓
 
 Create Waypoint
 
-        ↓
+    ↓
 
 Confirm Clean Repository
 
@@ -300,35 +311,35 @@ Architectural Discipline
 
 Development should favor:
 
-- data-driven architecture
+data-driven architecture
 
-- reusable domain models
+reusable domain models
 
-- normalized database relationships
+normalized database relationships
 
-- organization-aware data ownership
+organization-aware data ownership
 
-- incremental improvements
+incremental improvements
 
-- existing platform capabilities
+existing platform capabilities
 
-- clear Builder / Runtime boundaries
+clear Builder / Runtime boundaries
 
-- simple scalable solutions
+simple scalable solutions
 
 Avoid:
 
-- hardcoded business structures
+hardcoded business structures
 
-- duplicate sources of truth
+duplicate sources of truth
 
-- duplicated business logic
+duplicated business logic
 
-- unnecessary rewrites
+unnecessary rewrites
 
-- unnecessary abstractions
+unnecessary abstractions
 
-- feature-specific database structures when a reusable model is practical
+feature-specific database structures when a reusable model is practical
 
 The platform should be designed to support multiple organizations, thousands of users, and large volumes of Runtime performance data.
 
@@ -368,19 +379,128 @@ Administration is responsible for organizational management and management entry
 
 Administration may provide navigation into:
 
-- Performance Sheets
+Performance Sheets
 
-- Builder
+Builder
 
-- Assignments
+Assignments
 
-- Runtime-related management
+Runtime-related management
 
 Administration should not duplicate Builder definition editing or Runtime execution logic.
 
 The existing Builder remains the Performance Sheet definition engine.
 
 The existing Runtime remains the Performance Instance execution engine.
+
+Administrative Context Contract
+
+Administration must preserve a clear distinction between platform-level
+Super Admin authority and organization-level Organization Admin authority.
+
+For Platform Super Admin Administration:
+
+Organization is the primary tenant context.
+
+The Super Admin must explicitly select the Organization being administered
+on organization-scoped Administration pages.
+
+Organization selection is a UI/query context, not the authorization
+boundary.
+
+Department and Team selectors must resolve from the selected Organization.
+
+Changing Organization must reset dependent Department and Team selections.
+
+The selected Organization ID must drive server-side data queries and
+mutations.
+
+The Organization page is the top-level tenant-management page and is the
+exception to the child-page Organization selector pattern.
+
+For Organization Admin workspaces:
+
+The Organization context is derived from the authenticated and authorized
+Organization Membership.
+
+Organization Admins must not receive a tenant-switching Organization
+selector.
+
+The client-selected context must never be treated as proof of
+authorization.
+
+The same administrative context rules apply consistently across Users,
+Roles & Permissions, Performance Sheets, Assignments, Objectives, Key
+Results, Initiatives, Dashboards, Reports, and Settings where those areas
+are organization-scoped.
+
+One Builder, Two Administrative Entry Contexts
+
+The platform uses one shared Builder engine.
+
+The two administrative entry contexts are:
+
+Platform Super Admin
+↓
+Administration
+↓
+Selected Organization
+↓
+Performance Sheets
+↓
+Builder
+
+Organization Admin
+↓
+Organization Workspace
+↓
+Authorized Organization
+↓
+Performance Sheets
+↓
+Builder
+
+These are different entry contexts, not different Builder systems.
+
+Objectives, Key Results, and Initiatives remain owned by the Builder
+definition and must not become duplicate Administration sources of truth.
+
+Reporting Cadence Rule
+
+Monthly performance is a product reporting cadence.
+
+Do not introduce or reintroduce an arbitrary administrator-managed
+Reporting Period entity merely to represent monthly performance.
+
+Time-bound Runtime execution should be represented through the Assignment,
+Performance Instance, dated KPI updates, and related execution data.
+
+Documentation Continuity Guardrail
+
+If a change affects:
+
+administrative actor boundaries
+
+organization context
+
+cascading selectors
+
+Builder / Runtime ownership
+
+source-of-truth ownership
+
+reporting cadence
+
+authorization boundaries
+
+major Administration workflows
+
+then the change must be reflected in the appropriate repository
+documentation before or as part of the milestone completion.
+
+A feature is not considered architecturally complete if the code works but
+the governing documentation still describes a different product or
+architecture.
 
 Git Workflow
 
@@ -390,17 +510,17 @@ Completed milestones should be committed with a clear commit message.
 
 Before committing:
 
-- confirm the intended files
+confirm the intended files
 
-- confirm compilation
+confirm compilation
 
-- confirm functional verification
+confirm functional verification
 
 After committing:
 
-- confirm the commit succeeded
+confirm the commit succeeded
 
-- confirm the working tree is clean
+confirm the working tree is clean
 
 Large unrelated changes should not be bundled into a milestone commit unless they are intentionally part of the same architectural change.
 
@@ -414,17 +534,17 @@ Major milestones should include appropriate functional verification.
 
 Examples include:
 
-- browser testing
+browser testing
 
-- Runtime execution testing
+Runtime execution testing
 
-- database CRUD testing
+database CRUD testing
 
-- Builder workflow testing
+Builder workflow testing
 
-- Administration workflow testing
+Administration workflow testing
 
-- lifecycle testing
+lifecycle testing
 
 The level of verification should match the risk and importance of the milestone.
 
@@ -434,17 +554,19 @@ The project should remain resumable even after a long development pause.
 
 When development resumes:
 
-1. Review the latest Waypoint.
+Review the Product North Star.
 
-2. Review Platform Decisions.
+Review the latest Waypoint.
 
-3. Review Platform Backlog.
+Review Platform Decisions.
 
-4. Confirm the current milestone.
+Review Platform Backlog.
 
-5. Inspect the relevant existing implementation.
+Confirm the current milestone.
 
-6. Continue from the documented checkpoint.
+Inspect the relevant existing implementation.
+
+Continue from the documented checkpoint.
 
 The conversation is not the authoritative project record.
 
@@ -472,24 +594,24 @@ The AI Architecture Partner is responsible for architectural guidance, engineeri
 
 Both partners agree to:
 
-- Build with simplicity.
+Build with simplicity.
 
-- Challenge unnecessary complexity.
+Challenge unnecessary complexity.
 
-- Document important decisions.
+Document important decisions.
 
-- Keep technical debt visible.
+Keep technical debt visible.
 
-- Review the latest Waypoint before resuming development.
+Review the latest Waypoint before resuming development.
 
-- Review current Platform Decisions and Platform Backlog before implementation.
+Review current Platform Decisions and Platform Backlog before implementation.
 
-- Avoid unnecessary rewrites.
+Avoid unnecessary rewrites.
 
-- Preserve Builder / Runtime separation.
+Preserve Builder / Runtime separation.
 
-- Prefer data-driven architecture.
+Prefer data-driven architecture.
 
-- Continuously improve the platform without losing sight of the product vision.
+Continuously improve the platform without losing sight of the product vision.
 
 The objective is not only to build software, but to build a platform that remains understandable, maintainable, and scalable for years to come.
