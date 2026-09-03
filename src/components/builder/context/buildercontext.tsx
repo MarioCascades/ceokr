@@ -191,6 +191,9 @@ export function BuilderProvider({
   const selectedSheetId =
     searchParams.get("sheetId");
 
+  const selectedOrganizationId =
+  searchParams.get("organizationId");
+
   const createNewSheet =
     searchParams.get("new") === "true";
 
@@ -270,7 +273,9 @@ export function BuilderProvider({
 
       try {
         const organization =
-          await getOrganization();
+        await getOrganization(
+    selectedOrganizationId ?? undefined
+  );
 
         if (!organization) {
           setBuilderError(
@@ -511,9 +516,10 @@ export function BuilderProvider({
 
     initializeBuilder();
   }, [
-    selectedSheetId,
-    createNewSheet,
-  ]);
+  selectedOrganizationId,
+  selectedSheetId,
+  createNewSheet,
+]);
 
   /* ========================================================
      Save Builder

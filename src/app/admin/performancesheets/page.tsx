@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+
+import AdminPageHeader from "@/components/admin/shared/adminpageheader";
 
 import {
   getOrganization,
@@ -36,6 +39,11 @@ type VersionHistoryMap = Record<
 ========================================================== */
 
 export default function PerformanceSheetsPage() {
+  const searchParams = useSearchParams();
+
+  const selectedOrganizationId =
+    searchParams.get("organizationId");
+
   const [organization, setOrganization] =
     useState<Organization | null>(null);
 
@@ -66,18 +74,52 @@ export default function PerformanceSheetsPage() {
   ] = useState<string | null>(null);
 
   /* ========================================================
+     Builder Navigation Helpers
+  ======================================================== */
+
+  const organizationQuery =
+    selectedOrganizationId
+      ? `&organizationId=${encodeURIComponent(
+          selectedOrganizationId
+        )}`
+      : "";
+
+  const builderHref =
+    selectedOrganizationId
+      ? `/builder?organizationId=${encodeURIComponent(
+          selectedOrganizationId
+        )}`
+      : "/builder";
+
+  const builderNewHref =
+    selectedOrganizationId
+      ? `/builder?new=true&organizationId=${encodeURIComponent(
+          selectedOrganizationId
+        )}`
+      : "/builder?new=true";
+
+  /* ========================================================
      Initialize
   ======================================================== */
 
   useEffect(() => {
     async function initialize() {
       try {
+        setIsLoading(true);
         setErrorMessage(null);
+        setHistoryErrorMessage(null);
 
         const existingOrganization =
-          await getOrganization();
+          await getOrganization(
+            selectedOrganizationId ??
+              undefined
+          );
 
         if (!existingOrganization) {
+          setOrganization(null);
+          setPerformanceSheets([]);
+          setVersionHistory({});
+
           setErrorMessage(
             "No organization has been configured yet."
           );
@@ -98,16 +140,11 @@ export default function PerformanceSheetsPage() {
           records
         );
 
-        /*
-         * Load the preserved versions for each
-         * logical Performance Sheet.
-         *
-         * This is intentionally loaded after
-         * the management list so the primary
-         * management view remains simple.
-         */
+        /* ==================================================
+           Load Version History
+        ================================================== */
+
         setIsLoadingHistory(true);
-        setHistoryErrorMessage(null);
 
         const historyEntries =
           await Promise.all(
@@ -159,7 +196,7 @@ export default function PerformanceSheetsPage() {
     }
 
     initialize();
-  }, []);
+  }, [selectedOrganizationId]);
 
   /* ========================================================
      Render
@@ -167,75 +204,53 @@ export default function PerformanceSheetsPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 px-8 py-10">
-      <div className="mx-auto max-w-6xl space-y-8">
+      <div className="mx-auto max-w-7xl space-y-8">
 
         {/* ==================================================
-            Header
+            Shared Administration Header
         ================================================== */}
 
-        <div className="flex flex-col gap-6">
+        <AdminPageHeader
+          title="Performance Sheets"
+          description="Manage Performance Sheet definitions, versions and Builder access."
+        />
 
-          <div className="flex items-center justify-between gap-4">
+        {/* ==================================================
+            Management Navigation
+        ================================================== */}
 
-            <div>
-              <h1 className="text-3xl font-bold">
-                Performance Sheets
-              </h1>
-
-              <p className="mt-2 text-muted-foreground">
-                Manage Performance Sheet definitions,
-                versions and Builder access.
-              </p>
-            </div>
-
-            <Button
-              asChild
-              variant="outline"
-            >
-              <Link href="/admin">
-                Back to Administration
-              </Link>
-            </Button>
-
-          </div>
-
-          {/* ==================================================
-              Management Navigation
-          ================================================== */}
-
-          <nav
-            aria-label="Performance Sheet management navigation"
-            className="flex flex-wrap gap-2"
+        <nav
+          aria-label="Performance Sheet management navigation"
+          className="flex flex-wrap gap-2"
+        >
+          <Button
+            asChild
+            variant="secondary"
           >
-            <Button
-              asChild
-              variant="secondary"
+            <Link
+              href={
+                selectedOrganizationId
+                  ? `/admin/performancesheets?organizationId=${encodeURIComponent(
+                      selectedOrganizationId
+                    )}`
+                  : "/admin/performancesheets"
+              }
             >
-              <Link href="/admin/performancesheets">
-                Performance Sheets
-              </Link>
-            </Button>
+              Performance Sheets
+            </Link>
+          </Button>
 
-            <Button
-              asChild
-              variant="outline"
+          <Button
+            asChild
+            variant="outline"
+          >
+            <Link
+              href={builderHref}
             >
-              <Link href="/builder">
-                Builder
-              </Link>
-            </Button>
-
-            <Button
-              asChild
-              variant="outline"
-            >
-              <Link href="/admin">
-                Administration
-              </Link>
-            </Button>
-          </nav>
-
-        </div>
+              Builder
+            </Link>
+          </Button>
+        </nav>
 
         {/* ==================================================
             Error
@@ -262,7 +277,7 @@ export default function PerformanceSheetsPage() {
         )}
 
         {/* ==================================================
-            Organization
+            Organization Summary
         ================================================== */}
 
         {!isLoading &&
@@ -294,7 +309,7 @@ export default function PerformanceSheetsPage() {
           )}
 
         {/* ==================================================
-            Performance Sheets
+            Performance Sheet Definitions
         ================================================== */}
 
         {!isLoading && (
@@ -318,7 +333,9 @@ export default function PerformanceSheetsPage() {
               </div>
 
               <Button asChild>
-                <Link href="/builder?new=true">
+                <Link
+                  href={builderNewHref}
+                >
                   Create Performance Sheet
                 </Link>
               </Button>
@@ -326,7 +343,7 @@ export default function PerformanceSheetsPage() {
             </div>
 
             {/* ==================================================
-                History Error
+                Version History Error
             ================================================== */}
 
             {historyErrorMessage && (
@@ -351,7 +368,9 @@ export default function PerformanceSheetsPage() {
 
                 <div className="mt-4">
                   <Button asChild>
-                    <Link href="/builder?new=true">
+                    <Link
+                      href={builderNewHref}
+                    >
                       Create Performance Sheet
                     </Link>
                   </Button>
@@ -359,18 +378,25 @@ export default function PerformanceSheetsPage() {
 
               </div>
             ) : (
+
               /* ==================================================
-                 Performance Sheet Definitions
+                 Performance Sheet List
               ================================================== */
 
               <div className="divide-y">
 
                 {performanceSheets.map(
                   (sheet) => {
+
                     const versions =
                       versionHistory[
                         sheet.sheet_key
                       ] ?? [];
+
+                    const openBuilderHref =
+                      `/builder?sheetId=${encodeURIComponent(
+                        sheet.id
+                      )}${organizationQuery}`;
 
                     return (
                       <div
@@ -379,7 +405,7 @@ export default function PerformanceSheetsPage() {
                       >
 
                         {/* ==================================================
-                            Definition Header
+                            Performance Sheet Header
                         ================================================== */}
 
                         <div className="flex items-center justify-between gap-6">
@@ -424,9 +450,9 @@ export default function PerformanceSheetsPage() {
                               asChild
                             >
                               <Link
-                                href={`/builder?sheetId=${encodeURIComponent(
-                                  sheet.id
-                                )}`}
+                                href={
+                                  openBuilderHref
+                                }
                               >
                                 Open Builder
                               </Link>
@@ -471,50 +497,58 @@ export default function PerformanceSheetsPage() {
                             <div className="divide-y">
 
                               {versions.map(
-                                (version) => (
-                                  <div
-                                    key={version.id}
-                                    className="flex items-center justify-between gap-6 px-4 py-4"
-                                  >
+                                (version) => {
 
-                                    <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
+                                  const versionBuilderHref =
+                                    `/builder?sheetId=${encodeURIComponent(
+                                      version.id
+                                    )}${organizationQuery}`;
 
-                                      <span className="text-sm font-medium">
-                                        Version{" "}
-                                        {version.version}
-                                      </span>
+                                  return (
+                                    <div
+                                      key={version.id}
+                                      className="flex items-center justify-between gap-6 px-4 py-4"
+                                    >
 
-                                      <span className="text-sm text-muted-foreground">
-                                        {formatStatus(
-                                          version.status
-                                        )}
-                                      </span>
+                                      <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
 
-                                      <span className="text-sm text-muted-foreground">
-                                        Updated{" "}
-                                        {formatDate(
-                                          version.updated_at
-                                        )}
-                                      </span>
+                                        <span className="text-sm font-medium">
+                                          Version{" "}
+                                          {version.version}
+                                        </span>
+
+                                        <span className="text-sm text-muted-foreground">
+                                          {formatStatus(
+                                            version.status
+                                          )}
+                                        </span>
+
+                                        <span className="text-sm text-muted-foreground">
+                                          Updated{" "}
+                                          {formatDate(
+                                            version.updated_at
+                                          )}
+                                        </span>
+
+                                      </div>
+
+                                      <Button
+                                        asChild
+                                        variant="outline"
+                                        size="sm"
+                                      >
+                                        <Link
+                                          href={
+                                            versionBuilderHref
+                                          }
+                                        >
+                                          Open
+                                        </Link>
+                                      </Button>
 
                                     </div>
-
-                                    <Button
-                                      asChild
-                                      variant="outline"
-                                      size="sm"
-                                    >
-                                      <Link
-                                        href={`/builder?sheetId=${encodeURIComponent(
-                                          version.id
-                                        )}`}
-                                      >
-                                        Open
-                                      </Link>
-                                    </Button>
-
-                                  </div>
-                                )
+                                  );
+                                }
                               )}
 
                             </div>

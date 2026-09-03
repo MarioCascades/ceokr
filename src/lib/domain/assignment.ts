@@ -1,5 +1,4 @@
 import type { PerformanceSheet } from "./performancesheet";
-import type { ReportingPeriod } from "./reportingperiod";
 
 /* ==========================================================
    Assignment Types
@@ -40,11 +39,6 @@ export interface Assignment {
    * Published Performance Sheet being assigned.
    */
   performanceSheetId: PerformanceSheet["id"];
-
-  /**
-   * Reporting Period this assignment belongs to.
-   */
-  reportingPeriodId: ReportingPeriod["id"];
 
   /**
    * Determines what type of entity

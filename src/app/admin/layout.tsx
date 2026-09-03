@@ -1,4 +1,8 @@
+"use client";
+
+import { Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 export default function AdminLayout({
   children,
@@ -8,142 +12,155 @@ export default function AdminLayout({
   return (
     <main className="min-h-screen bg-gray-100">
       <div className="flex min-h-screen">
-
-        {/* ==================================================
-            Administration Sidebar
-        ================================================== */}
-
-        <aside className="w-60 shrink-0 border-r bg-white">
-
-          {/* Sidebar Header */}
-
-          <div className="border-b px-6 py-5">
-            <h2 className="text-xl font-bold tracking-tight">
-              Administration
-            </h2>
-
-            <p className="mt-1 text-xs text-muted-foreground">
-              Platform management
-            </p>
-          </div>
-
-          {/* Navigation */}
-
-          <nav className="px-3 py-5">
-
-            {/* Overview */}
-
-            <AdminNavLink
-              href="/admin"
-              label="Overview"
-            />
-
-            {/* Organization */}
-
-            <AdminNavSection title="Organization" />
-
-            <AdminNavLink
-              href="/admin/organization"
-              label="Organization"
-            />
-
-            <AdminNavLink
-              href="/admin/departments"
-              label="Departments"
-            />
-
-            <AdminNavLink
-              href="/admin/teams"
-              label="Teams"
-            />
-
-            <AdminNavLink
-              href="/admin/users"
-              label="Users"
-            />
-
-            <AdminNavLink
-              href="/admin/roles"
-              label="Roles & Permissions"
-            />
-
-            {/* Performance */}
-
-            <AdminNavSection title="Performance" />
-
-            <AdminNavLink
-              href="/admin/performancesheets"
-              label="Performance Sheets"
-            />
-
-            <AdminNavLink
-              href="/admin/assignments"
-              label="Assignments"
-            />
-
-            <AdminNavLink
-              href="/admin/objectives"
-              label="Objectives"
-            />
-
-            <AdminNavLink
-              href="/admin/keyresults"
-              label="Key Results"
-            />
-
-            <AdminNavLink
-              href="/admin/initiatives"
-              label="Initiatives"
-            />
-
-            {/* Analytics */}
-
-            <AdminNavSection title="Analytics" />
-
-            <AdminNavLink
-              href="/admin/dashboards"
-              label="Dashboards"
-            />
-
-            <AdminNavLink
-              href="/admin/reports"
-              label="Reports"
-            />
-
-            {/* Platform */}
-
-            <AdminNavSection title="Platform" />
-
-            <AdminNavLink
-              href="/admin/settings"
-              label="Settings"
-            />
-
-            <AdminNavLink
-              href="/admin/ai"
-              label="AI Configuration"
-            />
-
-          </nav>
-
-        </aside>
-
-        {/* ==================================================
-            Administration Content
-        ================================================== */}
-
-        <section className="min-w-0 flex-1 bg-gray-50 p-8 lg:p-10">
-          {children}
-        </section>
-
+        <Suspense fallback={<AdminShellFallback />}>
+          <AdminShell>{children}</AdminShell>
+        </Suspense>
       </div>
     </main>
   );
 }
 
-/* ==========================================================
-   Administration Navigation Section
-========================================================== */
+function AdminShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const searchParams = useSearchParams();
+  const organizationId = searchParams.get("organizationId");
+
+  function adminHref(path: string) {
+    if (!organizationId) return path;
+
+    return `${path}?organizationId=${encodeURIComponent(
+      organizationId
+    )}`;
+  }
+
+  return (
+    <>
+      <aside className="w-60 shrink-0 border-r bg-white">
+        <div className="border-b px-6 py-5">
+          <h2 className="text-xl font-bold tracking-tight">
+            Administration
+          </h2>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            Platform management
+          </p>
+        </div>
+
+        <nav className="px-3 py-5">
+          <AdminNavLink
+            href={adminHref("/admin")}
+            label="Overview"
+          />
+
+          <AdminNavSection title="Organization" />
+
+          <AdminNavLink
+            href={adminHref("/admin/organization")}
+            label="Organization"
+          />
+
+          <AdminNavLink
+            href={adminHref("/admin/departments")}
+            label="Departments"
+          />
+
+          <AdminNavLink
+            href={adminHref("/admin/teams")}
+            label="Teams"
+          />
+
+          <AdminNavLink
+            href={adminHref("/admin/users")}
+            label="Users"
+          />
+
+          <AdminNavLink
+            href={adminHref("/admin/roles")}
+            label="Roles & Permissions"
+          />
+
+          <AdminNavSection title="Performance" />
+
+          <AdminNavLink
+            href={adminHref("/admin/performancesheets")}
+            label="Performance Sheets"
+          />
+
+          <AdminNavLink
+            href={adminHref("/admin/assignments")}
+            label="Assignments"
+          />
+
+          <AdminNavLink
+            href={adminHref("/admin/objectives")}
+            label="Objectives"
+          />
+
+          <AdminNavLink
+            href={adminHref("/admin/keyresults")}
+            label="Key Results"
+          />
+
+          <AdminNavLink
+            href={adminHref("/admin/initiatives")}
+            label="Initiatives"
+          />
+
+          <AdminNavSection title="Analytics" />
+
+          <AdminNavLink
+            href={adminHref("/admin/dashboards")}
+            label="Dashboards"
+          />
+
+          <AdminNavLink
+            href={adminHref("/admin/reports")}
+            label="Reports"
+          />
+
+          <AdminNavSection title="Platform" />
+
+          <AdminNavLink
+            href={adminHref("/admin/settings")}
+            label="Settings"
+          />
+
+          <AdminNavLink
+            href={adminHref("/admin/ai")}
+            label="AI Configuration"
+          />
+        </nav>
+      </aside>
+
+      <section className="min-w-0 flex-1 bg-gray-50 p-8 lg:p-10">
+        {children}
+      </section>
+    </>
+  );
+}
+
+function AdminShellFallback() {
+  return (
+    <>
+      <aside className="w-60 shrink-0 border-r bg-white">
+        <div className="border-b px-6 py-5">
+          <h2 className="text-xl font-bold tracking-tight">
+            Administration
+          </h2>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            Platform management
+          </p>
+        </div>
+      </aside>
+
+      <section className="min-w-0 flex-1 bg-gray-50 p-8 lg:p-10" />
+    </>
+  );
+}
 
 function AdminNavSection({
   title,
@@ -159,10 +176,6 @@ function AdminNavSection({
   );
 }
 
-/* ==========================================================
-   Administration Navigation Link
-========================================================== */
-
 function AdminNavLink({
   href,
   label,
@@ -173,19 +186,7 @@ function AdminNavLink({
   return (
     <Link
       href={href}
-      className="
-        mb-1
-        block
-        rounded-md
-        px-3
-        py-2
-        text-sm
-        font-medium
-        text-gray-700
-        transition-colors
-        hover:bg-gray-100
-        hover:text-gray-950
-      "
+      className="mb-1 block rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-950"
     >
       {label}
     </Link>

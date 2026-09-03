@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
@@ -54,6 +55,9 @@ import type {
 } from "@/components/admin/users/userform";
 
 export default function UsersPage() {
+  const searchParams = useSearchParams();
+  const selectedOrganizationId = searchParams.get("organizationId");
+
   const [organization, setOrganization] =
     useState<Organization | null>(null);
 
@@ -104,10 +108,11 @@ export default function UsersPage() {
   useEffect(() => {
     async function initialize() {
       try {
+        setIsLoading(true);
         setErrorMessage(null);
 
         const existingOrganization =
-          await getOrganization();
+          await getOrganization(selectedOrganizationId ?? undefined);
 
         if (!existingOrganization) {
           setErrorMessage(
@@ -167,7 +172,7 @@ export default function UsersPage() {
     }
 
     initialize();
-  }, []);
+  }, [selectedOrganizationId]);
 
   async function handleInvite(
     values: UserFormValues

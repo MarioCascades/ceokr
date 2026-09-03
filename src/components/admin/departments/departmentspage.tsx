@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
@@ -33,6 +34,9 @@ import type {
 } from "@/components/admin/departments/departmentform";
 
 export default function DepartmentsPage() {
+  const searchParams = useSearchParams();
+  const selectedOrganizationId = searchParams.get("organizationId");
+
   const [organization, setOrganization] =
     useState<Organization | null>(null);
 
@@ -95,10 +99,11 @@ export default function DepartmentsPage() {
   useEffect(() => {
     async function initialize() {
       try {
+        setIsLoading(true);
         setErrorMessage(null);
 
         const existingOrganization =
-          await getOrganization();
+          await getOrganization(selectedOrganizationId ?? undefined);
 
         if (!existingOrganization) {
           setErrorMessage(
@@ -130,7 +135,7 @@ export default function DepartmentsPage() {
     }
 
     initialize();
-  }, []);
+  }, [selectedOrganizationId]);
 
   /* ========================================================
      Create Department

@@ -8,9 +8,23 @@ import {
   getOrganization,
 } from "@/services/organization.service";
 
-export default async function RuntimePage() {
+interface RuntimePageProps {
+  searchParams: Promise<{
+    organizationId?: string;
+    subjectId?: string;
+  }>;
+}
+
+export default async function RuntimePage({
+  searchParams,
+}: RuntimePageProps) {
+  const params =
+    await searchParams;
+
   const organization =
-    await getOrganization();
+    await getOrganization(
+      params.organizationId
+    );
 
   if (!organization) {
     return (
@@ -30,7 +44,8 @@ export default async function RuntimePage() {
 
   const runtimeExecution =
     await loadRuntimeExecution(
-      organization.id
+      organization.id,
+      params.subjectId
     );
 
   if (!runtimeExecution) {
@@ -75,11 +90,6 @@ export default async function RuntimePage() {
       performanceInstance={
         runtimeExecution
           .performanceInstance
-      }
-
-      reportingPeriod={
-        runtimeExecution
-          .reportingPeriod
       }
 
       subject={

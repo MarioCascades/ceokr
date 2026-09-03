@@ -10,9 +10,13 @@ import {
 
 import AdminPageHeader from "@/components/admin/shared/adminpageheader";
 
-export default async function KeyResultsPage() {
+export default async function KeyResultsPage({
+  organizationId,
+}: {
+  organizationId?: string;
+}) {
   const organization =
-    await getOrganization();
+    await getOrganization(organizationId);
 
   if (!organization) {
     return (

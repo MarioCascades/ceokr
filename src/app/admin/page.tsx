@@ -2,7 +2,30 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 
-export default function AdminPage() {
+import { getOrganization } from "@/services/organization.service";
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    organizationId?: string;
+  }>;
+}) {
+  const params = await searchParams;
+  const organizationId = params.organizationId;
+
+  const organization = organizationId
+    ? await getOrganization(organizationId)
+    : null;
+
+  function adminHref(path: string) {
+    if (!organizationId) return path;
+
+    return `${path}?organizationId=${encodeURIComponent(
+      organizationId
+    )}`;
+  }
+
   return (
     <main className="min-h-screen bg-gray-200 px-6 py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -23,6 +46,43 @@ export default function AdminPage() {
         </div>
 
         {/* ==================================================
+            Current Organization Context
+        ================================================== */}
+
+        <section className="rounded-2xl border border-gray-300 bg-white p-6 shadow-sm lg:p-7">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Currently administering
+              </p>
+
+              <div className="mt-2 flex items-center gap-3">
+                <span className="text-2xl">
+                  🏢
+                </span>
+
+                <h2 className="text-2xl font-semibold tracking-tight text-gray-950">
+                  {organization?.company_name ??
+                    "No organization selected"}
+                </h2>
+              </div>
+
+              {!organization && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Select an organization before managing organization-specific resources.
+                </p>
+              )}
+            </div>
+
+            {organizationId && organization && (
+              <div className="rounded-md border bg-gray-50 px-4 py-2 text-xs text-muted-foreground">
+                Organization context active
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ==================================================
             Organization
         ================================================== */}
 
@@ -33,31 +93,31 @@ export default function AdminPage() {
           <AdminCard
             title="🏢 Organization"
             description="Manage organization profile, branding and configuration."
-            href="/admin/organization"
+            href={adminHref("/admin/organization")}
           />
 
           <AdminCard
             title="🏛 Departments"
             description="Create, edit and manage departments."
-            href="/admin/departments"
+            href={adminHref("/admin/departments")}
           />
 
           <AdminCard
             title="👥 Teams"
             description="Create and organize teams."
-            href="/admin/teams"
+            href={adminHref("/admin/teams")}
           />
 
           <AdminCard
             title="👤 Users"
             description="Invite and manage users."
-            href="/admin/users"
+            href={adminHref("/admin/users")}
           />
 
           <AdminCard
             title="🔐 Roles & Permissions"
             description="Control security and user access."
-            href="/admin/roles"
+            href={adminHref("/admin/roles")}
           />
         </AdminSection>
 
@@ -72,31 +132,31 @@ export default function AdminPage() {
           <AdminCard
             title="🧩 Performance Sheets"
             description="Manage Performance Sheet definitions, versions and Builder access."
-            href="/admin/performancesheets"
+            href={adminHref("/admin/performancesheets")}
           />
 
           <AdminCard
             title="📋 Assignments"
             description="Assign published Performance Sheets to users, teams, departments or the organization."
-            href="/admin/assignments"
+            href={adminHref("/admin/assignments")}
           />
 
           <AdminCard
             title="🎯 Objectives"
             description="View objectives defined within your Performance Sheets."
-            href="/admin/objectives"
+            href={adminHref("/admin/objectives")}
           />
 
           <AdminCard
             title="📈 Key Results"
             description="View measurable outcomes defined within your Performance Sheets."
-            href="/admin/keyresults"
+            href={adminHref("/admin/keyresults")}
           />
 
           <AdminCard
             title="🚀 Initiatives"
             description="View initiatives defined within your Performance Sheets."
-            href="/admin/initiatives"
+            href={adminHref("/admin/initiatives")}
           />
         </AdminSection>
 
@@ -111,34 +171,34 @@ export default function AdminPage() {
           <AdminCard
             title="📊 Dashboards"
             description="Configure dashboards and widgets."
-            href="/admin/dashboards"
+            href={adminHref("/admin/dashboards")}
           />
 
           <AdminCard
             title="📑 Reports"
             description="Generate and manage reports."
-            href="/admin/reports"
+            href={adminHref("/admin/reports")}
           />
         </AdminSection>
 
         {/* ==================================================
-            Platform
+            Configuration
         ================================================== */}
 
         <AdminSection
-          title="Platform"
-          description="Configure platform-wide capabilities and services."
+          title="Configuration"
+          description="Configure organization-level capabilities and services."
         >
           <AdminCard
             title="⚙️ Settings"
-            description="Platform-wide configuration."
-            href="/admin/settings"
+            description="Organization-level configuration."
+            href={adminHref("/admin/settings")}
           />
 
           <AdminCard
             title="🤖 AI Configuration"
             description="Configure AI assistants and automation."
-            href="/admin/ai"
+            href={adminHref("/admin/ai")}
           />
         </AdminSection>
 
@@ -163,8 +223,6 @@ function AdminSection({
   return (
     <section className="rounded-2xl border border-gray-300 bg-gray-50 p-6 shadow-sm lg:p-7">
 
-      {/* Section Header */}
-
       <div className="mb-6">
         <h2 className="text-2xl font-semibold tracking-tight text-gray-950">
           {title}
@@ -174,8 +232,6 @@ function AdminSection({
           {description}
         </p>
       </div>
-
-      {/* Section Cards */}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {children}

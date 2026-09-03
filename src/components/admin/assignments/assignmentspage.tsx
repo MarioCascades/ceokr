@@ -7,6 +7,8 @@ import {
   useState,
 } from "react";
 
+import { useSearchParams } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 
 import AdminPageHeader from "@/components/admin/shared/adminpageheader";
@@ -47,17 +49,9 @@ import {
   type PerformanceSheetRecord,
 } from "@/lib/repositories/performancesheetrepository";
 
-import {
-  findReportingPeriodsByOrganization,
-} from "@/lib/repositories/reportingperiodrepository";
-
 import type {
   Organization,
 } from "@/lib/types/organization";
-
-import type {
-  ReportingPeriod,
-} from "@/lib/domain/reportingperiod";
 
 import type {
   Department,
@@ -76,6 +70,9 @@ import type {
 ========================================================== */
 
 export default function AssignmentsPage() {
+  const searchParams = useSearchParams();
+  const selectedOrganizationId = searchParams.get("organizationId");
+
   /* ========================================================
      Core Data
   ======================================================== */
@@ -90,11 +87,6 @@ export default function AssignmentsPage() {
     performanceSheets,
     setPerformanceSheets,
   ] = useState<PerformanceSheetRecord[]>([]);
-
-  const [
-    reportingPeriods,
-    setReportingPeriods,
-  ] = useState<ReportingPeriod[]>([]);
 
   const [users, setUsers] =
     useState<UserManagementRecord[]>([]);
@@ -137,11 +129,6 @@ export default function AssignmentsPage() {
   const [
     selectedPerformanceSheetId,
     setSelectedPerformanceSheetId,
-  ] = useState("");
-
-  const [
-    selectedReportingPeriodId,
-    setSelectedReportingPeriodId,
   ] = useState("");
 
   const [
@@ -191,7 +178,7 @@ export default function AssignmentsPage() {
         setErrorMessage(null);
 
         const existingOrganization =
-          await getOrganization();
+          await getOrganization(selectedOrganizationId ?? undefined);
 
         if (!existingOrganization) {
           setOrganization(null);
@@ -210,7 +197,6 @@ export default function AssignmentsPage() {
         const [
           assignmentRecords,
           publishedSheets,
-          periods,
           userRecords,
           teamRecords,
           departmentRecords,
@@ -220,10 +206,6 @@ export default function AssignmentsPage() {
           ),
 
           findPublishedPerformanceSheetsByOrganization(
-            existingOrganization.id
-          ),
-
-          findReportingPeriodsByOrganization(
             existingOrganization.id
           ),
 
@@ -246,10 +228,6 @@ export default function AssignmentsPage() {
 
         setPerformanceSheets(
           publishedSheets
-        );
-
-        setReportingPeriods(
-          periods
         );
 
         setUsers(
@@ -278,7 +256,7 @@ export default function AssignmentsPage() {
         setIsLoading(false);
       }
     },
-    []
+    [selectedOrganizationId]
   );
 
   /* ========================================================
@@ -304,18 +282,6 @@ export default function AssignmentsPage() {
         )
       );
     }, [performanceSheets]);
-
-  const reportingPeriodMap =
-    useMemo(() => {
-      return new Map(
-        reportingPeriods.map(
-          (period) => [
-            period.id,
-            period,
-          ]
-        )
-      );
-    }, [reportingPeriods]);
 
   const userMap =
     useMemo(() => {
@@ -443,8 +409,6 @@ export default function AssignmentsPage() {
   function resetCreateForm() {
     setSelectedPerformanceSheetId("");
 
-    setSelectedReportingPeriodId("");
-
     setSelectedAssignmentType(
       "individual"
     );
@@ -515,14 +479,6 @@ export default function AssignmentsPage() {
       return;
     }
 
-    if (!selectedReportingPeriodId) {
-      setCreateError(
-        "Please select a Reporting Period."
-      );
-
-      return;
-    }
-
     if (!selectedSubjectId) {
       setCreateError(
         "Please select a subject for this assignment."
@@ -548,9 +504,6 @@ export default function AssignmentsPage() {
 
         performanceSheetId:
           selectedPerformanceSheetId,
-
-        reportingPeriodId:
-          selectedReportingPeriodId,
 
         assignmentType:
           selectedAssignmentType,
@@ -867,11 +820,6 @@ export default function AssignmentsPage() {
                         assignment.performanceSheetId
                       );
 
-                    const reportingPeriod =
-                      reportingPeriodMap.get(
-                        assignment.reportingPeriodId
-                      );
-
                     return (
                       <div
                         key={assignment.id}
@@ -919,15 +867,6 @@ export default function AssignmentsPage() {
                                 </span>{" "}
                                 {performanceSheet
                                   ? `${performanceSheet.name} — Version ${performanceSheet.version}`
-                                  : "Unavailable"}
-                              </div>
-
-                              <div>
-                                <span className="font-medium text-gray-700">
-                                  Reporting Period:
-                                </span>{" "}
-                                {reportingPeriod
-                                  ? reportingPeriod.name
                                   : "Unavailable"}
                               </div>
 
@@ -1070,55 +1009,6 @@ export default function AssignmentsPage() {
                   <p className="text-xs text-amber-600">
                     No published Performance Sheets
                     are available.
-                  </p>
-                )}
-
-              </div>
-
-              {/* Reporting Period */}
-
-              <div className="space-y-2">
-
-                <label
-                  htmlFor="reporting-period"
-                  className="text-sm font-medium"
-                >
-                  Reporting Period
-                </label>
-
-                <select
-                  id="reporting-period"
-                  value={
-                    selectedReportingPeriodId
-                  }
-                  onChange={(event) =>
-                    setSelectedReportingPeriodId(
-                      event.target.value
-                    )
-                  }
-                  disabled={isCreating}
-                  className="w-full rounded-md border bg-white px-3 py-2 text-sm"
-                >
-                  <option value="">
-                    Select a Reporting Period
-                  </option>
-
-                  {reportingPeriods.map(
-                    (period) => (
-                      <option
-                        key={period.id}
-                        value={period.id}
-                      >
-                        {period.name}
-                      </option>
-                    )
-                  )}
-                </select>
-
-                {reportingPeriods.length ===
-                  0 && (
-                  <p className="text-xs text-amber-600">
-                    No Reporting Periods are available.
                   </p>
                 )}
 
@@ -1330,7 +1220,6 @@ export default function AssignmentsPage() {
                 disabled={
                   isCreating ||
                   !selectedPerformanceSheetId ||
-                  !selectedReportingPeriodId ||
                   !selectedSubjectId ||
                   !selectedAssignedByUserId
                 }
@@ -1443,16 +1332,6 @@ export default function AssignmentsPage() {
                           managedAssignment.performanceSheetId
                         )?.version}`
                       : "Unavailable"}
-                  </div>
-
-                  <div>
-                    <span className="font-medium text-gray-700">
-                      Reporting Period:
-                    </span>{" "}
-                    {reportingPeriodMap.get(
-                      managedAssignment.reportingPeriodId
-                    )?.name ??
-                      "Unavailable"}
                   </div>
 
                 </div>

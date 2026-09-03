@@ -17,8 +17,6 @@ interface PerformanceInstanceRecord {
 
   performance_sheet_id: string;
 
-  reporting_period_id: string;
-
   overall_score: number;
 
   progress: number;
@@ -60,9 +58,6 @@ function mapRecordToPerformanceInstance(
 
     performanceSheetId:
       record.performance_sheet_id,
-
-    reportingPeriodId:
-      record.reporting_period_id,
 
     overallScore:
       record.overall_score,
@@ -117,9 +112,6 @@ export async function createPerformanceInstance(
 
       performance_sheet_id:
         performanceInstance.performanceSheetId,
-
-      reporting_period_id:
-        performanceInstance.reportingPeriodId,
 
       overall_score:
         performanceInstance.overallScore,

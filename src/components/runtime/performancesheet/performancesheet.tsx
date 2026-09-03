@@ -15,10 +15,6 @@ import type {
 } from "@/lib/domain/performanceinstance";
 
 import type {
-  ReportingPeriod,
-} from "@/lib/domain/reportingperiod";
-
-import type {
   RuntimeSubject,
 } from "@/lib/runtime/runtimeexecution";
 
@@ -34,17 +30,10 @@ import EmployeeComments from "../shared/employeecomments";
 
 interface PerformanceSheetProps {
   document: BuilderDocument;
-
   keyResultProgress: KeyResultProgress[];
-
   organizationId: string;
-
   performanceInstanceId: string;
-
   performanceInstance: PerformanceInstance;
-
-  reportingPeriod: ReportingPeriod;
-
   subject: RuntimeSubject | null;
 }
 
@@ -54,7 +43,6 @@ export default function PerformanceSheet({
   organizationId,
   performanceInstanceId,
   performanceInstance,
-  reportingPeriod,
   subject,
 }: PerformanceSheetProps) {
   const [
@@ -90,9 +78,7 @@ export default function PerformanceSheet({
       const updated =
         await transitionPerformanceInstanceAction({
           organizationId,
-
           performanceInstanceId,
-
           transition,
         });
 
@@ -131,13 +117,7 @@ export default function PerformanceSheet({
 
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-8">
-
-      {/* ==========================================
-          Organization
-      ========================================== */}
-
       <section className="rounded-lg border bg-white p-6 shadow-sm">
-
         <h1 className="text-3xl font-bold">
           {document.organization.companyName}
         </h1>
@@ -147,15 +127,9 @@ export default function PerformanceSheet({
             {document.organization.tagline}
           </p>
         )}
-
       </section>
 
-      {/* ==========================================
-          Performance Header
-      ========================================== */}
-
       <section className="rounded-lg border bg-white p-6 shadow-sm">
-
         <h2 className="text-2xl font-semibold">
           {runtimeDisplayName}
         </h2>
@@ -169,14 +143,12 @@ export default function PerformanceSheet({
         </p>
 
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-
           {document.performanceHeader.metrics.map(
             (metric) => (
               <div
                 key={metric.id}
                 className="rounded-md border p-4"
               >
-
                 <p className="text-sm text-muted-foreground">
                   {metric.title}
                 </p>
@@ -184,42 +156,22 @@ export default function PerformanceSheet({
                 <p className="mt-2 text-xl font-bold">
                   {metric.value}
                 </p>
-
               </div>
             )
           )}
-
         </div>
-
       </section>
-
-      {/* ==========================================
-          Runtime Summary
-      ========================================== */}
 
       <RuntimeSummary
         performanceInstance={{
           ...performanceInstance,
-
-          status:
-            currentStatus,
+          status: currentStatus,
         }}
-
-        reportingPeriod={
-          reportingPeriod
-        }
       />
 
-      {/* ==========================================
-          Runtime Lifecycle
-      ========================================== */}
-
       <section className="rounded-lg border bg-white p-6 shadow-sm">
-
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
           <div>
-
             <h2 className="text-xl font-semibold">
               Performance Workflow
             </h2>
@@ -233,11 +185,9 @@ export default function PerformanceSheet({
                 )}
               </span>
             </p>
-
           </div>
 
           <div className="flex flex-wrap gap-3">
-
             {currentStatus ===
               "not_started" && (
               <button
@@ -317,9 +267,7 @@ export default function PerformanceSheet({
                   : "Complete Performance"}
               </button>
             )}
-
           </div>
-
         </div>
 
         {transitionSaved && (
@@ -333,12 +281,7 @@ export default function PerformanceSheet({
             {transitionError}
           </p>
         )}
-
       </section>
-
-      {/* ==========================================
-          Objectives
-      ========================================== */}
 
       {document.objectives.map(
         (objective) => (
@@ -358,34 +301,24 @@ export default function PerformanceSheet({
         )
       )}
 
-      {/* ==========================================
-          Employee Comments
-      ========================================== */}
-
       <EmployeeComments
         organizationId={
           organizationId
         }
-
         performanceInstanceId={
           performanceInstanceId
         }
-
         initialComments={
           performanceInstance.employeeComments
         }
-
         label="Employee Comments"
-
         placeholder={
           document.comments.placeholder
         }
-
         helpText={
           document.comments.helpText
         }
       />
-
     </main>
   );
 }

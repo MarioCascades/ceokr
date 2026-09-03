@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import {
+  Suspense,
+  useState,
+} from "react";
+import {
+  useSearchParams,
+} from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import CEPageHeader from "@/components/ui/cepageheader";
@@ -35,6 +41,17 @@ import type {
 ========================================================== */
 
 function BuilderContent() {
+  const searchParams =
+    useSearchParams();
+
+  const selectedOrganizationId =
+    searchParams.get("organizationId");
+
+  const performanceSheetsHref =
+    selectedOrganizationId
+      ? `/admin/performancesheets?organizationId=${selectedOrganizationId}`
+      : "/admin/performancesheets";
+
   const {
     editMode,
     setEditMode,
@@ -225,6 +242,7 @@ function BuilderContent() {
         description="Design your organization's performance sheet."
         rightContent={
           <>
+
             {/* ================= Navigation ================= */}
 
             <Button
@@ -233,6 +251,15 @@ function BuilderContent() {
             >
               <Link href="/admin">
                 Administration
+              </Link>
+            </Button>
+
+            <Button
+              asChild
+              variant="outline"
+            >
+              <Link href={performanceSheetsHref}>
+                Back to Performance Sheets
               </Link>
             </Button>
 
@@ -318,17 +345,16 @@ function BuilderContent() {
                 Create Revision
               </Button>
             )}
+
           </>
         }
       />
 
-      {/* ================= PAGE ================= */}
+      <div className="mx-auto max-w-7xl space-y-8 px-8 py-12">
 
-      <div className="mx-auto max-w-7xl space-y-6 px-8 py-8">
+        {/* ================= Performance Sheet Status ================= */}
 
-        {/* ================= Lifecycle Status ================= */}
-
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-white px-5 py-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-6 rounded-xl border bg-white p-6 shadow-sm">
 
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

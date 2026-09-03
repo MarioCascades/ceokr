@@ -1,142 +1,124 @@
-import {
-  loadPublishedById,
-} from "@/lib/repositories/performancesheetrepository";
-
-import {
-  findPerformanceInstancesByOrganization,
-} from "@/lib/repositories/performanceinstancerepository";
-
-import {
-  findKeyResultProgressByPerformanceInstance,
-} from "@/lib/repositories/keyresultprogressrepository";
-
-import {
-  loadAssignment,
-} from "@/lib/repositories/assignmentrepository";
-
-import {
-  findReportingPeriodById,
-} from "@/lib/repositories/reportingperiodrepository";
-
-import {
-  getUser,
-} from "@/services/user.service";
-
-/* ==========================================================
-   Runtime Subject
-   ----------------------------------------------------------
-   Represents the entity currently executing the Performance
-   Instance.
-
-   The Builder document remains immutable.
-
-   Runtime resolves the actual execution subject from the
-   Assignment.
-========================================================== */
+import { loadPublishedById } from "@/lib/repositories/performancesheetrepository";
+import { findPerformanceInstancesByOrganization } from "@/lib/repositories/performanceinstancerepository";
+import { findKeyResultProgressByPerformanceInstance } from "@/lib/repositories/keyresultprogressrepository";
+import { loadAssignment } from "@/lib/repositories/assignmentrepository";
+import { getUser } from "@/services/user.service";
 
 export interface RuntimeSubject {
   type: "individual";
-
   id: string;
-
   displayName: string;
-
   email: string;
 }
 
-/* ==========================================================
-   Load Runtime Execution
-   ----------------------------------------------------------
-   Runtime execution is resolved through the active
-   Performance Instance.
-
-   Performance Instance
-        ↓
-   Assignment
-        ↓
-   Runtime Subject
-        ↓
-   Reporting Period
-        ↓
-   Exact published Performance Sheet
-        ↓
-   Key Result Progress
-
-   The Performance Sheet remains the immutable definition.
-
-   Assignment determines who or what is executing it.
-========================================================== */
-
 export async function loadRuntimeExecution(
-  organizationId: string
+  organizationId: string,
+  subjectId?: string
 ) {
-  /*
-   * Find the Runtime Performance Instance
-   * belonging to this organization.
-   *
-   * A Runtime execution remains accessible while
-   * it is actively being worked, submitted, or
-   * awaiting approval.
-   */
-  const performanceInstances =
-    await findPerformanceInstancesByOrganization(
-      organizationId
-    );
-
   const runtimeStatuses = [
     "in_progress",
     "submitted",
     "approved",
   ] as const;
 
-  const performanceInstance =
-    performanceInstances.find(
-      (instance) =>
-        runtimeStatuses.includes(
-          instance.status as
-            (typeof runtimeStatuses)[number]
+  /*
+   * ==========================================================
+   * Resolve Performance Instance
+   *
+   * When a subjectId is supplied, Runtime is being opened
+   * for a specific individual. Resolve that person's active
+   * assignment first, then find the matching performance
+   * instance.
+   *
+   * When no subjectId is supplied, preserve the existing
+   * organization-level Runtime behavior.
+   * ==========================================================
+   */
+
+  const performanceInstances =
+    await findPerformanceInstancesByOrganization(
+      organizationId
+    );
+
+  let performanceInstance =
+    undefined as
+      | (typeof performanceInstances)[number]
+      | undefined;
+
+  let assignment;
+
+  if (subjectId) {
+    assignment = await import(
+      "@/lib/repositories/assignmentrepository"
+    ).then(
+      ({ loadActiveAssignment }) =>
+        loadActiveAssignment(
+          organizationId,
+          subjectId
         )
     );
+
+    if (!assignment) {
+      return null;
+    }
+
+    performanceInstance =
+      performanceInstances.find(
+        (instance) =>
+          instance.assignmentId ===
+            assignment!.id &&
+          runtimeStatuses.includes(
+            instance.status as
+              (typeof runtimeStatuses)[number]
+          )
+      );
+  } else {
+    performanceInstance =
+      performanceInstances.find(
+        (instance) =>
+          runtimeStatuses.includes(
+            instance.status as
+              (typeof runtimeStatuses)[number]
+          )
+      );
+  }
 
   if (!performanceInstance) {
     return null;
   }
 
   /*
-   * Load the Assignment associated with
-   * this Performance Instance.
+   * ==========================================================
+   * Resolve Assignment
+   * ==========================================================
    */
-  const assignment =
-    await loadAssignment(
+
+  if (!assignment) {
+    assignment = await loadAssignment(
       organizationId,
       performanceInstance.assignmentId
     );
+  }
 
   if (!assignment) {
     return null;
   }
 
   /*
-   * Resolve the Runtime subject.
-   *
-   * The current Runtime header is employee-oriented,
-   * so Individual assignments resolve to the assigned
-   * User.
-   *
-   * Team, Department, and Organization presentation will
-   * be handled separately when their Runtime UX is defined.
+   * ==========================================================
+   * Resolve Runtime Subject
+   * ==========================================================
    */
-  let subject: RuntimeSubject | null =
-    null;
+
+  let subject: RuntimeSubject | null = null;
 
   if (
     assignment.assignmentType ===
     "individual"
   ) {
-    const user =
-  await getUser(
-    assignment.subjectId
-  );
+    const user = await getUser(
+      assignment.subjectId
+    );
 
     if (!user) {
       return null;
@@ -149,40 +131,18 @@ export async function loadRuntimeExecution(
 
     subject = {
       type: "individual",
-
       id: user.id,
-
       displayName,
-
       email: user.email,
     };
   }
 
   /*
-   * Load the Reporting Period associated with
-   * this Performance Instance.
-   *
-   * The Performance Instance is the Runtime
-   * execution anchor, so its reportingPeriodId
-   * is authoritative for this execution.
+   * ==========================================================
+   * Resolve Published Performance Sheet
+   * ==========================================================
    */
-  const reportingPeriod =
-    await findReportingPeriodById(
-      organizationId,
-      performanceInstance.reportingPeriodId
-    );
 
-  if (!reportingPeriod) {
-    return null;
-  }
-
-  /*
-   * Load the exact published Performance Sheet
-   * referenced by the Assignment.
-   *
-   * We intentionally do NOT load the latest
-   * published version for the organization.
-   */
   const performanceSheet =
     await loadPublishedById(
       organizationId,
@@ -194,24 +154,27 @@ export async function loadRuntimeExecution(
   }
 
   /*
-   * Load Runtime Key Result Progress.
+   * ==========================================================
+   * Resolve Key Result Progress
+   * ==========================================================
    */
+
   const keyResultProgress =
     await findKeyResultProgressByPerformanceInstance(
       performanceInstance.id
     );
 
+  /*
+   * ==========================================================
+   * Runtime Execution
+   * ==========================================================
+   */
+
   return {
     assignment,
-
     subject,
-
-    reportingPeriod,
-
     performanceSheet,
-
     performanceInstance,
-
     keyResultProgress,
   };
 }

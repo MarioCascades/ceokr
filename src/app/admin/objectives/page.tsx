@@ -1,5 +1,15 @@
 import ObjectivesPage from "@/components/admin/objectives/objectivespage";
 
-export default function Page() {
-  return <ObjectivesPage />;
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ organizationId?: string }>;
+}) {
+  const params = await searchParams;
+
+  return (
+    <ObjectivesPage
+      organizationId={params.organizationId}
+    />
+  );
 }

@@ -21,8 +21,6 @@ interface AssignmentRow {
 
   performance_sheet_id: string;
 
-  reporting_period_id: string;
-
   assignment_type: AssignmentType;
 
   subject_id: string;
@@ -57,9 +55,6 @@ function toAssignment(
 
     performanceSheetId:
       row.performance_sheet_id,
-
-    reportingPeriodId:
-      row.reporting_period_id,
 
     assignmentType:
       row.assignment_type,
@@ -109,9 +104,6 @@ export async function createAssignment(
         performance_sheet_id:
           assignment.performanceSheetId,
 
-        reporting_period_id:
-          assignment.reportingPeriodId,
-
         assignment_type:
           assignment.assignmentType,
 
@@ -151,9 +143,6 @@ export async function updateAssignment(
       .update({
         performance_sheet_id:
           assignment.performanceSheetId,
-
-        reporting_period_id:
-          assignment.reportingPeriodId,
 
         assignment_type:
           assignment.assignmentType,

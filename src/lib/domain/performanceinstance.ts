@@ -1,6 +1,5 @@
 import type { Assignment } from "./assignment";
 import type { PerformanceSheet } from "./performancesheet";
-import type { ReportingPeriod } from "./reportingperiod";
 
 /* ==========================================================
    Performance Instance Status
@@ -38,11 +37,6 @@ export interface PerformanceInstance {
    * being executed.
    */
   performanceSheetId: PerformanceSheet["id"];
-
-  /**
-   * Reporting Period for this execution.
-   */
-  reportingPeriodId: ReportingPeriod["id"];
 
   /**
    * Overall weighted performance score.

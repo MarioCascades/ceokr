@@ -29,10 +29,6 @@ import {
 } from "@/lib/repositories/performancesheetrepository";
 
 import {
-  findReportingPeriodById,
-} from "@/lib/repositories/reportingperiodrepository";
-
-import {
   supabase,
 } from "@/lib/supabase/client";
 
@@ -297,33 +293,6 @@ async function validateAssignmentSubject(
 
 
 /* ==========================================================
-   Reporting Period Validation
-========================================================== */
-
-/**
- * Validates that the selected Reporting Period belongs to
- * the same organization as the Assignment.
- */
-async function validateReportingPeriod(
-  organizationId: string,
-  reportingPeriodId: string
-): Promise<void> {
-
-  const reportingPeriod =
-    await findReportingPeriodById(
-      organizationId,
-      reportingPeriodId
-    );
-
-  if (!reportingPeriod) {
-    throw new Error(
-      "The selected Reporting Period could not be found in this organization."
-    );
-  }
-}
-
-
-/* ==========================================================
    Create Assignment
 ========================================================== */
 
@@ -356,16 +325,6 @@ export async function createAssignment(
       "The selected Performance Sheet could not be found or is not published."
     );
   }
-
-
-  /* ========================================================
-     Validate Reporting Period
-  ======================================================== */
-
-  await validateReportingPeriod(
-    assignment.organizationId,
-    assignment.reportingPeriodId
-  );
 
 
   /* ========================================================
@@ -710,9 +669,6 @@ export async function createPerformanceExecutionFromAssignment(
 
         performanceSheetId:
           performanceSheet.id,
-
-        reportingPeriodId:
-          assignment.reportingPeriodId,
 
         overallScore:
           0,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +27,11 @@ import type { Organization } from "@/lib/types/organization";
 import type { Department } from "@/lib/types/domain/department";
 
 export default function TeamsPage() {
+  const searchParams = useSearchParams();
+  const selectedOrganizationId = searchParams.get("organizationId");
+  const selectedDepartmentId =
+    searchParams.get("departmentId");
+
   const [organization, setOrganization] =
     useState<Organization | null>(null);
 
@@ -100,10 +106,11 @@ export default function TeamsPage() {
   useEffect(() => {
     async function initialize() {
       try {
+        setIsLoading(true);
         setErrorMessage(null);
 
         const existingOrganization =
-          await getOrganization();
+          await getOrganization(selectedOrganizationId ?? undefined);
 
         if (!existingOrganization) {
           setErrorMessage(
@@ -143,7 +150,7 @@ export default function TeamsPage() {
     }
 
     initialize();
-  }, []);
+  }, [selectedOrganizationId]);
 
   /* ========================================================
      Create Team
@@ -365,6 +372,15 @@ export default function TeamsPage() {
      Page
   ======================================================== */
 
+  const visibleTeams =
+    selectedDepartmentId
+      ? teams.filter(
+          (team) =>
+            team.department_id ===
+            selectedDepartmentId
+        )
+      : teams;
+
   return (
     <main className="min-h-screen bg-gray-50 px-8 py-10">
       <div className="mx-auto max-w-5xl space-y-8">
@@ -375,6 +391,56 @@ export default function TeamsPage() {
           title="Teams"
           description="Create and manage teams within your organization."
         />
+
+        {organization && departments.length > 0 && (
+          <section className="rounded-xl border bg-white p-5 shadow-sm">
+            <label
+              htmlFor="team-department-context"
+              className="mb-2 block text-sm font-medium"
+            >
+              Department Context
+            </label>
+
+            <select
+              id="team-department-context"
+              value={selectedDepartmentId ?? ""}
+              onChange={(event) => {
+                const params = new URLSearchParams(
+                  window.location.search
+                );
+
+                if (event.target.value) {
+                  params.set(
+                    "departmentId",
+                    event.target.value
+                  );
+                } else {
+                  params.delete("departmentId");
+                }
+
+                params.delete("teamId");
+
+                window.location.assign(
+                  `${window.location.pathname}?${params.toString()}`
+                );
+              }}
+              className="h-10 w-full rounded-md border bg-white px-3 text-sm"
+            >
+              <option value="">
+                All departments
+              </option>
+
+              {departments.map((department) => (
+                <option
+                  key={department.id}
+                  value={department.id}
+                >
+                  {department.name}
+                </option>
+              ))}
+            </select>
+          </section>
+        )}
 
         {/* Error */}
 
@@ -416,7 +482,7 @@ export default function TeamsPage() {
               <div className="flex items-center gap-3">
 
                 <div className="rounded-lg bg-gray-100 px-3 py-2 text-sm">
-                  {teams.length}{" "}
+                  {visibleTeams.length}{" "}
                   {teams.length === 1
                     ? "team"
                     : "teams"}
@@ -463,7 +529,7 @@ export default function TeamsPage() {
             ) : (
               <div className="divide-y">
 
-                {teams.map(
+                {visibleTeams.map(
                   (team) => (
                     <div
                       key={team.id}

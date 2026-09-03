@@ -10,17 +10,24 @@ import type {
    Get Organization
 ========================================================== */
 
-export async function getOrganization(): Promise<
+export async function getOrganization(organizationId?: string): Promise<
   Organization | null
 > {
-  const { data, error } = await supabase
+  let query = supabase
     .from("organization")
-    .select("*")
-    .order("created_at", {
-      ascending: true,
-    })
-    .limit(1)
-    .maybeSingle();
+    .select("*");
+
+  if (organizationId) {
+    query = query.eq("id", organizationId);
+  } else {
+    query = query
+      .order("created_at", {
+        ascending: true,
+      })
+      .limit(1);
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     console.error(
@@ -38,6 +45,115 @@ export async function getOrganization(): Promise<
   }
 
   return data as Organization;
+}
+
+
+/* ==========================================================
+   List Organizations
+========================================================== */
+
+export async function listOrganizations(): Promise<
+  Organization[]
+> {
+  const { data, error } = await supabase
+    .from("organization")
+    .select("*")
+    .order("created_at", {
+      ascending: true,
+    });
+
+  if (error) {
+    console.error(
+      "Error loading organizations:",
+      error
+    );
+
+    throw new Error(
+      `Failed to load organizations: ${error.message}`
+    );
+  }
+
+  return (data ?? []) as Organization[];
+}
+
+/* ==========================================================
+   Delete Organization
+========================================================== */
+
+export async function deleteOrganization(
+  organizationId: string
+): Promise<void> {
+  const { count: membershipCount, error: membershipError } =
+    await supabase
+      .from("organization_memberships")
+      .select("id", {
+        count: "exact",
+        head: true,
+      })
+      .eq("organization_id", organizationId);
+
+  if (membershipError) {
+    console.error(
+      "Error checking organization memberships:",
+      membershipError
+    );
+
+    throw new Error(
+      `Failed to verify organization memberships: ${membershipError.message}`
+    );
+  }
+
+  if ((membershipCount ?? 0) > 0) {
+    throw new Error(
+      `Organization cannot be deleted because it has ${membershipCount} organization membership${
+        membershipCount === 1 ? "" : "s"
+      }. Remove the memberships before deleting the organization.`
+    );
+  }
+
+  const { count: teamCount, error: teamError } =
+    await supabase
+      .from("teams")
+      .select("id", {
+        count: "exact",
+        head: true,
+      })
+      .eq("organization_id", organizationId);
+
+  if (teamError) {
+    console.error(
+      "Error checking organization teams:",
+      teamError
+    );
+
+    throw new Error(
+      `Failed to verify organization teams: ${teamError.message}`
+    );
+  }
+
+  if ((teamCount ?? 0) > 0) {
+    throw new Error(
+      `Organization cannot be deleted because it has ${teamCount} team${
+        teamCount === 1 ? "" : "s"
+      }. Remove the teams before deleting the organization.`
+    );
+  }
+
+  const { error } = await supabase
+    .from("organization")
+    .delete()
+    .eq("id", organizationId);
+
+  if (error) {
+    console.error(
+      "Error deleting organization:",
+      error
+    );
+
+    throw new Error(
+      `Failed to delete organization: ${error.message}`
+    );
+  }
 }
 
 /* ==========================================================

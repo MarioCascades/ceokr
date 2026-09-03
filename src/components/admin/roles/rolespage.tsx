@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
@@ -25,6 +26,9 @@ import type { Role } from "@/lib/types/domain/role";
 import type { Organization } from "@/lib/types/organization";
 
 export default function RolesPage() {
+  const searchParams = useSearchParams();
+  const selectedOrganizationId = searchParams.get("organizationId");
+
   const [organization, setOrganization] =
     useState<Organization | null>(null);
 
@@ -79,10 +83,11 @@ export default function RolesPage() {
   useEffect(() => {
     async function initialize() {
       try {
+        setIsLoading(true);
         setErrorMessage(null);
 
         const existingOrganization =
-          await getOrganization();
+          await getOrganization(selectedOrganizationId ?? undefined);
 
         if (!existingOrganization) {
           setErrorMessage(
@@ -116,7 +121,7 @@ export default function RolesPage() {
     }
 
     initialize();
-  }, []);
+  }, [selectedOrganizationId]);
 
   /* ========================================================
      Create Role
