@@ -220,6 +220,22 @@ export default function OrganizationPage() {
   }
 
   /* ========================================================
+     Open Organization Workspace
+  ======================================================== */
+
+  function handleOpenOrganizationWorkspace() {
+    if (!organization) {
+      return;
+    }
+
+    router.push(
+      `/organization?organizationId=${encodeURIComponent(
+        organization.id
+      )}&from=admin`
+    );
+  }
+
+  /* ========================================================
      Create Organization
   ======================================================== */
 
@@ -574,7 +590,7 @@ export default function OrganizationPage() {
 
         <section className="rounded-xl border bg-white p-6 shadow-sm">
 
-          <div className="flex items-end justify-between gap-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 
             <div className="min-w-0 flex-1">
 
@@ -607,20 +623,34 @@ export default function OrganizationPage() {
 
             </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setErrorMessage(null);
-                setIsCreatingOrganization(
-                  (current) => !current
-                );
-              }}
-            >
-              {isCreatingOrganization
-                ? "Cancel"
-                : "+ Create Organization"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+
+              <Button
+                type="button"
+                onClick={
+                  handleOpenOrganizationWorkspace
+                }
+                disabled={!organization}
+              >
+                Open Organization Workspace
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setErrorMessage(null);
+                  setIsCreatingOrganization(
+                    (current) => !current
+                  );
+                }}
+              >
+                {isCreatingOrganization
+                  ? "Cancel"
+                  : "+ Create Organization"}
+              </Button>
+
+            </div>
 
           </div>
 

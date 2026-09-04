@@ -156,20 +156,70 @@ export default function Home() {
         selectedMemberId
     );
 
+  /*
+   * ========================================================
+   * Administration Navigation
+   * ========================================================
+   */
+
   const adminHref =
     selectedOrganizationId
       ? `/admin?organizationId=${selectedOrganizationId}`
       : "/admin";
+
+  /*
+   * ========================================================
+   * Organization Workspace Navigation
+   * ========================================================
+   *
+   * Super Admin:
+   *
+   * /organization?organizationId=123&from=admin
+   *
+   * Organization Admin:
+   *
+   * /organization?organizationId=123
+   *
+   * from=admin is navigation context only.
+   * It is NOT an authorization mechanism.
+   */
+
+  const organizationWorkspaceHref =
+    selectedOrganizationId
+      ? `/organization?organizationId=${selectedOrganizationId}${
+          role === "super_admin"
+            ? "&from=admin"
+            : ""
+        }`
+      : "/organization";
+
+  /*
+   * ========================================================
+   * Performance Sheet Navigation
+   * ========================================================
+   */
 
   const performanceSheetsHref =
     selectedOrganizationId
       ? `/admin/performancesheets?organizationId=${selectedOrganizationId}`
       : "/admin/performancesheets";
 
+  /*
+   * ========================================================
+   * Builder Navigation
+   * ========================================================
+   */
+
   const builderHref =
     selectedOrganizationId
       ? `/builder?organizationId=${selectedOrganizationId}`
       : "/builder";
+
+  /*
+   * ========================================================
+   * Runtime Navigation
+   * ========================================================
+   */
 
   const runtimeHref =
     selectedOrganizationId &&
@@ -186,7 +236,9 @@ export default function Home() {
     <main className="min-h-screen bg-background px-6 py-12">
       <div className="mx-auto max-w-5xl space-y-10">
 
-        {/* Header */}
+        {/* ==================================================
+            Header
+        ================================================== */}
 
         <section className="space-y-4 text-center">
           <h1 className="text-5xl font-bold tracking-tight">
@@ -199,7 +251,9 @@ export default function Home() {
           </p>
         </section>
 
-        {/* Development Demo Context */}
+        {/* ==================================================
+            Development Demo Context
+        ================================================== */}
 
         <section className="space-y-6 rounded-xl border bg-card p-6 shadow-sm">
 
@@ -217,7 +271,9 @@ export default function Home() {
 
           <div className="grid gap-6 md:grid-cols-2">
 
-            {/* Role */}
+            {/* =================================================
+                Role
+            ================================================= */}
 
             <div className="space-y-2">
               <label
@@ -255,7 +311,9 @@ export default function Home() {
               </select>
             </div>
 
-            {/* Organization */}
+            {/* =================================================
+                Organization
+            ================================================= */}
 
             <div className="space-y-2">
               <label
@@ -317,7 +375,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Development Member Selector */}
+          {/* ==================================================
+              Member Selector
+          ================================================== */}
 
           {isMember && (
             <div className="space-y-2">
@@ -389,6 +449,10 @@ export default function Home() {
             </div>
           )}
 
+          {/* ==================================================
+              Current Workspace
+          ================================================== */}
+
           <div className="rounded-lg bg-muted/50 p-4">
             <p className="text-sm text-muted-foreground">
               Current workspace
@@ -410,7 +474,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Workspace */}
+        {/* ==================================================
+            Workspace
+        ================================================== */}
 
         <section className="space-y-6">
 
@@ -428,7 +494,9 @@ export default function Home() {
 
           <div className="grid gap-4 md:grid-cols-2">
 
-            {/* My Performance */}
+            {/* =================================================
+                My Performance
+            ================================================= */}
 
             <div className="space-y-4 rounded-xl border bg-card p-6">
               <div>
@@ -457,7 +525,9 @@ export default function Home() {
               </Button>
             </div>
 
-            {/* Team Performance */}
+            {/* =================================================
+                Team Performance
+            ================================================= */}
 
             <div className="space-y-4 rounded-xl border bg-card p-6">
               <div>
@@ -504,7 +574,9 @@ export default function Home() {
               </Button>
             </div>
 
-            {/* Organization Performance */}
+            {/* =================================================
+                Organization Performance
+            ================================================= */}
 
             <div className="space-y-4 rounded-xl border bg-card p-6">
               <div>
@@ -549,7 +621,45 @@ export default function Home() {
               </Button>
             </div>
 
-            {/* Administration */}
+            {/* =================================================
+                Organization Workspace
+            ================================================= */}
+
+            {!isMember && (
+              <div className="space-y-4 rounded-xl border bg-card p-6">
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    Organization Workspace
+                  </h3>
+
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Manage your organization&apos;s people,
+                    structure, performance system, and
+                    organization-level capabilities.
+                  </p>
+                </div>
+
+                <Button
+                  asChild
+                  className="w-full"
+                  disabled={
+                    !selectedOrganizationId
+                  }
+                >
+                  <Link
+                    href={
+                      organizationWorkspaceHref
+                    }
+                  >
+                    Open Organization Workspace
+                  </Link>
+                </Button>
+              </div>
+            )}
+
+            {/* =================================================
+                Administration
+            ================================================= */}
 
             {!isMember && (
               <div className="space-y-4 rounded-xl border bg-card p-6">
@@ -576,7 +686,9 @@ export default function Home() {
               </div>
             )}
 
-            {/* Builder */}
+            {/* =================================================
+                Builder
+            ================================================= */}
 
             {!isMember && (
               <div className="space-y-4 rounded-xl border bg-card p-6">
@@ -606,7 +718,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Member explanation */}
+        {/* ==================================================
+            Member Explanation
+        ================================================== */}
 
         {isMember && (
           <section className="rounded-xl border bg-card p-6">
@@ -624,7 +738,9 @@ export default function Home() {
           </section>
         )}
 
-        {/* Super Admin organization context */}
+        {/* ==================================================
+            Super Admin Organization Context
+        ================================================== */}
 
         {role ===
           "super_admin" &&
