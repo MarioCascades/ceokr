@@ -20,6 +20,7 @@ import {
   deleteObjective as deleteObjectiveAction,
   addKeyResult as addKeyResultAction,
   updateKeyResult as updateKeyResultAction,
+  moveKeyResult as moveKeyResultAction,
   deleteKeyResult as deleteKeyResultAction,
   addInitiative as addInitiativeAction,
   updateInitiative as updateInitiativeAction,
@@ -140,6 +141,12 @@ type BuilderContextType = {
     keyResult: BuilderKeyResult
   ) => void;
 
+  moveKeyResult: (
+    keyResultId: string,
+    sourceObjectiveId: string,
+    targetObjectiveId: string
+  ) => void;
+
   deleteKeyResult: (
     objectiveId: string,
     keyResultId: string
@@ -192,7 +199,7 @@ export function BuilderProvider({
     searchParams.get("sheetId");
 
   const selectedOrganizationId =
-  searchParams.get("organizationId");
+    searchParams.get("organizationId");
 
   const createNewSheet =
     searchParams.get("new") === "true";
@@ -273,9 +280,9 @@ export function BuilderProvider({
 
       try {
         const organization =
-        await getOrganization(
-    selectedOrganizationId ?? undefined
-  );
+          await getOrganization(
+            selectedOrganizationId ?? undefined
+          );
 
         if (!organization) {
           setBuilderError(
@@ -516,10 +523,10 @@ export function BuilderProvider({
 
     initializeBuilder();
   }, [
-  selectedOrganizationId,
-  selectedSheetId,
-  createNewSheet,
-]);
+    selectedOrganizationId,
+    selectedSheetId,
+    createNewSheet,
+  ]);
 
   /* ========================================================
      Save Builder
@@ -891,6 +898,21 @@ export function BuilderProvider({
     );
   };
 
+  const moveKeyResult = (
+    keyResultId: string,
+    sourceObjectiveId: string,
+    targetObjectiveId: string
+  ) => {
+    setBuilderDocument((current) =>
+      moveKeyResultAction(
+        current,
+        keyResultId,
+        sourceObjectiveId,
+        targetObjectiveId
+      )
+    );
+  };
+
   const deleteKeyResult = (
     objectiveId: string,
     keyResultId: string
@@ -1010,6 +1032,7 @@ export function BuilderProvider({
 
         addKeyResult,
         updateKeyResult,
+        moveKeyResult,
         deleteKeyResult,
 
         addInitiative,

@@ -1,6 +1,7 @@
 "use client";
 
-import { BuilderInitiative } from "@/lib/types/builderdocument";
+import type { BuilderInitiative } from "@/lib/types/builderdocument";
+
 import { Button } from "@/components/ui/button";
 
 import InitiativeRow from "./initiativerow";
@@ -20,6 +21,9 @@ export default function Initiatives({
   onEdit,
   onDelete,
 }: InitiativesProps) {
+  const initiativeLimitReached =
+    initiatives.length >= 3;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -38,6 +42,7 @@ export default function Initiatives({
             variant="outline"
             size="sm"
             onClick={onAdd}
+            disabled={initiativeLimitReached}
           >
             + Add Initiative
           </Button>
@@ -62,6 +67,12 @@ export default function Initiatives({
             />
           ))}
         </div>
+      )}
+
+      {initiativeLimitReached && (
+        <p className="text-xs text-muted-foreground">
+          Maximum of 3 Initiatives per Key Result.
+        </p>
       )}
     </div>
   );

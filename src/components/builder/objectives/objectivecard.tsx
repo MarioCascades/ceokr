@@ -18,6 +18,8 @@ import KeyResultDialog from "./keyresults/keyresultdialog";
 type ObjectiveCardProps = {
   objective: BuilderObjective;
 
+  objectives: BuilderObjective[];
+
   onEdit: () => void;
 
   onDelete: () => void;
@@ -25,12 +27,14 @@ type ObjectiveCardProps = {
 
 export default function ObjectiveCard({
   objective,
+  objectives,
   onEdit,
   onDelete,
 }: ObjectiveCardProps) {
   const {
     addKeyResult,
     updateKeyResult,
+    moveKeyResult,
     deleteKeyResult,
     editMode,
   } = useBuilder();
@@ -63,20 +67,55 @@ export default function ObjectiveCard({
   }
 
   function handleSaveKeyResult(
-    keyResult: BuilderKeyResult
+    keyResult: BuilderKeyResult,
+    targetObjectiveId?: string
   ) {
+    const currentObjectiveId =
+      objective.id;
+
+    const targetId =
+      targetObjectiveId ??
+      currentObjectiveId;
+
     const exists = objective.keyResults.some(
       (kr) => kr.id === keyResult.id
     );
 
+    /*
+     * Existing KR.
+     *
+     * If the selected Objective changed,
+     * move the existing KR rather than
+     * delete/recreate it.
+     */
     if (exists) {
-      updateKeyResult(
-        objective.id,
-        keyResult
-      );
+      if (
+        targetId !==
+        currentObjectiveId
+      ) {
+        moveKeyResult(
+          keyResult.id,
+          currentObjectiveId,
+          targetId
+        );
+
+        updateKeyResult(
+          targetId,
+          keyResult
+        );
+      } else {
+        updateKeyResult(
+          currentObjectiveId,
+          keyResult
+        );
+      }
     } else {
+      /*
+       * New KR is created directly under
+       * the selected Objective.
+       */
       addKeyResult(
-        objective.id,
+        targetId,
         keyResult
       );
     }
@@ -156,6 +195,8 @@ export default function ObjectiveCard({
       <KeyResultDialog
         open={dialogOpen}
         keyResult={selectedKeyResult}
+        objectives={objectives}
+        currentObjectiveId={objective.id}
         onClose={() => {
           setDialogOpen(false);
           setSelectedKeyResult(null);

@@ -126,6 +126,69 @@ export function updateKeyResult(
   };
 }
 
+/**
+ * Move an existing Key Result from one Objective to another.
+ *
+ * The Key Result ID is preserved so the KR remains the same
+ * logical entity after the move.
+ */
+export function moveKeyResult(
+  document: BuilderDocument,
+  keyResultId: string,
+  sourceObjectiveId: string,
+  targetObjectiveId: string
+): BuilderDocument {
+  if (sourceObjectiveId === targetObjectiveId) {
+    return document;
+  }
+
+  const sourceObjective = document.objectives.find(
+    (objective) => objective.id === sourceObjectiveId
+  );
+
+  const targetObjective = document.objectives.find(
+    (objective) => objective.id === targetObjectiveId
+  );
+
+  if (!sourceObjective || !targetObjective) {
+    return document;
+  }
+
+  const keyResult = sourceObjective.keyResults.find(
+    (kr) => kr.id === keyResultId
+  );
+
+  if (!keyResult) {
+    return document;
+  }
+
+  return {
+    ...document,
+    objectives: document.objectives.map((objective) => {
+      if (objective.id === sourceObjectiveId) {
+        return {
+          ...objective,
+          keyResults: objective.keyResults.filter(
+            (kr) => kr.id !== keyResultId
+          ),
+        };
+      }
+
+      if (objective.id === targetObjectiveId) {
+        return {
+          ...objective,
+          keyResults: [
+            ...objective.keyResults,
+            keyResult,
+          ],
+        };
+      }
+
+      return objective;
+    }),
+  };
+}
+
 export function deleteKeyResult(
   document: BuilderDocument,
   objectiveId: string,
@@ -169,6 +232,10 @@ export function addInitiative(
         ...objective,
         keyResults: objective.keyResults.map((kr) => {
           if (kr.id !== keyResultId) {
+            return kr;
+          }
+
+          if (kr.initiatives.length >= 3) {
             return kr;
           }
 

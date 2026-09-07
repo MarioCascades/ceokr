@@ -106,6 +106,10 @@ export interface BuilderKeyResult {
 
   weight: number;
 
+  measurementType?: "percentage" | "numeric" | "financial";
+
+  scoringMethod?: "percent_into_period" | "percentage_of_target";
+
   initiatives: BuilderInitiative[];
 }
 
