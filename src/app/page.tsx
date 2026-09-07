@@ -187,7 +187,13 @@ export default function Home() {
    * Runtime Navigation
    * ========================================================
    *
-   * Members enter their own performance runtime.
+   * Members currently enter their own performance runtime
+   * using the selected member as the development subject.
+   *
+   * Organization Performance uses only the selected
+   * organization context. The eventual authenticated
+   * runtime authorization model will determine what the
+   * current actor may view or edit.
    */
 
   const runtimeHref =
@@ -203,6 +209,17 @@ export default function Home() {
             selectedOrganizationId
           )}`
         : "/runtime";
+
+  const organizationPerformanceHref =
+    selectedOrganizationId
+      ? `/runtime?organizationId=${encodeURIComponent(
+          selectedOrganizationId
+        )}`
+      : "/runtime";
+
+  const organizationPerformanceName =
+    selectedOrganization?.company_name ??
+    "Organization";
 
   const isMember =
     role === "member";
@@ -443,6 +460,7 @@ export default function Home() {
 
           {role === "super_admin" && (
             <div className="space-y-4 rounded-xl border bg-card p-6">
+
               <div>
                 <h3 className="text-lg font-semibold">
                   Administration
@@ -458,9 +476,43 @@ export default function Home() {
               <Button
                 asChild
                 className="w-full"
+                disabled={
+                  !selectedOrganizationId
+                }
               >
                 <a href={adminHref}>
                   Open Administration
+                </a>
+              </Button>
+
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold">
+                  {organizationPerformanceName}{" "}
+                  Performance
+                </h3>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  View and manage this
+                  organization&apos;s performance
+                  system.
+                </p>
+              </div>
+
+              <Button
+                asChild
+                className="w-full"
+                disabled={
+                  !selectedOrganizationId
+                }
+              >
+                <a
+                  href={
+                    organizationPerformanceHref
+                  }
+                >
+                  Open{" "}
+                  {organizationPerformanceName}{" "}
+                  Performance
                 </a>
               </Button>
             </div>
@@ -472,6 +524,7 @@ export default function Home() {
 
           {role === "organization_admin" && (
             <div className="space-y-4 rounded-xl border bg-card p-6">
+
               <div>
                 <h3 className="text-lg font-semibold">
                   Organization Workspace
@@ -500,6 +553,36 @@ export default function Home() {
                   Open Organization Workspace
                 </a>
               </Button>
+
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold">
+                  {organizationPerformanceName}{" "}
+                  Performance
+                </h3>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  View and manage your
+                  organization&apos;s performance.
+                </p>
+              </div>
+
+              <Button
+                asChild
+                className="w-full"
+                disabled={
+                  !selectedOrganizationId
+                }
+              >
+                <a
+                  href={
+                    organizationPerformanceHref
+                  }
+                >
+                  Open{" "}
+                  {organizationPerformanceName}{" "}
+                  Performance
+                </a>
+              </Button>
             </div>
           )}
 
@@ -509,15 +592,17 @@ export default function Home() {
 
           {role === "member" && (
             <div className="space-y-4 rounded-xl border bg-card p-6">
+
               <div>
                 <h3 className="text-lg font-semibold">
                   My Performance
                 </h3>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Work with your assigned performance
-                  sheet, objectives, key results,
-                  initiatives, updates, and scores.
+                  Work with your personal
+                  performance, objectives, key
+                  results, initiatives, updates,
+                  and scores.
                 </p>
               </div>
 
@@ -530,6 +615,36 @@ export default function Home() {
               >
                 <a href={runtimeHref}>
                   Open My Performance
+                </a>
+              </Button>
+
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold">
+                  {organizationPerformanceName}{" "}
+                  Performance
+                </h3>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  View your organization&apos;s
+                  performance.
+                </p>
+              </div>
+
+              <Button
+                asChild
+                className="w-full"
+                disabled={
+                  !selectedOrganizationId
+                }
+              >
+                <a
+                  href={
+                    organizationPerformanceHref
+                  }
+                >
+                  Open{" "}
+                  {organizationPerformanceName}{" "}
+                  Performance
                 </a>
               </Button>
             </div>

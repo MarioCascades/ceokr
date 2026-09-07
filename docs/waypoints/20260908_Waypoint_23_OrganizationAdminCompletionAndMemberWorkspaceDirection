@@ -1,0 +1,628 @@
+# Waypoint 23 — Organization Admin Completion & Member Workspace Direction
+
+Date: 2026-09-07
+Milestone: Organization Admin Workspace Foundation Completion / Member Workspace Direction
+Status: COMPLETE
+Previous Waypoint: Waypoint 22 — Organization Admin Workspace Foundation
+
+---
+
+## 1. Overview
+
+This waypoint records the completion of the current Organization Admin Workspace milestone and establishes the next development direction: Member Workspace Foundation.
+
+The Organization Admin workspace now provides the intended organization-scoped administrative presentation layer separate from the Platform Super Admin Administration experience.
+
+The Organization Admin workspace does not create a second Builder, second Runtime, or duplicate domain models.
+
+The platform now has two administrative entry contexts:
+
+Platform Super Admin
+→ Administration
+→ Selected Organization
+→ Organization Workspace
+
+and:
+
+Organization Admin
+→ Organization Workspace
+→ Authorized Organization
+
+The current organization context used by the Organization Admin workspace remains a navigation/development context. It is not a production authorization boundary.
+
+Production tenant authorization, authentication, and PostgreSQL Row Level Security remain future security milestones.
+
+The next product-facing milestone is Member Workspace Foundation.
+
+---
+
+## 2. Completed Work
+
+### Organization Admin Workspace
+
+The `/organization` workspace foundation is established with organization-scoped navigation covering the intended administrative areas:
+
+- Overview
+- Organization
+- Departments
+- Teams
+- Users / Members
+- Roles & Permissions
+- Performance Sheets
+- Assignments
+- Objectives
+- Key Results
+- Initiatives
+- Dashboards
+- Reports
+- Settings
+- AI
+
+Areas without complete underlying platform capabilities remain intentionally limited or placeholder/context-ready.
+
+### Organization Context
+
+Organization Admin workspace pages operate against one organization context.
+
+The Organization Admin experience does not provide a tenant-switching organization selector.
+
+The selected organization context is preserved through Organization Workspace navigation where required.
+
+This is a UX and navigation contract only.
+
+Future production authorization must validate:
+
+- authenticated identity
+- organization membership
+- organization role
+- permissions
+- requested organization context
+- resource ownership
+- server-side authorization
+- PostgreSQL Row Level Security where appropriate
+
+### Administration vs Organization Workspace
+
+The platform maintains a clear distinction between:
+
+- `/admin/*` — Platform Super Admin Administration
+- `/organization/*` — Organization Admin Workspace
+
+The two surfaces may reuse services and components, but they do not represent the same authorization role.
+
+### Existing Domain Ownership Preserved
+
+The Organization Admin workspace does not introduce duplicate sources of truth for:
+
+- Organizations
+- Departments
+- Teams
+- Users
+- Memberships
+- Roles
+- Permissions
+- Performance Sheets
+- Objectives
+- Key Results
+- Initiatives
+- Assignments
+- Performance Instances
+- Runtime execution state
+
+Existing services, repositories, domain models, Builder definitions, published Performance Sheet versions, Assignment structures, and Runtime execution structures remain authoritative.
+
+### Performance Sheet Ownership
+
+The Builder remains the single Performance Sheet construction engine.
+
+The Organization Admin workspace provides an administrative entry point into the existing Builder rather than creating a second builder.
+
+The intended relationship remains:
+
+Builder Definition
+→ Published Performance Sheet
+→ Assignment
+→ Performance Instance
+→ Runtime / Member Workspace
+
+### Assignment and Performance Flow
+
+The existing Assignment architecture remains responsible for connecting published Performance Sheets to execution subjects.
+
+The existing Runtime remains responsible for:
+
+- Performance Instance resolution
+- published Performance Sheet resolution
+- execution context
+- Runtime subject resolution
+- Runtime Key Result Progress
+- current values
+- scoring
+- employee comments
+- manager comments
+- aggregate state
+- lifecycle state
+
+Member Workspace must consume these structures rather than reproduce them.
+
+### User / Member Administration
+
+The Organization Admin Users / Members area continues to use the existing user and organization membership architecture.
+
+Existing domain workflows remain authoritative for:
+
+- user profile information
+- department association
+- team association
+- active/inactive state
+- organization membership
+- membership roles
+
+No second member identity model is introduced by this waypoint.
+
+### Browser Verification
+
+Organization Admin navigation and the implemented workspace foundation were reviewed in the browser.
+
+The user explicitly confirmed that:
+
+- Assignments appears to be working.
+- Objectives appears to be working.
+
+The broader Organization Admin workspace structure and context behavior were also verified as part of the milestone.
+
+Placeholder areas remain intentionally limited where complete underlying platform capabilities do not yet exist.
+
+---
+
+## 3. Architecture Decisions
+
+### One Builder, One Runtime, Multiple Presentation Contexts
+
+The platform will continue to use:
+
+- one Builder
+- one published Performance Sheet model
+- one Assignment model
+- one Runtime execution engine
+
+Different user experiences may present the same underlying execution data.
+
+Member Workspace is therefore a presentation, navigation, and workflow layer over Runtime.
+
+It is not a second performance engine.
+
+### Member Workspace / Runtime Relationship
+
+The Member Workspace will sit on top of the existing Runtime execution architecture.
+
+The intended relationship is:
+
+Builder Definition
+↓
+Published Performance Sheet
+↓
+Assignment
+↓
+Performance Instance
+↓
+Runtime Execution
+↓
+Member Workspace
+
+The Member Workspace may provide:
+
+- current performance view
+- assigned Performance Sheet
+- Objectives
+- Key Results
+- current KPI/progress values
+- comments
+- status
+- completion/progress context
+- relevant employee actions
+
+These capabilities must be sourced from Runtime and related domain services.
+
+### No Member-Specific Performance Model
+
+Member Workspace must not create member-specific copies of:
+
+- Objectives
+- Key Results
+- Initiatives
+- Performance Sheets
+- KPI calculations
+- Assignments
+- Performance Instances
+
+Reusable definitions remain Builder-owned.
+
+Period-specific execution state remains Runtime-owned.
+
+### Monthly Cadence Remains a Product Rule
+
+The platform continues to treat monthly performance cadence as product behavior.
+
+Member Workspace should not introduce an administrator-managed arbitrary Reporting Period entity.
+
+Runtime should continue resolving the applicable execution context from the existing period architecture.
+
+### Current Scoring Remains Runtime Logic
+
+The current Runtime scoring utility remains intentionally simple:
+
+current value / target × 100
+
+with the current 0–100 scoring behavior.
+
+This does not become member-specific logic.
+
+The generalized KPI Calculation Engine and weighted aggregation remain future platform capabilities.
+
+### Production Security Remains Separate
+
+The current organization query context is not authorization.
+
+Member Workspace implementation must not imply production authorization before the authentication and tenant-security milestones are completed.
+
+Future member access must be enforced using authenticated identity and server-side authorization.
+
+---
+
+## 4. Files Added
+
+The Organization Admin milestone added the following workspace files:
+
+- `src/app/organization/layout.tsx`
+- `src/app/organization/page.tsx`
+- `src/app/organization/departments/page.tsx`
+- `src/app/organization/organization/page.tsx`
+- `src/app/organization/performancesheets/page.tsx`
+- `src/app/organization/roles/page.tsx`
+- `src/app/organization/teams/page.tsx`
+- `src/app/organization/users/page.tsx`
+- `src/app/organization/assignments/page.tsx`
+- `src/app/organization/objectives/page.tsx`
+- `src/app/organization/keyresults/page.tsx`
+- `src/app/organization/initiatives/page.tsx`
+- `src/app/organization/dashboards/page.tsx`
+- `src/app/organization/reports/page.tsx`
+- `src/app/organization/settings/page.tsx`
+- `src/app/organization/ai/page.tsx`
+- `src/app/organization/organizationshell.tsx`
+
+No new Member Workspace files are introduced by this waypoint.
+
+---
+
+## 5. Files Modified
+
+The Organization Admin implementation modified:
+
+- `src/app/page.tsx`
+- `src/app/builder/page.tsx`
+- `src/components/admin/organization/organizationpage.tsx`
+- `src/components/admin/shared/adminpageheader.tsx`
+
+Existing shared administration, Builder, Assignment, and Runtime files remain authoritative.
+
+No duplicate Runtime implementation was added.
+
+---
+
+## 6. Files Removed
+
+None.
+
+---
+
+## 7. Database Changes
+
+No database migrations were created for this milestone.
+
+The Organization Admin Workspace reuses the existing:
+
+- organization
+- department
+- team
+- user
+- membership
+- role
+- permission
+- Performance Sheet
+- Assignment
+- Runtime
+
+architecture.
+
+No duplicate database source of truth was introduced.
+
+No new Member Workspace-specific persistence model is required at this stage.
+
+Before adding any new member-facing persistence, the existing Runtime and Performance Instance relationships must be inspected to determine whether the requirement is already represented by existing records.
+
+---
+
+## 8. Documentation Updated
+
+The following project documentation state has been established for this checkpoint:
+
+### Platform Decisions
+
+Decision #38 — Member Workspace / Runtime Relationship has been accepted.
+
+This decision establishes that Member Workspace is a presentation/workflow layer over the existing Runtime execution model and must not introduce duplicate performance engines or domain sources of truth.
+
+### Platform Backlog
+
+The backlog has been reconciled so that the next development phase is:
+
+**Member Workspace Foundation**
+
+The backlog continues to track production authorization, RLS, Runtime security, historical KPI updates, KPI calculation, weighted aggregation, and historical reporting as deferred priorities.
+
+### Historical Waypoints
+
+Historical Waypoints remain unchanged.
+
+This Waypoint becomes the new current checkpoint.
+
+---
+
+## 9. Technical Debt / Deferred Work
+
+### Production Authentication
+
+Authentication is not yet the production security boundary for Member Workspace.
+
+Future implementation must connect member identity to authenticated platform identity.
+
+### Production Tenant Authorization
+
+Organization context must eventually be derived and validated from authenticated membership rather than trusted from a client-supplied organization identifier.
+
+### PostgreSQL Row Level Security
+
+RLS remains outstanding.
+
+Future RLS policies must enforce tenant isolation at the database layer where appropriate.
+
+### Runtime Security
+
+Runtime currently provides the execution architecture but production access control remains a separate security milestone.
+
+Member Workspace must not bypass Runtime security boundaries.
+
+### Assignment Subject Validation
+
+Assignment subject validation remains deferred.
+
+Future hardening should ensure that an Assignment can only target valid subjects within the appropriate organization and subject type.
+
+### Performance Instance Relationship Integrity
+
+The relationship between Assignment, Performance Sheet version, Performance Instance, subject, and period requires continued hardening.
+
+Member Workspace should consume this relationship rather than reconstruct it.
+
+### Historical KPI Updates
+
+Historical KPI update storage remains future work.
+
+Member Workspace should not invent a separate historical KPI storage model.
+
+### Generalized KPI Calculation Engine
+
+The current scoring utility remains intentionally small.
+
+A generalized KPI Calculation Engine remains future platform work.
+
+### Weighted Aggregation
+
+Formal weighted aggregation across Key Results, Objectives, and Performance Instances remains future work.
+
+### Historical Performance Reporting
+
+Historical reporting remains future work and should eventually be built from persisted Runtime history rather than member-specific reporting copies.
+
+---
+
+## 10. Verification
+
+### Compilation
+
+The Organization Admin implementation successfully compiled using:
+
+`npm run build`
+
+Result:
+
+**PASSED**
+
+### Git Change Verification
+
+The implementation was previously verified for whitespace/change integrity and committed.
+
+### Organization Admin Verification
+
+Browser verification covered the Organization Admin workspace foundation, including:
+
+- Organization Workspace navigation
+- organization context
+- Organization page
+- Departments
+- Teams
+- Users / Members
+- Roles & Permissions foundation
+- Performance Sheets
+- shared workspace header behavior
+- Super Admin → Organization Workspace navigation
+
+The user additionally confirmed that Assignments and Objectives appeared to be working.
+
+### Git Checkpoint
+
+Organization Admin Workspace Foundation implementation commit:
+
+`ee8dacd`
+
+Commit message:
+
+`Complete organization admin workspace foundation`
+
+The implementation was previously reported as pushed with a clean working tree.
+
+This Waypoint itself must be committed separately after being added to the repository.
+
+---
+
+## 11. Milestone Status
+
+### Organization Admin Workspace Foundation
+
+**COMPLETE**
+
+### Administration Context / Organization Context
+
+**ESTABLISHED**
+
+### Organization Admin Fixed Organization Context
+
+**ESTABLISHED**
+
+### One Builder / Two Administrative Entry Contexts
+
+**ESTABLISHED**
+
+### Builder Ownership of Objectives / Key Results / Initiatives
+
+**ESTABLISHED**
+
+### Monthly Performance Cadence
+
+**ESTABLISHED PRODUCT RULE**
+
+### Production Authorization / RLS
+
+**DEFERRED**
+
+### Runtime Security
+
+**DEFERRED**
+
+### Historical KPI Updates
+
+**DEFERRED**
+
+### Generalized KPI Calculation Engine
+
+**DEFERRED**
+
+### Weighted Aggregation
+
+**DEFERRED**
+
+### Historical Performance Reporting
+
+**DEFERRED**
+
+### Next Development Milestone
+
+**MEMBER WORKSPACE FOUNDATION**
+
+---
+
+## 12. Next Session
+
+Resume from this Waypoint.
+
+Before implementation:
+
+1. Review this Waypoint.
+2. Review `docs/01_Platform_Decisions.md`.
+3. Review `docs/02_Platform_Backlog.md`.
+4. Review `03_Product_North_Star.md`.
+5. Confirm **Member Workspace Foundation** as the current milestone.
+6. Inspect the existing Runtime architecture before changing code.
+7. Inspect:
+   - Performance Instance resolution
+   - Assignment resolution
+   - published Performance Sheet resolution
+   - Runtime subject resolution
+   - Runtime Key Result Progress
+   - Runtime aggregate state
+   - current Runtime navigation
+8. Identify the smallest reusable Runtime services/components needed by Member Workspace.
+9. Do not rebuild Builder.
+10. Do not rebuild Runtime.
+11. Do not introduce a duplicate Member Performance Sheet model.
+12. Do not introduce duplicate Objective, Key Result, Initiative, Assignment, Performance Instance, or KPI calculation logic.
+13. Do not introduce an arbitrary Reporting Period entity.
+14. Keep the first Member Workspace milestone focused on presentation and workflow over existing Runtime data.
+
+The first Member Workspace implementation should answer:
+
+**How does an authenticated member open their current performance execution and interact with the existing Runtime without creating a second execution system?**
+
+---
+
+## 13. Checkpoint Summary
+
+| Area | Status |
+|---|---|
+| Builder | ESTABLISHED |
+| Runtime Execution Foundation | ESTABLISHED |
+| Platform Administration | ESTABLISHED FOUNDATION |
+| Organization Management | COMPLETE |
+| Departments | COMPLETE |
+| Teams | COMPLETE |
+| Users / Members | COMPLETE |
+| Roles & Permissions | FOUNDATION COMPLETE |
+| Performance Sheet Management | COMPLETE |
+| Assignment Management | COMPLETE |
+| Administration Context | ESTABLISHED |
+| Organization Admin Workspace | COMPLETE |
+| Organization Admin Fixed Context | ESTABLISHED |
+| One Builder / Two Administrative Entry Contexts | ESTABLISHED |
+| Objectives / Key Results / Initiatives Ownership | BUILDER-OWNED |
+| Monthly Cadence | ESTABLISHED PRODUCT RULE |
+| Production Authentication | DEFERRED |
+| Production Tenant Authorization | DEFERRED |
+| PostgreSQL RLS | DEFERRED |
+| Runtime Security Boundaries | DEFERRED |
+| Assignment Subject Validation | DEFERRED |
+| Performance Instance Integrity | DEFERRED |
+| Historical KPI Updates | DEFERRED |
+| KPI Calculation Engine | DEFERRED |
+| Weighted Aggregation | DEFERRED |
+| Historical Reporting | DEFERRED |
+| Member Workspace Foundation | **NEXT MILESTONE** |
+
+---
+
+## 14. Engineering Rule for the Next Milestone
+
+The Member Workspace must be built as a thin product layer over the existing platform engine.
+
+The architecture remains:
+
+**Builder**
+→ defines reusable performance system
+
+**Published Performance Sheet**
+→ freezes reusable version
+
+**Assignment**
+→ connects the published system to an execution subject
+
+**Performance Instance**
+→ represents the subject's period-specific execution
+
+**Runtime**
+→ owns execution state and calculations
+
+**Member Workspace**
+→ presents and enables interaction with that execution
+
+This boundary must remain intact as Member Workspace development begins.

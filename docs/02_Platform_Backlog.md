@@ -20,11 +20,11 @@ determining the current project state.
 
 Current Development Phase
 
-Administration Completion
+Member Workspace Foundation
 
 Status
 
-IN PROGRESS
+NEXT MILESTONE
 
 The platform is currently completing the Administration management layer.
 
@@ -62,12 +62,12 @@ Administration Organization Context / Cascading Selection
 
 Status
 
-RECONCILIATION REQUIRED
+COMPLETE / ESTABLISHED
 
-The Super Admin Administration experience must preserve an explicit
-Organization context across child Administration pages.
+The Super Admin Administration experience preserves explicit Organization
+context across child Administration pages.
 
-The required product pattern is:
+The established product pattern is:
 
 Organization
 ↓
@@ -78,13 +78,12 @@ Team
 The Organization page is the top-level tenant-management page and does not
 require an Organization selector above it.
 
-Child Administration pages must allow the Super Admin to select the
-Organization being administered where applicable.
+Child Administration pages use the selected Organization where applicable.
 
-Department and Team selectors must be dependent on the selected parent
+Department and Team context are dependent on the selected parent
 Organization.
 
-Changing the selected Organization must reset dependent Department and Team
+Changing the selected Organization resets dependent Department and Team
 context.
 
 The selected Organization ID is navigation and query context only.
@@ -117,26 +116,20 @@ Settings
 
 Organization Admin context is different.
 
-An Organization Admin operates within their authorized Organization and
-does not require an Organization-switching selector.
+An Organization Admin operates within one fixed Organization context and does
+not provide an Organization-switching selector.
 
 The Builder remains one shared engine for both administrative entry
 contexts.
 
-This work is a product/UX continuity requirement and must be completed
-before additional Administration page expansion is treated as stable.
-
-Current Administration focus:
-
-Additional Administration capabilities
+The Administration context reconciliation work is complete for the current
+scope.
 
 Production authorization and security hardening remain separate
-
 architecture milestones.
 
-The Builder and Runtime foundations already exist and should not be
-
-rebuilt during this Administration phase.
+The Builder and Runtime foundations already exist and are not rebuilt as part
+of this Administration work.
 
 Administration Roadmap
 
@@ -542,9 +535,9 @@ Platform Super Admin Administration Context
 
 Status
 
-RECONCILIATION REQUIRED
+ESTABLISHED
 
-The Super Admin Administration experience is platform-level and must support
+The Super Admin Administration experience is platform-level and supports
 administration across Organizations through explicit Organization context.
 
 The selected Organization is a UI/query context and must not replace
@@ -554,36 +547,42 @@ Organization Admin Workspace
 
 Status
 
-FUTURE
+COMPLETE / ESTABLISHED
 
-Create a separate Organization Admin workspace after the Super Admin
-Administration context is stable.
+The Organization Admin workspace has been established as a separate
+organization-scoped administrative entry context.
 
-The Organization Admin workspace must:
+The Organization Admin workspace:
 
-operate on the Organization determined by the authenticated user's
-organization authorization
+operates within one fixed Organization context
 
-not provide cross-Organization switching
+does not provide cross-Organization switching
 
-provide access to organization configuration and Builder capabilities
-according to Organization Roles and Permissions
+provides access to organization configuration and administrative capabilities
+according to the current product scope
 
-use the same underlying Builder engine as the Super Admin experience
+uses the same underlying Builder engine as the Super Admin experience
 
-Do not create a second Builder.
+does not create a second Builder
+
+The current Organization Admin workspace establishes the intended UX and
+navigation contract.
+
+Production authorization must eventually derive and validate the
+Organization Admin scope from authenticated Organization membership, role,
+and permissions.
 
 Priority
 
-High
+Complete
 
 3B. Administration Context Components
 
 Status
 
-RECONCILIATION REQUIRED
+ESTABLISHED
 
-Standardize reusable Administration context components for:
+The reusable Administration context pattern has been standardized for:
 
 Organization selection
 
@@ -591,15 +590,18 @@ Department selection
 
 Team selection
 
-The component pattern should reset dependent selections when a parent
-context changes and should pass IDs rather than names.
+The component pattern resets dependent selections when a parent context
+changes and passes IDs rather than names.
 
 These components are UX/navigation context helpers, not authorization
 mechanisms.
 
+The Organization Admin workspace intentionally uses fixed Organization
+context rather than an Organization-switching selector.
+
 Priority
 
-High
+Complete
 
 Runtime
 
@@ -1275,9 +1277,9 @@ Runtime Execution Foundation
 
 COMPLETE / ESTABLISHED
 
-Administration
+Administration Foundation
 
-IN PROGRESS
+COMPLETE / ESTABLISHED
 
 Organization
 
@@ -1323,6 +1325,30 @@ Administration Page Structure / Shared Header Standardization
 
 COMPLETE
 
+Administration Organization Context / Cascading Selection
+
+COMPLETE / ESTABLISHED
+
+Organization Admin Workspace Foundation
+
+COMPLETE / ESTABLISHED
+
+Organization Admin Fixed Organization Context
+
+ESTABLISHED
+
+One Builder / Two Administrative Entry Contexts
+
+ESTABLISHED
+
+Objectives / Key Results / Initiatives
+
+BUILDER-OWNED / ESTABLISHED
+
+Monthly Performance Cadence
+
+ESTABLISHED PRODUCT RULE
+
 Dashboards
 
 V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
@@ -1339,6 +1365,26 @@ Production Authorization / RLS
 
 OUTSTANDING
 
+Runtime Security Boundaries
+
+DEFERRED
+
+Historical KPI Updates
+
+DEFERRED
+
+KPI Calculation Engine
+
+DEFERRED
+
+Weighted Aggregation
+
+DEFERRED
+
+Historical Performance Reporting
+
+DEFERRED
+
 Next Development Session
 
 Start from the latest Waypoint.
@@ -1351,9 +1397,13 @@ Platform Decisions
 
 Platform Backlog
 
-Confirm the next Administration milestone before implementation.
+Product North Star
 
-The following Administration capabilities are functionally established:
+Confirm the Member Workspace Foundation milestone before implementation.
+
+The Administration foundation is established for the current scope.
+
+Completed Administration foundation includes:
 
 Organization
 
@@ -1363,7 +1413,7 @@ Teams
 
 Users / Members
 
-Roles & Permissions
+Roles & Permissions foundation
 
 Performance Sheet Management
 
@@ -1371,11 +1421,9 @@ Assignment Management
 
 Administration Page Structure / Shared Header Standardization
 
-The following Administration continuity work must be reconciled and verified:
-
 Super Admin Organization context
 
-Organization → Department → Team cascading selection
+Organization → Department → Team cascading context
 
 Organization context across child Administration pages
 
@@ -1383,13 +1431,45 @@ Organization Admin fixed Organization context
 
 One Builder / two administrative entry contexts
 
+Super Admin → Organization Workspace entry
+
 Objectives / Key Results / Initiatives remaining Builder-owned
 
 Monthly cadence without an administrator-managed Reporting Period entity
 
-The next development phase should be selected based on platform value,
+The next development phase is:
 
-architectural priority, and the current documented roadmap.
+Member Workspace Foundation
+
+Before implementation, inspect the existing Runtime architecture.
+
+The Member Workspace must:
+
+operate on existing Runtime architecture
+
+consume existing Assignments
+
+consume existing Performance Instances
+
+consume published Performance Sheet versions
+
+preserve the Builder / Runtime boundary
+
+avoid creating a parallel performance engine
+
+avoid duplicating Objective definitions
+
+avoid duplicating Key Result definitions
+
+avoid duplicating Initiative definitions
+
+avoid duplicating KPI calculation logic
+
+avoid creating member-specific Performance Sheet definitions
+
+respect the existing monthly execution model
+
+Production authorization and security hardening remain separate milestones.
 
 The Platform Membership / Super Admin foundation is complete but is not
 
@@ -1401,15 +1481,21 @@ Production Tenant Authorization
 
 Production Row Level Security
 
-Platform Administration UI / Super Admin Management
-
 Runtime Security Boundaries
 
 Assignment Subject Validation
 
 Performance Instance Relationship Integrity
 
-Other future Administration capabilities may include:
+Historical KPI Updates
+
+KPI Calculation Engine
+
+Weighted Aggregation
+
+Historical Performance Reporting
+
+Other future product capabilities may include:
 
 advanced Performance Sheet management
 
@@ -1423,7 +1509,11 @@ AI configuration
 
 Do not rebuild Builder.
 
+Do not rebuild Runtime.
+
 Do not duplicate Runtime execution logic.
+
+Do not introduce an arbitrary Reporting Period entity.
 
 The repository remains the authoritative engineering record.
 
@@ -1431,9 +1521,7 @@ Current Deferred Priorities
 
 Priority: High
 
-Administration Organization Context / Cascading Selection
-
-Organization Admin Workspace Foundation
+Member Workspace Foundation
 
 Production Tenant Authorization
 
@@ -1475,7 +1563,7 @@ Search
 
 Filtering
 
-Dashboards
+Dynamic Dashboard System
 
 Reports
 

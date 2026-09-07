@@ -1669,3 +1669,73 @@ conversation history.
 Status
 
 Accepted
+---
+
+# 38. Member Workspace / Runtime Relationship
+
+The Member Workspace is a member-facing presentation and navigation layer
+over the existing Runtime execution architecture.
+
+The Member Workspace must consume existing Runtime records and relationships,
+including:
+
+- Assignments
+- Performance Instances
+- published Performance Sheet versions
+- Runtime Key Result Progress
+- Runtime aggregate state
+- Runtime lifecycle state
+- employee comments where authorized
+- manager comments where authorized
+
+The Member Workspace must not create:
+
+- a second performance engine
+- a second Performance Instance model
+- duplicate Objective definitions
+- duplicate Key Result definitions
+- duplicate Initiative definitions
+- duplicate KPI calculation logic
+- duplicate Assignment logic
+- member-specific copies of Performance Sheet definitions
+
+The architectural relationship is:
+
+Builder Definition
+
+↓
+
+Published Performance Sheet
+
+↓
+
+Assignment
+
+↓
+
+Performance Instance
+
+↓
+
+Member Workspace / Runtime Execution
+
+The Member Workspace presents and operates on the Runtime execution state
+appropriate to the authenticated member.
+
+The Member Workspace may provide member-specific navigation, presentation,
+workflow controls, and authorized views without becoming a separate
+performance execution engine.
+
+Runtime remains the authoritative execution layer for period-specific
+performance state.
+
+The Member Workspace must not modify Builder definitions as part of normal
+member performance execution.
+
+Production authorization must eventually ensure that a member can only
+access Performance Instances, Assignments, and Runtime records for which
+that member is authorized.
+
+Status
+
+Accepted
