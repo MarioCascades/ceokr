@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 
@@ -20,18 +19,13 @@ type Organization = {
   company_name: string;
 };
 
-const DEMO_ROLE_LABELS: Record<
-  DemoRole,
-  string
-> = {
+const DEMO_ROLE_LABELS: Record<DemoRole, string> = {
   super_admin: "Super Admin",
   organization_admin: "Organization Admin",
   member: "Member",
 };
 
-function getUserDisplayName(
-  record: UserManagementRecord
-) {
+function getUserDisplayName(record: UserManagementRecord) {
   return (
     record.user.display_name?.trim() ||
     `${record.user.first_name} ${record.user.last_name}`.trim() ||
@@ -67,17 +61,12 @@ export default function Home() {
   useEffect(() => {
     async function loadOrganizations() {
       try {
-        const data =
-          await listOrganizations();
+        const data = await listOrganizations();
 
-        setOrganizations(
-          data ?? []
-        );
+        setOrganizations(data ?? []);
 
         if (data?.length) {
-          setSelectedOrganizationId(
-            data[0].id
-          );
+          setSelectedOrganizationId(data[0].id);
         }
       } catch (error) {
         console.error(
@@ -115,13 +104,10 @@ export default function Home() {
               record.user.is_active !== false
           );
 
-        setUserRecords(
-          activeRecords
-        );
+        setUserRecords(activeRecords);
 
         setSelectedMemberId(
-          activeRecords[0]?.user.id ??
-            ""
+          activeRecords[0]?.user.id ?? ""
         );
       } catch (error) {
         console.error(
@@ -160,11 +146,16 @@ export default function Home() {
    * ========================================================
    * Administration Navigation
    * ========================================================
+   *
+   * Super Admin enters the platform administration
+   * experience from this development workspace.
    */
 
   const adminHref =
     selectedOrganizationId
-      ? `/admin?organizationId=${selectedOrganizationId}`
+      ? `/admin?organizationId=${encodeURIComponent(
+          selectedOrganizationId
+        )}`
       : "/admin";
 
   /*
@@ -172,61 +163,45 @@ export default function Home() {
    * Organization Workspace Navigation
    * ========================================================
    *
-   * Super Admin:
+   * Organization Admin enters the organization-scoped
+   * workspace directly from this development workspace.
    *
-   * /organization?organizationId=123&from=admin
+   * Super Admin enters the Organization Workspace through:
    *
-   * Organization Admin:
-   *
-   * /organization?organizationId=123
-   *
-   * from=admin is navigation context only.
-   * It is NOT an authorization mechanism.
+   * Administration
+   *   ↓
+   * Selected Organization
+   *   ↓
+   * Open Organization Workspace
    */
 
   const organizationWorkspaceHref =
     selectedOrganizationId
-      ? `/organization?organizationId=${selectedOrganizationId}${
-          role === "super_admin"
-            ? "&from=admin"
-            : ""
-        }`
+      ? `/organization?organizationId=${encodeURIComponent(
+          selectedOrganizationId
+        )}`
       : "/organization";
-
-  /*
-   * ========================================================
-   * Performance Sheet Navigation
-   * ========================================================
-   */
-
-  const performanceSheetsHref =
-    selectedOrganizationId
-      ? `/admin/performancesheets?organizationId=${selectedOrganizationId}`
-      : "/admin/performancesheets";
-
-  /*
-   * ========================================================
-   * Builder Navigation
-   * ========================================================
-   */
-
-  const builderHref =
-    selectedOrganizationId
-      ? `/builder?organizationId=${selectedOrganizationId}`
-      : "/builder";
 
   /*
    * ========================================================
    * Runtime Navigation
    * ========================================================
+   *
+   * Members enter their own performance runtime.
    */
 
   const runtimeHref =
     selectedOrganizationId &&
     selectedMemberId
-      ? `/runtime?organizationId=${selectedOrganizationId}&subjectId=${selectedMemberId}`
+      ? `/runtime?organizationId=${encodeURIComponent(
+          selectedOrganizationId
+        )}&subjectId=${encodeURIComponent(
+          selectedMemberId
+        )}`
       : selectedOrganizationId
-        ? `/runtime?organizationId=${selectedOrganizationId}`
+        ? `/runtime?organizationId=${encodeURIComponent(
+            selectedOrganizationId
+          )}`
         : "/runtime";
 
   const isMember =
@@ -296,10 +271,7 @@ export default function Home() {
                 {Object.entries(
                   DEMO_ROLE_LABELS
                 ).map(
-                  ([
-                    value,
-                    label,
-                  ]) => (
+                  ([value, label]) => (
                     <option
                       key={value}
                       value={value}
@@ -323,16 +295,13 @@ export default function Home() {
                 Organization
               </label>
 
-              {role ===
-              "super_admin" ? (
+              {role === "super_admin" ? (
                 <select
                   id="organization"
                   value={
                     selectedOrganizationId
                   }
-                  onChange={(
-                    event
-                  ) =>
+                  onChange={(event) =>
                     setSelectedOrganizationId(
                       event.target.value
                     )
@@ -342,21 +311,14 @@ export default function Home() {
                   {organizations.length ===
                   0 ? (
                     <option value="">
-                      No organizations
-                      available
+                      No organizations available
                     </option>
                   ) : (
                     organizations.map(
-                      (
-                        organization
-                      ) => (
+                      (organization) => (
                         <option
-                          key={
-                            organization.id
-                          }
-                          value={
-                            organization.id
-                          }
+                          key={organization.id}
+                          value={organization.id}
                         >
                           {
                             organization.company_name
@@ -396,50 +358,33 @@ export default function Home() {
               ) : (
                 <select
                   id="member"
-                  value={
-                    selectedMemberId
-                  }
-                  onChange={(
-                    event
-                  ) =>
+                  value={selectedMemberId}
+                  onChange={(event) =>
                     setSelectedMemberId(
                       event.target.value
                     )
                   }
                   disabled={
-                    userRecords.length ===
-                    0
+                    userRecords.length === 0
                   }
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {userRecords.length ===
-                  0 ? (
+                  {userRecords.length === 0 ? (
                     <option value="">
-                      No active members
-                      available
+                      No active members available
                     </option>
                   ) : (
                     userRecords.map(
-                      (
-                        record
-                      ) => (
+                      (record) => (
                         <option
-                          key={
-                            record.user.id
-                          }
-                          value={
-                            record.user.id
-                          }
+                          key={record.user.id}
+                          value={record.user.id}
                         >
-                          {
-                            getUserDisplayName(
-                              record
-                            )
-                          }
+                          {getUserDisplayName(
+                            record
+                          )}
                           {" — "}
-                          {
-                            record.user.email
-                          }
+                          {record.user.email}
                         </option>
                       )
                     )
@@ -459,9 +404,7 @@ export default function Home() {
             </p>
 
             <p className="mt-1 text-lg font-semibold">
-              {DEMO_ROLE_LABELS[
-                role
-              ]}
+              {DEMO_ROLE_LABELS[role]}
 
               {!isMember &&
                 selectedOrganization?.company_name &&
@@ -469,13 +412,15 @@ export default function Home() {
 
               {isMember &&
                 selectedMember &&
-                ` — ${getUserDisplayName(selectedMember)}`}
+                ` — ${getUserDisplayName(
+                  selectedMember
+                )}`}
             </p>
           </div>
         </section>
 
         {/* ==================================================
-            Workspace
+            Workspace Entry Point
         ================================================== */}
 
         <section className="space-y-6">
@@ -486,18 +431,83 @@ export default function Home() {
             </h2>
 
             <p className="mt-1 text-muted-foreground">
-              Your available platform capabilities
-              are determined by your current
-              workspace role.
+              Your primary platform entry point is
+              determined by your current workspace
+              role.
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          {/* =================================================
+              Super Admin
+          ================================================= */}
 
-            {/* =================================================
-                My Performance
-            ================================================= */}
+          {role === "super_admin" && (
+            <div className="space-y-4 rounded-xl border bg-card p-6">
+              <div>
+                <h3 className="text-lg font-semibold">
+                  Administration
+                </h3>
 
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Manage organizations, users,
+                  teams, assignments, performance
+                  sheets, and platform configuration.
+                </p>
+              </div>
+
+              <Button
+                asChild
+                className="w-full"
+              >
+                <a href={adminHref}>
+                  Open Administration
+                </a>
+              </Button>
+            </div>
+          )}
+
+          {/* =================================================
+              Organization Admin
+          ================================================= */}
+
+          {role === "organization_admin" && (
+            <div className="space-y-4 rounded-xl border bg-card p-6">
+              <div>
+                <h3 className="text-lg font-semibold">
+                  Organization Workspace
+                </h3>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Manage your organization&apos;s
+                  people, structure, performance
+                  system, and organization-level
+                  capabilities.
+                </p>
+              </div>
+
+              <Button
+                asChild
+                className="w-full"
+                disabled={
+                  !selectedOrganizationId
+                }
+              >
+                <a
+                  href={
+                    organizationWorkspaceHref
+                  }
+                >
+                  Open Organization Workspace
+                </a>
+              </Button>
+            </div>
+          )}
+
+          {/* =================================================
+              Member
+          ================================================= */}
+
+          {role === "member" && (
             <div className="space-y-4 rounded-xl border bg-card p-6">
               <div>
                 <h3 className="text-lg font-semibold">
@@ -515,251 +525,17 @@ export default function Home() {
                 asChild
                 className="w-full"
                 disabled={
-                  isMember &&
                   !selectedMemberId
                 }
               >
-                <Link href={runtimeHref}>
+                <a href={runtimeHref}>
                   Open My Performance
-                </Link>
+                </a>
               </Button>
             </div>
-
-            {/* =================================================
-                Team Performance
-            ================================================= */}
-
-            <div className="space-y-4 rounded-xl border bg-card p-6">
-              <div>
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold">
-                    Team Performance
-                  </h3>
-
-                  <span className="rounded-full border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                    Preview
-                  </span>
-                </div>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Review your team&apos;s performance
-                  together, including team members,
-                  objectives, key results, initiatives,
-                  and overall team results.
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-muted/50 p-4">
-                <p className="text-sm font-medium">
-                  Team Runtime View
-                </p>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  The future team view will allow
-                  authorized users to review each
-                  member&apos;s performance sheet
-                  without giving them permission to
-                  edit another member&apos;s sheet.
-                </p>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                disabled
-              >
-                Team Performance —
-                Coming Next
-              </Button>
-            </div>
-
-            {/* =================================================
-                Organization Performance
-            ================================================= */}
-
-            <div className="space-y-4 rounded-xl border bg-card p-6">
-              <div>
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold">
-                    Organization Performance
-                  </h3>
-
-                  <span className="rounded-full border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                    Preview
-                  </span>
-                </div>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Organization-wide performance,
-                  KPI trends, dashboards, charts,
-                  and historical results.
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-muted/50 p-4">
-                <p className="text-sm font-medium">
-                  Executive Runtime View
-                </p>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  This will eventually provide the
-                  dynamic organization dashboard
-                  generated from the platform&apos;s
-                  performance data.
-                </p>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                disabled
-              >
-                Organization Dashboard —
-                Coming Next
-              </Button>
-            </div>
-
-            {/* =================================================
-                Organization Workspace
-            ================================================= */}
-
-            {!isMember && (
-              <div className="space-y-4 rounded-xl border bg-card p-6">
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    Organization Workspace
-                  </h3>
-
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Manage your organization&apos;s people,
-                    structure, performance system, and
-                    organization-level capabilities.
-                  </p>
-                </div>
-
-                <Button
-                  asChild
-                  className="w-full"
-                  disabled={
-                    !selectedOrganizationId
-                  }
-                >
-                  <Link
-                    href={
-                      organizationWorkspaceHref
-                    }
-                  >
-                    Open Organization Workspace
-                  </Link>
-                </Button>
-              </div>
-            )}
-
-            {/* =================================================
-                Administration
-            ================================================= */}
-
-            {!isMember && (
-              <div className="space-y-4 rounded-xl border bg-card p-6">
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    Administration
-                  </h3>
-
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Manage organizations, users,
-                    teams, assignments, performance
-                    sheets, and platform configuration.
-                  </p>
-                </div>
-
-                <Button
-                  asChild
-                  className="w-full"
-                >
-                  <Link href={adminHref}>
-                    Open Administration
-                  </Link>
-                </Button>
-              </div>
-            )}
-
-            {/* =================================================
-                Builder
-            ================================================= */}
-
-            {!isMember && (
-              <div className="space-y-4 rounded-xl border bg-card p-6">
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    Performance Sheet Builder
-                  </h3>
-
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Create and configure the
-                    performance sheet that powers
-                    the runtime experience.
-                  </p>
-                </div>
-
-                <Button
-                  asChild
-                  className="w-full"
-                >
-                  <Link href={builderHref}>
-                    Open Builder
-                  </Link>
-                </Button>
-              </div>
-            )}
-
-          </div>
-        </section>
-
-        {/* ==================================================
-            Member Explanation
-        ================================================== */}
-
-        {isMember && (
-          <section className="rounded-xl border bg-card p-6">
-            <h2 className="text-lg font-semibold">
-              Member Experience
-            </h2>
-
-            <p className="mt-2 text-muted-foreground">
-              Members do not access Administration
-              or the Performance Sheet Builder. Their
-              primary product experience is Runtime,
-              with access to their own performance and
-              authorized team views.
-            </p>
-          </section>
-        )}
-
-        {/* ==================================================
-            Super Admin Organization Context
-        ================================================== */}
-
-        {role ===
-          "super_admin" &&
-          selectedOrganizationId && (
-            <section className="flex flex-wrap gap-3">
-              <Button
-                asChild
-                variant="outline"
-              >
-                <Link
-                  href={
-                    performanceSheetsHref
-                  }
-                >
-                  View Performance Sheets
-                </Link>
-              </Button>
-            </section>
           )}
+
+        </section>
 
       </div>
     </main>

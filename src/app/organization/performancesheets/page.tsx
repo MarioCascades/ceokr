@@ -53,17 +53,11 @@ export default function OrganizationPerformanceSheetsPage() {
     ? `&organizationId=${encodeURIComponent(selectedOrganizationId)}`
     : "";
 
-  const builderHref = selectedOrganizationId
-    ? `/builder?organizationId=${encodeURIComponent(
-        selectedOrganizationId
-      )}`
-    : "/builder";
-
   const builderNewHref = selectedOrganizationId
     ? `/builder?new=true&organizationId=${encodeURIComponent(
         selectedOrganizationId
-      )}`
-    : "/builder?new=true";
+      )}&from=organization`
+    : "/builder?new=true&from=organization";
 
   /*
    * Load the current organization and its Performance Sheet definitions.
@@ -152,30 +146,6 @@ export default function OrganizationPerformanceSheetsPage() {
           description="Manage this organization's Performance Sheet definitions, versions and Builder access."
           showOrganizationSelector={false}
         />
-
-        {/* Local Performance Sheet navigation */}
-        <nav
-          aria-label="Performance Sheet management navigation"
-          className="flex flex-wrap gap-2"
-        >
-          <Button asChild variant="secondary">
-            <Link
-              href={
-                selectedOrganizationId
-                  ? `/organization/performancesheets?organizationId=${encodeURIComponent(
-                      selectedOrganizationId
-                    )}`
-                  : "/organization/performancesheets"
-              }
-            >
-              Performance Sheets
-            </Link>
-          </Button>
-
-          <Button asChild variant="outline">
-            <Link href={builderHref}>Builder</Link>
-          </Button>
-        </nav>
 
         {/* Error */}
         {errorMessage && (
@@ -272,10 +242,6 @@ export default function OrganizationPerformanceSheetsPage() {
                   const versions =
                     versionHistory[sheet.sheet_key] ?? [];
 
-                  const openBuilderHref = `/builder?sheetId=${encodeURIComponent(
-                    sheet.id
-                  )}${organizationQuery}`;
-
                   return (
                     <div key={sheet.sheet_key} className="p-6">
                       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -299,13 +265,6 @@ export default function OrganizationPerformanceSheetsPage() {
                           </p>
                         </div>
 
-                        <div className="flex shrink-0 flex-wrap gap-2">
-                          <Button asChild>
-                            <Link href={openBuilderHref}>
-                              Open Builder
-                            </Link>
-                          </Button>
-                        </div>
                       </div>
 
                       {/* Version history */}
@@ -332,7 +291,7 @@ export default function OrganizationPerformanceSheetsPage() {
                             {versions.map((version) => {
                               const versionBuilderHref = `/builder?sheetId=${encodeURIComponent(
                                 version.id
-                              )}${organizationQuery}`;
+                              )}${organizationQuery}&from=organization`;
 
                               return (
                                 <div

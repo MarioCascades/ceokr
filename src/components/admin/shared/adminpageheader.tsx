@@ -16,7 +16,35 @@ type AdminPageHeaderProps = {
   showOrganizationSelector?: boolean;
 };
 
-export default function AdminPageHeader({
+export default function AdminPageHeader(
+  props: AdminPageHeaderProps
+) {
+  return (
+    <Suspense
+      fallback={
+        <div className="mb-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h1 className="text-3xl font-semibold">
+                {props.title}
+              </h1>
+
+              {props.description && (
+                <p className="mt-2 text-muted-foreground">
+                  {props.description}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <AdminPageHeaderContent {...props} />
+    </Suspense>
+  );
+}
+
+function AdminPageHeaderContent({
   title,
   description,
   actions,
@@ -77,12 +105,6 @@ export default function AdminPageHeader({
    * ---------------------------------------------------------
    * Organization Overview
    * ---------------------------------------------------------
-   *
-   * Intentionally removes from=admin.
-   *
-   * Once the user returns to the Organization Workspace
-   * overview, they are inside the normal organization
-   * workspace context.
    */
 
   const organizationOverviewHref =
@@ -96,9 +118,6 @@ export default function AdminPageHeader({
    * ---------------------------------------------------------
    * Administration
    * ---------------------------------------------------------
-   *
-   * Preserve organization context when returning to the
-   * Super Admin administration workspace.
    */
 
   const administrationHref =
@@ -136,12 +155,6 @@ export default function AdminPageHeader({
 
           {/* =================================================
               Super Admin Organization Selector
-          =================================================
-
-          The platform organization selector belongs to the
-          Super Admin workspace.
-
-          It must NOT appear inside the Organization Workspace.
           ================================================= */}
 
           {showOrganizationSelector &&
@@ -171,9 +184,6 @@ export default function AdminPageHeader({
               <>
                 {/* =============================================
                     Super Admin Return Path
-
-                    Only shown when the workspace was explicitly
-                    entered from the administration context.
                 ============================================= */}
 
                 {enteredFromAdministration && (
@@ -201,7 +211,12 @@ export default function AdminPageHeader({
                  Super Admin Administration Workspace
               =============================================== */
 
-              <AdminBackToAdministration />
+              <Link
+                href={administrationHref}
+                className="rounded-md border bg-white px-4 py-2 text-sm font-medium"
+              >
+                Back to Administration
+              </Link>
             )}
 
             {/* =================================================
@@ -213,32 +228,5 @@ export default function AdminPageHeader({
         </div>
       </div>
     </div>
-  );
-}
-
-/* ============================================================
-   Super Admin
-   Back to Administration
-============================================================ */
-
-function AdminBackToAdministration() {
-  const searchParams = useSearchParams();
-
-  const organizationId =
-    searchParams.get("organizationId");
-
-  const href = organizationId
-    ? `/admin?organizationId=${encodeURIComponent(
-        organizationId
-      )}`
-    : "/admin";
-
-  return (
-    <Link
-      href={href}
-      className="rounded-md border bg-white px-4 py-2 text-sm font-medium"
-    >
-      Back to Administration
-    </Link>
   );
 }
