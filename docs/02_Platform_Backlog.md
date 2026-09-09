@@ -4,7 +4,7 @@ Platform Backlog
 
 Document Status: CURRENT
 
-Last Updated: 2026-09-02
+Last Updated: 2026-09-10
 
 This document tracks intentionally deferred architecture, product
 
@@ -20,7 +20,7 @@ determining the current project state.
 
 Current Development Phase
 
-Member Workspace Foundation
+Runtime Product Experience / CascadEffects Design & Vibe
 
 Status
 
@@ -1205,25 +1205,65 @@ CascadEffects Design System
 
 Status
 
-FUTURE
+NEXT MILESTONE / READY TO BEGIN
 
-Create centralized design tokens for:
+The next product-experience increment should establish the centralized
+CascadEffects default design system before broad page-by-page visual
+refinement.
+
+Official Brand Guide colors:
 
 Deep Navy
 
-Coral
+#082550
+
+Grayish Blue
+
+#B4C2D1
+
+Light Blue
+
+#E9F4F8
+
+Dark Charcoal
+
+#272D2C
 
 White
 
-light gray surfaces
+#FFFFFF
+
+Coral
+
+#E26D5C
+
+The four signature brand colors that should remain visually prominent are:
+
+Deep Navy
+
+Grayish Blue
+
+Light Blue
+
+Coral
+
+Coral is a selective callout / action color.
+
+The design system should centralize reusable tokens for:
+
+page backgrounds
+
+surfaces
+
+cards
+
+borders
 
 typography
 
 buttons
 
 forms
-
-cards
 
 dialogs
 
@@ -1233,21 +1273,60 @@ navigation
 
 status indicators
 
-The design system should be reusable across:
+spacing
+
+radius
+
+shadows
+
+iconography
+
+The Brand Guide typography direction should be reflected where appropriate:
+
+Roboto Black
+
+Martel Sans
+
+Khula
+
+The platform should favor consistent line iconography and consistent stroke
+treatment.
+
+The visual experience should feel:
+
+clean
+
+modern
+
+minimalist
+
+structured
+
+confident
+
+professional
+
+The centralized design system should be reusable across:
 
 Administration
 
 Builder
 
-Runtime
+shared platform navigation
 
 Dashboards
 
 Reports
 
-Organization-specific branding should eventually be configurable through
+Runtime
 
+Runtime may later apply organization-specific visual configuration.
+
+Organization-specific branding should eventually be configurable through
 Administration.
+
+The CascadEffects default theme should remain the platform fallback.
+
 
 Deployment / Environment Configuration
 

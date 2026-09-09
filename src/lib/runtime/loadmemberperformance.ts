@@ -128,6 +128,20 @@ export type MemberPerformanceExecution = {
       >
     >;
 
+  /*
+   * Previous-month values are presentation data derived
+   * from the historical Runtime Performance Instance.
+   *
+   * The key is the Builder Key Result source ID.
+   *
+   * We intentionally do not add another persistence field.
+   */
+  previousKeyResultValues:
+    Record<
+      string,
+      string | number
+    >;
+
   subject: {
     type: "individual";
 
@@ -139,6 +153,167 @@ export type MemberPerformanceExecution = {
   };
 
 };
+
+
+/* ==========================================================
+   Month Helpers
+========================================================== */
+
+function addMonths(
+  performanceMonth: string,
+  amount: number
+): string {
+
+  const date =
+    new Date(
+      `${performanceMonth}T00:00:00Z`
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return performanceMonth;
+  }
+
+  date.setUTCMonth(
+    date.getUTCMonth() +
+      amount
+  );
+
+  return [
+    date
+      .getUTCFullYear()
+      .toString()
+      .padStart(
+        4,
+        "0"
+      ),
+
+    (date.getUTCMonth() + 1)
+      .toString()
+      .padStart(
+        2,
+        "0"
+      ),
+
+    "01",
+  ].join("-");
+}
+
+
+/* ==========================================================
+   Previous Month Values
+========================================================== */
+
+async function loadPreviousKeyResultValues(
+  performanceInstances:
+    Awaited<
+      ReturnType<
+        typeof findPerformanceInstancesByAssignment
+      >
+    >,
+
+  selectedPerformanceMonth: string
+): Promise<
+  Record<
+    string,
+    string | number
+  >
+> {
+
+  const previousMonth =
+    addMonths(
+      selectedPerformanceMonth,
+      -1
+    );
+
+  const previousInstance =
+    performanceInstances.find(
+      (instance) =>
+        instance.performanceMonth ===
+        previousMonth
+    );
+
+  if (!previousInstance) {
+    return {};
+  }
+
+  const previousKeyResults =
+    await findPerformanceInstanceKeyResults(
+      previousInstance.id
+    );
+
+  const previousProgress =
+    await findKeyResultProgressByPerformanceInstance(
+      previousInstance.id
+    );
+
+  const progressByKeyResultId =
+    new Map<
+      string,
+      string | number
+    >();
+
+  for (
+    const progress
+    of previousProgress
+  ) {
+
+    if (
+      progress.currentValue ===
+      null ||
+      progress.currentValue ===
+      undefined ||
+      progress.currentValue ===
+      ""
+    ) {
+      continue;
+    }
+
+    progressByKeyResultId.set(
+      progress.performanceInstanceKeyResultId,
+      progress.currentValue
+    );
+  }
+
+  const previousValues:
+    Record<
+      string,
+      string | number
+    > = {};
+
+  for (
+    const keyResult
+    of previousKeyResults
+  ) {
+
+    if (
+      !keyResult.sourceKeyResultId
+    ) {
+      continue;
+    }
+
+    const value =
+      progressByKeyResultId.get(
+        keyResult.id
+      );
+
+    if (
+      value ===
+        undefined
+    ) {
+      continue;
+    }
+
+    previousValues[
+      keyResult.sourceKeyResultId
+    ] = value;
+  }
+
+  return previousValues;
+}
 
 
 /* ==========================================================
@@ -173,13 +348,6 @@ export async function loadMemberPerformance(
   /* ========================================================
      Ownership Validation
   ======================================================== */
-
-  /*
-   * The member must own the assignment.
-   *
-   * We intentionally do not accept an arbitrary subjectId
-   * as the ownership authority.
-   */
 
   if (
     assignment.assignmentType !==
@@ -221,7 +389,8 @@ export async function loadMemberPerformance(
           assignment.id,
           performanceMonth
         )
-      : performanceInstances[0] ?? null;
+      : performanceInstances[0] ??
+        null;
 
 
   /* ========================================================
@@ -310,6 +479,18 @@ export async function loadMemberPerformance(
 
 
   /* ========================================================
+     Previous Month Values
+  ======================================================== */
+
+  const previousKeyResultValues =
+    await loadPreviousKeyResultValues(
+      performanceInstances,
+
+      performanceInstance.performanceMonth
+    );
+
+
+  /* ========================================================
      Runtime Subject
   ======================================================== */
 
@@ -340,6 +521,8 @@ export async function loadMemberPerformance(
     objectives,
 
     keyResultProgress,
+
+    previousKeyResultValues,
 
     subject: {
 

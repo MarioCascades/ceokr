@@ -947,53 +947,106 @@ Accepted
 # 24. Visual Design System
 
 CascadEffects will use a centralized design system rather than independently
-
 hardcoded page styling.
 
-The design system will eventually define:
+The CascadEffects Brand Guide is the visual source of truth for the default
+platform brand.
 
-- brand colors
+The official CascadEffects palette is:
 
-- typography
+- Deep Navy: `#082550`
+- Grayish Blue: `#B4C2D1`
+- Light Blue: `#E9F4F8`
+- Dark Charcoal: `#272D2C`
+- White: `#FFFFFF`
+- Coral: `#E26D5C`
 
-- buttons
-
-- inputs
-
-- cards
-
-- dialogs
-
-- tables
-
-- navigation
-
-- status indicators
-
-- Admin components
-
-The intended CascadEffects visual direction includes:
+The four signature colors that should remain visually prominent throughout
+the platform are:
 
 - Deep Navy
-
+- Grayish Blue
+- Light Blue
 - Coral
 
-- White
+Dark Charcoal and White provide supporting text and surface treatment.
 
-- light gray surfaces
+Coral is an accent / callout color and should be used selectively for
+buttons, calls to action, and smaller emphasis areas rather than becoming
+the dominant page color.
 
-- modern SaaS styling
+The design system will define reusable tokens for:
 
-- generous spacing
+- brand colors
+- page backgrounds
+- surfaces
+- borders
+- text
+- muted text
+- typography
+- buttons
+- inputs
+- cards
+- dialogs
+- tables
+- navigation
+- status indicators
+- spacing
+- border radius
+- shadows
 
-- clean typography
+The Brand Guide typography direction is:
 
-Brand configuration should eventually be manageable through Administration.
+- Roboto Black for major headings / titles
+- Martel Sans for supporting headings / subtitles
+- Khula for body text
+
+Platform headings should generally follow the Brand Guide's all-caps
+direction where appropriate to the application experience.
+
+Iconography should favor consistent line-icon treatment with consistent
+stroke weight. Full solid iconography should not become the default platform
+icon style.
+
+The default platform experience should feel:
+
+- clean
+- modern
+- minimalist
+- structured
+- confident
+- professional
+- spacious without excessive unused space
+
+The platform should favor solid surfaces and restrained gradients where they
+improve hierarchy rather than introducing arbitrary colors or decorative
+complexity.
+
+The centralized CascadEffects design system applies to the shared platform
+experience, including:
+
+- Administration
+- Builder
+- shared application navigation
+- dashboards
+- reports
+- common UI components
+
+Runtime presentation remains architecturally separate because Runtime is the
+organization-facing performance experience and will eventually support
+organization-specific visual configuration.
+
+The CascadEffects default design system should be the fallback visual theme
+for organizations that have not configured organization-specific branding.
+
+Future organization-specific branding should use configuration and theme
+overrides rather than duplicate UI systems.
 
 Status
 
 Accepted
 
+---
 ---
 
 # 25. Deployment Configuration

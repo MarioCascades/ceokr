@@ -130,18 +130,6 @@ function getCurrentPerformanceMonth(): string {
 
 /* ==========================================================
    Build Available Performance Months
-   ----------------------------------------------------------
-   The Assignment domain does not currently contain an
-   explicit start month.
-
-   Therefore the earliest known valid month is the earliest
-   existing Performance Instance.
-
-   The selector then extends forward through the current
-   calendar month.
-
-   Existing instances are reused.
-   Missing months are created on selection.
 ========================================================== */
 
 function buildPerformanceMonths(
@@ -226,19 +214,11 @@ export default function MemberWorkspace({
     );
 
 
-  /* ========================================================
-     Available Months
-  ======================================================== */
-
   const performanceMonths =
     buildPerformanceMonths(
       execution
     );
 
-
-  /* ========================================================
-     Selected Month
-  ======================================================== */
 
   const selectedMonth =
     execution
@@ -279,10 +259,6 @@ export default function MemberWorkspace({
           performanceMonth
         );
 
-
-      /* ====================================================
-         Navigate To Selected Month
-      ==================================================== */
 
       const params =
         new URLSearchParams();
@@ -330,7 +306,6 @@ export default function MemberWorkspace({
   return (
     <div className="min-h-screen bg-background">
 
-
       {/* ==================================================
           Member Workspace Header
       ================================================== */}
@@ -340,11 +315,6 @@ export default function MemberWorkspace({
         <div className="mx-auto max-w-7xl px-8 py-6">
 
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-
-
-            {/* ================================================
-                Member Identity
-            ================================================= */}
 
             <div>
 
@@ -372,10 +342,6 @@ export default function MemberWorkspace({
 
             </div>
 
-
-            {/* ================================================
-                Performance Month Selector
-            ================================================= */}
 
             <div className="w-full md:w-64">
 
@@ -478,32 +444,7 @@ export default function MemberWorkspace({
 
 
       {/* ==================================================
-          Selected Month Context
-      ================================================== */}
-
-      <section className="mx-auto max-w-7xl px-8 pt-6">
-
-        <div className="rounded-lg border bg-card px-5 py-4">
-
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Current Performance Month
-          </p>
-
-          <p className="mt-1 text-lg font-semibold">
-            {
-              formatPerformanceMonth(
-                selectedMonth
-              )
-            }
-          </p>
-
-        </div>
-
-      </section>
-
-
-      {/* ==================================================
-          Existing Runtime Performance Sheet
+          Runtime Performance Sheet
       ================================================== */}
 
       <PerformanceSheet
@@ -521,6 +462,11 @@ export default function MemberWorkspace({
         keyResultProgress={
           execution
             .keyResultProgress
+        }
+
+        previousKeyResultValues={
+          execution
+            .previousKeyResultValues
         }
 
         organizationId={
@@ -543,6 +489,8 @@ export default function MemberWorkspace({
           execution
             .subject
         }
+
+        memberMode
       />
 
     </div>

@@ -24,6 +24,14 @@ import type {
   RuntimePerformanceObjective,
 } from "@/lib/runtime/runtimeperformance";
 
+import type {
+  UserManagementRecord,
+} from "@/lib/types/domain/usermanagement";
+
+import type {
+  DashboardData,
+} from "@/services/dashboard.service";
+
 import {
   transitionPerformanceInstanceAction,
 } from "@/app/runtime/actions";
@@ -32,9 +40,20 @@ import ObjectiveCard from "./objectivecard";
 
 import ObjectiveEditor from "./objectiveeditor";
 
+import RuntimeHeader from "../shared/runtimeheader";
+
 import RuntimeSummary from "../shared/runtimesummary";
 
+import RuntimeNavigation from "../shared/runtimenavigation";
+
+import RuntimeOverview from "../shared/runtimeoverview";
+
 import EmployeeComments from "../shared/employeecomments";
+
+
+/* ==========================================================
+   Props
+========================================================== */
 
 interface PerformanceSheetProps {
   document: BuilderDocument;
@@ -42,6 +61,11 @@ interface PerformanceSheetProps {
   objectives: RuntimePerformanceObjective[];
 
   keyResultProgress: KeyResultProgress[];
+
+  previousKeyResultValues: Record<
+    string,
+    string | number
+  >;
 
   organizationId: string;
 
@@ -51,8 +75,23 @@ interface PerformanceSheetProps {
 
   subject: RuntimeSubject | null;
 
+  /*
+   * Organization Runtime provides these.
+   *
+   * Member Workspace intentionally does not need to
+   * provide them yet.
+   */
+  members?: UserManagementRecord[];
+
+  dashboard?: DashboardData;
+
   memberMode?: boolean;
 }
+
+
+/* ==========================================================
+   Performance Sheet
+========================================================== */
 
 export default function PerformanceSheet({
   document,
@@ -60,6 +99,8 @@ export default function PerformanceSheet({
   objectives: initialObjectives,
 
   keyResultProgress,
+
+  previousKeyResultValues,
 
   organizationId,
 
@@ -69,14 +110,21 @@ export default function PerformanceSheet({
 
   subject,
 
+  members = [],
+
+  dashboard,
+
   memberMode = false,
+
 }: PerformanceSheetProps) {
+
   const [
     currentStatus,
     setCurrentStatus,
   ] = useState(
     performanceInstance.status
   );
+
 
   const [
     objectives,
@@ -85,15 +133,18 @@ export default function PerformanceSheet({
     initialObjectives
   );
 
+
   const [
     addingObjective,
     setAddingObjective,
   ] = useState(false);
 
+
   const [
     transitioning,
     setTransitioning,
   ] = useState(false);
+
 
   const [
     transitionError,
@@ -102,10 +153,16 @@ export default function PerformanceSheet({
     null
   );
 
+
   const [
     transitionSaved,
     setTransitionSaved,
   ] = useState(false);
+
+
+  /* ========================================================
+     Runtime Lifecycle
+  ======================================================== */
 
   async function handleTransition(
     transition:
@@ -114,13 +171,22 @@ export default function PerformanceSheet({
       | "approve"
       | "complete"
   ) {
-    setTransitioning(true);
 
-    setTransitionError(null);
+    setTransitioning(
+      true
+    );
 
-    setTransitionSaved(false);
+    setTransitionError(
+      null
+    );
+
+    setTransitionSaved(
+      false
+    );
+
 
     try {
+
       const updated =
         await transitionPerformanceInstanceAction({
           organizationId,
@@ -130,12 +196,19 @@ export default function PerformanceSheet({
           transition,
         });
 
+
       setCurrentStatus(
         updated.status
       );
 
-      setTransitionSaved(true);
-    } catch (error) {
+      setTransitionSaved(
+        true
+      );
+
+    } catch (
+      error
+    ) {
+
       console.error(
         "Failed to transition Performance Instance:",
         error
@@ -146,15 +219,26 @@ export default function PerformanceSheet({
           ? error.message
           : "Failed to update Performance Instance status."
       );
+
     } finally {
-      setTransitioning(false);
+
+      setTransitioning(
+        false
+      );
+
     }
   }
+
+
+  /* ========================================================
+     Objective Updates
+  ======================================================== */
 
   function handleObjectiveUpdated(
     updatedObjective:
       RuntimePerformanceObjective
   ) {
+
     setObjectives(
       (current) =>
         current.map(
@@ -165,11 +249,14 @@ export default function PerformanceSheet({
               : objective
         )
     );
+
   }
+
 
   function handleObjectiveDeleted(
     objectiveId: string
   ) {
+
     setObjectives(
       (current) =>
         current.filter(
@@ -178,12 +265,15 @@ export default function PerformanceSheet({
             objectiveId
         )
     );
+
   }
+
 
   function handleObjectiveCreated(
     objective:
       RuntimePerformanceObjective
   ) {
+
     setObjectives(
       (current) => [
         ...current,
@@ -197,123 +287,152 @@ export default function PerformanceSheet({
       ]
     );
 
-    setAddingObjective(false);
+    setAddingObjective(
+      false
+    );
+
   }
 
-  const runtimeDisplayName =
-    subject?.displayName ??
-    document.performanceHeader.employeeName;
+
+  /* ========================================================
+     Runtime Instance With Local Status
+  ======================================================== */
+
+  const runtimePerformanceInstance:
+    PerformanceInstance =
+    {
+      ...performanceInstance,
+
+      status:
+        currentStatus,
+    };
+
+
+  /* ========================================================
+     Render
+  ======================================================== */
 
   return (
-    <main className="mx-auto max-w-7xl space-y-8 p-8">
+    <main className="mx-auto max-w-7xl space-y-8 p-6 md:p-8">
+
 
       {/* ======================================================
-          Organization Header
+          Runtime Navigation
+
+          Only the organization Runtime supplies the
+          organization member navigation context.
+
+          Member Workspace continues to use the same
+          PerformanceSheet without creating another engine.
       ====================================================== */}
 
-      <section className="rounded-lg border bg-white p-6 shadow-sm">
+      {!memberMode &&
+        members.length > 0 && (
 
-        <h1 className="text-3xl font-bold">
-          {document.organization.companyName}
-        </h1>
+        <RuntimeNavigation
 
-        {document.organization.tagline && (
-          <p className="mt-2 text-muted-foreground">
-            {document.organization.tagline}
-          </p>
-        )}
+          organizationId={
+            organizationId
+          }
 
-      </section>
+          members={
+            members
+          }
+
+          selectedSubjectId={
+            subject?.id
+          }
+
+        />
+
+      )}
+
 
       {/* ======================================================
-          Performance Header
+          Organization Dashboard
+
+          Dashboard is intentionally only rendered when the
+          organization Runtime provides dashboard data.
       ====================================================== */}
 
-      <section className="rounded-lg border bg-white p-6 shadow-sm">
+      {!memberMode &&
+        !subject &&
+        dashboard && (
 
-        <h2 className="text-2xl font-semibold">
-          {runtimeDisplayName}
-        </h2>
+        <RuntimeOverview
+          dashboard={
+            dashboard
+          }
+        />
 
-        <p className="text-muted-foreground">
-          {document.performanceHeader.employeeRole}
-        </p>
+      )}
 
-        <p className="mt-2">
-          {document.performanceHeader.roleDescription}
-        </p>
 
-        <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      {/* ======================================================
+          Runtime Header
+      ====================================================== */}
 
-          {document.performanceHeader.metrics.map(
-            (metric) => (
-              <div
-                key={metric.id}
-                className="rounded-md border p-4"
-              >
+      <RuntimeHeader
 
-                <p className="text-sm text-muted-foreground">
-                  {metric.title}
-                </p>
+        document={
+          document
+        }
 
-                <p className="mt-2 text-xl font-bold">
-                  {metric.value}
-                </p>
+        performanceInstance={
+          runtimePerformanceInstance
+        }
 
-              </div>
-            )
-          )}
+        subject={
+          subject
+        }
 
-        </div>
+      />
 
-      </section>
 
       {/* ======================================================
           Runtime Summary
       ====================================================== */}
 
       <RuntimeSummary
-        performanceInstance={{
-          ...performanceInstance,
 
-          status:
-            currentStatus,
-        }}
+        performanceInstance={
+          runtimePerformanceInstance
+        }
+
       />
+
 
       {/* ======================================================
           Performance Workflow
       ====================================================== */}
 
-      <section className="rounded-lg border bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
 
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
 
           <div>
 
-            <h2 className="text-xl font-semibold">
-              Performance Workflow
+            <p className="text-sm font-medium text-primary">
+              Workflow
+            </p>
+
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">
+              Performance Status
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-
-              Current status:{" "}
-
-              <span className="font-medium capitalize">
-                {currentStatus.replace(
-                  "_",
-                  " "
-                )}
-              </span>
-
+              Move this monthly performance instance
+              through its current workflow stage.
             </p>
 
           </div>
+
 
           <div className="flex flex-wrap gap-3">
 
             {currentStatus ===
               "not_started" && (
+
               <button
                 type="button"
                 onClick={() =>
@@ -324,16 +443,21 @@ export default function PerformanceSheet({
                 disabled={
                   transitioning
                 }
-                className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {transitioning
-                  ? "Starting..."
-                  : "Start Performance"}
+                {
+                  transitioning
+                    ? "Starting..."
+                    : "Start Performance"
+                }
               </button>
+
             )}
+
 
             {currentStatus ===
               "in_progress" && (
+
               <button
                 type="button"
                 onClick={() =>
@@ -344,73 +468,103 @@ export default function PerformanceSheet({
                 disabled={
                   transitioning
                 }
-                className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {transitioning
-                  ? "Submitting..."
-                  : "Submit Performance"}
+                {
+                  transitioning
+                    ? "Submitting..."
+                    : "Submit Performance"
+                }
               </button>
+
             )}
+
 
             {!memberMode &&
               currentStatus ===
                 "submitted" && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleTransition(
-                      "approve"
-                    )
-                  }
-                  disabled={
-                    transitioning
-                  }
-                  className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {transitioning
+
+              <button
+                type="button"
+                onClick={() =>
+                  handleTransition(
+                    "approve"
+                  )
+                }
+                disabled={
+                  transitioning
+                }
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {
+                  transitioning
                     ? "Approving..."
-                    : "Approve Performance"}
-                </button>
-              )}
+                    : "Approve Performance"
+                }
+              </button>
+
+            )}
+
 
             {!memberMode &&
               currentStatus ===
                 "approved" && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleTransition(
-                      "complete"
-                    )
-                  }
-                  disabled={
-                    transitioning
-                  }
-                  className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {transitioning
+
+              <button
+                type="button"
+                onClick={() =>
+                  handleTransition(
+                    "complete"
+                  )
+                }
+                disabled={
+                  transitioning
+                }
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {
+                  transitioning
                     ? "Completing..."
-                    : "Complete Performance"}
-                </button>
-              )}
+                    : "Complete Performance"
+                }
+              </button>
+
+            )}
 
           </div>
 
         </div>
 
+
         {transitionSaved && (
-          <p className="mt-4 text-sm text-green-600">
+
+          <p className="mt-4 text-sm text-muted-foreground">
             Performance status updated.
           </p>
+
         )}
 
+
         {transitionError && (
-          <p className="mt-4 text-sm text-red-600">
-            {transitionError}
-          </p>
+
+          <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+
+            <p className="text-sm font-medium text-destructive">
+              Unable to update performance status
+            </p>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              {
+                transitionError
+              }
+            </p>
+
+          </div>
+
         )}
 
       </section>
+
 
       {/* ======================================================
           Runtime Performance Objectives
@@ -418,54 +572,102 @@ export default function PerformanceSheet({
 
       <section className="space-y-6">
 
+        <div>
+
+          <p className="text-sm font-medium text-primary">
+            Performance
+          </p>
+
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight">
+            Objectives
+          </h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Review and update the objectives,
+            Key Results, and initiatives for this
+            monthly performance instance.
+          </p>
+
+        </div>
+
+
         {objectives.map(
           (objective) => (
+
             <ObjectiveCard
+
               key={
                 objective.id
               }
+
               objective={
                 objective
               }
+
               keyResultProgress={
                 keyResultProgress
               }
+
               organizationId={
                 organizationId
               }
+
               performanceInstanceId={
                 performanceInstanceId
               }
+
+              performanceMonth={
+                performanceInstance
+                  .performanceMonth
+              }
+
+              previousKeyResultValues={
+                previousKeyResultValues
+              }
+
               onUpdated={
                 handleObjectiveUpdated
               }
+
               onDeleted={
                 handleObjectiveDeleted
               }
+
             />
+
           )
         )}
 
+
         {addingObjective && (
+
           <ObjectiveEditor
+
             organizationId={
               organizationId
             }
+
             performanceInstanceId={
               performanceInstanceId
             }
+
             onSaved={
               handleObjectiveCreated
             }
+
             onCancel={() =>
               setAddingObjective(
                 false
               )
             }
+
           />
+
         )}
 
+
         {!addingObjective && (
+
           <button
             type="button"
             onClick={() =>
@@ -473,35 +675,49 @@ export default function PerformanceSheet({
                 true
               )
             }
-            className="w-full rounded-lg border-2 border-dashed px-6 py-5 text-sm font-semibold hover:bg-muted"
+            className="w-full rounded-xl border-2 border-dashed px-6 py-5 text-sm font-semibold transition-colors hover:bg-muted"
           >
             + Add Objective
           </button>
+
         )}
 
       </section>
+
 
       {/* ======================================================
           Employee Comments
       ====================================================== */}
 
       <EmployeeComments
+
         organizationId={
           organizationId
         }
+
         performanceInstanceId={
           performanceInstanceId
         }
+
         initialComments={
-          performanceInstance.employeeComments
+          performanceInstance
+            .employeeComments
         }
+
         label="Employee Comments"
+
         placeholder={
-          document.comments.placeholder
+          document
+            .comments
+            .placeholder
         }
+
         helpText={
-          document.comments.helpText
+          document
+            .comments
+            .helpText
         }
+
       />
 
     </main>

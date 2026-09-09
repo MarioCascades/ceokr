@@ -1,18 +1,10 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  createRuntimePerformanceInstanceKeyResultAction,
-  deleteRuntimePerformanceInstanceObjectiveAction,
-} from "@/app/runtime/actions";
+import { useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 
 import type {
   RuntimePerformanceObjective,
-  RuntimePerformanceKeyResult,
 } from "@/lib/runtime/runtimeperformance";
 
 import type {
@@ -21,9 +13,12 @@ import type {
 
 import KeyResultRow from "../keyresults/keyresultrow";
 
-import KeyResultEditor from "../keyresults/keyresulteditor";
-
 import ObjectiveEditor from "./objectiveeditor";
+
+
+/* ==========================================================
+   Props
+========================================================== */
 
 interface ObjectiveCardProps {
   objective: RuntimePerformanceObjective;
@@ -34,8 +29,15 @@ interface ObjectiveCardProps {
 
   performanceInstanceId: string;
 
+  performanceMonth: string;
+
+  previousKeyResultValues: Record<
+    string,
+    string | number
+  >;
+
   onUpdated: (
-    objective: RuntimePerformanceObjective
+    updatedObjective: RuntimePerformanceObjective
   ) => void;
 
   onDeleted: (
@@ -43,33 +45,28 @@ interface ObjectiveCardProps {
   ) => void;
 }
 
-export default function ObjectiveCard({
-  objective: initialObjective,
 
-  keyResultProgress:
-    initialKeyResultProgress,
+/* ==========================================================
+   Objective Card
+========================================================== */
+
+export default function ObjectiveCard({
+  objective,
+
+  keyResultProgress,
 
   organizationId,
 
   performanceInstanceId,
 
+  performanceMonth,
+
+  previousKeyResultValues,
+
   onUpdated,
 
   onDeleted,
 }: ObjectiveCardProps) {
-  const [
-    objective,
-    setObjective,
-  ] = useState(
-    initialObjective
-  );
-
-  const [
-    localKeyResultProgress,
-    setLocalKeyResultProgress,
-  ] = useState(
-    initialKeyResultProgress
-  );
 
   const [
     editing,
@@ -77,346 +74,182 @@ export default function ObjectiveCard({
   ] = useState(false);
 
   const [
-    addingKeyResult,
-    setAddingKeyResult,
-  ] = useState(false);
-
-  const [
     deleting,
     setDeleting,
   ] = useState(false);
 
-  const [
-    deleteError,
-    setDeleteError,
-  ] = useState<string | null>(
-    null
-  );
 
-  /*
-   * Keep local Runtime progress synchronized
-   * when the parent Runtime execution reloads
-   * or provides updated progress.
-   */
-  useEffect(() => {
-    setLocalKeyResultProgress(
-      initialKeyResultProgress
+  /* ========================================================
+     Objective Progress
+  ======================================================== */
+
+  const objectiveProgress =
+    keyResultProgress.filter(
+      (progress) =>
+        progress.objectiveId ===
+        objective.id
     );
-  }, [
-    initialKeyResultProgress,
-  ]);
 
-  /* ==========================================================
-     Objective Delete
-  ========================================================== */
+
+  /* ========================================================
+     Delete Objective
+  ======================================================== */
 
   async function handleDelete() {
-    const confirmed =
-      window.confirm(
-        "Delete this Objective and all of its Key Results and Initiatives?"
-      );
 
-    if (!confirmed) {
+    if (deleting) {
       return;
     }
 
     setDeleting(true);
 
-    setDeleteError(null);
-
     try {
-      await deleteRuntimePerformanceInstanceObjectiveAction(
-  organizationId,
 
-  performanceInstanceId,
+      const response =
+        await fetch(
+          "/api/runtime/objectives",
+          {
+            method: "DELETE",
 
-  objective.id
-);
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              organizationId,
+
+              performanceInstanceId,
+
+              objectiveId:
+                objective.id,
+            }),
+          }
+        );
+
+
+      if (!response.ok) {
+        throw new Error(
+          "Failed to delete objective."
+        );
+      }
+
 
       onDeleted(
         objective.id
       );
-    } catch (caughtError) {
-      setDeleteError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Failed to delete objective."
+
+    } catch (error) {
+
+      console.error(
+        "Failed to delete objective:",
+        error
       );
-    } finally {
+
       setDeleting(false);
     }
   }
 
-  /* ==========================================================
-     Objective Update
-  ========================================================== */
 
-  function handleUpdated(
-    updatedObjective:
-      RuntimePerformanceObjective
-  ) {
-    setObjective(
-      updatedObjective
-    );
-
-    onUpdated(
-      updatedObjective
-    );
-
-    setEditing(false);
-  }
-
-  /* ==========================================================
-     Key Result Create
-  ========================================================== */
-
-  async function handleCreateKeyResult(
-    values: {
-      title: string;
-
-      target: unknown;
-
-      measurementType:
-        | "percentage"
-        | "numeric"
-        | "financial";
-
-      scoringMethod:
-        | "percent_into_period"
-        | "percentage_of_target";
-
-      weight?: number;
-    }
-  ) {
-    const result =
-      await createRuntimePerformanceInstanceKeyResultAction(
-        {
-          organizationId,
-
-          performanceInstanceId,
-
-          performanceInstanceObjectiveId:
-            objective.id,
-
-          title:
-            values.title,
-
-          target:
-            values.target,
-
-          measurementType:
-            values.measurementType,
-
-          scoringMethod:
-            values.scoringMethod,
-
-          weight:
-            values.weight,
-        }
-      );
-
-    const newKeyResult:
-      RuntimePerformanceKeyResult = {
-      id:
-        result.keyResult.id,
-
-      sourceKeyResultId:
-        result.keyResult.sourceKeyResultId,
-
-      title:
-        result.keyResult.title,
-
-      target:
-        result.keyResult.target,
-
-      weight:
-        result.keyResult.weight,
-
-      measurementType:
-        result.keyResult.measurementType,
-
-      scoringMethod:
-        result.keyResult.scoringMethod,
-
-      position:
-        result.keyResult.position,
-
-      initiatives:
-        [],
-    };
-
-    const updatedObjective:
-      RuntimePerformanceObjective = {
-      ...objective,
-
-      keyResults: [
-        ...objective.keyResults,
-
-        newKeyResult,
-      ],
-    };
-
-    setObjective(
-      updatedObjective
-    );
-
-    setLocalKeyResultProgress(
-      (current) => [
-        ...current,
-
-        result.progress,
-      ]
-    );
-
-    /*
-     * Keep the parent PerformanceSheet state
-     * synchronized with the newly created KR.
-     */
-    onUpdated(
-      updatedObjective
-    );
-
-    setAddingKeyResult(
-      false
-    );
-  }
-
-  /* ==========================================================
-     Key Result Update
-  ========================================================== */
-
-  function handleKeyResultUpdated(
-    updatedKeyResult:
-      RuntimePerformanceKeyResult
-  ) {
-    const updatedObjective:
-      RuntimePerformanceObjective = {
-      ...objective,
-
-      keyResults:
-        objective.keyResults.map(
-          (keyResult) =>
-            keyResult.id ===
-            updatedKeyResult.id
-              ? updatedKeyResult
-              : keyResult
-        ),
-    };
-
-    setObjective(
-      updatedObjective
-    );
-
-    onUpdated(
-      updatedObjective
-    );
-  }
-
-  /* ==========================================================
-     Key Result Delete
-  ========================================================== */
-
-  function handleKeyResultDeleted(
-    keyResultId: string
-  ) {
-    const updatedObjective:
-      RuntimePerformanceObjective = {
-      ...objective,
-
-      keyResults:
-        objective.keyResults.filter(
-          (keyResult) =>
-            keyResult.id !==
-            keyResultId
-        ),
-    };
-
-    setObjective(
-      updatedObjective
-    );
-
-    setLocalKeyResultProgress(
-      (current) =>
-        current.filter(
-          (progress) =>
-            progress.performanceInstanceKeyResultId !==
-            keyResultId
-        )
-    );
-
-    onUpdated(
-      updatedObjective
-    );
-  }
-
-  /* ==========================================================
-     Objective Edit
-  ========================================================== */
+  /* ========================================================
+     Objective Editor
+  ======================================================== */
 
   if (editing) {
+
     return (
       <ObjectiveEditor
+
         organizationId={
           organizationId
         }
+
         performanceInstanceId={
           performanceInstanceId
         }
+
         objective={
           objective
         }
-        onSaved={
-          handleUpdated
-        }
+
+        onSaved={(
+          updatedObjective
+        ) => {
+
+          setEditing(false);
+
+          onUpdated(
+            updatedObjective
+          );
+        }}
+
         onCancel={() =>
           setEditing(false)
         }
+
       />
     );
   }
 
+
+  /* ========================================================
+     Render
+  ======================================================== */
+
   return (
-    <section className="rounded-lg border bg-white p-6 shadow-sm">
 
-      {/* ======================================================
+    <section className="rounded-2xl border bg-card shadow-sm">
+
+      {/* ====================================================
           Objective Header
-      ====================================================== */}
+      ==================================================== */}
 
-      <div className="mb-6 flex items-start justify-between gap-6">
+      <div className="flex flex-col gap-4 border-b px-6 py-5 md:flex-row md:items-start md:justify-between">
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0">
 
-          <h2 className="text-2xl font-semibold">
-            {
-              objective.title
-            }
-          </h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Objective
+          </p>
+
+          <h3 className="mt-1 text-xl font-semibold tracking-tight">
+            {objective.title}
+          </h3>
 
           {objective.description && (
-            <p className="mt-1 text-muted-foreground">
+
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+
               {
                 objective.description
               }
+
             </p>
           )}
 
         </div>
 
-        <div className="flex shrink-0 gap-2">
+
+        {/* ==================================================
+            Objective Actions
+        ================================================== */}
+
+        <div className="flex shrink-0 items-center gap-2">
 
           <button
             type="button"
             onClick={() =>
               setEditing(true)
             }
-            disabled={
-              deleting ||
-              addingKeyResult
-            }
-            className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
           >
+
+            <Pencil className="h-4 w-4" />
+
             Edit
+
           </button>
+
 
           <button
             type="button"
@@ -424,134 +257,100 @@ export default function ObjectiveCard({
               handleDelete
             }
             disabled={
-              deleting ||
-              addingKeyResult
+              deleting
             }
-            className="rounded-md border px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md border border-destructive/30 px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {deleting
-              ? "Deleting..."
-              : "Delete"}
+
+            <Trash2 className="h-4 w-4" />
+
+            {
+              deleting
+                ? "Deleting..."
+                : "Delete"
+            }
+
           </button>
 
         </div>
 
       </div>
 
-      {/* ======================================================
-          Objective Delete Error
-      ====================================================== */}
 
-      {deleteError && (
-        <p className="mb-4 text-sm text-red-600">
-          {
-            deleteError
-          }
-        </p>
-      )}
-
-      {/* ======================================================
-          Objective Weight
-      ====================================================== */}
-
-      {objective.weight !==
-        undefined && (
-        <div className="mb-6 rounded-md border px-4 py-2">
-
-          <p className="text-sm text-muted-foreground">
-            Weight
-          </p>
-
-          <p className="text-lg font-semibold">
-            {
-              objective.weight
-            }%
-          </p>
-
-        </div>
-      )}
-
-      {/* ======================================================
+      {/* ====================================================
           Key Results
-      ====================================================== */}
+      ==================================================== */}
 
-      <div className="space-y-4">
+      <div className="divide-y">
 
-        {objective.keyResults.map(
-          (keyResult) => {
+        {objective.keyResults.length === 0 ? (
 
-            const progress =
-              localKeyResultProgress.find(
-                (item) =>
-                  item.performanceInstanceKeyResultId ===
-                  keyResult.id
+          <div className="px-6 py-8">
+
+            <p className="text-sm text-muted-foreground">
+              No Key Results have been
+              added to this objective yet.
+            </p>
+
+          </div>
+
+        ) : (
+
+          objective.keyResults.map(
+            (keyResult) => {
+
+              const progress =
+                objectiveProgress.find(
+                  (item) =>
+                    item.keyResultId ===
+                    keyResult.id
+                );
+
+
+              return (
+
+                <div
+                  key={
+                    keyResult.id
+                  }
+                  className="px-6 py-5"
+                >
+
+                  <KeyResultRow
+
+                    keyResult={
+                      keyResult
+                    }
+
+                    progress={
+                      progress
+                    }
+
+                    organizationId={
+                      organizationId
+                    }
+
+                    performanceInstanceId={
+                      performanceInstanceId
+                    }
+
+                    performanceMonth={
+                      performanceMonth
+                    }
+
+                    previousKeyResultValues={
+                      previousKeyResultValues
+                    }
+
+                  />
+
+                </div>
               );
-
-            return (
-              <KeyResultRow
-                key={
-                  keyResult.id
-                }
-                keyResult={
-                  keyResult
-                }
-                progress={
-                  progress
-                }
-                organizationId={
-                  organizationId
-                }
-                performanceInstanceId={
-                  performanceInstanceId
-                }
-                onUpdated={
-                  handleKeyResultUpdated
-                }
-                onDeleted={
-                  handleKeyResultDeleted
-                }
-              />
-            );
-          }
+            }
+          )
         )}
 
       </div>
-
-      {/* ======================================================
-          Add Key Result
-      ====================================================== */}
-
-      {addingKeyResult ? (
-        <div className="mt-5">
-
-          <KeyResultEditor
-            onCancel={() =>
-              setAddingKeyResult(
-                false
-              )
-            }
-            onSave={
-              handleCreateKeyResult
-            }
-          />
-
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() =>
-            setAddingKeyResult(
-              true
-            )
-          }
-          disabled={
-            deleting
-          }
-          className="mt-5 w-full rounded-md border border-dashed px-4 py-3 text-sm font-medium hover:bg-muted disabled:opacity-50"
-        >
-          + Add Key Result
-        </button>
-      )}
 
     </section>
   );

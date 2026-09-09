@@ -27,6 +27,11 @@ import KeyResultEditor from "./keyresulteditor";
 
 import Initiatives from "../initiatives/initiatives";
 
+
+/* ==========================================================
+   Props
+========================================================== */
+
 interface KeyResultRowProps {
   keyResult: RuntimePerformanceKeyResult;
 
@@ -35,6 +40,13 @@ interface KeyResultRowProps {
   organizationId: string;
 
   performanceInstanceId: string;
+
+  performanceMonth: string;
+
+  previousKeyResultValues: Record<
+    string,
+    string | number
+  >;
 
   onUpdated?: (
     keyResult: RuntimePerformanceKeyResult
@@ -45,14 +57,29 @@ interface KeyResultRowProps {
   ) => void;
 }
 
+
+/* ==========================================================
+   Key Result Row
+========================================================== */
+
 export default function KeyResultRow({
   keyResult,
+
   progress,
+
   organizationId,
+
   performanceInstanceId,
+
+  performanceMonth,
+
+  previousKeyResultValues,
+
   onUpdated,
+
   onDeleted,
 }: KeyResultRowProps) {
+
   const [
     currentKeyResult,
     setCurrentKeyResult,
@@ -94,6 +121,11 @@ export default function KeyResultRow({
     null
   );
 
+
+  /* ========================================================
+     Target
+  ======================================================== */
+
   const target =
     typeof currentKeyResult.target ===
         "number" ||
@@ -101,6 +133,35 @@ export default function KeyResultRow({
         "string"
       ? currentKeyResult.target
       : "";
+
+
+  /* ========================================================
+     Previous Value
+  ======================================================== */
+
+  const previousValue =
+    currentKeyResult.sourceKeyResultId
+      ? previousKeyResultValues[
+          currentKeyResult.sourceKeyResultId
+        ]
+      : undefined;
+
+
+  /*
+   * The Runtime row receives the actual
+   * Performance Instance month.
+   *
+   * The scoring calculation remains unchanged
+   * in this increment. performanceMonth is
+   * available for the documented "% Into Period"
+   * scoring behavior to be implemented separately.
+   */
+  void performanceMonth;
+
+
+  /* ========================================================
+     Current Score
+  ======================================================== */
 
   const calculatedScore =
     calculatePercentageOfTarget(
@@ -111,6 +172,11 @@ export default function KeyResultRow({
   const score =
     calculatedScore;
 
+
+  /* ========================================================
+     Progress Width
+  ======================================================== */
+
   const progressWidth =
     Math.min(
       Math.max(
@@ -120,13 +186,25 @@ export default function KeyResultRow({
       100
     );
 
+
+  /* ========================================================
+     Runtime Status
+  ======================================================== */
+
   const runtimeStatus =
     currentValue === ""
       ? "not_started"
       : "in_progress";
 
+
+  /* ========================================================
+     Save Current Value
+  ======================================================== */
+
   async function handleSave() {
+
     if (!progress) {
+
       setError(
         "Runtime Key Result Progress record not found."
       );
@@ -134,12 +212,24 @@ export default function KeyResultRow({
       return;
     }
 
-    setSaving(true);
-    setSaved(false);
-    setError(null);
+
+    setSaving(
+      true
+    );
+
+    setSaved(
+      false
+    );
+
+    setError(
+      null
+    );
+
 
     try {
+
       await updateRuntimeKeyResultProgressAction({
+
         organizationId,
 
         performanceInstanceId,
@@ -164,39 +254,60 @@ export default function KeyResultRow({
             : "in_progress",
       });
 
-      setSaved(true);
+
+      setSaved(
+        true
+      );
+
     } catch (error) {
+
       console.error(
         "Failed to save Runtime Key Result progress:",
         error
       );
+
 
       setError(
         error instanceof Error
           ? error.message
           : "Failed to save Runtime Key Result progress."
       );
+
     } finally {
-      setSaving(false);
+
+      setSaving(
+        false
+      );
     }
   }
+
+
+  /* ========================================================
+     Update Key Result
+  ======================================================== */
 
   async function handleUpdate(
     values: {
       title: string;
+
       target: unknown;
+
       measurementType:
         | "percentage"
         | "numeric"
         | "financial";
+
       scoringMethod:
         | "percent_into_period"
         | "percentage_of_target";
+
       weight?: number;
     }
   ) {
+
     const updated =
       await updateRuntimePerformanceInstanceKeyResultAction({
+
         organizationId,
 
         performanceInstanceId,
@@ -220,7 +331,10 @@ export default function KeyResultRow({
           values.weight,
       });
 
-    const runtimeUpdated: RuntimePerformanceKeyResult = {
+
+    const runtimeUpdated:
+      RuntimePerformanceKeyResult = {
+
       ...currentKeyResult,
 
       title:
@@ -239,48 +353,76 @@ export default function KeyResultRow({
         updated.scoringMethod,
     };
 
+
     setCurrentKeyResult(
       runtimeUpdated
     );
 
-    setEditing(false);
-    setSaved(false);
+    setEditing(
+      false
+    );
+
+    setSaved(
+      false
+    );
+
 
     onUpdated?.(
       runtimeUpdated
     );
   }
 
+
+  /* ========================================================
+     Delete Key Result
+  ======================================================== */
+
   async function handleDelete() {
+
     const confirmed =
       window.confirm(
         `Delete "${currentKeyResult.title}"?\n\nThis will remove the Key Result from this Performance Instance.`
       );
 
+
     if (!confirmed) {
       return;
     }
 
-    setDeleting(true);
-    setError(null);
+
+    setDeleting(
+      true
+    );
+
+    setError(
+      null
+    );
+
 
     try {
+
       await deleteRuntimePerformanceInstanceKeyResultAction(
+
         organizationId,
 
         performanceInstanceId,
 
         currentKeyResult.id
+
       );
+
 
       onDeleted?.(
         currentKeyResult.id
       );
+
     } catch (error) {
+
       console.error(
         "Failed to delete Runtime Key Result:",
         error
       );
+
 
       setError(
         error instanceof Error
@@ -288,50 +430,82 @@ export default function KeyResultRow({
           : "Failed to delete Key Result."
       );
 
-      setDeleting(false);
+
+      setDeleting(
+        false
+      );
     }
   }
 
+
+  /* ========================================================
+     Initiative Updates
+  ======================================================== */
+
   function handleInitiativesUpdated(
-    initiatives: RuntimePerformanceInitiative[]
+    initiatives:
+      RuntimePerformanceInitiative[]
   ) {
-    const updated: RuntimePerformanceKeyResult = {
+
+    const updated:
+      RuntimePerformanceKeyResult = {
+
       ...currentKeyResult,
 
       initiatives,
     };
 
+
     setCurrentKeyResult(
       updated
     );
+
 
     onUpdated?.(
       updated
     );
   }
 
+
+  /* ========================================================
+     Editor
+  ======================================================== */
+
   if (editing) {
+
     return (
       <KeyResultEditor
+
         keyResult={
           currentKeyResult
         }
+
         onCancel={() =>
-          setEditing(false)
+          setEditing(
+            false
+          )
         }
+
         onSave={
           handleUpdate
         }
+
       />
     );
   }
 
+
+  /* ========================================================
+     Runtime Row
+  ======================================================== */
+
   return (
+
     <div className="rounded-lg border bg-gray-50 p-5">
 
-      {/* ======================================================
-          Key Result Header
-      ====================================================== */}
+      {/* ====================================================
+          Header
+      ==================================================== */}
 
       <div className="flex items-start justify-between gap-4">
 
@@ -343,26 +517,44 @@ export default function KeyResultRow({
             }
           </h3>
 
+
           <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
 
             {currentKeyResult.measurementType && (
+
               <span className="rounded border bg-white px-2 py-1">
-                {currentKeyResult.measurementType ===
-                "financial"
-                  ? "Financial ($)"
-                  : currentKeyResult.measurementType ===
-                    "percentage"
-                    ? "Percentage"
-                    : "Numeric"}
+
+                {
+                  currentKeyResult.measurementType ===
+                  "financial"
+
+                    ? "Financial ($)"
+
+                    : currentKeyResult.measurementType ===
+                      "percentage"
+
+                      ? "Percentage"
+
+                      : "Numeric"
+                }
+
               </span>
             )}
 
+
             {currentKeyResult.scoringMethod && (
+
               <span className="rounded border bg-white px-2 py-1">
-                {currentKeyResult.scoringMethod ===
-                "percent_into_period"
-                  ? "% Into Period"
-                  : "% of Target"}
+
+                {
+                  currentKeyResult.scoringMethod ===
+                  "percent_into_period"
+
+                    ? "% Into Period"
+
+                    : "% of Target"
+                }
+
               </span>
             )}
 
@@ -370,24 +562,35 @@ export default function KeyResultRow({
 
         </div>
 
+
+        {/* ==================================================
+            Actions
+        ================================================== */}
+
         <div className="flex items-center gap-2">
 
           <span className="rounded bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
+
             {
               currentKeyResult.weight ??
               0
             }% Weight
+
           </span>
+
 
           <button
             type="button"
             onClick={() =>
-              setEditing(true)
+              setEditing(
+                true
+              )
             }
             className="rounded-md border bg-white px-3 py-1 text-xs font-medium"
           >
             Edit
           </button>
+
 
           <button
             type="button"
@@ -399,22 +602,59 @@ export default function KeyResultRow({
             }
             className="rounded-md border border-red-200 bg-white px-3 py-1 text-xs font-medium text-red-600 disabled:opacity-50"
           >
-            {deleting
-              ? "Deleting..."
-              : "Delete"}
+
+            {
+              deleting
+                ? "Deleting..."
+                : "Delete"
+            }
+
           </button>
 
         </div>
 
       </div>
 
-      {/* ======================================================
-          Runtime Values
-      ====================================================== */}
 
-      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+      {/* ====================================================
+          Performance Values
+      ==================================================== */}
 
-        {/* Target */}
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4">
+
+        {/* ==================================================
+            Previous
+        ================================================== */}
+
+        <div>
+
+          <p className="text-xs uppercase tracking-wide text-gray-500">
+            Previous
+          </p>
+
+
+          <p className="mt-2 text-xl font-semibold">
+
+            {
+              previousValue !==
+              undefined
+                ? previousValue
+                : "—"
+            }
+
+          </p>
+
+
+          <p className="mt-1 text-xs text-gray-500">
+            Previous month
+          </p>
+
+        </div>
+
+
+        {/* ==================================================
+            Target
+        ================================================== */}
 
         <div>
 
@@ -422,13 +662,19 @@ export default function KeyResultRow({
             Target
           </p>
 
+
           <p className="mt-2 text-xl font-semibold">
-            {target}
+            {
+              target
+            }
           </p>
 
         </div>
 
-        {/* Current */}
+
+        {/* ==================================================
+            Current
+        ================================================== */}
 
         <div>
 
@@ -439,6 +685,7 @@ export default function KeyResultRow({
             Current
           </label>
 
+
           <input
             id={`current-${currentKeyResult.id}`}
             type="text"
@@ -448,11 +695,14 @@ export default function KeyResultRow({
             onChange={(
               event
             ) => {
+
               setCurrentValue(
                 event.target.value
               );
 
-              setSaved(false);
+              setSaved(
+                false
+              );
             }}
             className="mt-2 w-full rounded-md border bg-white px-3 py-2 text-xl font-semibold"
             placeholder="Enter current value"
@@ -460,7 +710,10 @@ export default function KeyResultRow({
 
         </div>
 
-        {/* Score */}
+
+        {/* ==================================================
+            Score
+        ================================================== */}
 
         <div>
 
@@ -468,17 +721,21 @@ export default function KeyResultRow({
             Score
           </p>
 
+
           <p className="mt-2 text-xl font-semibold">
-            {score}%
+            {
+              score
+            }%
           </p>
 
         </div>
 
       </div>
 
-      {/* ======================================================
-          Runtime Status
-      ====================================================== */}
+
+      {/* ====================================================
+          Status
+      ==================================================== */}
 
       <div className="mt-4">
 
@@ -486,15 +743,19 @@ export default function KeyResultRow({
           Status
         </p>
 
+
         <p className="mt-1 text-sm font-medium">
-          {runtimeStatus}
+          {
+            runtimeStatus
+          }
         </p>
 
       </div>
 
-      {/* ======================================================
+
+      {/* ====================================================
           Save
-      ====================================================== */}
+      ==================================================== */}
 
       <div className="mt-5 flex items-center gap-3">
 
@@ -509,28 +770,45 @@ export default function KeyResultRow({
           }
           className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {saving
-            ? "Saving..."
-            : "Save Current"}
+
+          {
+            saving
+              ? "Saving..."
+              : "Save Current"
+          }
+
         </button>
 
+
         {saved && (
+
           <span className="text-sm text-green-600">
             Saved
           </span>
+
         )}
 
       </div>
 
+
+      {/* ====================================================
+          Error
+      ==================================================== */}
+
       {error && (
+
         <p className="mt-3 text-sm text-red-600">
-          {error}
+          {
+            error
+          }
         </p>
+
       )}
 
-      {/* ======================================================
+
+      {/* ====================================================
           Progress
-      ====================================================== */}
+      ==================================================== */}
 
       <div className="mt-6">
 
@@ -539,7 +817,8 @@ export default function KeyResultRow({
           <div
             className="h-3 rounded-full bg-blue-600"
             style={{
-              width: `${progressWidth}%`,
+              width:
+                `${progressWidth}%`,
             }}
           />
 
@@ -547,23 +826,29 @@ export default function KeyResultRow({
 
       </div>
 
-      {/* ======================================================
-          Runtime Initiatives
-      ====================================================== */}
+
+      {/* ====================================================
+          Initiatives
+      ==================================================== */}
 
       <Initiatives
+
         keyResult={
           currentKeyResult
         }
+
         organizationId={
           organizationId
         }
+
         performanceInstanceId={
           performanceInstanceId
         }
+
         onUpdated={
           handleInitiativesUpdated
         }
+
       />
 
     </div>
