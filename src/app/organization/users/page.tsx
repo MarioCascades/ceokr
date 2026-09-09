@@ -438,6 +438,9 @@ export default function OrganizationUsersPage() {
               records={userRecords}
               onEdit={handleEdit}
               onDeactivate={handleDeactivate}
+              organizationId={
+                organization?.id ?? ""
+              }
             />
           </section>
         )}

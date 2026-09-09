@@ -1,8 +1,35 @@
 import { loadPublishedById } from "@/lib/repositories/performancesheetrepository";
-import { findPerformanceInstancesByOrganization } from "@/lib/repositories/performanceinstancerepository";
-import { findKeyResultProgressByPerformanceInstance } from "@/lib/repositories/keyresultprogressrepository";
-import { loadAssignment } from "@/lib/repositories/assignmentrepository";
+
+import {
+  findPerformanceInstancesByOrganization,
+} from "@/lib/repositories/performanceinstancerepository";
+
+import {
+  findPerformanceInstanceObjectives,
+} from "@/lib/repositories/performanceinstanceobjectiverepository";
+
+import {
+  findPerformanceInstanceKeyResults,
+} from "@/lib/repositories/performanceinstancekeyresultrepository";
+
+import {
+  findPerformanceInstanceInitiativesByKeyResult,
+} from "@/lib/repositories/performanceinstanceinitiativerepository";
+
+import {
+  findKeyResultProgressByPerformanceInstance,
+} from "@/lib/repositories/keyresultprogressrepository";
+
+import {
+  loadAssignment,
+  loadActiveAssignment,
+} from "@/lib/repositories/assignmentrepository";
+
 import { getUser } from "@/services/user.service";
+
+import {
+  buildRuntimePerformanceObjectives,
+} from "@/lib/runtime/runtimeperformance";
 
 export interface RuntimeSubject {
   type: "individual";
@@ -21,42 +48,21 @@ export async function loadRuntimeExecution(
     "approved",
   ] as const;
 
-  /*
-   * ==========================================================
-   * Resolve Performance Instance
-   *
-   * When a subjectId is supplied, Runtime is being opened
-   * for a specific individual. Resolve that person's active
-   * assignment first, then find the matching performance
-   * instance.
-   *
-   * When no subjectId is supplied, preserve the existing
-   * organization-level Runtime behavior.
-   * ==========================================================
-   */
-
   const performanceInstances =
     await findPerformanceInstancesByOrganization(
       organizationId
     );
 
-  let performanceInstance =
-    undefined as
-      | (typeof performanceInstances)[number]
-      | undefined;
-
-  let assignment;
+  let performanceInstance:
+    | (typeof performanceInstances)[number]
+    | undefined;
 
   if (subjectId) {
-    assignment = await import(
-      "@/lib/repositories/assignmentrepository"
-    ).then(
-      ({ loadActiveAssignment }) =>
-        loadActiveAssignment(
-          organizationId,
-          subjectId
-        )
-    );
+    const assignment =
+      await loadActiveAssignment(
+        organizationId,
+        subjectId
+      );
 
     if (!assignment) {
       return null;
@@ -66,51 +72,68 @@ export async function loadRuntimeExecution(
       performanceInstances.find(
         (instance) =>
           instance.assignmentId ===
-            assignment!.id &&
+            assignment.id &&
           runtimeStatuses.includes(
             instance.status as
               (typeof runtimeStatuses)[number]
           )
       );
-  } else {
-    performanceInstance =
-      performanceInstances.find(
-        (instance) =>
-          runtimeStatuses.includes(
-            instance.status as
-              (typeof runtimeStatuses)[number]
-          )
-      );
+
+    if (!performanceInstance) {
+      return null;
+    }
+
+    return buildRuntimeExecution(
+      organizationId,
+      performanceInstance,
+      assignment
+    );
   }
+
+  performanceInstance =
+    performanceInstances.find(
+      (instance) =>
+        runtimeStatuses.includes(
+          instance.status as
+            (typeof runtimeStatuses)[number]
+        )
+    );
 
   if (!performanceInstance) {
     return null;
   }
 
-  /*
-   * ==========================================================
-   * Resolve Assignment
-   * ==========================================================
-   */
-
-  if (!assignment) {
-    assignment = await loadAssignment(
+  const assignment =
+    await loadAssignment(
       organizationId,
       performanceInstance.assignmentId
     );
-  }
 
   if (!assignment) {
     return null;
   }
 
-  /*
-   * ==========================================================
-   * Resolve Runtime Subject
-   * ==========================================================
-   */
+  return buildRuntimeExecution(
+    organizationId,
+    performanceInstance,
+    assignment
+  );
+}
 
-  let subject: RuntimeSubject | null = null;
+async function buildRuntimeExecution(
+  organizationId: string,
+  performanceInstance: Awaited<
+    ReturnType<
+      typeof findPerformanceInstancesByOrganization
+    >
+  >[number],
+  assignment: NonNullable<
+    Awaited<ReturnType<typeof loadAssignment>>
+  >
+) {
+  let subject:
+    | RuntimeSubject
+    | null = null;
 
   if (
     assignment.assignmentType ===
@@ -137,12 +160,6 @@ export async function loadRuntimeExecution(
     };
   }
 
-  /*
-   * ==========================================================
-   * Resolve Published Performance Sheet
-   * ==========================================================
-   */
-
   const performanceSheet =
     await loadPublishedById(
       organizationId,
@@ -153,22 +170,37 @@ export async function loadRuntimeExecution(
     return null;
   }
 
-  /*
-   * ==========================================================
-   * Resolve Key Result Progress
-   * ==========================================================
-   */
+  const instanceObjectives =
+    await findPerformanceInstanceObjectives(
+      performanceInstance.id
+    );
+
+  const instanceKeyResults =
+    await findPerformanceInstanceKeyResults(
+      performanceInstance.id
+    );
+
+  const instanceInitiatives =
+    await Promise.all(
+      instanceKeyResults.map(
+        (keyResult) =>
+          findPerformanceInstanceInitiativesByKeyResult(
+            keyResult.id
+          )
+      )
+    );
+
+  const objectives =
+    buildRuntimePerformanceObjectives(
+      instanceObjectives,
+      instanceKeyResults,
+      instanceInitiatives.flat()
+    );
 
   const keyResultProgress =
     await findKeyResultProgressByPerformanceInstance(
       performanceInstance.id
     );
-
-  /*
-   * ==========================================================
-   * Runtime Execution
-   * ==========================================================
-   */
 
   return {
     assignment,
@@ -176,5 +208,6 @@ export async function loadRuntimeExecution(
     performanceSheet,
     performanceInstance,
     keyResultProgress,
+    objectives,
   };
 }

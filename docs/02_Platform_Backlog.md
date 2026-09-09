@@ -663,29 +663,73 @@ The current scoring utility intentionally remains small.
 
 A generalized KPI Calculation Engine remains future platform work.
 
-Runtime Workspace Enhancements
+Runtime Product Experience
 
 Status
 
-FUTURE
+NEXT MILESTONE
 
-Future enhancements may include:
+The Runtime Execution Foundation and Member Workspace Foundation are
 
-richer Runtime workspace presentation
+established.
 
-weighted aggregation
+The next milestone is to turn those foundations into the complete
 
-additional KPI visualization
+day-to-day performance-management experience.
 
-historical updates
+Priority areas include:
 
-expanded workflow controls
+- richer Runtime workspace presentation
+- member performance workflow
+- monthly navigation
+- previous/current/target performance presentation
+- measurement-type-aware value entry
+- score visibility
+- Objective / Key Result / Initiative presentation
+- initiative add/edit/remove workflow
+- employee comments
+- manager comments
+- Runtime lifecycle presentation
+- manager review / approval experience
+- clear performance status
+- historical month navigation
+- consistent performance-sheet visual hierarchy
 
-additional reporting context
+The work must reuse the existing Runtime engine.
 
-improved member experience
+Do not create a second performance engine or a second Member performance
 
-Runtime Workspace is NOT the current milestone.
+data model.
+
+Mint remains a UX reference, not an architecture to rebuild.
+
+The Runtime Product Experience must remain generated from:
+
+Builder Definition
+
+↓
+
+Published Performance Sheet
+
+↓
+
+Assignment
+
+↓
+
+Monthly Performance Instance
+
+↓
+
+Runtime Data
+
+↓
+
+Member / Manager Experience
+
+Priority
+
+High
 
 Architecture
 
@@ -1399,178 +1443,44 @@ Platform Backlog
 
 Product North Star
 
-Confirm the Member Workspace Foundation milestone before implementation.
+Confirm the Runtime Product Experience milestone before implementation.
 
-The Administration foundation is established for the current scope.
+The following foundations are established:
 
-Completed Administration foundation includes:
+Administration
 
-Organization
+Organization Admin Workspace
 
-Departments
+Builder
 
-Teams
+Runtime Execution Foundation
 
-Users / Members
+Member Workspace Foundation
 
-Roles & Permissions foundation
+Monthly Performance Cadence
 
-Performance Sheet Management
+Member Performance Navigation
 
-Assignment Management
+Objectives / Key Results / Initiatives remain Builder-owned definitions.
 
-Administration Page Structure / Shared Header Standardization
-
-Super Admin Organization context
-
-Organization → Department → Team cascading context
-
-Organization context across child Administration pages
-
-Organization Admin fixed Organization context
-
-One Builder / two administrative entry contexts
-
-Super Admin → Organization Workspace entry
-
-Objectives / Key Results / Initiatives remaining Builder-owned
-
-Monthly cadence without an administrator-managed Reporting Period entity
+Runtime owns period-specific execution state.
 
 The next development phase is:
 
-Member Workspace Foundation
+Runtime Product Experience
 
-Before implementation, inspect the existing Runtime architecture.
+Before implementation, inspect the existing Runtime and Member Workspace
 
-The Member Workspace must:
-
-operate on existing Runtime architecture
-
-consume existing Assignments
-
-consume existing Performance Instances
-
-consume published Performance Sheet versions
-
-preserve the Builder / Runtime boundary
-
-avoid creating a parallel performance engine
-
-avoid duplicating Objective definitions
-
-avoid duplicating Key Result definitions
-
-avoid duplicating Initiative definitions
-
-avoid duplicating KPI calculation logic
-
-avoid creating member-specific Performance Sheet definitions
-
-respect the existing monthly execution model
-
-Production authorization and security hardening remain separate milestones.
-
-The Platform Membership / Super Admin foundation is complete but is not
-
-yet production security hardening.
-
-High-priority architectural hardening remains:
-
-Production Tenant Authorization
-
-Production Row Level Security
-
-Runtime Security Boundaries
-
-Assignment Subject Validation
-
-Performance Instance Relationship Integrity
-
-Historical KPI Updates
-
-KPI Calculation Engine
-
-Weighted Aggregation
-
-Historical Performance Reporting
-
-Other future product capabilities may include:
-
-advanced Performance Sheet management
-
-additional management workflows
-
-Dashboards
-
-Reports
-
-AI configuration
+architecture.
 
 Do not rebuild Builder.
 
-Do not rebuild Runtime.
+Do not create a second Runtime engine.
 
-Do not duplicate Runtime execution logic.
+Do not create a second Member performance data model.
 
-Do not introduce an arbitrary Reporting Period entity.
+Do not reintroduce an administrator-managed Reporting Period entity.
 
-The repository remains the authoritative engineering record.
+Use the latest Waypoint and current architecture as the implementation
 
-Current Deferred Priorities
-
-Priority: High
-
-Member Workspace Foundation
-
-Production Tenant Authorization
-
-Production Row Level Security
-
-Runtime Security Boundaries
-
-Historical KPI Updates
-
-KPI Calculation Engine
-
-Weighted Aggregation
-
-Historical Performance Reporting
-
-Priority: Medium
-
-Assignment Subject Validation
-
-Performance Instance Relationship Integrity
-
-Organization Domain Model
-
-Repository Mappers
-
-Organization table naming standardization
-
-Priority: Future Product
-
-Multiple Performance Sheet Definitions
-
-Performance Sheet Library
-
-Archive
-
-Duplicate
-
-Search
-
-Filtering
-
-Dynamic Dashboard System
-
-Reports
-
-AI-Assisted Planning
-
-Predictive Analytics
-
-CascadEffects Design System
-
-Environment Validation
+starting point.

@@ -13,7 +13,7 @@ import {
 } from "@/lib/repositories/assignmentrepository";
 
 import {
-  findPerformanceInstancesByOrganization,
+  findPerformanceInstanceByAssignmentAndMonth,
 } from "@/lib/repositories/performanceinstancerepository";
 
 import {
@@ -568,12 +568,119 @@ export async function cancelAssignment(
 
 
 /* ==========================================================
-   Create Performance Execution From Assignment
+   Normalize Performance Month
+   ----------------------------------------------------------
+   Canonical Runtime month format:
+   YYYY-MM-01
 ========================================================== */
 
-export async function createPerformanceExecutionFromAssignment(
+function normalizePerformanceMonth(
+  performanceMonth: string
+): string {
+
+  const trimmed =
+    performanceMonth.trim();
+
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      trimmed
+    )
+  ) {
+    throw new Error(
+      "Performance month must use YYYY-MM-DD format."
+    );
+  }
+
+  const [
+    year,
+    month,
+    day,
+  ] =
+    trimmed.split("-");
+
+  const numericMonth =
+    Number(month);
+
+  const numericDay =
+    Number(day);
+
+  if (
+    numericMonth < 1 ||
+    numericMonth > 12
+  ) {
+    throw new Error(
+      "Performance month contains an invalid month."
+    );
+  }
+
+  if (
+    numericDay < 1 ||
+    numericDay > 31
+  ) {
+    throw new Error(
+      "Performance month contains an invalid day."
+    );
+  }
+
+  return `${year}-${month}-01`;
+}
+
+
+/* ==========================================================
+   Validate Requested Performance Month
+========================================================== */
+
+function validatePerformanceMonth(
+  performanceMonth: string
+): string {
+
+  const normalizedMonth =
+    normalizePerformanceMonth(
+      performanceMonth
+    );
+
+  const currentDate =
+    new Date();
+
+  const currentMonth =
+    [
+      currentDate
+        .getFullYear()
+        .toString()
+        .padStart(4, "0"),
+
+      (currentDate.getMonth() + 1)
+        .toString()
+        .padStart(2, "0"),
+
+      "01",
+    ].join("-");
+
+  if (
+    normalizedMonth >
+    currentMonth
+  ) {
+    throw new Error(
+      "Future performance months cannot be created."
+    );
+  }
+
+  return normalizedMonth;
+}
+
+
+/* ==========================================================
+   Create Or Get Performance Execution For Month
+   ----------------------------------------------------------
+   Monthly Runtime identity:
+   one Performance Instance per Assignment per
+   calendar month.
+========================================================== */
+
+export async function getOrCreatePerformanceExecutionForMonth(
   organizationId: string,
-  assignmentId: string
+  assignmentId: string,
+  performanceMonth: string
 ): Promise<PerformanceInstance> {
 
   const assignment =
@@ -599,6 +706,16 @@ export async function createPerformanceExecutionFromAssignment(
 
 
   /* ========================================================
+     Validate Requested Month
+  ======================================================== */
+
+  const normalizedMonth =
+    validatePerformanceMonth(
+      performanceMonth
+    );
+
+
+  /* ========================================================
      Load Exact Published Performance Sheet
   ======================================================== */
 
@@ -610,53 +727,40 @@ export async function createPerformanceExecutionFromAssignment(
 
   if (!performanceSheet) {
     throw new Error(
-      "The published Performance Sheet assigned to this assignment could not be found."
+      "The Performance Sheet assigned to this assignment could not be found."
     );
   }
 
 
   /* ========================================================
-     Prevent Duplicate Active Executions
+     Find Existing Instance
   ======================================================== */
 
-  const existingInstances =
-    await findPerformanceInstancesByOrganization(
-      organizationId
+  const existingInstance =
+    await findPerformanceInstanceByAssignmentAndMonth(
+      organizationId,
+      assignment.id,
+      normalizedMonth
     );
 
-  const existingExecution =
-    existingInstances.find(
-      (instance) =>
-        instance.assignmentId ===
-          assignment.id &&
-        (
-          instance.status ===
-            "not_started" ||
-          instance.status ===
-            "in_progress" ||
-          instance.status ===
-            "submitted" ||
-          instance.status ===
-            "approved"
-        )
-    );
-
-  if (existingExecution) {
+  if (existingInstance) {
 
     /*
-     * Runtime initialization is intentionally idempotent.
+     * Initialization is idempotent.
+     *
+     * Existing Runtime progress is never overwritten.
      */
     await initializePerformanceInstance(
-      existingExecution,
+      existingInstance,
       performanceSheet.document
     );
 
-    return existingExecution;
+    return existingInstance;
   }
 
 
   /* ========================================================
-     Create Performance Execution
+     Create Requested Monthly Instance
   ======================================================== */
 
   const performanceInstance =
@@ -669,6 +773,9 @@ export async function createPerformanceExecutionFromAssignment(
 
         performanceSheetId:
           performanceSheet.id,
+
+        performanceMonth:
+          normalizedMonth,
 
         overallScore:
           0,
@@ -702,4 +809,39 @@ export async function createPerformanceExecutionFromAssignment(
     );
 
   return performanceInstance;
+}
+
+
+/* ==========================================================
+   Create Performance Execution From Assignment
+   ----------------------------------------------------------
+   Convenience wrapper for the current calendar month.
+========================================================== */
+
+export async function createPerformanceExecutionFromAssignment(
+  organizationId: string,
+  assignmentId: string
+): Promise<PerformanceInstance> {
+
+  const now =
+    new Date();
+
+  const performanceMonth =
+    [
+      now.getFullYear()
+        .toString()
+        .padStart(4, "0"),
+
+      (now.getMonth() + 1)
+        .toString()
+        .padStart(2, "0"),
+
+      "01",
+    ].join("-");
+
+  return getOrCreatePerformanceExecutionForMonth(
+    organizationId,
+    assignmentId,
+    performanceMonth
+  );
 }

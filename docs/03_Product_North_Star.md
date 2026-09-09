@@ -806,13 +806,17 @@ re-established from the documentation.
 
 Current Project Position
 
-As of the latest completed implementation Waypoint (Waypoint 18):
+As of Waypoint 24:
 
 Builder: COMPLETE / ESTABLISHED
 
 Runtime Execution Foundation: COMPLETE / ESTABLISHED
 
-Administration: IN PROGRESS
+Administration Foundation: COMPLETE / ESTABLISHED
+
+Organization Admin Workspace Foundation: COMPLETE / ESTABLISHED
+
+Member Workspace Foundation: COMPLETE / ESTABLISHED
 
 Organization: COMPLETE
 
@@ -832,7 +836,13 @@ Performance Sheet Management: COMPLETE
 
 Assignment Management: COMPLETE
 
-Dashboards: FUTURE
+Objectives / Key Results / Initiatives: BUILDER-OWNED / ESTABLISHED
+
+Monthly Performance Cadence: ESTABLISHED PRODUCT RULE
+
+Member Performance Navigation: ESTABLISHED
+
+Dashboards: V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
 
 Reports: FUTURE
 
@@ -840,8 +850,17 @@ AI: FUTURE
 
 Production Authorization / RLS: OUTSTANDING
 
-The next development direction must be selected from the current
-Waypoint, Platform Decisions, and Platform Backlog.
+Runtime Security Boundaries: DEFERRED
+
+Historical KPI Updates: DEFERRED
+
+KPI Calculation Engine: DEFERRED
+
+Weighted Aggregation: DEFERRED
+
+The next development milestone is:
+
+Runtime Product Experience
 
 Current Security Boundary
 
@@ -895,6 +914,109 @@ server services
 API routes
 
 database / RLS
+
+Runtime Is the Product Experience
+
+The Runtime layer is the execution engine that turns a published
+Performance Sheet into a working performance-management experience.
+
+The intended product flow is:
+
+Builder Definition
+
+↓
+
+Published Performance Sheet Version
+
+↓
+
+Assignment
+
+↓
+
+Monthly Performance Instance
+
+↓
+
+Runtime Execution
+
+↓
+
+Member / Manager Performance Experience
+
+↓
+
+Historical Performance
+
+The Member Workspace is a presentation, navigation, and workflow layer
+over Runtime.
+
+It must not become a second performance engine.
+
+Members operate on their own authorized Runtime performance state.
+
+Administrators and managers may operate on Runtime state according to their
+eventual authorization scope.
+
+Mint remains the Version 1 operational and UX reference for the type of
+performance experience CascadEffects must be able to generate.
+
+The platform is not rebuilding Mint.
+
+Instead, the platform must generate equivalent classes of performance
+experiences dynamically from reusable definitions, assignments, monthly
+execution data, and permissions.
+
+The Runtime Product Experience should ultimately provide:
+
+- member identity and role context
+- organization context
+- month selection
+- previous month performance
+- current month performance
+- target values
+- current values
+- scores
+- Objectives
+- Key Results
+- Initiatives
+- employee comments
+- manager comments
+- lifecycle state
+- manager review / approval where applicable
+- historical navigation
+
+The experience must remain data-driven and reusable across organizations.
+
+No organization-specific person, Objective, Key Result, dashboard, reporting
+structure, or KPI calculation should be hardcoded into the product.
+
+Monthly performance is a product rule.
+
+The platform does not require an administrator-managed arbitrary Reporting
+Period entity to operate monthly performance.
+
+Historical performance should be derived from dated Performance Instances
+and Runtime records.
+
+The current Runtime scoring model remains intentionally small:
+
+- Percentage of Target
+- Percent Into Period
+
+A generalized KPI Calculation Engine remains future platform work.
+
+The final product promise remains:
+
+Configure once.
+
+Publish once.
+
+Assign.
+
+Generate monthly performance execution repeatedly.
+
+---
 
 The Final Test
 

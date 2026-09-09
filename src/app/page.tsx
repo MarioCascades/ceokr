@@ -25,7 +25,9 @@ const DEMO_ROLE_LABELS: Record<DemoRole, string> = {
   member: "Member",
 };
 
-function getUserDisplayName(record: UserManagementRecord) {
+function getUserDisplayName(
+  record: UserManagementRecord
+) {
   return (
     record.user.display_name?.trim() ||
     `${record.user.first_name} ${record.user.last_name}`.trim() ||
@@ -144,19 +146,21 @@ export default function Home() {
 
   /*
    * ========================================================
-   * Administration Navigation
+   * Organization Management Navigation
    * ========================================================
    *
-   * Super Admin enters the platform administration
-   * experience from this development workspace.
+   * Organization Management is a platform-level
+   * Super Admin operation.
+   *
+   * It intentionally does NOT include organizationId.
+   *
+   * This allows a Platform Super Admin to create a
+   * completely new organization without first entering
+   * an existing organization context.
    */
 
-  const adminHref =
-    selectedOrganizationId
-      ? `/admin?organizationId=${encodeURIComponent(
-          selectedOrganizationId
-        )}`
-      : "/admin";
+  const organizationManagementHref =
+    "/admin/organization";
 
   /*
    * ========================================================
@@ -184,31 +188,33 @@ export default function Home() {
 
   /*
    * ========================================================
-   * Runtime Navigation
+   * Member Workspace Navigation
    * ========================================================
    *
-   * Members currently enter their own performance runtime
-   * using the selected member as the development subject.
+   * Members enter the Member Workspace.
    *
-   * Organization Performance uses only the selected
-   * organization context. The eventual authenticated
-   * runtime authorization model will determine what the
-   * current actor may view or edit.
+   * The Member Workspace is responsible for selecting
+   * the monthly Performance Instance.
+   *
+   * The member's own identity is currently supplied by
+   * the development workspace. Production authentication
+   * and authorization will replace this development
+   * subject context later.
    */
 
-  const runtimeHref =
+  const memberWorkspaceHref =
     selectedOrganizationId &&
     selectedMemberId
-      ? `/runtime?organizationId=${encodeURIComponent(
+      ? `/member?organizationId=${encodeURIComponent(
           selectedOrganizationId
         )}&subjectId=${encodeURIComponent(
           selectedMemberId
         )}`
       : selectedOrganizationId
-        ? `/runtime?organizationId=${encodeURIComponent(
+        ? `/member?organizationId=${encodeURIComponent(
             selectedOrganizationId
           )}`
-        : "/runtime";
+        : "/member";
 
   const organizationPerformanceHref =
     selectedOrganizationId
@@ -476,12 +482,11 @@ export default function Home() {
               <Button
                 asChild
                 className="w-full"
-                disabled={
-                  !selectedOrganizationId
-                }
               >
-                <a href={adminHref}>
-                  Open Administration
+                <a
+                  href={organizationManagementHref}
+                >
+                  Manage Organizations
                 </a>
               </Button>
 
@@ -613,7 +618,9 @@ export default function Home() {
                   !selectedMemberId
                 }
               >
-                <a href={runtimeHref}>
+                <a
+                  href={memberWorkspaceHref}
+                >
                   Open My Performance
                 </a>
               </Button>

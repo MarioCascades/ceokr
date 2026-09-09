@@ -112,7 +112,9 @@ export default function UsersPage() {
         setErrorMessage(null);
 
         const existingOrganization =
-          await getOrganization(selectedOrganizationId ?? undefined);
+          await getOrganization(
+            selectedOrganizationId ?? undefined
+          );
 
         if (!existingOrganization) {
           setErrorMessage(
@@ -540,6 +542,9 @@ export default function UsersPage() {
             <UsersList
               records={
                 userRecords
+              }
+              organizationId={
+                organization?.id ?? ""
               }
               onEdit={
                 handleEdit

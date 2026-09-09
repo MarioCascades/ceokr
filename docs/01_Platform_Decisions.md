@@ -1050,45 +1050,49 @@ Builder
 
 Established
 
-Runtime
+Runtime Execution Foundation
 
 Established
 
+Administration Foundation
+
+Established
+
+Member Workspace Foundation
+
+Established
+
+The current platform flow is:
+
 Administration
 
-In active development
+↓
 
-Current Administration hierarchy:
-
-Organization
+Builder
 
 ↓
 
-Departments
+Published Performance Sheet
 
 ↓
 
-Teams
+Assignment
 
 ↓
 
-Users / Members
+Monthly Performance Instance
 
 ↓
 
-Organization Membership
+Runtime Execution
 
 ↓
 
-Roles / Permissions
+Member Workspace / Performance Experience
 
 ↓
 
-Performance Sheets
-
-↓
-
-Assignments
+Historical Performance Data / Reporting
 
 Platform authority exists above the Organization hierarchy:
 
@@ -1110,25 +1114,82 @@ Platform Super Admins are not Organization Roles and do not require an
 
 Organization Membership in every Organization they administer.
 
-The Builder and Runtime architectures should not be rebuilt as part of the
+The Builder remains the authoritative construction engine for reusable
 
-current Administration completion phase.
+Performance Sheet definitions.
+
+Runtime remains the authoritative execution engine for period-specific
+
+performance state and mutable performance values.
+
+The Member Workspace is a presentation, navigation, and workflow layer
+
+over Runtime. It does not introduce a second performance engine.
 
 Current Administration foundations include:
 
 - Organization
-
 - Departments
-
 - Teams
-
 - Users / Members
-
-- Roles & Permissions
-
+- Roles & Permissions foundation
 - Performance Sheet Management
-
 - Assignment Management
+- Administration Page Structure / Shared Header Standardization
+- Super Admin Organization Context
+- Organization → Department → Team cascading context
+- Organization Admin fixed Organization context
+- One Builder / two administrative entry contexts
+
+Current Builder foundations include:
+
+- Performance Sheet definitions
+- Objectives
+- Key Results
+- Initiatives
+- Draft editing
+- Publishing
+- Published version immutability
+- Key Result measurement configuration
+- Key Result scoring configuration
+
+Current Runtime foundations include:
+
+- Assignment resolution
+- Published Performance Sheet resolution
+- Monthly Performance Instance resolution
+- Runtime Objective state
+- Runtime Key Result state
+- Runtime Initiative state
+- Key Result Progress
+- Current value
+- Score
+- Employee comments
+- Manager comments
+- Runtime lifecycle state
+- Runtime editing of the working Performance Instance
+
+Current Member Workspace foundation includes:
+
+- Member-specific Performance navigation
+- Monthly Performance Instance selection
+- Access to the member's Runtime execution
+- Member editing of their own performance state
+- Reuse of the same Runtime execution architecture used by administrative actors
+
+Monthly performance is an established product rule.
+
+The platform does not require an administrator-managed arbitrary
+
+ReportingPeriod entity to make monthly performance work.
+
+Legacy Reporting Period persistence may remain temporarily as migration
+
+or cleanup work, but Reporting Period is not a user-facing product concept
+
+and must not be reintroduced into new Assignment, Performance Instance,
+
+Runtime, Member Workspace, or Administration workflows.
 
 Status
 
@@ -1140,55 +1201,240 @@ Accepted
 
 The current development phase is:
 
-Administration completion and platform hardening.
+Runtime Product Experience.
 
-Completed Administration capabilities include:
+The platform foundations required for the current product direction are
 
-- Organization
+established:
 
-- Departments
+- Administration foundation
+- Organization Admin Workspace foundation
+- Builder
+- Runtime Execution Foundation
+- Member Workspace foundation
+- Monthly Performance cadence
+- Member Performance navigation
+- Runtime Objective / Key Result / Initiative editing foundation
 
-- Teams
+The next milestone is not a new performance engine.
 
-- Users / Members
+The next milestone is to turn the established Runtime architecture into the
 
-- Roles & Permissions
+complete product experience that organizations and members will use for
 
-- Performance Sheet Management
+day-to-day performance management.
 
-- Assignment Management
+The Runtime Product Experience should make the following experience coherent
 
-The next milestone must always be confirmed against the latest Waypoint and
+and reusable:
 
-Platform Backlog before implementation.
+- Member identity and role context
+- Organization context
+- Member performance page
+- Monthly performance navigation
+- Previous month performance
+- Current month performance
+- Target values
+- Current values
+- Scores
+- Objectives
+- Key Results
+- Initiatives
+- Comments
+- Runtime lifecycle
+- Manager review / approval where applicable
+- Clear performance status
+- Consistent visual hierarchy
+- Data-driven rendering from the published Performance Sheet and Runtime data
 
-The Platform Membership and Platform Super Admin authorization foundation
+Mint remains the UX reference for the type of performance experience the
 
-is now established.
+platform must be able to generate.
 
-Production authorization and security remain separate architecture
+Mint must not become the architecture.
 
-milestones.
+The product experience should be generated from:
 
-High-priority future architecture includes:
+Builder Definition
 
-- production tenant authorization
+↓
 
-- production Row Level Security
+Published Performance Sheet Version
 
-- Runtime security boundaries
+↓
 
-- Assignment Subject Validation
+Assignment
 
-- Performance Instance Relationship Integrity
+↓
 
-- Historical KPI Updates
+Monthly Performance Instance
 
-- generalized KPI Calculation Engine
+↓
 
-- weighted aggregation
+Runtime Data
+
+↓
+
+Member / Manager Performance Experience
 
 The Builder and Runtime foundations should not be rebuilt.
+
+The next product work should improve the experience and complete missing
+
+Runtime workflows without creating duplicate sources of truth.
+
+Separate high-priority architecture milestones remain:
+
+- production tenant authorization
+- production Row Level Security
+- Runtime security boundaries
+- Assignment Subject Validation
+- Performance Instance Relationship Integrity
+- Historical KPI Updates
+- generalized KPI Calculation Engine
+- weighted aggregation
+
+Status
+
+Accepted
+
+---
+
+# 39. Runtime Product Experience Direction
+
+The Runtime Product Experience is the next major product milestone.
+
+The purpose of this milestone is to turn the existing Runtime execution
+
+foundation and Member Workspace foundation into the primary day-to-day
+
+performance-management experience.
+
+The product must remain data-driven.
+
+The experience must be generated from:
+
+- Organization
+- User / Member
+- Assignment
+- Published Performance Sheet Version
+- Monthly Performance Instance
+- Runtime Objectives
+- Runtime Key Results
+- Runtime Initiatives
+- Key Result Progress
+- Runtime comments
+- Runtime lifecycle state
+- Validated measurement and scoring configuration
+
+The experience should support the core monthly workflow:
+
+Member
+
+↓
+
+Open My Performance
+
+↓
+
+Select Month
+
+↓
+
+Review Objectives
+
+↓
+
+Review Key Results
+
+↓
+
+Review Previous Month
+
+↓
+
+Enter / update Current Month value
+
+↓
+
+Review Target
+
+↓
+
+Review Score
+
+↓
+
+Add or update Initiatives when needed
+
+↓
+
+Save performance state
+
+↓
+
+Submit when ready
+
+↓
+
+Manager review / approval where applicable
+
+The exact workflow may evolve, but the architectural rule does not:
+
+Runtime owns execution.
+
+Member Workspace presents and operates Runtime state.
+
+Builder owns reusable definitions.
+
+The Member Workspace must never become a second definition system.
+
+The Runtime Product Experience should progressively support:
+
+- clearer performance-sheet presentation
+- reliable month navigation
+- member editing
+- manager review
+- lifecycle controls
+- Objective and Key Result presentation
+- Initiative presentation
+- measurement-type-aware value entry
+- scoring visibility
+- comments
+- performance status
+- historical navigation
+- future reporting
+
+Scoring remains intentionally small in the current Runtime.
+
+The current supported methods are:
+
+- Percentage of Target
+- Percent Into Period
+
+A generalized KPI Calculation Engine remains future architecture work.
+
+The platform should not introduce arbitrary formula execution into the UI.
+
+Future calculation capabilities should use validated, reusable configuration
+
+rather than arbitrary JavaScript or SQL supplied by a user.
+
+Runtime Product Experience is also where the platform must demonstrate the
+
+central product promise:
+
+Configure once.
+
+Publish once.
+
+Assign.
+
+Generate monthly performance execution repeatedly.
+
+The experience must work across organizations without hardcoded people,
+
+objectives, Key Results, dashboards, reporting structures, or KPI logic.
 
 Status
 

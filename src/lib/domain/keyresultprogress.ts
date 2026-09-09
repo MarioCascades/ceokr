@@ -19,7 +19,18 @@ export interface KeyResultProgress {
   performanceInstanceId: PerformanceInstance["id"];
 
   /*
-   * References the immutable Builder definition.
+   * References the Performance Instance snapshot Key Result.
+   *
+   * This is the Runtime source of truth for the Key Result
+   * being measured.
+   */
+  performanceInstanceKeyResultId: string;
+
+  /*
+   * Legacy Builder source identifiers.
+   *
+   * These are retained temporarily for compatibility with
+   * existing Runtime code and historical records.
    */
   objectiveId: string;
 

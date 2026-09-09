@@ -1,0 +1,2 @@
+ALTER TABLE performance_instance_objectives
+ALTER COLUMN source_objective_id DROP NOT NULL;

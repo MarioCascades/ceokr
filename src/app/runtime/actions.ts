@@ -16,6 +16,24 @@ import {
   transitionPerformanceInstance,
 } from "@/lib/runtime/transitionperformanceinstance";
 
+import {
+  createRuntimePerformanceInstanceKeyResult,
+  updateRuntimePerformanceInstanceKeyResult,
+  deleteRuntimePerformanceInstanceKeyResult,
+} from "@/lib/runtime/manageperformanceinstancekeyresults";
+
+import {
+  createRuntimePerformanceInstanceObjective,
+  updateRuntimePerformanceInstanceObjective,
+  deleteRuntimePerformanceInstanceObjective,
+} from "@/lib/runtime/manageperformanceinstanceobjectives";
+
+import {
+  createRuntimePerformanceInstanceInitiative,
+  updateRuntimePerformanceInstanceInitiative,
+  deleteRuntimePerformanceInstanceInitiative,
+} from "@/lib/runtime/manageperformanceinstanceinitiatives";
+
 import type {
   PerformanceInstanceTransition,
 } from "@/lib/runtime/transitionperformanceinstance";
@@ -28,8 +46,20 @@ import type {
   PerformanceInstance,
 } from "@/lib/domain/performanceinstance";
 
+import type {
+  PerformanceInstanceKeyResult,
+} from "@/lib/domain/performanceinstancekeyresult";
+
+import type {
+  PerformanceInstanceObjective,
+} from "@/lib/domain/performanceinstanceobjective";
+
+import type {
+  PerformanceInstanceInitiative,
+} from "@/lib/domain/performanceinstanceinitiative";
+
 /* ==========================================================
-   Update Runtime Key Result Progress
+   Runtime Key Result Progress
 ========================================================== */
 
 export interface UpdateRuntimeKeyResultProgressActionInput {
@@ -50,10 +80,6 @@ export interface UpdateRuntimeKeyResultProgressActionInput {
   status: KeyResultProgress["status"];
 }
 
-/* ==========================================================
-   Update Key Result Progress
-========================================================== */
-
 export async function updateRuntimeKeyResultProgressAction(
   input: UpdateRuntimeKeyResultProgressActionInput
 ): Promise<{
@@ -67,7 +93,211 @@ export async function updateRuntimeKeyResultProgressAction(
 }
 
 /* ==========================================================
-   Update Runtime Employee Comments
+   Runtime Objective Management
+========================================================== */
+
+export interface CreateRuntimePerformanceInstanceObjectiveActionInput {
+  organizationId: string;
+
+  performanceInstanceId: string;
+
+  title: string;
+
+  description?: string;
+}
+
+export async function createRuntimePerformanceInstanceObjectiveAction(
+  input: CreateRuntimePerformanceInstanceObjectiveActionInput
+): Promise<PerformanceInstanceObjective> {
+  return createRuntimePerformanceInstanceObjective(
+    input
+  );
+}
+
+export interface UpdateRuntimePerformanceInstanceObjectiveActionInput {
+  organizationId: string;
+
+  performanceInstanceId: string;
+
+  objectiveId: string;
+
+  title: string;
+
+  description?: string;
+}
+
+export async function updateRuntimePerformanceInstanceObjectiveAction(
+  input: UpdateRuntimePerformanceInstanceObjectiveActionInput
+): Promise<PerformanceInstanceObjective> {
+  return updateRuntimePerformanceInstanceObjective(
+    input
+  );
+}
+
+export async function deleteRuntimePerformanceInstanceObjectiveAction(
+  organizationId: string,
+
+  performanceInstanceId: string,
+
+  objectiveId: string
+): Promise<void> {
+  return deleteRuntimePerformanceInstanceObjective(
+    organizationId,
+    performanceInstanceId,
+    objectiveId
+  );
+}
+
+/* ==========================================================
+   Runtime Key Result Management
+========================================================== */
+
+export interface CreateRuntimePerformanceInstanceKeyResultActionInput {
+  organizationId: string;
+
+  performanceInstanceId: string;
+
+  performanceInstanceObjectiveId: string;
+
+  title: string;
+
+  target: unknown;
+
+  measurementType?:
+    | "percentage"
+    | "numeric"
+    | "financial";
+
+  scoringMethod?:
+    | "percent_into_period"
+    | "percentage_of_target";
+
+  weight?: number;
+}
+
+export async function createRuntimePerformanceInstanceKeyResultAction(
+  input: CreateRuntimePerformanceInstanceKeyResultActionInput
+): Promise<{
+  keyResult: PerformanceInstanceKeyResult;
+
+  progress: KeyResultProgress;
+}> {
+  return createRuntimePerformanceInstanceKeyResult(
+    input
+  );
+}
+
+export interface UpdateRuntimePerformanceInstanceKeyResultActionInput {
+  organizationId: string;
+
+  performanceInstanceId: string;
+
+  keyResultId: string;
+
+  title: string;
+
+  target: unknown;
+
+  measurementType?:
+    | "percentage"
+    | "numeric"
+    | "financial";
+
+  scoringMethod?:
+    | "percent_into_period"
+    | "percentage_of_target";
+
+  weight?: number;
+}
+
+export async function updateRuntimePerformanceInstanceKeyResultAction(
+  input: UpdateRuntimePerformanceInstanceKeyResultActionInput
+): Promise<PerformanceInstanceKeyResult> {
+  return updateRuntimePerformanceInstanceKeyResult(
+    input
+  );
+}
+
+export async function deleteRuntimePerformanceInstanceKeyResultAction(
+  organizationId: string,
+
+  performanceInstanceId: string,
+
+  keyResultId: string
+): Promise<void> {
+  return deleteRuntimePerformanceInstanceKeyResult(
+    organizationId,
+
+    performanceInstanceId,
+
+    keyResultId
+  );
+}
+
+/* ==========================================================
+   Runtime Initiative Management
+========================================================== */
+
+export interface CreateRuntimePerformanceInstanceInitiativeActionInput {
+  organizationId: string;
+
+  performanceInstanceId: string;
+
+  performanceInstanceKeyResultId: string;
+
+  text: string;
+}
+
+export async function createRuntimePerformanceInstanceInitiativeAction(
+  input: CreateRuntimePerformanceInstanceInitiativeActionInput
+): Promise<PerformanceInstanceInitiative> {
+  return createRuntimePerformanceInstanceInitiative(
+    input
+  );
+}
+
+export interface UpdateRuntimePerformanceInstanceInitiativeActionInput {
+  organizationId: string;
+
+  performanceInstanceId: string;
+
+  performanceInstanceKeyResultId: string;
+
+  initiativeId: string;
+
+  text: string;
+}
+
+export async function updateRuntimePerformanceInstanceInitiativeAction(
+  input: UpdateRuntimePerformanceInstanceInitiativeActionInput
+): Promise<PerformanceInstanceInitiative> {
+  return updateRuntimePerformanceInstanceInitiative(
+    input
+  );
+}
+
+export async function deleteRuntimePerformanceInstanceInitiativeAction(
+  organizationId: string,
+
+  performanceInstanceId: string,
+
+  performanceInstanceKeyResultId: string,
+
+  initiativeId: string
+): Promise<void> {
+  return deleteRuntimePerformanceInstanceInitiative(
+    organizationId,
+
+    performanceInstanceId,
+
+    performanceInstanceKeyResultId,
+
+    initiativeId
+  );
+}
+
+/* ==========================================================
+   Employee Comments
 ========================================================== */
 
 export interface UpdateRuntimeEmployeeCommentsActionInput {
@@ -78,10 +308,6 @@ export interface UpdateRuntimeEmployeeCommentsActionInput {
   employeeComments: string;
 }
 
-/* ==========================================================
-   Update Employee Comments
-========================================================== */
-
 export async function updateRuntimeEmployeeCommentsAction(
   input: UpdateRuntimeEmployeeCommentsActionInput
 ): Promise<PerformanceInstance> {
@@ -91,7 +317,7 @@ export async function updateRuntimeEmployeeCommentsAction(
 }
 
 /* ==========================================================
-   Update Runtime Manager Comments
+   Manager Comments
 ========================================================== */
 
 export interface UpdateRuntimeManagerCommentsActionInput {
@@ -102,10 +328,6 @@ export interface UpdateRuntimeManagerCommentsActionInput {
   managerComments: string;
 }
 
-/* ==========================================================
-   Update Manager Comments
-========================================================== */
-
 export async function updateRuntimeManagerCommentsAction(
   input: UpdateRuntimeManagerCommentsActionInput
 ): Promise<PerformanceInstance> {
@@ -115,7 +337,7 @@ export async function updateRuntimeManagerCommentsAction(
 }
 
 /* ==========================================================
-   Runtime Performance Instance Lifecycle
+   Performance Instance Lifecycle
 ========================================================== */
 
 export interface TransitionPerformanceInstanceActionInput {
@@ -126,16 +348,14 @@ export interface TransitionPerformanceInstanceActionInput {
   transition: PerformanceInstanceTransition;
 }
 
-/* ==========================================================
-   Transition Performance Instance
-========================================================== */
-
 export async function transitionPerformanceInstanceAction(
   input: TransitionPerformanceInstanceActionInput
 ): Promise<PerformanceInstance> {
   return transitionPerformanceInstance(
     input.organizationId,
+
     input.performanceInstanceId,
+
     input.transition
   );
 }
