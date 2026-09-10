@@ -1,5 +1,9 @@
 import PerformanceSheet from "@/components/runtime/performancesheet/performancesheet";
 
+import RuntimeNavigation from "@/components/runtime/shared/runtimenavigation";
+
+import RuntimeOverview from "@/components/runtime/shared/runtimeoverview";
+
 import {
   loadRuntimeExecution,
 } from "@/lib/runtime/runtimeexecution";
@@ -16,13 +20,17 @@ import {
   loadDashboard,
 } from "@/services/dashboard.service";
 
+
 interface RuntimePageProps {
   searchParams: Promise<{
     organizationId?: string;
 
     subjectId?: string;
+
+    performanceMonth?: string;
   }>;
 }
+
 
 export default async function RuntimePage({
   searchParams,
@@ -73,7 +81,9 @@ export default async function RuntimePage({
     loadRuntimeExecution(
       organization.id,
 
-      params.subjectId
+      params.subjectId,
+
+      params.performanceMonth
     ),
 
     listUserManagementRecords(
@@ -127,7 +137,65 @@ export default async function RuntimePage({
 
 
   /* ========================================================
-     Runtime Product
+     Organization Dashboard
+  ======================================================== */
+
+  if (!params.subjectId) {
+
+    return (
+      <main
+        className="
+          mx-auto
+          w-full
+          max-w-[1500px]
+          space-y-8
+          px-4
+          py-6
+          sm:px-6
+          lg:px-8
+          xl:px-10
+        "
+      >
+
+        <RuntimeNavigation
+
+          organizationId={
+            organization.id
+          }
+
+          members={
+            activeMembers
+          }
+
+          performanceMonth={
+            runtimeExecution
+              .performanceInstance
+              .performanceMonth
+          }
+
+          performanceMonths={
+            runtimeExecution
+              .performanceMonths
+          }
+
+        />
+
+
+        <RuntimeOverview
+
+          dashboard={
+            dashboard
+          }
+
+        />
+
+      </main>
+    );
+  }
+
+
+  /* ========================================================
+     Individual Member Performance
   ======================================================== */
 
   return (
@@ -189,6 +257,12 @@ export default async function RuntimePage({
       previousKeyResultValues={
         runtimeExecution
           .previousKeyResultValues
+      }
+
+
+      performanceMonths={
+        runtimeExecution
+          .performanceMonths
       }
 
     />

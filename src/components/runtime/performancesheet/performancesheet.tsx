@@ -85,6 +85,12 @@ interface PerformanceSheetProps {
 
   dashboard?: DashboardData;
 
+  /*
+   * Available monthly Performance Instances for
+   * the current Runtime assignment.
+   */
+  performanceMonths: string[];
+
   memberMode?: boolean;
 }
 
@@ -113,6 +119,8 @@ export default function PerformanceSheet({
   members = [],
 
   dashboard,
+
+  performanceMonths,
 
   memberMode = false,
 
@@ -313,17 +321,22 @@ export default function PerformanceSheet({
   ======================================================== */
 
   return (
-    <main className="mx-auto max-w-7xl space-y-8 p-6 md:p-8">
-
+    <main
+      className="
+        mx-auto
+        w-full
+        max-w-[1500px]
+        space-y-8
+        px-4
+        py-6
+        sm:px-6
+        lg:px-8
+        xl:px-10
+      "
+    >
 
       {/* ======================================================
           Runtime Navigation
-
-          Only the organization Runtime supplies the
-          organization member navigation context.
-
-          Member Workspace continues to use the same
-          PerformanceSheet without creating another engine.
       ====================================================== */}
 
       {!memberMode &&
@@ -343,6 +356,14 @@ export default function PerformanceSheet({
             subject?.id
           }
 
+          performanceMonth={
+            performanceInstance.performanceMonth
+          }
+
+          performanceMonths={
+            performanceMonths
+          }
+
         />
 
       )}
@@ -350,9 +371,6 @@ export default function PerformanceSheet({
 
       {/* ======================================================
           Organization Dashboard
-
-          Dashboard is intentionally only rendered when the
-          organization Runtime provides dashboard data.
       ====================================================== */}
 
       {!memberMode &&
@@ -406,21 +424,67 @@ export default function PerformanceSheet({
           Performance Workflow
       ====================================================== */}
 
-      <section className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+      <section
+        className="
+          overflow-hidden
+          rounded-2xl
+          border
+          border-border/80
+          bg-card
+          shadow-[0_8px_30px_rgba(8,37,80,0.05)]
+        "
+      >
 
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div
+          className="
+            flex
+            flex-col
+            gap-6
+            px-6
+            py-6
+            md:px-8
+            md:py-7
+            lg:flex-row
+            lg:items-center
+            lg:justify-between
+          "
+        >
 
-          <div>
+          <div className="min-w-0">
 
-            <p className="text-sm font-medium text-primary">
+            <p
+              className="
+                text-xs
+                font-bold
+                uppercase
+                tracking-[0.16em]
+                text-primary
+              "
+            >
               Workflow
             </p>
 
-            <h2 className="mt-1 text-xl font-semibold tracking-tight">
+            <h2
+              className="
+                mt-2
+                text-2xl
+                font-black
+                tracking-tight
+                text-primary
+              "
+            >
               Performance Status
             </h2>
 
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p
+              className="
+                mt-2
+                max-w-2xl
+                text-sm
+                leading-6
+                text-muted-foreground
+              "
+            >
               Move this monthly performance instance
               through its current workflow stage.
             </p>
@@ -428,7 +492,14 @@ export default function PerformanceSheet({
           </div>
 
 
-          <div className="flex flex-wrap gap-3">
+          <div
+            className="
+              flex
+              shrink-0
+              flex-wrap
+              gap-3
+            "
+          >
 
             {currentStatus ===
               "not_started" && (
@@ -443,7 +514,23 @@ export default function PerformanceSheet({
                 disabled={
                   transitioning
                 }
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                className="
+                  rounded-xl
+                  bg-primary
+                  px-5
+                  py-2.5
+                  text-sm
+                  font-bold
+                  text-primary-foreground
+                  shadow-sm
+                  transition-all
+                  duration-200
+                  hover:-translate-y-px
+                  hover:shadow-md
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                  disabled:hover:translate-y-0
+                "
               >
                 {
                   transitioning
@@ -468,7 +555,23 @@ export default function PerformanceSheet({
                 disabled={
                   transitioning
                 }
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                className="
+                  rounded-xl
+                  bg-[#e26d5c]
+                  px-5
+                  py-2.5
+                  text-sm
+                  font-bold
+                  text-white
+                  shadow-sm
+                  transition-all
+                  duration-200
+                  hover:-translate-y-px
+                  hover:shadow-md
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                  disabled:hover:translate-y-0
+                "
               >
                 {
                   transitioning
@@ -494,7 +597,23 @@ export default function PerformanceSheet({
                 disabled={
                   transitioning
                 }
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                className="
+                  rounded-xl
+                  bg-primary
+                  px-5
+                  py-2.5
+                  text-sm
+                  font-bold
+                  text-primary-foreground
+                  shadow-sm
+                  transition-all
+                  duration-200
+                  hover:-translate-y-px
+                  hover:shadow-md
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                  disabled:hover:translate-y-0
+                "
               >
                 {
                   transitioning
@@ -520,7 +639,22 @@ export default function PerformanceSheet({
                 disabled={
                   transitioning
                 }
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                className="
+                  rounded-xl
+                  bg-primary
+                  px-5
+                  py-2.5
+                  text-sm
+                  font-bold
+                  text-primary-foreground
+                  shadow-sm
+                  transition-all
+                  duration-200
+                  hover:-translate-y-px
+                  hover:shadow-md
+                  disabled:cursor-not-allowed
+                  disabled:hover:translate-y-0
+                "
               >
                 {
                   transitioning
@@ -536,28 +670,74 @@ export default function PerformanceSheet({
         </div>
 
 
-        {transitionSaved && (
+        {(transitionSaved ||
+          transitionError) && (
 
-          <p className="mt-4 text-sm text-muted-foreground">
-            Performance status updated.
-          </p>
+          <div
+            className="
+              border-t
+              border-border/70
+              bg-background/70
+              px-6
+              py-4
+              md:px-8
+            "
+          >
 
-        )}
+            {transitionSaved && (
+
+              <p
+                className="
+                  text-sm
+                  font-semibold
+                  text-primary
+                "
+              >
+                Performance status updated.
+              </p>
+
+            )}
 
 
-        {transitionError && (
+            {transitionError && (
 
-          <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+              <div
+                className="
+                  rounded-xl
+                  border
+                  border-destructive/30
+                  bg-destructive/5
+                  px-4
+                  py-3
+                "
+              >
 
-            <p className="text-sm font-medium text-destructive">
-              Unable to update performance status
-            </p>
+                <p
+                  className="
+                    text-sm
+                    font-bold
+                    text-destructive
+                  "
+                >
+                  Unable to update performance status
+                </p>
 
-            <p className="mt-1 text-sm text-muted-foreground">
-              {
-                transitionError
-              }
-            </p>
+                <p
+                  className="
+                    mt-1
+                    text-sm
+                    leading-6
+                    text-muted-foreground
+                  "
+                >
+                  {
+                    transitionError
+                  }
+                </p>
+
+              </div>
+
+            )}
 
           </div>
 
@@ -570,43 +750,161 @@ export default function PerformanceSheet({
           Runtime Performance Objectives
       ====================================================== */}
 
-      <section className="space-y-6">
+      <section
+        className="
+          space-y-6
+        "
+      >
 
-        <div>
+        <div
+          className="
+            rounded-2xl
+            border
+            border-border/80
+            bg-card
+            px-6
+            py-6
+            shadow-[0_8px_30px_rgba(8,37,80,0.04)]
+            md:px-8
+            md:py-7
+          "
+        >
 
-          <p className="text-sm font-medium text-primary">
-            Performance
-          </p>
+          <div
+            className="
+              flex
+              flex-col
+              gap-3
+              lg:flex-row
+              lg:items-end
+              lg:justify-between
+            "
+          >
 
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight">
-            Objectives
-          </h2>
+            <div>
 
-          <p className="mt-1 text-sm text-muted-foreground">
-            Review and update the objectives,
-            Key Results, and initiatives for this
-            monthly performance instance.
-          </p>
+              <p
+                className="
+                  text-xs
+                  font-bold
+                  uppercase
+                  tracking-[0.16em]
+                  text-primary
+                "
+              >
+                Performance
+              </p>
+
+              <h2
+                className="
+                  mt-2
+                  text-3xl
+                  font-black
+                  tracking-tight
+                  text-primary
+                "
+              >
+                Objectives
+              </h2>
+
+              <p
+                className="
+                  mt-2
+                  max-w-3xl
+                  text-sm
+                  leading-6
+                  text-muted-foreground
+                "
+              >
+                Review and update the objectives,
+                Key Results, and initiatives for this
+                monthly performance instance.
+              </p>
+
+            </div>
+
+
+            <div
+              className="
+                hidden
+                shrink-0
+                rounded-xl
+                bg-[#e9f4f8]
+                px-4
+                py-2
+                text-xs
+                font-bold
+                uppercase
+                tracking-[0.12em]
+                text-primary
+                sm:block
+              "
+            >
+              Monthly Performance
+            </div>
+
+          </div>
 
         </div>
 
 
-        {objectives.map(
-          (objective) => (
+        <div
+          className="
+            space-y-6
+          "
+        >
 
-            <ObjectiveCard
+          {objectives.map(
+            (objective) => (
 
-              key={
-                objective.id
-              }
+              <ObjectiveCard
 
-              objective={
-                objective
-              }
+                key={
+                  objective.id
+                }
 
-              keyResultProgress={
-                keyResultProgress
-              }
+                objective={
+                  objective
+                }
+
+                keyResultProgress={
+                  keyResultProgress
+                }
+
+                organizationId={
+                  organizationId
+                }
+
+                performanceInstanceId={
+                  performanceInstanceId
+                }
+
+                performanceMonth={
+                  performanceInstance
+                    .performanceMonth
+                }
+
+                previousKeyResultValues={
+                  previousKeyResultValues
+                }
+
+                onUpdated={
+                  handleObjectiveUpdated
+                }
+
+                onDeleted={
+                  handleObjectiveDeleted
+                }
+
+              />
+
+            )
+          )}
+
+
+          {addingObjective && (
+
+            <ObjectiveEditor
 
               organizationId={
                 organizationId
@@ -616,32 +914,148 @@ export default function PerformanceSheet({
                 performanceInstanceId
               }
 
-              performanceMonth={
-                performanceInstance
-                  .performanceMonth
+              onSaved={
+                handleObjectiveCreated
               }
 
-              previousKeyResultValues={
-                previousKeyResultValues
-              }
-
-              onUpdated={
-                handleObjectiveUpdated
-              }
-
-              onDeleted={
-                handleObjectiveDeleted
+              onCancel={() =>
+                setAddingObjective(
+                  false
+                )
               }
 
             />
 
-          )
-        )}
+          )}
 
 
-        {addingObjective && (
+          {!addingObjective && (
 
-          <ObjectiveEditor
+            <button
+              type="button"
+              onClick={() =>
+                setAddingObjective(
+                  true
+                )
+              }
+              className="
+                group
+                flex
+                w-full
+                items-center
+                justify-center
+                gap-3
+                rounded-2xl
+                border-2
+                border-dashed
+                border-[#b4c2d1]
+                bg-[#e9f4f8]/40
+                px-6
+                py-6
+                text-sm
+                font-bold
+                text-primary
+                transition-all
+                duration-200
+                hover:border-primary
+                hover:bg-[#e9f4f8]
+              "
+            >
+
+              <span
+                className="
+                  flex
+                  h-8
+                  w-8
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-primary
+                  text-lg
+                  font-normal
+                  leading-none
+                  text-primary-foreground
+                  transition-transform
+                  duration-200
+                  group-hover:scale-105
+                "
+                aria-hidden="true"
+              >
+                +
+              </span>
+
+              Add Objective
+
+            </button>
+
+          )}
+
+        </div>
+
+      </section>
+
+
+      {/* ======================================================
+          Employee Comments
+      ====================================================== */}
+
+      <section
+        className="
+          overflow-hidden
+          rounded-2xl
+          border
+          border-border/80
+          bg-card
+          shadow-[0_8px_30px_rgba(8,37,80,0.05)]
+        "
+      >
+
+        <div
+          className="
+            border-b
+            border-border/70
+            px-6
+            py-5
+            md:px-8
+          "
+        >
+
+          <p
+            className="
+              text-xs
+              font-bold
+              uppercase
+              tracking-[0.16em]
+              text-primary
+            "
+          >
+            Reflection
+          </p>
+
+          <h2
+            className="
+              mt-2
+              text-2xl
+              font-black
+              tracking-tight
+              text-primary
+            "
+          >
+            Employee Comments
+          </h2>
+
+        </div>
+
+        <div
+          className="
+            px-6
+            py-6
+            md:px-8
+            md:py-7
+          "
+        >
+
+          <EmployeeComments
 
             organizationId={
               organizationId
@@ -651,74 +1065,30 @@ export default function PerformanceSheet({
               performanceInstanceId
             }
 
-            onSaved={
-              handleObjectiveCreated
+            initialComments={
+              performanceInstance
+                .employeeComments
             }
 
-            onCancel={() =>
-              setAddingObjective(
-                false
-              )
+            label="Employee Comments"
+
+            placeholder={
+              document
+                .comments
+                .placeholder
+            }
+
+            helpText={
+              document
+                .comments
+                .helpText
             }
 
           />
 
-        )}
-
-
-        {!addingObjective && (
-
-          <button
-            type="button"
-            onClick={() =>
-              setAddingObjective(
-                true
-              )
-            }
-            className="w-full rounded-xl border-2 border-dashed px-6 py-5 text-sm font-semibold transition-colors hover:bg-muted"
-          >
-            + Add Objective
-          </button>
-
-        )}
+        </div>
 
       </section>
-
-
-      {/* ======================================================
-          Employee Comments
-      ====================================================== */}
-
-      <EmployeeComments
-
-        organizationId={
-          organizationId
-        }
-
-        performanceInstanceId={
-          performanceInstanceId
-        }
-
-        initialComments={
-          performanceInstance
-            .employeeComments
-        }
-
-        label="Employee Comments"
-
-        placeholder={
-          document
-            .comments
-            .placeholder
-        }
-
-        helpText={
-          document
-            .comments
-            .helpText
-        }
-
-      />
 
     </main>
   );

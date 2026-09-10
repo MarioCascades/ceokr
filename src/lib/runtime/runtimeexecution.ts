@@ -82,6 +82,14 @@ function addMonths(
       `${performanceMonth}T00:00:00Z`
     );
 
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return performanceMonth;
+  }
+
   date.setUTCMonth(
     date.getUTCMonth() +
       amount
@@ -112,6 +120,7 @@ async function loadPreviousKeyResultValues(
       typeof findPerformanceInstancesByOrganization
     >
   >,
+
   currentPerformanceInstance: Awaited<
     ReturnType<
       typeof findPerformanceInstancesByOrganization
@@ -154,7 +163,7 @@ async function loadPreviousKeyResultValues(
 
   const values:
     Record<string, string | number> =
-      {};
+    {};
 
   for (
     const keyResult of
@@ -201,7 +210,10 @@ async function loadPreviousKeyResultValues(
 
 export async function loadRuntimeExecution(
   organizationId: string,
-  subjectId?: string
+
+  subjectId?: string,
+
+  performanceMonth?: string
 ) {
 
   const performanceInstances =
@@ -232,9 +244,6 @@ export async function loadRuntimeExecution(
       return null;
     }
 
-    const currentMonth =
-      getCurrentPerformanceMonth();
-
     const assignmentInstances =
       performanceInstances.filter(
         (instance) =>
@@ -248,26 +257,42 @@ export async function loadRuntimeExecution(
       return null;
     }
 
+    /*
+     * Runtime normally opens the current month.
+     *
+     * When performanceMonth is supplied, resolve the
+     * exact monthly Performance Instance requested by
+     * the user.
+     */
+    const selectedMonth =
+      performanceMonth ??
+      getCurrentPerformanceMonth();
+
     const performanceInstance =
       assignmentInstances.find(
         (instance) =>
           instance.performanceMonth ===
-          currentMonth
+          selectedMonth
       ) ??
       assignmentInstances[0];
 
     return buildRuntimeExecution(
       organizationId,
+
       performanceInstance,
+
       assignment,
-      performanceInstances
+
+      performanceInstances,
+
+      assignmentInstances
     );
   }
 
 
   /* ========================================================
      Organization Runtime
-     
+
      No subjectId means the user is entering the
      organization-level Performance experience.
 
@@ -318,14 +343,15 @@ export async function loadRuntimeExecution(
     return null;
   }
 
-  const currentMonth =
+  const selectedMonth =
+    performanceMonth ??
     getCurrentPerformanceMonth();
 
   const performanceInstance =
     organizationInstances.find(
       (instance) =>
         instance.performanceMonth ===
-        currentMonth
+        selectedMonth
     ) ??
     organizationInstances[0];
 
@@ -342,9 +368,14 @@ export async function loadRuntimeExecution(
 
   return buildRuntimeExecution(
     organizationId,
+
     performanceInstance,
+
     assignment,
-    performanceInstances
+
+    performanceInstances,
+
+    organizationInstances
   );
 }
 
@@ -371,6 +402,12 @@ async function buildRuntimeExecution(
   >,
 
   performanceInstances: Awaited<
+    ReturnType<
+      typeof findPerformanceInstancesByOrganization
+    >
+  >,
+
+  assignmentInstances: Awaited<
     ReturnType<
       typeof findPerformanceInstancesByOrganization
     >
@@ -504,6 +541,24 @@ async function buildRuntimeExecution(
 
 
   /* ========================================================
+     Available Performance Months
+  ======================================================== */
+
+  const performanceMonths =
+    Array.from(
+      new Set(
+        assignmentInstances.map(
+          (instance) =>
+            instance.performanceMonth
+        )
+      )
+    ).sort(
+      (a, b) =>
+        b.localeCompare(a)
+    );
+
+
+  /* ========================================================
      Runtime Execution
   ======================================================== */
 
@@ -516,6 +571,8 @@ async function buildRuntimeExecution(
     performanceSheet,
 
     performanceInstance,
+
+    performanceMonths,
 
     keyResultProgress,
 

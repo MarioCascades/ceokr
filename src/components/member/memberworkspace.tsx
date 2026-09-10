@@ -490,6 +490,10 @@ export default function MemberWorkspace({
             .subject
         }
 
+        performanceMonths={
+          performanceMonths
+        }
+
         memberMode
       />
 

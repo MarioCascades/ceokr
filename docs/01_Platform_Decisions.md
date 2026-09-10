@@ -2038,3 +2038,114 @@ that member is authorized.
 Status
 
 Accepted
+
+---
+
+# 39. Authentication and Role-Based Entry
+
+Authentication is now a required product dependency for the next product-flow
+milestone.
+
+Authentication establishes who is signed in.
+
+Authorization remains the later security mechanism that determines what the
+authenticated actor is allowed to access.
+
+The immediate authentication foundation should support:
+
+- Login
+- Authenticated session
+- Supabase Auth identity resolution
+- Application User resolution
+- Platform Membership resolution
+- Organization Membership resolution
+- Role-aware entry routing
+- Forgot Password
+- Password Reset
+
+The three role-based post-login entry experiences are:
+
+## Platform Super Admin
+
+Super Admin Login
+
+↓
+
+Super Admin Landing
+
+↓
+
+Manage Organizations
+
+OR
+
+Open Organization Performance
+
+↓
+
+Select Organization
+
+↓
+
+Open the existing performance / Runtime experience
+
+A Platform Super Admin operates above the Organization tenant boundary and
+therefore selects an Organization when entering an organization-specific
+performance experience.
+
+## Organization Admin
+
+Organization Admin Login
+
+↓
+
+Organization Admin Landing
+
+↓
+
+Open Organization Workspace
+
+OR
+
+Open Organization Performance
+
+The Organization Admin operates within one authorized Organization and does
+not receive a cross-Organization selector.
+
+## Member
+
+Member Login
+
+↓
+
+Member Landing
+
+↓
+
+Open My Performance
+
+OR
+
+Open Organization Performance
+
+My Performance remains the member's own editable Runtime performance
+experience.
+
+Organization Performance is a performance-facing view and does not make the
+Member an Administration actor.
+
+These landing pages are navigation entry points. They must not create
+duplicate Builder, Runtime, or performance data models.
+
+Password recovery belongs to the authentication experience and should be
+available from the login page.
+
+Authenticated users may later change their password through account/profile
+settings. Password management should not be embedded into the role landing
+pages.
+
+Production authorization and RLS remain separate future security milestones.
+
+Status
+
+Accepted

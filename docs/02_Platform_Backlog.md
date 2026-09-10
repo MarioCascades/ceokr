@@ -20,13 +20,21 @@ determining the current project state.
 
 Current Development Phase
 
-Runtime Product Experience / CascadEffects Design & Vibe
+Authentication + Role-Based Entry
 
 Status
 
 NEXT MILESTONE
 
-The platform is currently completing the Administration management layer.
+The Runtime Dashboard / member performance separation has been completed and
+verified.
+
+The next dependency is authentication because the intended product experience
+requires the platform to identify whether the authenticated actor is a
+Platform Super Admin, Organization Admin, or Member.
+
+This milestone establishes the smallest authentication foundation required to
+route each actor to the correct landing experience.
 
 Completed:
 
@@ -667,7 +675,7 @@ Runtime Product Experience
 
 Status
 
-NEXT MILESTONE
+FOUNDATION CHECKPOINT COMPLETE / CONTINUING AFTER AUTHENTICATION
 
 The Runtime Execution Foundation and Member Workspace Foundation are
 
@@ -1205,7 +1213,7 @@ CascadEffects Design System
 
 Status
 
-NEXT MILESTONE / READY TO BEGIN
+PARTIALLY ESTABLISHED / CONTINUE AFTER AUTHENTICATION
 
 The next product-experience increment should establish the centralized
 CascadEffects default design system before broad page-by-page visual
@@ -1472,6 +1480,22 @@ Monthly Performance Cadence
 
 ESTABLISHED PRODUCT RULE
 
+Member Performance Navigation
+
+ESTABLISHED
+
+Runtime Dashboard / Member Performance Separation
+
+COMPLETE / VERIFIED
+
+Runtime Product Experience
+
+FOUNDATION CHECKPOINT COMPLETE / CONTINUING AFTER AUTHENTICATION
+
+Authentication + Role-Based Entry
+
+NEXT MILESTONE
+
 Dashboards
 
 V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
@@ -1486,7 +1510,7 @@ FUTURE
 
 Production Authorization / RLS
 
-OUTSTANDING
+OUTSTANDING / LATER SECURITY MILESTONE
 
 Runtime Security Boundaries
 
@@ -1508,6 +1532,10 @@ Historical Performance Reporting
 
 DEFERRED
 
+CascadEffects Design System
+
+PARTIALLY ESTABLISHED / CONTINUE AFTER AUTHENTICATION
+
 Next Development Session
 
 Start from the latest Waypoint.
@@ -1522,35 +1550,68 @@ Platform Backlog
 
 Product North Star
 
-Confirm the Runtime Product Experience milestone before implementation.
+Confirm the Authentication + Role-Based Entry milestone.
 
-The following foundations are established:
+Inspect the existing:
 
-Administration
+- Supabase Auth implementation
+- login page
+- authentication services
+- Application User resolution
+- Platform Membership resolution
+- Organization Membership resolution
+- existing role / permission foundations
 
-Organization Admin Workspace
+Implement only the authentication foundation required for the three role-based
+landing experiences.
 
-Builder
+Required post-login entry:
 
-Runtime Execution Foundation
+Platform Super Admin
 
-Member Workspace Foundation
+↓
 
-Monthly Performance Cadence
+Super Admin Landing
 
-Member Performance Navigation
+├── Manage Organizations
 
-Objectives / Key Results / Initiatives remain Builder-owned definitions.
+└── Open Organization Performance
 
-Runtime owns period-specific execution state.
+    ↓
 
-The next development phase is:
+Organization Selector
 
-Runtime Product Experience
+Organization Admin
 
-Before implementation, inspect the existing Runtime and Member Workspace
+↓
 
-architecture.
+Organization Admin Landing
+
+├── Open Organization Workspace
+
+└── Open Organization Performance
+
+Member
+
+↓
+
+Member Landing
+
+├── Open My Performance
+
+└── Open Organization Performance
+
+Authentication should include:
+
+- Login
+- authenticated session
+- identity resolution
+- role-aware routing
+- Forgot Password
+- Password Reset
+
+Do not implement full production authorization or RLS as part of this
+milestone unless an actual blocking dependency is discovered.
 
 Do not rebuild Builder.
 
@@ -1560,6 +1621,5 @@ Do not create a second Member performance data model.
 
 Do not reintroduce an administrator-managed Reporting Period entity.
 
-Use the latest Waypoint and current architecture as the implementation
-
-starting point.
+After authentication is complete and verified, return to the remaining
+Runtime Product Experience and CascadEffects Design & Vibe work.
