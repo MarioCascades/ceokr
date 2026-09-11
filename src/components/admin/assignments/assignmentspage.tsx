@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
@@ -26,14 +26,10 @@ import {
 } from "@/services/team.service";
 
 import {
-  getDepartments,
-} from "@/services/department.service";
-
-import {
   createAssignment,
   activateAssignment,
   cancelAssignment,
-  createPerformanceExecutionFromAssignment,
+  reassignPerformanceSheet,
 } from "@/services/assignment.service";
 
 import {
@@ -54,10 +50,6 @@ import type {
 } from "@/lib/types/organization";
 
 import type {
-  Department,
-} from "@/lib/types/domain/department";
-
-import type {
   Team,
 } from "@/lib/types/domain/team";
 
@@ -67,64 +59,76 @@ import type {
 
 /* ==========================================================
    Assignment Management Page
+   ----------------------------------------------------------
+   Product rule:
+
+   Performance Sheets are assigned only to individual members.
+
+   Teams are used only for grouping members in the
+   administrative experience.
+
+   Team / Department / Organization Performance Sheets
+   are not part of the product model.
 ========================================================== */
 
 export default function AssignmentsPage() {
   const searchParams = useSearchParams();
-  const selectedOrganizationId = searchParams.get("organizationId");
+  const router = useRouter();
+
+  const selectedOrganizationId =
+    searchParams.get("organizationId");
 
   /* ========================================================
      Core Data
   ======================================================== */
 
-  const [organization, setOrganization] =
-    useState<Organization | null>(null);
+  const [
+    organization,
+    setOrganization,
+  ] = useState<Organization | null>(null);
 
-  const [assignments, setAssignments] =
-    useState<Assignment[]>([]);
+  const [
+    assignments,
+    setAssignments,
+  ] = useState<Assignment[]>([]);
 
   const [
     performanceSheets,
     setPerformanceSheets,
   ] = useState<PerformanceSheetRecord[]>([]);
 
-  const [users, setUsers] =
-    useState<UserManagementRecord[]>([]);
+  const [
+    users,
+    setUsers,
+  ] = useState<UserManagementRecord[]>([]);
 
-  const [teams, setTeams] =
-    useState<Team[]>([]);
-
-  const [departments, setDepartments] =
-    useState<Department[]>([]);
+  const [
+    teams,
+    setTeams,
+  ] = useState<Team[]>([]);
 
   /* ========================================================
      Page State
   ======================================================== */
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
 
-  const [errorMessage, setErrorMessage] =
-    useState<string | null>(null);
+  const [
+    errorMessage,
+    setErrorMessage,
+  ] = useState<string | null>(null);
 
   /* ========================================================
-     Create Assignment State
+     Assign Member State
   ======================================================== */
 
   const [
-    isCreateOpen,
-    setIsCreateOpen,
-  ] = useState(false);
-
-  const [
-    isCreating,
-    setIsCreating,
-  ] = useState(false);
-
-  const [
-    createError,
-    setCreateError,
-  ] = useState<string | null>(null);
+    memberToAssign,
+    setMemberToAssign,
+  ] = useState<UserManagementRecord | null>(null);
 
   const [
     selectedPerformanceSheetId,
@@ -132,30 +136,70 @@ export default function AssignmentsPage() {
   ] = useState("");
 
   const [
-    selectedAssignmentType,
-    setSelectedAssignmentType,
-  ] = useState<Assignment["assignmentType"]>(
-    "individual"
-  );
-
-  const [
-    selectedSubjectId,
-    setSelectedSubjectId,
-  ] = useState("");
-
-  const [
     selectedAssignedByUserId,
     setSelectedAssignedByUserId,
   ] = useState("");
 
+  const [
+    isAssigning,
+    setIsAssigning,
+  ] = useState(false);
+
+  const [
+    assignError,
+    setAssignError,
+  ] = useState<string | null>(null);
+
   /* ========================================================
-     Manage Assignment State
+     View Assignment State
   ======================================================== */
 
   const [
-    managedAssignment,
-    setManagedAssignment,
+    viewedAssignment,
+    setViewedAssignment,
   ] = useState<Assignment | null>(null);
+
+  /* ========================================================
+     Assignment History State
+  ======================================================== */
+
+  const [
+    historyMemberId,
+    setHistoryMemberId,
+  ] = useState<string | null>(null);
+
+  /* ========================================================
+     Reassignment State
+  ======================================================== */
+
+  const [
+    reassignmentAssignment,
+    setReassignmentAssignment,
+  ] = useState<Assignment | null>(null);
+
+  const [
+    selectedReplacementPerformanceSheetId,
+    setSelectedReplacementPerformanceSheetId,
+  ] = useState("");
+
+  const [
+    selectedReassignedByUserId,
+    setSelectedReassignedByUserId,
+  ] = useState("");
+
+  const [
+    isReassigning,
+    setIsReassigning,
+  ] = useState(false);
+
+  const [
+    reassignError,
+    setReassignError,
+  ] = useState<string | null>(null);
+
+  /* ========================================================
+     Lifecycle State
+  ======================================================== */
 
   const [
     isManaging,
@@ -178,7 +222,9 @@ export default function AssignmentsPage() {
         setErrorMessage(null);
 
         const existingOrganization =
-          await getOrganization(selectedOrganizationId ?? undefined);
+          await getOrganization(
+            selectedOrganizationId ?? undefined
+          );
 
         if (!existingOrganization) {
           setOrganization(null);
@@ -199,7 +245,6 @@ export default function AssignmentsPage() {
           publishedSheets,
           userRecords,
           teamRecords,
-          departmentRecords,
         ] = await Promise.all([
           findAssignmentsByOrganization(
             existingOrganization.id
@@ -214,10 +259,6 @@ export default function AssignmentsPage() {
           ),
 
           getTeams(
-            existingOrganization.id
-          ),
-
-          getDepartments(
             existingOrganization.id
           ),
         ]);
@@ -236,10 +277,6 @@ export default function AssignmentsPage() {
 
         setTeams(
           teamRecords
-        );
-
-        setDepartments(
-          departmentRecords
         );
       } catch (error) {
         console.error(
@@ -283,18 +320,6 @@ export default function AssignmentsPage() {
       );
     }, [performanceSheets]);
 
-  const userMap =
-    useMemo(() => {
-      return new Map(
-        users.map(
-          (record) => [
-            record.user.id,
-            record.user,
-          ]
-        )
-      );
-    }, [users]);
-
   const teamMap =
     useMemo(() => {
       return new Map(
@@ -307,76 +332,109 @@ export default function AssignmentsPage() {
       );
     }, [teams]);
 
-  const departmentMap =
-    useMemo(() => {
-      return new Map(
-        departments.map(
-          (department) => [
-            department.id,
-            department,
-          ]
-        )
-      );
-    }, [departments]);
-
   /* ========================================================
-     Subject Options
+     Active Individual Assignments
+     --------------------------------------------------------
+     Runtime expects one current individual assignment.
+
+     If historical/test data contains more than one active
+     assignment, the newest assignment wins for this page,
+     matching the existing Runtime resolution behavior.
   ======================================================== */
 
-  const subjectOptions =
+  const activeAssignmentByMember =
     useMemo(() => {
-      switch (
-        selectedAssignmentType
+      const map =
+        new Map<
+          string,
+          Assignment
+        >();
+
+      const activeAssignments =
+        assignments
+          .filter(
+            (assignment) =>
+              assignment.assignmentType ===
+                "individual" &&
+              assignment.status ===
+                "active"
+          )
+          .sort(
+            (a, b) =>
+              new Date(
+                b.assignedAt
+              ).getTime() -
+              new Date(
+                a.assignedAt
+              ).getTime()
+          );
+
+      for (
+        const assignment of activeAssignments
       ) {
-        case "individual":
-          return users.map(
-            (record) => ({
-              id: record.user.id,
-
-              label:
-                record.user.display_name ||
-                `${record.user.first_name} ${record.user.last_name}`.trim() ||
-                record.user.email,
-            })
+        if (
+          !map.has(
+            assignment.subjectId
+          )
+        ) {
+          map.set(
+            assignment.subjectId,
+            assignment
           );
-
-        case "team":
-          return teams.map(
-            (team) => ({
-              id: team.id,
-              label: team.name,
-            })
-          );
-
-        case "department":
-          return departments.map(
-            (department) => ({
-              id: department.id,
-              label: department.name,
-            })
-          );
-
-        case "organization":
-          return organization
-            ? [
-                {
-                  id: organization.id,
-                  label:
-                    organization.company_name,
-                },
-              ]
-            : [];
-
-        default:
-          return [];
+        }
       }
-    }, [
-      selectedAssignmentType,
-      users,
-      teams,
-      departments,
-      organization,
-    ]);
+
+      return map;
+    }, [assignments]);
+
+  /* ========================================================
+     Draft Individual Assignments
+  ======================================================== */
+
+  const draftAssignmentByMember =
+    useMemo(() => {
+      const map =
+        new Map<
+          string,
+          Assignment
+        >();
+
+      const draftAssignments =
+        assignments
+          .filter(
+            (assignment) =>
+              assignment.assignmentType ===
+                "individual" &&
+              assignment.status ===
+                "draft"
+          )
+          .sort(
+            (a, b) =>
+              new Date(
+                b.assignedAt
+              ).getTime() -
+              new Date(
+                a.assignedAt
+              ).getTime()
+          );
+
+      for (
+        const assignment of draftAssignments
+      ) {
+        if (
+          !map.has(
+            assignment.subjectId
+          )
+        ) {
+          map.set(
+            assignment.subjectId,
+            assignment
+          );
+        }
+      }
+
+      return map;
+    }, [assignments]);
 
   /* ========================================================
      Acting User Options
@@ -392,7 +450,8 @@ export default function AssignmentsPage() {
         )
         .map(
           (record) => ({
-            id: record.user.id,
+            id:
+              record.user.id,
 
             label:
               record.user.display_name ||
@@ -403,99 +462,250 @@ export default function AssignmentsPage() {
     }, [users]);
 
   /* ========================================================
-     Reset Create Form
+     Member Groups
   ======================================================== */
 
-  function resetCreateForm() {
-    setSelectedPerformanceSheetId("");
+  const memberGroups =
+    useMemo(() => {
+      const groups =
+        new Map<
+          string,
+          {
+            teamId: string | null;
+            teamName: string;
+            members: UserManagementRecord[];
+          }
+        >();
 
-    setSelectedAssignmentType(
-      "individual"
+      const activeMembers =
+        users.filter(
+          (record) =>
+            record.user.is_active !== false
+        );
+
+      for (
+        const record of activeMembers
+      ) {
+        const teamId =
+          record.membership?.team_id ??
+          null;
+
+        const team =
+          teamId
+            ? teamMap.get(
+                teamId
+              )
+            : null;
+
+        const groupKey =
+          teamId ??
+          "unassigned";
+
+        const existing =
+          groups.get(
+            groupKey
+          );
+
+        if (existing) {
+          existing.members.push(
+            record
+          );
+        } else {
+          groups.set(
+            groupKey,
+            {
+              teamId,
+              teamName:
+                team?.name ??
+                "Unassigned Team",
+              members: [
+                record,
+              ],
+            }
+          );
+        }
+      }
+
+      return Array.from(
+        groups.values()
+      ).sort(
+        (a, b) =>
+          a.teamName.localeCompare(
+            b.teamName
+          )
+      );
+    }, [
+      users,
+      teamMap,
+    ]);
+
+  /* ========================================================
+     Assignment Counts
+  ======================================================== */
+
+  const activeMemberCount =
+    activeAssignmentByMember.size;
+
+  const memberCount =
+    users.filter(
+      (record) =>
+        record.user.is_active !== false
+    ).length;
+
+  /* ========================================================
+     Assignment History
+  ======================================================== */
+
+  const historyAssignments =
+    useMemo(() => {
+      if (!historyMemberId) {
+        return [];
+      }
+
+      return assignments
+        .filter(
+          (assignment) =>
+            assignment.assignmentType ===
+              "individual" &&
+            assignment.subjectId ===
+              historyMemberId
+        )
+        .sort(
+          (a, b) =>
+            new Date(
+              b.assignedAt
+            ).getTime() -
+            new Date(
+              a.assignedAt
+            ).getTime()
+        );
+    }, [
+      assignments,
+      historyMemberId,
+    ]);
+
+  const historyMember =
+    useMemo(() => {
+      if (!historyMemberId) {
+        return null;
+      }
+
+      return (
+        users.find(
+          (record) =>
+            record.user.id ===
+            historyMemberId
+        ) ?? null
+      );
+    }, [
+      historyMemberId,
+      users,
+    ]);
+
+  /* ========================================================
+     Open Assign Member
+  ======================================================== */
+
+  function openAssignMember(
+    record: UserManagementRecord
+  ) {
+    setAssignError(null);
+
+    setMemberToAssign(
+      record
     );
 
-    setSelectedSubjectId("");
+    setSelectedPerformanceSheetId("");
 
-    setSelectedAssignedByUserId("");
-
-    setCreateError(null);
+    /*
+     * Development convenience:
+     * preselect the first active organization user.
+     *
+     * Production authentication will eventually provide
+     * the acting user automatically.
+     */
+    setSelectedAssignedByUserId(
+      actingUserOptions[0]?.id ??
+        ""
+    );
   }
 
   /* ========================================================
-     Open Create Form
+     Close Assign Member
   ======================================================== */
 
-  function openCreateAssignment() {
-    resetCreateForm();
-
-    setIsCreateOpen(true);
-  }
-
-  /* ========================================================
-     Close Create Form
-  ======================================================== */
-
-  function closeCreateAssignment() {
-    if (isCreating) {
+  function closeAssignMember() {
+    if (isAssigning) {
       return;
     }
 
-    setIsCreateOpen(false);
+    setMemberToAssign(
+      null
+    );
 
-    resetCreateForm();
+    setSelectedPerformanceSheetId(
+      ""
+    );
+
+    setSelectedAssignedByUserId(
+      ""
+    );
+
+    setAssignError(null);
   }
 
   /* ========================================================
-     Assignment Type Change
+     Create Member Assignment
   ======================================================== */
 
-  function handleAssignmentTypeChange(
-    type: Assignment["assignmentType"]
-  ) {
-    setSelectedAssignmentType(type);
-
-    setSelectedSubjectId("");
-  }
-
-  /* ========================================================
-     Create Assignment
-  ======================================================== */
-
-  async function handleCreateAssignment() {
-    setCreateError(null);
+  async function handleAssignMember() {
+    setAssignError(null);
 
     if (!organization) {
-      setCreateError(
+      setAssignError(
         "No organization has been configured."
       );
 
       return;
     }
 
-    if (!selectedPerformanceSheetId) {
-      setCreateError(
-        "Please select a Performance Sheet."
+    if (!memberToAssign) {
+      setAssignError(
+        "No member has been selected."
       );
 
       return;
     }
 
-    if (!selectedSubjectId) {
-      setCreateError(
-        "Please select a subject for this assignment."
+    if (!selectedPerformanceSheetId) {
+      setAssignError(
+        "Please select a published Performance Sheet."
       );
 
       return;
     }
 
     if (!selectedAssignedByUserId) {
-      setCreateError(
+      setAssignError(
         "Please select the user creating this assignment."
       );
 
       return;
     }
 
-    setIsCreating(true);
+    if (
+      activeAssignmentByMember.has(
+        memberToAssign.user.id
+      )
+    ) {
+      setAssignError(
+        "This member already has an active Performance Sheet assignment. Use View to work with the existing assignment."
+      );
+
+      return;
+    }
+
+    setIsAssigning(true);
 
     try {
       await createAssignment({
@@ -506,10 +716,10 @@ export default function AssignmentsPage() {
           selectedPerformanceSheetId,
 
         assignmentType:
-          selectedAssignmentType,
+          "individual",
 
         subjectId:
-          selectedSubjectId,
+          memberToAssign.user.id,
 
         status:
           "draft",
@@ -520,78 +730,290 @@ export default function AssignmentsPage() {
 
       await loadData();
 
-      setIsCreateOpen(false);
-
-      resetCreateForm();
+      closeAssignMember();
     } catch (error) {
       console.error(
-        "Failed to create assignment:",
+        "Failed to assign Performance Sheet:",
         error
       );
 
-      setCreateError(
+      setAssignError(
         error instanceof Error
           ? error.message
-          : "Failed to create assignment."
+          : "Failed to assign Performance Sheet."
       );
     } finally {
-      setIsCreating(false);
+      setIsAssigning(false);
     }
   }
 
   /* ========================================================
-     Open Manage Assignment
+     Open View Assignment
   ======================================================== */
 
-  function openManageAssignment(
+  function openViewAssignment(
     assignment: Assignment
   ) {
     setManageError(null);
 
-    setManagedAssignment(
+    setViewedAssignment(
       assignment
     );
   }
 
   /* ========================================================
-     Close Manage Assignment
+     Close View Assignment
   ======================================================== */
 
-  function closeManageAssignment() {
+  function closeViewAssignment() {
     if (isManaging) {
       return;
     }
 
-    setManagedAssignment(null);
+    setViewedAssignment(
+      null
+    );
 
     setManageError(null);
+  }
+
+  /* ========================================================
+     View Performance
+  ======================================================== */
+
+  function handleViewPerformance(
+    assignment: Assignment
+  ) {
+    if (!organization) {
+      return;
+    }
+
+    router.push(
+      `/member?organizationId=${encodeURIComponent(
+        organization.id
+      )}&subjectId=${encodeURIComponent(
+        assignment.subjectId
+      )}`
+    );
+  }
+
+  /* ========================================================
+     Open Performance History
+     --------------------------------------------------------
+     The dedicated historical runtime view is not yet
+     implemented. The member performance route remains the
+     current runtime experience.
+  ======================================================== */
+
+  function handleViewPerformanceHistory(
+    assignment: Assignment
+  ) {
+    if (!organization) {
+      return;
+    }
+
+    router.push(
+      `/member?organizationId=${encodeURIComponent(
+        organization.id
+      )}&subjectId=${encodeURIComponent(
+        assignment.subjectId
+      )}`
+    );
+  }
+
+  /* ========================================================
+     Open Assignment History
+  ======================================================== */
+
+  function handleViewAssignmentHistory(
+    assignment: Assignment
+  ) {
+    setHistoryMemberId(
+      assignment.subjectId
+    );
+
+    setViewedAssignment(
+      null
+    );
+  }
+
+  /* ========================================================
+     Open Reassignment
+  ======================================================== */
+
+  function openReassignment(
+    assignment: Assignment
+  ) {
+    setReassignError(null);
+
+    setSelectedReplacementPerformanceSheetId("");
+
+    setSelectedReassignedByUserId(
+      actingUserOptions[0]?.id ??
+        ""
+    );
+
+    setReassignmentAssignment(
+      assignment
+    );
+
+    setViewedAssignment(
+      null
+    );
+  }
+
+  /* ========================================================
+     Close Reassignment
+  ======================================================== */
+
+  function closeReassignment() {
+    if (isReassigning) {
+      return;
+    }
+
+    setReassignmentAssignment(
+      null
+    );
+
+    setSelectedReplacementPerformanceSheetId(
+      ""
+    );
+
+    setSelectedReassignedByUserId(
+      ""
+    );
+
+    setReassignError(null);
+  }
+
+  /* ========================================================
+     Execute Reassignment
+  ======================================================== */
+
+  async function handleReassignPerformanceSheet() {
+    setReassignError(null);
+
+    if (!organization) {
+      setReassignError(
+        "No organization has been configured."
+      );
+
+      return;
+    }
+
+    if (!reassignmentAssignment) {
+      setReassignError(
+        "No assignment has been selected."
+      );
+
+      return;
+    }
+
+    if (
+      reassignmentAssignment.assignmentType !==
+      "individual"
+    ) {
+      setReassignError(
+        "Only individual member assignments can be reassigned."
+      );
+
+      return;
+    }
+
+    if (
+      reassignmentAssignment.status !==
+      "active"
+    ) {
+      setReassignError(
+        "Only an active Performance Sheet assignment can be reassigned."
+      );
+
+      return;
+    }
+
+    if (
+      !selectedReplacementPerformanceSheetId
+    ) {
+      setReassignError(
+        "Please select the replacement Performance Sheet."
+      );
+
+      return;
+    }
+
+    if (
+      selectedReplacementPerformanceSheetId ===
+      reassignmentAssignment.performanceSheetId
+    ) {
+      setReassignError(
+        "Please select a different Performance Sheet."
+      );
+
+      return;
+    }
+
+    if (!selectedReassignedByUserId) {
+      setReassignError(
+        "Please select the user performing the reassignment."
+      );
+
+      return;
+    }
+
+    setIsReassigning(true);
+
+    try {
+      await reassignPerformanceSheet(
+        organization.id,
+        reassignmentAssignment.id,
+        selectedReplacementPerformanceSheetId,
+        selectedReassignedByUserId
+      );
+
+      await loadData();
+
+      closeReassignment();
+    } catch (error) {
+      console.error(
+        "Failed to reassign Performance Sheet:",
+        error
+      );
+
+      setReassignError(
+        error instanceof Error
+          ? error.message
+          : "Failed to reassign Performance Sheet."
+      );
+    } finally {
+      setIsReassigning(false);
+    }
   }
 
   /* ========================================================
      Activate Assignment
   ======================================================== */
 
-  async function handleActivateAssignment() {
-    if (
-      !organization ||
-      !managedAssignment
-    ) {
+  async function handleActivateAssignment(
+    assignment: Assignment
+  ) {
+    if (!organization) {
       return;
     }
 
     setIsManaging(true);
-
     setManageError(null);
 
     try {
       await activateAssignment(
         organization.id,
-        managedAssignment.id
+        assignment.id
       );
 
       await loadData();
 
-      setManagedAssignment(null);
+      setViewedAssignment(
+        null
+      );
     } catch (error) {
       console.error(
         "Failed to activate assignment:",
@@ -612,27 +1034,27 @@ export default function AssignmentsPage() {
      Cancel Assignment
   ======================================================== */
 
-  async function handleCancelAssignment() {
-    if (
-      !organization ||
-      !managedAssignment
-    ) {
+  async function handleCancelAssignment(
+    assignment: Assignment
+  ) {
+    if (!organization) {
       return;
     }
 
     setIsManaging(true);
-
     setManageError(null);
 
     try {
       await cancelAssignment(
         organization.id,
-        managedAssignment.id
+        assignment.id
       );
 
       await loadData();
 
-      setManagedAssignment(null);
+      setViewedAssignment(
+        null
+      );
     } catch (error) {
       console.error(
         "Failed to cancel assignment:",
@@ -645,53 +1067,6 @@ export default function AssignmentsPage() {
           : "Failed to cancel assignment."
       );
     } finally {
-      setIsManaging(false);
-    }
-  }
-
-  /* ========================================================
-     Create Performance Execution
-  ======================================================== */
-
-  async function handleCreatePerformanceExecution() {
-    if (
-      !organization ||
-      !managedAssignment
-    ) {
-      return;
-    }
-
-    setIsManaging(true);
-
-    setManageError(null);
-
-    try {
-      await createPerformanceExecutionFromAssignment(
-        organization.id,
-        managedAssignment.id
-      );
-
-      /*
-       * The existing Runtime page resolves the active
-       * Performance Instance for the organization.
-       *
-       * We intentionally navigate to the existing Runtime
-       * surface instead of creating another Runtime UI.
-       */
-      window.location.href =
-        "/runtime";
-    } catch (error) {
-      console.error(
-        "Failed to create performance execution:",
-        error
-      );
-
-      setManageError(
-        error instanceof Error
-          ? error.message
-          : "Failed to create performance execution."
-      );
-
       setIsManaging(false);
     }
   }
@@ -710,7 +1085,7 @@ export default function AssignmentsPage() {
 
         <AdminPageHeader
           title="Assignments"
-          description="Manage Performance Sheet assignments across your organization."
+          description="Assign Performance Sheets to individual members of the selected organization."
         />
 
         {/* ==================================================
@@ -748,20 +1123,41 @@ export default function AssignmentsPage() {
               <div className="flex items-center justify-between gap-4">
 
                 <div>
-                  <h2 className="text-xl font-semibold">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Organization
+                  </p>
+
+                  <h2 className="mt-1 text-xl font-semibold">
                     {organization.company_name}
                   </h2>
 
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Assignment Management
+                    Member Performance Assignment
                   </p>
                 </div>
 
-                <div className="rounded-lg bg-gray-100 px-3 py-2 text-sm">
-                  {assignments.length}{" "}
-                  {assignments.length === 1
-                    ? "assignment"
-                    : "assignments"}
+                <div className="flex gap-3">
+
+                  <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm">
+                    <div className="text-xs text-muted-foreground">
+                      Members
+                    </div>
+
+                    <div className="mt-1 font-semibold">
+                      {memberCount}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm">
+                    <div className="text-xs text-muted-foreground">
+                      Assigned
+                    </div>
+
+                    <div className="mt-1 font-semibold">
+                      {activeMemberCount}
+                    </div>
+                  </div>
+
                 </div>
 
               </div>
@@ -770,139 +1166,229 @@ export default function AssignmentsPage() {
           )}
 
         {/* ==================================================
-            Assignments
+            Member Assignments
         ================================================== */}
 
         {!isLoading && (
           <section className="rounded-xl border bg-white shadow-sm">
 
-            <div className="flex items-center justify-between gap-4 border-b p-6">
+            <div className="border-b p-6">
 
               <div>
                 <h2 className="text-xl font-semibold">
-                  Performance Assignments
+                  Member Performance Assignments
                 </h2>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Assign published Performance Sheets
-                  to users, teams, departments or the
-                  organization.
+                  Assign published Performance Sheets to individual members. Teams are used only to organize the member list.
                 </p>
               </div>
 
-              <Button
-                onClick={
-                  openCreateAssignment
-                }
-              >
-                Create Assignment
-              </Button>
-
             </div>
 
-            {assignments.length === 0 ? (
+            {memberGroups.length === 0 ? (
               <div className="p-6">
 
                 <p className="text-sm text-muted-foreground">
-                  No assignments have been created yet.
+                  No active members were found in this organization.
                 </p>
 
               </div>
             ) : (
-
               <div className="divide-y">
 
-                {assignments.map(
-                  (assignment) => {
+                {memberGroups.map(
+                  (group) => (
+                    <div
+                      key={
+                        group.teamId ??
+                        "unassigned"
+                      }
+                      className="p-6"
+                    >
 
-                    const performanceSheet =
-                      performanceSheetMap.get(
-                        assignment.performanceSheetId
-                      );
+                      {/* ==================================
+                          Team Group
+                      ================================== */}
 
-                    return (
-                      <div
-                        key={assignment.id}
-                        className="p-6"
-                      >
+                      <div className="mb-4">
 
-                        <div className="flex items-start justify-between gap-6">
+                        <h3 className="text-base font-semibold">
+                          {group.teamName}
+                        </h3>
 
-                          <div className="min-w-0 flex-1">
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {group.members.length}{" "}
+                          {group.members.length === 1
+                            ? "member"
+                            : "members"}
+                        </p>
 
-                            <div className="flex flex-wrap items-center gap-3">
+                      </div>
 
-                              <h3 className="font-semibold">
-                                {getSubjectName(
-                                  assignment,
-                                  organization,
-                                  userMap,
-                                  teamMap,
-                                  departmentMap
-                                )}
-                              </h3>
+                      {/* ==================================
+                          Members
+                      ================================== */}
 
-                              <StatusBadge
-                                status={
-                                  assignment.status
-                                }
-                              />
+                      <div className="overflow-hidden rounded-lg border">
 
-                            </div>
+                        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] border-b bg-gray-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
 
-                            <div className="mt-3 grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
-
-                              <div>
-                                <span className="font-medium text-gray-700">
-                                  Type:
-                                </span>{" "}
-                                {formatAssignmentType(
-                                  assignment.assignmentType
-                                )}
-                              </div>
-
-                              <div>
-                                <span className="font-medium text-gray-700">
-                                  Performance Sheet:
-                                </span>{" "}
-                                {performanceSheet
-                                  ? `${performanceSheet.name} — Version ${performanceSheet.version}`
-                                  : "Unavailable"}
-                              </div>
-
-                              <div>
-                                <span className="font-medium text-gray-700">
-                                  Assigned:
-                                </span>{" "}
-                                {formatDate(
-                                  assignment.assignedAt
-                                )}
-                              </div>
-
-                            </div>
-
+                          <div>
+                            Member
                           </div>
 
-                          <div className="flex shrink-0 gap-2">
+                          <div>
+                            Performance Sheet
+                          </div>
 
-                            <Button
-                              variant="outline"
-                              onClick={() =>
-                                openManageAssignment(
-                                  assignment
-                                )
-                              }
-                            >
-                              Manage
-                            </Button>
-
+                          <div className="text-right">
+                            Action
                           </div>
 
                         </div>
 
+                        <div className="divide-y">
+
+                          {group.members.map(
+                            (record) => {
+
+                              const memberId =
+                                record.user.id;
+
+                              const activeAssignment =
+                                activeAssignmentByMember.get(
+                                  memberId
+                                );
+
+                              const draftAssignment =
+                                draftAssignmentByMember.get(
+                                  memberId
+                                );
+
+                              const currentAssignment =
+                                activeAssignment ??
+                                draftAssignment ??
+                                null;
+
+                              const performanceSheet =
+                                currentAssignment
+                                  ? performanceSheetMap.get(
+                                      currentAssignment.performanceSheetId
+                                    )
+                                  : null;
+
+                              const memberName =
+                                record.user.display_name ||
+                                `${record.user.first_name} ${record.user.last_name}`.trim() ||
+                                record.user.email;
+
+                              return (
+                                <div
+                                  key={
+                                    memberId
+                                  }
+                                  className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] items-center gap-4 px-4 py-4"
+                                >
+
+                                  {/* ==============================
+                                      Member
+                                  ============================== */}
+
+                                  <div className="min-w-0">
+
+                                    <p className="font-medium">
+                                      {memberName}
+                                    </p>
+
+                                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                                      {record.user.email}
+                                    </p>
+
+                                  </div>
+
+                                  {/* ==============================
+                                      Performance Sheet
+                                  ============================== */}
+
+                                  <div className="min-w-0">
+
+                                    {performanceSheet ? (
+                                      <>
+                                        <p className="truncate text-sm">
+                                          {
+                                            performanceSheet.name
+                                          }
+                                        </p>
+
+                                        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+
+                                          <span>
+                                            Version{" "}
+                                            {
+                                              performanceSheet.version
+                                            }
+                                          </span>
+
+                                          <StatusBadge
+                                            status={
+                                              currentAssignment?.status ??
+                                              "draft"
+                                            }
+                                          />
+
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <p className="text-sm text-muted-foreground">
+                                        No Performance Sheet assigned
+                                      </p>
+                                    )}
+
+                                  </div>
+
+                                  {/* ==============================
+                                      Action
+                                  ============================== */}
+
+                                  <div className="flex justify-end">
+
+                                    {currentAssignment ? (
+                                      <Button
+                                        variant="outline"
+                                        onClick={() =>
+                                          openViewAssignment(
+                                            currentAssignment
+                                          )
+                                        }
+                                      >
+                                        View
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        onClick={() =>
+                                          openAssignMember(
+                                            record
+                                          )
+                                        }
+                                      >
+                                        Assign
+                                      </Button>
+                                    )}
+
+                                  </div>
+
+                                </div>
+                              );
+                            }
+                          )}
+
+                        </div>
+
                       </div>
-                    );
-                  }
+
+                    </div>
+                  )
                 )}
 
               </div>
@@ -914,36 +1400,42 @@ export default function AssignmentsPage() {
       </div>
 
       {/* ======================================================
-          Create Assignment Modal
+          Assign Member Modal
       ====================================================== */}
 
-      {isCreateOpen && (
+      {memberToAssign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
 
-          <div className="w-full max-w-2xl rounded-xl border bg-white shadow-xl">
+          <div className="w-full max-w-lg rounded-xl border bg-white shadow-xl">
 
             <div className="border-b px-6 py-5">
 
               <div className="flex items-start justify-between gap-4">
 
                 <div>
-                  <h2 className="text-xl font-semibold">
-                    Create Assignment
+
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Assign Member
+                  </p>
+
+                  <h2 className="mt-1 text-xl font-semibold">
+                    {memberToAssign.user.display_name ||
+                      `${memberToAssign.user.first_name} ${memberToAssign.user.last_name}`.trim() ||
+                      memberToAssign.user.email}
                   </h2>
 
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Assign a published Performance Sheet
-                    to a user, team, department or your
-                    organization.
+                    Assign a published Performance Sheet to this individual member.
                   </p>
+
                 </div>
 
                 <button
                   type="button"
                   onClick={
-                    closeCreateAssignment
+                    closeAssignMember
                   }
-                  disabled={isCreating}
+                  disabled={isAssigning}
                   className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                 >
                   ✕
@@ -955,27 +1447,25 @@ export default function AssignmentsPage() {
 
             <div className="space-y-6 px-6 py-6">
 
-              {createError && (
+              {assignError && (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                   <p className="text-sm text-red-700">
-                    {createError}
+                    {assignError}
                   </p>
                 </div>
               )}
 
-              {/* Performance Sheet */}
-
               <div className="space-y-2">
 
                 <label
-                  htmlFor="performance-sheet"
+                  htmlFor="member-performance-sheet"
                   className="text-sm font-medium"
                 >
                   Performance Sheet
                 </label>
 
                 <select
-                  id="performance-sheet"
+                  id="member-performance-sheet"
                   value={
                     selectedPerformanceSheetId
                   }
@@ -984,9 +1474,10 @@ export default function AssignmentsPage() {
                       event.target.value
                     )
                   }
-                  disabled={isCreating}
+                  disabled={isAssigning}
                   className="w-full rounded-md border bg-white px-3 py-2 text-sm"
                 >
+
                   <option value="">
                     Select a published Performance Sheet
                   </option>
@@ -1002,134 +1493,29 @@ export default function AssignmentsPage() {
                       </option>
                     )
                   )}
+
                 </select>
 
                 {performanceSheets.length ===
                   0 && (
                   <p className="text-xs text-amber-600">
-                    No published Performance Sheets
-                    are available.
+                    No published Performance Sheets are available.
                   </p>
                 )}
 
               </div>
 
-              {/* Assignment Type */}
-
               <div className="space-y-2">
 
                 <label
-                  htmlFor="assignment-type"
-                  className="text-sm font-medium"
-                >
-                  Assignment Type
-                </label>
-
-                <select
-                  id="assignment-type"
-                  value={
-                    selectedAssignmentType
-                  }
-                  onChange={(event) =>
-                    handleAssignmentTypeChange(
-                      event.target
-                        .value as Assignment["assignmentType"]
-                    )
-                  }
-                  disabled={isCreating}
-                  className="w-full rounded-md border bg-white px-3 py-2 text-sm"
-                >
-                  <option value="individual">
-                    Individual
-                  </option>
-
-                  <option value="team">
-                    Team
-                  </option>
-
-                  <option value="department">
-                    Department
-                  </option>
-
-                  <option value="organization">
-                    Organization
-                  </option>
-                </select>
-
-              </div>
-
-              {/* Subject */}
-
-              <div className="space-y-2">
-
-                <label
-                  htmlFor="assignment-subject"
-                  className="text-sm font-medium"
-                >
-                  {getSubjectLabel(
-                    selectedAssignmentType
-                  )}
-                </label>
-
-                <select
-                  id="assignment-subject"
-                  value={
-                    selectedSubjectId
-                  }
-                  onChange={(event) =>
-                    setSelectedSubjectId(
-                      event.target.value
-                    )
-                  }
-                  disabled={
-                    isCreating ||
-                    subjectOptions.length === 0
-                  }
-                  className="w-full rounded-md border bg-white px-3 py-2 text-sm"
-                >
-                  <option value="">
-                    Select{" "}
-                    {getSubjectLabel(
-                      selectedAssignmentType
-                    ).toLowerCase()}
-                  </option>
-
-                  {subjectOptions.map(
-                    (subject) => (
-                      <option
-                        key={subject.id}
-                        value={subject.id}
-                      >
-                        {subject.label}
-                      </option>
-                    )
-                  )}
-
-                </select>
-
-                {subjectOptions.length ===
-                  0 && (
-                  <p className="text-xs text-amber-600">
-                    No available subjects were found
-                    for this assignment type.
-                  </p>
-                )}
-
-              </div>
-
-              {/* Acting User */}
-
-              <div className="space-y-2">
-
-                <label
-                  htmlFor="assigned-by-user"
+                  htmlFor="member-assigned-by"
                   className="text-sm font-medium"
                 >
                   Acting User
                 </label>
 
                 <select
-                  id="assigned-by-user"
+                  id="member-assigned-by"
                   value={
                     selectedAssignedByUserId
                   }
@@ -1139,11 +1525,12 @@ export default function AssignmentsPage() {
                     )
                   }
                   disabled={
-                    isCreating ||
+                    isAssigning ||
                     actingUserOptions.length === 0
                   }
                   className="w-full rounded-md border bg-white px-3 py-2 text-sm"
                 >
+
                   <option value="">
                     Select the user creating this assignment
                   </option>
@@ -1162,23 +1549,10 @@ export default function AssignmentsPage() {
                 </select>
 
                 <p className="text-xs text-muted-foreground">
-                  Development mode: this represents the
-                  platform user creating the assignment.
-                  Production authentication will replace
-                  this selection later.
+                  Development mode: authentication will provide the acting user in the production authorization model.
                 </p>
 
-                {actingUserOptions.length ===
-                  0 && (
-                  <p className="text-xs text-amber-600">
-                    No active organization users are
-                    available to create assignments.
-                  </p>
-                )}
-
               </div>
-
-              {/* Draft Notice */}
 
               <div className="rounded-lg border bg-gray-50 p-4">
 
@@ -1187,12 +1561,11 @@ export default function AssignmentsPage() {
                 </p>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  New assignments are created as{" "}
+                  New member assignments are created as{" "}
                   <span className="font-medium">
                     Draft
                   </span>
-                  . They can be activated later after
-                  the assignment has been reviewed.
+                  . They must be activated before Runtime performance can be created.
                 </p>
 
               </div>
@@ -1205,9 +1578,9 @@ export default function AssignmentsPage() {
                 type="button"
                 variant="outline"
                 onClick={
-                  closeCreateAssignment
+                  closeAssignMember
                 }
-                disabled={isCreating}
+                disabled={isAssigning}
               >
                 Cancel
               </Button>
@@ -1215,17 +1588,16 @@ export default function AssignmentsPage() {
               <Button
                 type="button"
                 onClick={
-                  handleCreateAssignment
+                  handleAssignMember
                 }
                 disabled={
-                  isCreating ||
+                  isAssigning ||
                   !selectedPerformanceSheetId ||
-                  !selectedSubjectId ||
                   !selectedAssignedByUserId
                 }
               >
-                {isCreating
-                  ? "Creating..."
+                {isAssigning
+                  ? "Assigning..."
                   : "Create Assignment"}
               </Button>
 
@@ -1237,10 +1609,10 @@ export default function AssignmentsPage() {
       )}
 
       {/* ======================================================
-          Manage Assignment Modal
+          View Assignment Modal
       ====================================================== */}
 
-      {managedAssignment && (
+      {viewedAssignment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
 
           <div className="w-full max-w-lg rounded-xl border bg-white shadow-xl">
@@ -1250,19 +1622,25 @@ export default function AssignmentsPage() {
               <div className="flex items-start justify-between gap-4">
 
                 <div>
-                  <h2 className="text-xl font-semibold">
-                    Manage Assignment
+
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Member Assignment
+                  </p>
+
+                  <h2 className="mt-1 text-xl font-semibold">
+                    View Assignment
                   </h2>
 
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Review and manage the assignment lifecycle.
+                    View the member's current Performance Sheet assignment and available actions.
                   </p>
+
                 </div>
 
                 <button
                   type="button"
                   onClick={
-                    closeManageAssignment
+                    closeViewAssignment
                   }
                   disabled={isManaging}
                   className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900"
@@ -1284,38 +1662,21 @@ export default function AssignmentsPage() {
                 </div>
               )}
 
+              {/* ==========================================
+                  Assignment Summary
+              ========================================== */}
+
               <div className="rounded-lg border bg-gray-50 p-4">
 
                 <div className="space-y-3 text-sm">
 
                   <div>
                     <span className="font-medium text-gray-700">
-                      Subject:
+                      Member:
                     </span>{" "}
-                    {getSubjectName(
-                      managedAssignment,
-                      organization,
-                      userMap,
-                      teamMap,
-                      departmentMap
-                    )}
-                  </div>
-
-                  <div>
-                    <span className="font-medium text-gray-700">
-                      Type:
-                    </span>{" "}
-                    {formatAssignmentType(
-                      managedAssignment.assignmentType
-                    )}
-                  </div>
-
-                  <div>
-                    <span className="font-medium text-gray-700">
-                      Status:
-                    </span>{" "}
-                    {formatAssignmentStatus(
-                      managedAssignment.status
+                    {getMemberNameFromAssignment(
+                      viewedAssignment,
+                      users
                     )}
                   </div>
 
@@ -1324,85 +1685,144 @@ export default function AssignmentsPage() {
                       Performance Sheet:
                     </span>{" "}
                     {performanceSheetMap.get(
-                      managedAssignment.performanceSheetId
+                      viewedAssignment.performanceSheetId
                     )
                       ? `${performanceSheetMap.get(
-                          managedAssignment.performanceSheetId
+                          viewedAssignment.performanceSheetId
                         )?.name} — Version ${performanceSheetMap.get(
-                          managedAssignment.performanceSheetId
+                          viewedAssignment.performanceSheetId
                         )?.version}`
                       : "Unavailable"}
+                  </div>
+
+                  <div>
+                    <span className="font-medium text-gray-700">
+                      Status:
+                    </span>{" "}
+                    <StatusBadge
+                      status={
+                        viewedAssignment.status
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <span className="font-medium text-gray-700">
+                      Assigned:
+                    </span>{" "}
+                    {formatDate(
+                      viewedAssignment.assignedAt
+                    )}
                   </div>
 
                 </div>
 
               </div>
 
-              <div className="rounded-lg border bg-white p-4">
+              {/* ==========================================
+                  Performance Actions
+              ========================================== */}
+
+              <div className="space-y-3">
 
                 <p className="text-sm font-medium">
-                  Assignment lifecycle
+                  Performance
                 </p>
 
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Draft assignments can be activated after
-                  review. Active assignments can create a
-                  Performance Execution or be cancelled.
-                  Completed assignments remain historical records.
-                </p>
+                <Button
+                  type="button"
+                  className="w-full justify-start"
+                  onClick={() =>
+                    handleViewPerformance(
+                      viewedAssignment
+                    )
+                  }
+                >
+                  View Performance
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() =>
+                    handleViewPerformanceHistory(
+                      viewedAssignment
+                    )
+                  }
+                >
+                  Performance History
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() =>
+                    handleViewAssignmentHistory(
+                      viewedAssignment
+                    )
+                  }
+                >
+                  Assignment History
+                </Button>
 
               </div>
 
-            </div>
+              {/* ==========================================
+                  Assignment Management
+              ========================================== */}
 
-            <div className="flex flex-wrap justify-end gap-3 border-t px-6 py-4">
+              <div className="space-y-3">
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={
-                  closeManageAssignment
-                }
-                disabled={isManaging}
-              >
-                Close
-              </Button>
+                <p className="text-sm font-medium">
+                  Assignment Management
+                </p>
 
-              {managedAssignment.status ===
-                "draft" && (
-                <Button
-                  type="button"
-                  onClick={
-                    handleActivateAssignment
-                  }
-                  disabled={isManaging}
-                >
-                  {isManaging
-                    ? "Activating..."
-                    : "Activate Assignment"}
-                </Button>
-              )}
-
-              {managedAssignment.status ===
-                "active" && (
-                <>
+                {viewedAssignment.status ===
+                  "active" && (
                   <Button
                     type="button"
-                    onClick={
-                      handleCreatePerformanceExecution
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() =>
+                      openReassignment(
+                        viewedAssignment
+                      )
+                    }
+                  >
+                    Reassign Performance Sheet
+                  </Button>
+                )}
+
+                {viewedAssignment.status ===
+                  "draft" && (
+                  <Button
+                    type="button"
+                    className="w-full justify-start"
+                    onClick={() =>
+                      handleActivateAssignment(
+                        viewedAssignment
+                      )
                     }
                     disabled={isManaging}
                   >
                     {isManaging
-                      ? "Opening Runtime..."
-                      : "Create Performance Execution"}
+                      ? "Activating..."
+                      : "Activate Assignment"}
                   </Button>
+                )}
 
+                {viewedAssignment.status ===
+                  "active" && (
                   <Button
                     type="button"
                     variant="destructive"
-                    onClick={
-                      handleCancelAssignment
+                    className="w-full justify-start"
+                    onClick={() =>
+                      handleCancelAssignment(
+                        viewedAssignment
+                      )
                     }
                     disabled={isManaging}
                   >
@@ -1410,8 +1830,434 @@ export default function AssignmentsPage() {
                       ? "Cancelling..."
                       : "Cancel Assignment"}
                   </Button>
-                </>
+                )}
+
+              </div>
+
+            </div>
+
+            <div className="flex justify-end border-t px-6 py-4">
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={
+                  closeViewAssignment
+                }
+                disabled={isManaging}
+              >
+                Close
+              </Button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* ======================================================
+          Assignment History Modal
+      ====================================================== */}
+
+      {historyMemberId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+
+          <div className="w-full max-w-2xl rounded-xl border bg-white shadow-xl">
+
+            <div className="border-b px-6 py-5">
+
+              <div className="flex items-start justify-between gap-4">
+
+                <div>
+
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Assignment History
+                  </p>
+
+                  <h2 className="mt-1 text-xl font-semibold">
+                    {historyMember
+                      ? getMemberName(
+                          historyMember
+                        )
+                      : "Member"}
+                  </h2>
+
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Historical Performance Sheet assignments for this member.
+                  </p>
+
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setHistoryMemberId(
+                      null
+                    )
+                  }
+                  className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                >
+                  ✕
+                </button>
+
+              </div>
+
+            </div>
+
+            <div className="px-6 py-6">
+
+              {historyAssignments.length ===
+              0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No assignment history was found for this member.
+                </p>
+              ) : (
+                <div className="overflow-hidden rounded-lg border">
+
+                  <div className="grid grid-cols-[minmax(0,1.5fr)_auto_auto] border-b bg-gray-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+
+                    <div>
+                      Performance Sheet
+                    </div>
+
+                    <div>
+                      Status
+                    </div>
+
+                    <div>
+                      Assigned
+                    </div>
+
+                  </div>
+
+                  <div className="divide-y">
+
+                    {historyAssignments.map(
+                      (assignment) => {
+                        const sheet =
+                          performanceSheetMap.get(
+                            assignment.performanceSheetId
+                          );
+
+                        return (
+                          <div
+                            key={
+                              assignment.id
+                            }
+                            className="grid grid-cols-[minmax(0,1.5fr)_auto_auto] items-center gap-4 px-4 py-4"
+                          >
+
+                            <div className="min-w-0">
+
+                              <p className="truncate text-sm font-medium">
+                                {sheet?.name ??
+                                  "Unavailable"}
+                              </p>
+
+                              {sheet && (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  Version{" "}
+                                  {
+                                    sheet.version
+                                  }
+                                </p>
+                              )}
+
+                            </div>
+
+                            <StatusBadge
+                              status={
+                                assignment.status
+                              }
+                            />
+
+                            <p className="text-xs text-muted-foreground">
+                              {formatDate(
+                                assignment.assignedAt
+                              )}
+                            </p>
+
+                          </div>
+                        );
+                      }
+                    )}
+
+                  </div>
+
+                </div>
               )}
+
+            </div>
+
+            <div className="flex justify-end border-t px-6 py-4">
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  setHistoryMemberId(
+                    null
+                  )
+                }
+              >
+                Close
+              </Button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* ======================================================
+          Reassign Performance Sheet Modal
+      ====================================================== */}
+
+      {reassignmentAssignment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+
+          <div className="w-full max-w-lg rounded-xl border bg-white shadow-xl">
+
+            <div className="border-b px-6 py-5">
+
+              <div className="flex items-start justify-between gap-4">
+
+                <div>
+
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Reassign Performance Sheet
+                  </p>
+
+                  <h2 className="mt-1 text-xl font-semibold">
+                    Change Member Assignment
+                  </h2>
+
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    The existing assignment will remain preserved as historical record and a new active assignment will be created.
+                  </p>
+
+                </div>
+
+                <button
+                  type="button"
+                  onClick={
+                    closeReassignment
+                  }
+                  disabled={isReassigning}
+                  className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                >
+                  ✕
+                </button>
+
+              </div>
+
+            </div>
+
+            <div className="space-y-6 px-6 py-6">
+
+              {reassignError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                  <p className="text-sm text-red-700">
+                    {reassignError}
+                  </p>
+                </div>
+              )}
+
+              {/* ==========================================
+                  Member
+              ========================================== */}
+
+              <div className="rounded-lg border bg-gray-50 p-4">
+
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Member
+                </p>
+
+                <p className="mt-1 text-sm font-medium">
+                  {getMemberNameFromAssignment(
+                    reassignmentAssignment,
+                    users
+                  )}
+                </p>
+
+              </div>
+
+              {/* ==========================================
+                  Current Sheet
+              ========================================== */}
+
+              <div className="space-y-2">
+
+                <p className="text-sm font-medium">
+                  Current Performance Sheet
+                </p>
+
+                <div className="rounded-md border bg-gray-50 px-3 py-2 text-sm">
+
+                  {performanceSheetMap.get(
+                    reassignmentAssignment.performanceSheetId
+                  )
+                    ? `${performanceSheetMap.get(
+                        reassignmentAssignment.performanceSheetId
+                      )?.name} — Version ${performanceSheetMap.get(
+                        reassignmentAssignment.performanceSheetId
+                      )?.version}`
+                    : "Unavailable"}
+
+                </div>
+
+              </div>
+
+              {/* ==========================================
+                  Replacement Sheet
+              ========================================== */}
+
+              <div className="space-y-2">
+
+                <label
+                  htmlFor="replacement-performance-sheet"
+                  className="text-sm font-medium"
+                >
+                  Replacement Performance Sheet
+                </label>
+
+                <select
+                  id="replacement-performance-sheet"
+                  value={
+                    selectedReplacementPerformanceSheetId
+                  }
+                  onChange={(event) =>
+                    setSelectedReplacementPerformanceSheetId(
+                      event.target.value
+                    )
+                  }
+                  disabled={isReassigning}
+                  className="w-full rounded-md border bg-white px-3 py-2 text-sm"
+                >
+
+                  <option value="">
+                    Select a published Performance Sheet
+                  </option>
+
+                  {performanceSheets
+                    .filter(
+                      (sheet) =>
+                        sheet.id !==
+                        reassignmentAssignment.performanceSheetId
+                    )
+                    .map(
+                      (sheet) => (
+                        <option
+                          key={sheet.id}
+                          value={sheet.id}
+                        >
+                          {sheet.name} — Version{" "}
+                          {sheet.version}
+                        </option>
+                      )
+                    )}
+
+                </select>
+
+              </div>
+
+              {/* ==========================================
+                  Acting User
+              ========================================== */}
+
+              <div className="space-y-2">
+
+                <label
+                  htmlFor="reassigned-by"
+                  className="text-sm font-medium"
+                >
+                  Acting User
+                </label>
+
+                <select
+                  id="reassigned-by"
+                  value={
+                    selectedReassignedByUserId
+                  }
+                  onChange={(event) =>
+                    setSelectedReassignedByUserId(
+                      event.target.value
+                    )
+                  }
+                  disabled={
+                    isReassigning ||
+                    actingUserOptions.length === 0
+                  }
+                  className="w-full rounded-md border bg-white px-3 py-2 text-sm"
+                >
+
+                  <option value="">
+                    Select the user performing the reassignment
+                  </option>
+
+                  {actingUserOptions.map(
+                    (user) => (
+                      <option
+                        key={user.id}
+                        value={user.id}
+                      >
+                        {user.label}
+                      </option>
+                    )
+                  )}
+
+                </select>
+
+              </div>
+
+              {/* ==========================================
+                  Historical Preservation Notice
+              ========================================== */}
+
+              <div className="rounded-lg border bg-gray-50 p-4">
+
+                <p className="text-sm font-medium">
+                  Historical preservation
+                </p>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  The previous assignment is not overwritten. It will remain available in Assignment History, while the replacement becomes the member's new active Performance Sheet assignment.
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="flex justify-end gap-3 border-t px-6 py-4">
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={
+                  closeReassignment
+                }
+                disabled={isReassigning}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="button"
+                onClick={
+                  handleReassignPerformanceSheet
+                }
+                disabled={
+                  isReassigning ||
+                  !selectedReplacementPerformanceSheetId ||
+                  !selectedReassignedByUserId
+                }
+              >
+                {isReassigning
+                  ? "Reassigning..."
+                  : "Confirm Reassignment"}
+              </Button>
 
             </div>
 
@@ -1425,128 +2271,41 @@ export default function AssignmentsPage() {
 }
 
 /* ==========================================================
-   Subject Name
+   Member Name From Assignment
 ========================================================== */
 
-function getSubjectName(
+function getMemberNameFromAssignment(
   assignment: Assignment,
-  organization: Organization | null,
-  userMap: Map<
-    string,
-    UserManagementRecord["user"]
-  >,
-  teamMap: Map<
-    string,
-    Team
-  >,
-  departmentMap: Map<
-    string,
-    Department
-  >
+  users: UserManagementRecord[]
 ): string {
-  switch (
-    assignment.assignmentType
-  ) {
-    case "individual": {
-      const user =
-        userMap.get(
-          assignment.subjectId
-        );
+  const record =
+    users.find(
+      (item) =>
+        item.user.id ===
+        assignment.subjectId
+    );
 
-      if (!user) {
-        return "Unknown User";
-      }
-
-      return (
-        user.display_name ||
-        `${user.first_name} ${user.last_name}`.trim() ||
-        user.email
-      );
-    }
-
-    case "team": {
-      const team =
-        teamMap.get(
-          assignment.subjectId
-        );
-
-      return (
-        team?.name ??
-        "Unknown Team"
-      );
-    }
-
-    case "department": {
-      const department =
-        departmentMap.get(
-          assignment.subjectId
-        );
-
-      return (
-        department?.name ??
-        "Unknown Department"
-      );
-    }
-
-    case "organization":
-      return (
-        organization?.company_name ??
-        "Organization"
-      );
-
-    default:
-      return "Unknown Subject";
+  if (!record) {
+    return "Unknown Member";
   }
+
+  return getMemberName(
+    record
+  );
 }
 
 /* ==========================================================
-   Assignment Type
+   Member Name
 ========================================================== */
 
-function formatAssignmentType(
-  type: Assignment["assignmentType"]
+function getMemberName(
+  record: UserManagementRecord
 ): string {
-  switch (type) {
-    case "individual":
-      return "Individual";
-
-    case "team":
-      return "Team";
-
-    case "department":
-      return "Department";
-
-    case "organization":
-      return "Organization";
-
-    default:
-      return type;
-  }
-}
-
-/* ==========================================================
-   Subject Label
-========================================================== */
-
-function getSubjectLabel(
-  type: Assignment["assignmentType"]
-): string {
-  switch (type) {
-    case "individual":
-      return "User";
-
-    case "team":
-      return "Team";
-
-    case "department":
-      return "Department";
-
-    case "organization":
-      return "Organization";
-
-    default:
-      return "Subject";
-  }
+  return (
+    record.user.display_name ||
+    `${record.user.first_name} ${record.user.last_name}`.trim() ||
+    record.user.email
+  );
 }
 
 /* ==========================================================
@@ -1558,14 +2317,11 @@ function StatusBadge({
 }: {
   status: Assignment["status"];
 }) {
-  const label =
-    formatAssignmentStatus(
-      status
-    );
-
   return (
-    <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium">
-      {label}
+    <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium">
+      {formatAssignmentStatus(
+        status
+      )}
     </span>
   );
 }

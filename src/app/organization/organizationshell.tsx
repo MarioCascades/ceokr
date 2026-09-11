@@ -90,6 +90,20 @@ export default function OrganizationShell({
     )}`;
   }
 
+  /*
+   * ==========================================================
+   * Organization Runtime
+   * ==========================================================
+   *
+   * This enters the existing shared Runtime at the
+   * organization level.
+   *
+   * No new Runtime implementation is created here.
+   */
+
+  const performanceWorkspaceHref =
+    organizationHref("/runtime");
+
   return (
     <div className="min-h-screen bg-slate-100">
 
@@ -181,6 +195,12 @@ export default function OrganizationShell({
           ================================================== */}
 
           <OrganizationNavSection title="Performance">
+
+            <OrganizationNavLink
+              href={performanceWorkspaceHref}
+              label="Performance Workspace"
+            />
+
             <OrganizationNavLink
               href={organizationHref(
                 "/organization/performancesheets"
@@ -209,12 +229,6 @@ export default function OrganizationShell({
               label="Key Results"
             />
 
-            <OrganizationNavLink
-              href={organizationHref(
-                "/organization/initiatives"
-              )}
-              label="Initiatives"
-            />
           </OrganizationNavSection>
 
           {/* ==================================================

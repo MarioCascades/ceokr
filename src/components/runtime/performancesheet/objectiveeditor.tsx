@@ -92,6 +92,9 @@ export default function ObjectiveEditor({
               title,
 
               description,
+
+              position:
+                objective.position,
             }
           );
 

@@ -1,346 +1,881 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+
 import AdminPageHeader from "@/components/admin/shared/adminpageheader";
 
-import { getOrganization } from "@/services/organization.service";
 import {
-  listPerformanceSheetDefinitions,
-  findPerformanceSheetVersions,
+  getOrganization,
+} from "@/services/organization.service";
+
+import {
+  listUserManagementRecords,
+} from "@/services/user.service";
+
+import {
+  getTeams,
+} from "@/services/team.service";
+
+import {
+  findAssignmentsByOrganization,
+} from "@/lib/repositories/assignmentrepository";
+
+import type {
+  Assignment,
+} from "@/lib/domain/assignment";
+
+import {
+  findPublishedPerformanceSheetsByOrganization,
+  type PerformanceSheetRecord,
 } from "@/lib/repositories/performancesheetrepository";
 
-import type { Organization } from "@/lib/types/organization";
-import type { PerformanceSheetRecord } from "@/lib/repositories/performancesheetrepository";
+import type {
+  Organization,
+} from "@/lib/types/organization";
 
-type VersionHistoryMap = Record<string, PerformanceSheetRecord[]>;
+import type {
+  Team,
+} from "@/lib/types/domain/team";
+
+import type {
+  UserManagementRecord,
+} from "@/lib/types/domain/usermanagement";
+
+/* ==========================================================
+   Organization Admin Performance Sheets
+   ----------------------------------------------------------
+   Product rule:
+
+   Performance Sheets belong to individual members.
+
+   This page is the Organization Admin version of the
+   Super Admin member-performance view.
+
+   The Organization Admin operates inside one organization.
+   There is intentionally NO organization selector here.
+
+   This page does NOT manage Performance Sheet definitions
+   or versions. Builder owns those definitions.
+
+   This page shows:
+
+   Organization
+      ↓
+   Members
+      ↓
+   Assigned Performance Sheet
+      ↓
+   Manage
+      ↓
+   Member Runtime Performance
+========================================================== */
 
 export default function OrganizationPerformanceSheetsPage() {
-  const searchParams = useSearchParams();
+  const searchParams =
+    useSearchParams();
+
+  const router =
+    useRouter();
 
   /*
-   * Organization Admin workspace is organization-scoped.
+   * Temporary organization context.
    *
-   * The organizationId is currently carried through the workspace URL
-   * until authentication and organization membership enforcement are
-   * implemented.
+   * Authentication / authorization will eventually provide
+   * the organization directly from the authenticated
+   * Organization Membership.
    */
-  const selectedOrganizationId = searchParams.get("organizationId");
+  const organizationId =
+    searchParams.get(
+      "organizationId"
+    );
 
-  const [organization, setOrganization] = useState<Organization | null>(
+  /* ========================================================
+     Core Data
+  ======================================================== */
+
+  const [
+    organization,
+    setOrganization,
+  ] = useState<Organization | null>(
     null
   );
 
-  const [performanceSheets, setPerformanceSheets] = useState<
-    PerformanceSheetRecord[]
-  >([]);
+  const [
+    assignments,
+    setAssignments,
+  ] = useState<Assignment[]>(
+    []
+  );
 
-  const [versionHistory, setVersionHistory] =
-    useState<VersionHistoryMap>({});
+  const [
+    performanceSheets,
+    setPerformanceSheets,
+  ] = useState<PerformanceSheetRecord[]>(
+    []
+  );
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [
+    users,
+    setUsers,
+  ] = useState<UserManagementRecord[]>(
+    []
+  );
 
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [
+    teams,
+    setTeams,
+  ] = useState<Team[]>(
+    []
+  );
 
-  /*
-   * Preserve organization context when navigating into Builder.
-   */
-  const organizationQuery = selectedOrganizationId
-    ? `&organizationId=${encodeURIComponent(selectedOrganizationId)}`
-    : "";
+  /* ========================================================
+     Page State
+  ======================================================== */
 
-  const builderNewHref = selectedOrganizationId
-    ? `/builder?new=true&organizationId=${encodeURIComponent(
-        selectedOrganizationId
-      )}&from=organization`
-    : "/builder?new=true&from=organization";
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
 
-  /*
-   * Load the current organization and its Performance Sheet definitions.
-   *
-   * This page intentionally reuses the existing repository rather than
-   * creating duplicate Performance Sheet data-access logic.
-   */
-  useEffect(() => {
-    async function initialize() {
-      try {
-        setIsLoading(true);
-        setErrorMessage(null);
+  const [
+    errorMessage,
+    setErrorMessage,
+  ] = useState<string | null>(
+    null
+  );
 
-        const existingOrganization = await getOrganization(
-          selectedOrganizationId ?? undefined
-        );
+  /* ========================================================
+     Load Data
+  ======================================================== */
 
-        if (!existingOrganization) {
-          setOrganization(null);
-          setPerformanceSheets([]);
-          setVersionHistory({});
-          setErrorMessage("No organization has been configured yet.");
-          return;
-        }
+  const loadData =
+    useCallback(
+      async () => {
+        try {
+          setIsLoading(true);
 
-        setOrganization(existingOrganization);
+          setErrorMessage(null);
 
-        const records = await listPerformanceSheetDefinitions(
-          existingOrganization.id
-        );
+          if (!organizationId) {
+            setOrganization(null);
 
-        setPerformanceSheets(records);
+            setAssignments([]);
 
-        /*
-         * Load version history for each logical Performance Sheet.
-         *
-         * The repository already understands sheet_key/version relationships,
-         * so the Organization Admin workspace does not need to recreate that
-         * logic.
-         */
-        setIsLoadingHistory(true);
+            setPerformanceSheets([]);
 
-        const historyEntries = await Promise.all(
-          records.map(async (sheet) => {
-            const versions = await findPerformanceSheetVersions(
-              existingOrganization.id,
-              sheet.sheet_key
+            setUsers([]);
+
+            setTeams([]);
+
+            setErrorMessage(
+              "No organization context is available."
             );
 
-            return [sheet.sheet_key, versions] as const;
-          })
-        );
+            return;
+          }
 
-        const historyMap: VersionHistoryMap = {};
+          const existingOrganization =
+            await getOrganization(
+              organizationId
+            );
 
-        for (const [sheetKey, versions] of historyEntries) {
-          historyMap[sheetKey] = versions;
+          if (!existingOrganization) {
+            setOrganization(null);
+
+            setAssignments([]);
+
+            setPerformanceSheets([]);
+
+            setUsers([]);
+
+            setTeams([]);
+
+            setErrorMessage(
+              "The selected organization could not be found."
+            );
+
+            return;
+          }
+
+          setOrganization(
+            existingOrganization
+          );
+
+          const [
+            assignmentRecords,
+            publishedSheets,
+            userRecords,
+            teamRecords,
+          ] =
+            await Promise.all([
+              findAssignmentsByOrganization(
+                existingOrganization.id
+              ),
+
+              findPublishedPerformanceSheetsByOrganization(
+                existingOrganization.id
+              ),
+
+              listUserManagementRecords(
+                existingOrganization.id
+              ),
+
+              getTeams(
+                existingOrganization.id
+              ),
+            ]);
+
+          setAssignments(
+            assignmentRecords
+          );
+
+          setPerformanceSheets(
+            publishedSheets
+          );
+
+          setUsers(
+            userRecords
+          );
+
+          setTeams(
+            teamRecords
+          );
+        } catch (error) {
+          console.error(
+            "Failed to load member Performance Sheets:",
+            error
+          );
+
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : "Failed to load member Performance Sheets."
+          );
+        } finally {
+          setIsLoading(false);
         }
+      },
+      [
+        organizationId,
+      ]
+    );
 
-        setVersionHistory(historyMap);
-      } catch (error) {
-        console.error(
-          "Failed to load organization Performance Sheets:",
-          error
-        );
+  /* ========================================================
+     Initialize
+  ======================================================== */
 
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Failed to load Performance Sheets."
-        );
-      } finally {
-        setIsLoadingHistory(false);
-        setIsLoading(false);
+  useEffect(() => {
+    loadData();
+  }, [
+    loadData,
+  ]);
+
+  /* ========================================================
+     Lookup Maps
+  ======================================================== */
+
+  const performanceSheetMap =
+    useMemo(() => {
+      return new Map(
+        performanceSheets.map(
+          (sheet) => [
+            sheet.id,
+            sheet,
+          ]
+        )
+      );
+    }, [
+      performanceSheets,
+    ]);
+
+  const teamMap =
+    useMemo(() => {
+      return new Map(
+        teams.map(
+          (team) => [
+            team.id,
+            team,
+          ]
+        )
+      );
+    }, [
+      teams,
+    ]);
+
+  /* ========================================================
+     Active Individual Assignments
+     --------------------------------------------------------
+     Runtime expects one current individual assignment.
+
+     If historical/test data contains more than one active
+     assignment, the newest assignment wins.
+  ======================================================== */
+
+  const activeAssignmentByMember =
+    useMemo(() => {
+      const map =
+        new Map<
+          string,
+          Assignment
+        >();
+
+      const activeAssignments =
+        assignments
+          .filter(
+            (assignment) =>
+              assignment.assignmentType ===
+                "individual" &&
+              assignment.status ===
+                "active"
+          )
+          .sort(
+            (a, b) =>
+              new Date(
+                b.assignedAt
+              ).getTime() -
+              new Date(
+                a.assignedAt
+              ).getTime()
+          );
+
+      for (
+        const assignment of
+          activeAssignments
+      ) {
+        if (
+          !map.has(
+            assignment.subjectId
+          )
+        ) {
+          map.set(
+            assignment.subjectId,
+            assignment
+          );
+        }
       }
+
+      return map;
+    }, [
+      assignments,
+    ]);
+
+  /* ========================================================
+     Member Groups
+     --------------------------------------------------------
+     Teams organize the display only.
+
+     Performance Sheets remain individual-member assignments.
+  ======================================================== */
+
+  const memberGroups =
+    useMemo(() => {
+      const groups =
+        new Map<
+          string,
+          {
+            teamId: string | null;
+            teamName: string;
+            members: UserManagementRecord[];
+          }
+        >();
+
+      const activeMembers =
+        users.filter(
+          (record) =>
+            record.user.is_active !==
+            false
+        );
+
+      for (
+        const record of
+          activeMembers
+      ) {
+        const teamId =
+          record.membership
+            ?.team_id ??
+          null;
+
+        const team =
+          teamId
+            ? teamMap.get(
+                teamId
+              )
+            : null;
+
+        const groupKey =
+          teamId ??
+          "unassigned";
+
+        const existing =
+          groups.get(
+            groupKey
+          );
+
+        if (existing) {
+          existing.members.push(
+            record
+          );
+        } else {
+          groups.set(
+            groupKey,
+            {
+              teamId,
+              teamName:
+                team?.name ??
+                "Unassigned Team",
+              members: [
+                record,
+              ],
+            }
+          );
+        }
+      }
+
+      return Array.from(
+        groups.values()
+      )
+        .map(
+          (group) => ({
+            ...group,
+            members:
+              [...group.members].sort(
+                compareMembers
+              ),
+          })
+        )
+        .sort(
+          (a, b) =>
+            a.teamName.localeCompare(
+              b.teamName
+            )
+        );
+    }, [
+      users,
+      teamMap,
+    ]);
+
+  /* ========================================================
+     Counts
+  ======================================================== */
+
+  const memberCount =
+    users.filter(
+      (record) =>
+        record.user.is_active !==
+        false
+    ).length;
+
+  const activeSheetCount =
+    activeAssignmentByMember.size;
+
+  /* ========================================================
+     Manage Member Performance
+     --------------------------------------------------------
+     Opens the existing Runtime member-performance route.
+
+     This is NOT impersonation.
+
+     The eventual authorization layer determines whether the
+     Organization Admin is allowed to operate on this member.
+  ======================================================== */
+
+  function handleManageMember(
+    memberId: string
+  ) {
+    if (!organizationId) {
+      return;
     }
 
-    initialize();
-  }, [selectedOrganizationId]);
+    router.push(
+      `/member?organizationId=${encodeURIComponent(
+        organizationId
+      )}&subjectId=${encodeURIComponent(
+        memberId
+      )}`
+    );
+  }
+
+  /* ========================================================
+     Render
+  ======================================================== */
 
   return (
     <main className="min-h-screen bg-gray-50 px-8 py-10">
       <div className="mx-auto max-w-7xl space-y-8">
-        <AdminPageHeader
-          title="Performance Sheets"
-          description="Manage this organization's Performance Sheet definitions, versions and Builder access."
-          showOrganizationSelector={false}
-        />
 
-        {/* Error */}
+        {/* ==================================================
+            Header
+        ================================================== */}
+
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+
+          <AdminPageHeader
+            title="Performance Sheets"
+            description="Manage the Performance Sheet experience for each member of this organization."
+            showOrganizationSelector={false}
+          />
+
+          <Button
+            asChild
+            variant="outline"
+            className="shrink-0"
+          >
+            <a
+              href={
+                organizationId
+                  ? `/organization?organizationId=${encodeURIComponent(
+                      organizationId
+                    )}`
+                  : "/organization"
+              }
+            >
+              Back to Overview
+            </a>
+          </Button>
+
+        </div>
+
+        {/* ==================================================
+            Error
+        ================================================== */}
+
         {errorMessage && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-            <p className="text-sm text-red-700">{errorMessage}</p>
-          </div>
-        )}
-
-        {/* Loading */}
-        {isLoading && (
-          <section className="rounded-xl border bg-white p-6 shadow-sm">
-            <p className="text-sm text-muted-foreground">
-              Loading Performance Sheets...
+          <section className="rounded-xl border border-red-200 bg-red-50 p-5">
+            <p className="text-sm text-red-700">
+              {errorMessage}
             </p>
           </section>
         )}
 
-        {/* Organization context */}
-        {!isLoading && organization && (
+        {/* ==================================================
+            Loading
+        ================================================== */}
+
+        {isLoading && (
           <section className="rounded-xl border bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold">
-                  {organization.company_name}
-                </h2>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Performance Sheet Definitions
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-gray-100 px-3 py-2 text-sm">
-                {performanceSheets.length}{" "}
-                {performanceSheets.length === 1 ? "sheet" : "sheets"}
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Loading member Performance Sheets...
+            </p>
           </section>
         )}
 
-        {/* Performance Sheet definitions */}
-        {!isLoading && (
-          <section className="rounded-xl border bg-white shadow-sm">
-            <div className="flex items-center justify-between gap-4 border-b p-6">
-              <div>
-                <h2 className="text-xl font-semibold">
-                  Performance Sheet Definitions
-                </h2>
+        {/* ==================================================
+            Organization Summary
+        ================================================== */}
 
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Manage reusable Performance Sheet definitions through the
-                  Builder.
-                </p>
-              </div>
+        {!isLoading &&
+          organization && (
+            <section className="rounded-xl border bg-white p-6 shadow-sm">
 
-              <Button asChild>
-                <Link href={builderNewHref}>
-                  Create Performance Sheet
-                </Link>
-              </Button>
-            </div>
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
 
-            {isLoadingHistory && performanceSheets.length > 0 && (
-              <div className="border-b bg-gray-50 px-6 py-3">
-                <p className="text-xs text-muted-foreground">
-                  Loading version history...
-                </p>
-              </div>
-            )}
-
-            {performanceSheets.length === 0 ? (
-              <div className="p-6">
-                <div className="rounded-lg border border-dashed bg-gray-50 p-8 text-center">
-                  <h3 className="text-lg font-semibold">
-                    No Performance Sheets yet
-                  </h3>
-
-                  <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-                    Create the organization's first Performance Sheet
-                    definition using the Builder.
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Organization
                   </p>
 
-                  <div className="mt-5">
-                    <Button asChild>
-                      <Link href={builderNewHref}>
-                        Create Performance Sheet
-                      </Link>
-                    </Button>
-                  </div>
+                  <h2 className="mt-2 text-2xl font-semibold text-gray-950">
+                    {organization.company_name}
+                  </h2>
+
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Member Performance
+                  </p>
                 </div>
+
+                <div className="flex gap-6">
+
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Members
+                    </p>
+
+                    <p className="mt-1 text-2xl font-semibold text-gray-950">
+                      {memberCount}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Active Sheets
+                    </p>
+
+                    <p className="mt-1 text-2xl font-semibold text-gray-950">
+                      {activeSheetCount}
+                    </p>
+                  </div>
+
+                </div>
+
               </div>
+
+            </section>
+          )}
+
+        {/* ==================================================
+            Member Performance
+        ================================================== */}
+
+        {!isLoading && (
+          <section className="rounded-xl border bg-white shadow-sm">
+
+            <div className="border-b p-6">
+
+              <h2 className="text-xl font-semibold text-gray-950">
+                Member Performance
+              </h2>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                View each member's assigned Performance Sheet
+                and manage their performance experience.
+              </p>
+
+            </div>
+
+            {memberGroups.length === 0 ? (
+
+              <div className="p-6">
+
+                <p className="text-sm text-muted-foreground">
+                  No active members were found in this
+                  organization.
+                </p>
+
+              </div>
+
             ) : (
+
               <div className="divide-y">
-                {performanceSheets.map((sheet) => {
-                  const versions =
-                    versionHistory[sheet.sheet_key] ?? [];
 
-                  return (
-                    <div key={sheet.sheet_key} className="p-6">
-                      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-lg font-semibold">
-                              {sheet.name}
-                            </h3>
+                {memberGroups.map(
+                  (group) => (
+                    <div
+                      key={
+                        group.teamId ??
+                        "unassigned"
+                      }
+                      className="p-6"
+                    >
 
-                            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
-                              Version {sheet.version}
-                            </span>
+                      {/* ==================================
+                          Team
+                      ================================== */}
 
-                            <span className="rounded-full border px-2.5 py-1 text-xs font-medium">
-                              {formatStatus(sheet.status)}
-                            </span>
-                          </div>
+                      <div className="mb-4">
 
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            Updated {formatDate(sheet.updated_at)}
-                          </p>
-                        </div>
+                        <h3 className="text-base font-semibold text-gray-950">
+                          {group.teamName}
+                        </h3>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {group.members.length}{" "}
+                          {group.members.length ===
+                          1
+                            ? "member"
+                            : "members"}
+                        </p>
 
                       </div>
 
-                      {/* Version history */}
-                      <div className="mt-6 rounded-lg border bg-gray-50">
-                        <div className="border-b px-4 py-3">
-                          <h4 className="text-sm font-semibold">
-                            Version History
-                          </h4>
+                      {/* ==================================
+                          Member Table
+                      ================================== */}
 
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Published versions remain immutable. Create a
-                            revision when changes are required.
-                          </p>
+                      <div className="overflow-hidden rounded-lg border">
+
+                        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] border-b bg-gray-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+
+                          <div>
+                            Member
+                          </div>
+
+                          <div>
+                            Performance Sheet
+                          </div>
+
+                          <div className="text-right">
+                            Action
+                          </div>
+
                         </div>
 
-                        {versions.length === 0 ? (
-                          <div className="px-4 py-5">
-                            <p className="text-sm text-muted-foreground">
-                              No version history is available.
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="divide-y">
-                            {versions.map((version) => {
-                              const versionBuilderHref = `/builder?sheetId=${encodeURIComponent(
-                                version.id
-                              )}${organizationQuery}&from=organization`;
+                        <div className="divide-y">
+
+                          {group.members.map(
+                            (record) => {
+                              const memberId =
+                                record.user.id;
+
+                              const activeAssignment =
+                                activeAssignmentByMember.get(
+                                  memberId
+                                );
+
+                              const performanceSheet =
+                                activeAssignment
+                                  ? performanceSheetMap.get(
+                                      activeAssignment.performanceSheetId
+                                    )
+                                  : null;
+
+                              const memberName =
+                                getMemberName(
+                                  record
+                                );
 
                               return (
                                 <div
-                                  key={version.id}
-                                  className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                                  key={
+                                    memberId
+                                  }
+                                  className="grid grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] sm:items-center"
                                 >
-                                  <div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <span className="text-sm font-medium">
-                                        Version {version.version}
-                                      </span>
 
-                                      <span className="rounded-full border px-2 py-0.5 text-[11px] font-medium">
-                                        {formatStatus(version.status)}
-                                      </span>
-                                    </div>
+                                  {/* ====================
+                                      Member
+                                  ==================== */}
 
-                                    <p className="mt-1 text-xs text-muted-foreground">
-                                      Updated{" "}
-                                      {formatDate(version.updated_at)}
+                                  <div className="min-w-0">
+
+                                    <p className="font-medium text-gray-950">
+                                      {memberName}
                                     </p>
+
+                                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                                      {
+                                        record
+                                          .user
+                                          .email
+                                      }
+                                    </p>
+
                                   </div>
 
-                                  <Button
-                                    asChild
-                                    variant="outline"
-                                    size="sm"
-                                  >
-                                    <Link href={versionBuilderHref}>
-                                      Open
-                                    </Link>
-                                  </Button>
+                                  {/* ====================
+                                      Performance Sheet
+                                  ==================== */}
+
+                                  <div>
+
+                                    {activeAssignment &&
+                                    performanceSheet ? (
+                                      <>
+                                        <p className="font-medium text-gray-950">
+                                          {
+                                            performanceSheet.name
+                                          }
+                                        </p>
+
+                                        <p className="mt-1 text-xs text-muted-foreground">
+                                          Version{" "}
+                                          {
+                                            performanceSheet.version
+                                          }{" "}
+                                          ·{" "}
+                                          {formatStatus(
+                                            performanceSheet.status
+                                          )}
+                                        </p>
+                                      </>
+                                    ) : (
+                                      <p className="text-sm text-muted-foreground">
+                                        No active Performance
+                                        Sheet
+                                      </p>
+                                    )}
+
+                                  </div>
+
+                                  {/* ====================
+                                      Action
+                                  ==================== */}
+
+                                  <div className="sm:text-right">
+
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      disabled={
+                                        !activeAssignment
+                                      }
+                                      onClick={() =>
+                                        handleManageMember(
+                                          memberId
+                                        )
+                                      }
+                                    >
+                                      Manage
+                                    </Button>
+
+                                  </div>
+
                                 </div>
                               );
-                            })}
-                          </div>
-                        )}
+                            }
+                          )}
+
+                        </div>
+
                       </div>
+
                     </div>
-                  );
-                })}
+                  )
+                )}
+
               </div>
             )}
+
           </section>
         )}
+
       </div>
     </main>
   );
 }
+
+/* ==========================================================
+   Member Name
+========================================================== */
+
+function getMemberName(
+  record: UserManagementRecord
+): string {
+  return (
+    record.user.display_name ||
+    `${record.user.first_name} ${record.user.last_name}`.trim() ||
+    record.user.email
+  );
+}
+
+/* ==========================================================
+   Member Sorting
+========================================================== */
+
+function compareMembers(
+  a: UserManagementRecord,
+  b: UserManagementRecord
+): number {
+  return getMemberName(
+    a
+  ).localeCompare(
+    getMemberName(
+      b
+    )
+  );
+}
+
+/* ==========================================================
+   Status
+========================================================== */
 
 function formatStatus(
   status: PerformanceSheetRecord["status"]
@@ -358,14 +893,4 @@ function formatStatus(
     default:
       return status;
   }
-}
-
-function formatDate(value: string): string {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString();
 }

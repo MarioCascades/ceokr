@@ -124,6 +124,8 @@ export interface UpdateRuntimePerformanceInstanceObjectiveActionInput {
   title: string;
 
   description?: string;
+
+  position: number;
 }
 
 export async function updateRuntimePerformanceInstanceObjectiveAction(

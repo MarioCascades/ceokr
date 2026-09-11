@@ -4,7 +4,7 @@ Platform Backlog
 
 Document Status: CURRENT
 
-Last Updated: 2026-09-10
+Last Updated: 2026-09-11
 
 This document tracks intentionally deferred architecture, product
 
@@ -1141,6 +1141,216 @@ Priority
 
 High
 
+
+---
+
+Settings and AI Product Experience
+
+Settings and AI work should follow the administrative authority model and
+remain separate from the authentication foundation until the authentication
+milestone is complete.
+
+## Super Admin Settings
+
+Status
+
+PLANNED
+
+Build a platform-level Settings page for CascadEffects Super Admins.
+
+Initial scope:
+
+- platform-level configuration areas
+- global defaults where appropriate
+- platform feature controls
+- future global AI configuration
+- clearly identified future settings
+
+Do not duplicate Organization-specific configuration here.
+
+Priority
+
+Medium
+
+## Organization Admin Settings
+
+Status
+
+NEXT AFTER AUTHENTICATION / PLANNED
+
+Build an organization-scoped Settings page for Organization Admins.
+
+Initial scope:
+
+- Organization preferences
+- organization performance-management preferences where appropriate
+- notification preferences
+- organization integrations / data configuration where appropriate
+- clearly identified future settings
+
+The page must use the authenticated Organization context.
+
+Do not provide an Organization-switching selector.
+
+Do not reintroduce administrator-managed Reporting Period configuration.
+
+Priority
+
+Medium
+
+## Super Admin AI Mock-up
+
+Status
+
+PLANNED / MOCK-UP FIRST
+
+Create a Super Admin AI page that demonstrates the future CascadEffects AI
+experience without requiring live AI API usage.
+
+Initial UI may include:
+
+- sample questions
+- suggested prompts
+- example help responses
+- "Chat with Me" interaction
+- visible future-capability messaging
+
+Priority
+
+Medium
+
+## Organization Admin AI Mock-up
+
+Status
+
+PLANNED / MOCK-UP FIRST
+
+Create an Organization Admin AI page with the same future-assistant concept,
+but scoped to Organization Admin workflows.
+
+Initial UI may include:
+
+- sample organization-management questions
+- suggested prompts
+- example help responses
+- "Chat with Me" interaction
+- visible future-capability messaging
+
+Priority
+
+Medium
+
+## Live AI Help Assistant
+
+Status
+
+FUTURE / BUSINESS APPROVAL REQUIRED
+
+Implement the live documentation/product-help assistant after business
+approval for the separate AI API operating expense.
+
+Requirements include:
+
+- secure server-side API integration
+- approved CascadEffects documentation context
+- relevant-document retrieval
+- no browser-exposed API keys
+- usage monitoring
+- cost controls
+- no private performance-data access in Phase 1
+
+Priority
+
+Medium
+
+## AI Data-Aware Expansion
+
+Status
+
+FUTURE
+
+Future phases may add:
+
+- performance analysis
+- KPI insights
+- planning assistance
+- reporting summaries
+- recommendations
+- predictive analytics
+
+This requires completed authentication, authorization, Organization scoping,
+and secure data-access architecture before private performance data is
+provided to the AI.
+
+Priority
+
+Medium
+
+## Authentication and Role-Based Entry
+
+Status
+
+NEXT MILESTONE
+
+The platform must replace the current role-selection login experience with
+authentication-driven role recognition.
+
+Required actor types:
+
+- Platform Super Admin
+- Organization Admin
+- Member
+
+The authenticated session should resolve:
+
+- Supabase Auth identity
+- Application User
+- Platform Membership where applicable
+- Organization Membership where applicable
+- applicable role context
+
+Required post-login landing experiences:
+
+```text
+Platform Super Admin
+↓
+Super Admin Landing
+├── Manage Organizations
+└── Open Organization Performance
+    ↓
+Organization Selector
+
+Organization Admin
+↓
+Organization Admin Landing
+├── Open Organization Workspace
+└── Open Organization Performance
+
+Member
+↓
+Member Landing
+├── Open My Performance
+└── Open Organization Performance
+```
+
+Authentication should include:
+
+- Login
+- authenticated session
+- identity resolution
+- role-aware routing
+- Forgot Password
+- Password Reset
+
+The role-selection dropdown must not be used as an authorization mechanism.
+
+Production authorization and RLS remain a separate security milestone.
+
+Priority
+
+High
+
+
 Dashboards
 
 Dynamic Dashboard System
@@ -1506,7 +1716,11 @@ FUTURE
 
 AI
 
-FUTURE
+PLANNED MOCK-UP / LIVE AI FUTURE
+
+Settings
+
+PLANNED / AUTHORITY-SCOPED
 
 Production Authorization / RLS
 
@@ -1621,5 +1835,16 @@ Do not create a second Member performance data model.
 
 Do not reintroduce an administrator-managed Reporting Period entity.
 
-After authentication is complete and verified, return to the remaining
-Runtime Product Experience and CascadEffects Design & Vibe work.
+After authentication is complete and verified, continue the product-experience
+roadmap in this order unless the latest Waypoint establishes a different
+priority:
+
+1. Super Admin Settings
+2. Organization Admin Settings
+3. Super Admin AI mock-up
+4. Organization Admin AI mock-up
+5. Live AI Help Assistant after business approval
+6. Remaining Runtime Product Experience / Design & Vibe work
+
+Do not treat the AI mock-ups as live AI functionality.
+Do not activate paid AI API usage without business approval.

@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-08-28
+**Last Updated:** 2026-09-11
 
 This document records architectural decisions that have been intentionally
 
@@ -2149,3 +2149,278 @@ Production authorization and RLS remain separate future security milestones.
 Status
 
 Accepted
+
+---
+
+# 40. Settings Ownership and Administrative Scope
+
+Settings are owned by the administrative authority responsible for the
+configuration.
+
+## Platform Super Admin Settings
+
+Super Admin Settings represent platform-level CascadEffects configuration.
+
+They may eventually include:
+
+- platform-wide defaults
+- platform feature controls
+- global platform configuration
+- platform integrations
+- platform-level AI configuration
+- system-level operational configuration
+
+Super Admin Settings operate above the Organization tenant boundary.
+
+They must not become a collection of Organization-specific settings.
+
+## Organization Admin Settings
+
+Organization Admin Settings represent configuration for the authorized
+Organization only.
+
+They may include:
+
+- Organization-specific preferences
+- performance-management preferences that are valid at the Organization level
+- Organization notification preferences
+- Organization data / integration configuration
+- Organization-specific operational preferences
+
+Organization Admin Settings must remain fixed to the authenticated
+Organization context.
+
+An Organization Admin must not receive a cross-Organization selector merely
+to operate Settings.
+
+Organization Settings must not modify another Organization.
+
+## Ownership Rule
+
+The permanent distinction is:
+
+```text
+Platform Super Admin
+        ↓
+Platform Settings
+        ↓
+CascadEffects-wide configuration
+
+Organization Admin
+        ↓
+Organization Settings
+        ↓
+Authorized Organization configuration
+```
+
+A setting should be implemented at the narrowest authority level that actually
+owns the behavior.
+
+Do not duplicate the same setting in both locations unless there is a clearly
+defined platform default and Organization override model.
+
+Organization identity and tenant-management operations remain owned by the
+Organization administration area rather than being duplicated merely because
+a Settings page exists.
+
+The monthly performance cadence remains a product rule.
+
+Do not introduce an arbitrary administrator-managed Reporting Period entity
+through Settings.
+
+Status
+
+Accepted
+
+---
+
+# 41. AI Assistant Product Direction
+
+CascadEffects AI is a platform capability that will be introduced
+incrementally.
+
+The initial AI experience should be a product-help assistant rather than a
+data-accessing performance analyst.
+
+## Initial AI Help Assistant
+
+The first AI experience should help authenticated users understand how to use
+CascadEffects.
+
+Examples include:
+
+- finding Objectives
+- creating or locating Key Results
+- understanding Assignments
+- navigating Performance Sheets
+- using Dashboards and Reports
+- understanding the current page
+- finding the appropriate workflow
+
+The assistant should be grounded in approved CascadEffects product
+documentation and application knowledge.
+
+It must not invent functionality.
+
+It must distinguish between:
+
+- available functionality
+- planned functionality
+- future functionality
+
+## Initial UI
+
+The Super Admin and Organization Admin AI pages may initially be presented as
+a realistic product mock-up / preview.
+
+The mock-up may include:
+
+- sample questions
+- example answers or suggested prompts
+- a visible "Chat with Me" interaction
+- clear messaging that the live AI capability is still in development
+
+The mock-up must not imply that live AI processing is already enabled.
+
+The initial UI may be implemented without enabling paid AI API usage.
+
+## Live AI Architecture
+
+When the live assistant is enabled, the application should use a secure
+server-side AI API integration.
+
+The API key must never be exposed to the browser.
+
+The initial live assistant should use documentation/product context and should
+not receive private Organization performance data unless a later product and
+security milestone explicitly authorizes that capability.
+
+The AI service must not become the authorization layer.
+
+Application authentication, authorization, Organization scoping, and database
+security remain authoritative.
+
+## AI Operating Cost
+
+A live AI assistant introduces a separate usage-based API operating expense
+from the existing ChatGPT Business subscription.
+
+Therefore:
+
+- UI and architecture may be built before live API activation.
+- Paid API usage should not be enabled before business approval.
+- Usage should be monitored.
+- Model selection and response/context limits should be used to control cost.
+- Initial launch should be treated as a controlled pilot.
+
+## Future AI Expansion
+
+After the help-assistant phase, future AI capabilities may include:
+
+- objective generation
+- Key Result recommendations
+- KPI recommendations
+- performance analysis
+- trend explanation
+- initiative suggestions
+- reporting summaries
+- organizational insights
+- predictive analytics
+- workflow assistance
+
+Data-aware AI must only be introduced after the platform has the appropriate
+authentication, authorization, Organization scoping, and secure data-access
+boundaries.
+
+Status
+
+Accepted
+
+---
+
+# 42. Authentication Must Determine Role-Based Entry
+
+CascadEffects authentication must recognize the authenticated actor rather
+than asking the user to select a role from a login control.
+
+The user should log in once.
+
+The platform resolves the authenticated identity and determines the applicable
+platform / organization role context from persisted application records and
+memberships.
+
+The intended actor types are:
+
+- Platform Super Admin
+- Organization Admin
+- Member
+
+The intended flow is:
+
+```text
+Login
+  ↓
+Supabase Auth
+  ↓
+Application User
+  ↓
+Resolve Platform / Organization membership
+  ↓
+Determine authorized role context
+  ↓
+Role-based landing page
+```
+
+The login interface must not treat a role-selection dropdown as an
+authorization mechanism.
+
+Selecting "Super Admin" must never grant Super Admin authority.
+
+## Landing Experiences
+
+### Platform Super Admin
+
+```text
+Login
+  ↓
+Super Admin Landing
+  ├── Manage Organizations
+  └── Open Organization Performance
+        ↓
+      Select Organization
+```
+
+### Organization Admin
+
+```text
+Login
+  ↓
+Organization Admin Landing
+  ├── Open Organization Workspace
+  └── Open Organization Performance
+```
+
+The Organization Admin operates within the authorized Organization and does
+not receive a cross-Organization selector.
+
+### Member
+
+```text
+Login
+  ↓
+Member Landing
+  ├── Open My Performance
+  └── Open Organization Performance
+```
+
+My Performance remains the member's own Runtime performance experience.
+
+These landing pages are entry and navigation experiences. They must not
+create duplicate Builder, Runtime, or performance data models.
+
+Production authorization and RLS remain separate security milestones.
+
+Status
+
+Accepted
+

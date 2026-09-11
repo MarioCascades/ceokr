@@ -124,6 +124,17 @@ export async function createPerformanceInstanceObjective(
 
 /* ==========================================================
    Update
+   ----------------------------------------------------------
+   Runtime Objective editing.
+
+   These fields belong to the monthly Runtime snapshot:
+
+   - title
+   - description
+   - weight
+   - position
+
+   This does NOT modify the Builder definition.
 ========================================================== */
 
 export interface UpdatePerformanceInstanceObjectiveInput {
@@ -134,6 +145,10 @@ export interface UpdatePerformanceInstanceObjectiveInput {
   title: string;
 
   description?: string;
+
+  weight?: number;
+
+  position: number;
 }
 
 export async function updatePerformanceInstanceObjective(
@@ -147,6 +162,47 @@ export async function updatePerformanceInstanceObjective(
     throw new Error(
       "Objective title is required."
     );
+  }
+
+  if (
+    !Number.isInteger(
+      input.position
+    ) ||
+    input.position < 1
+  ) {
+    throw new Error(
+      "Objective position must be a positive whole number."
+    );
+  }
+
+  let weight:
+    number | null =
+    null;
+
+  if (
+    input.weight !== undefined &&
+    input.weight !== null
+  ) {
+    if (
+      !Number.isFinite(
+        input.weight
+      )
+    ) {
+      throw new Error(
+        "Objective weight must be a valid number."
+      );
+    }
+
+    if (
+      input.weight < 0
+    ) {
+      throw new Error(
+        "Objective weight cannot be negative."
+      );
+    }
+
+    weight =
+      input.weight;
   }
 
   const description =
@@ -165,6 +221,11 @@ export async function updatePerformanceInstanceObjective(
         title,
 
         description,
+
+        weight,
+
+        position:
+          input.position,
       })
       .eq(
         "id",

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import DashboardPage from "@/components/admin/dashboards/dashboardpage";
+import CustomReportNotice from "@/components/admin/shared/customreportnotice";
 
 function DashboardPageFallback() {
   return (
@@ -12,8 +13,12 @@ function DashboardPageFallback() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<DashboardPageFallback />}>
-      <DashboardPage />
-    </Suspense>
+    <>
+      <Suspense fallback={<DashboardPageFallback />}>
+        <DashboardPage />
+      </Suspense>
+
+      <CustomReportNotice />
+    </>
   );
 }

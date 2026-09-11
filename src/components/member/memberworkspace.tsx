@@ -4,6 +4,8 @@ import {
   useState,
 } from "react";
 
+import Link from "next/link";
+
 import {
   createMemberPerformanceMonth,
 } from "@/app/member/actions";
@@ -226,6 +228,38 @@ export default function MemberWorkspace({
       .performanceMonth;
 
 
+  /*
+   * ==========================================================
+   * Member Runtime Entry
+   * ==========================================================
+   *
+   * This opens the existing shared Runtime for this member
+   * and preserves the current organization, member, and
+   * performance-month context.
+   */
+
+  const performanceWorkspaceParams =
+    new URLSearchParams();
+
+  performanceWorkspaceParams.set(
+    "organizationId",
+    execution.organizationId
+  );
+
+  performanceWorkspaceParams.set(
+    "subjectId",
+    execution.subject.id
+  );
+
+  performanceWorkspaceParams.set(
+    "performanceMonth",
+    selectedMonth
+  );
+
+  const performanceWorkspaceHref =
+    `/runtime?${performanceWorkspaceParams.toString()}`;
+
+
   /* ========================================================
      Change Performance Month
   ======================================================== */
@@ -343,67 +377,87 @@ export default function MemberWorkspace({
             </div>
 
 
-            <div className="w-full md:w-64">
+            <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-end">
 
-              <label
-                htmlFor="performance-month"
-                className="mb-2 block text-sm font-medium"
+              <Link
+                href={
+                  performanceWorkspaceHref
+                }
+                className="
+                  inline-flex h-10 items-center justify-center
+                  rounded-md bg-slate-900 px-4
+                  text-sm font-medium text-white
+                  transition-colors
+                  hover:bg-slate-800
+                "
               >
-                Performance Month
-              </label>
+                Open Performance Workspace →
+              </Link>
 
-              <select
-                id="performance-month"
-                value={
-                  selectedMonth
-                }
-                disabled={
-                  isChangingMonth
-                }
-                onChange={(
-                  event
-                ) =>
-                  handleMonthChange(
-                    event.target.value
-                  )
-                }
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-              >
+
+              <div className="w-full md:w-64">
+
+                <label
+                  htmlFor="performance-month"
+                  className="mb-2 block text-sm font-medium"
+                >
+                  Performance Month
+                </label>
+
+                <select
+                  id="performance-month"
+                  value={
+                    selectedMonth
+                  }
+                  disabled={
+                    isChangingMonth
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleMonthChange(
+                      event.target.value
+                    )
+                  }
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                >
+
+                  {
+                    performanceMonths.map(
+                      (
+                        performanceMonth
+                      ) => (
+
+                        <option
+                          key={
+                            performanceMonth
+                          }
+                          value={
+                            performanceMonth
+                          }
+                        >
+                          {
+                            formatPerformanceMonth(
+                              performanceMonth
+                            )
+                          }
+                        </option>
+
+                      )
+                    )
+                  }
+
+                </select>
 
                 {
-                  performanceMonths.map(
-                    (
-                      performanceMonth
-                    ) => (
-
-                      <option
-                        key={
-                          performanceMonth
-                        }
-                        value={
-                          performanceMonth
-                        }
-                      >
-                        {
-                          formatPerformanceMonth(
-                            performanceMonth
-                          )
-                        }
-                      </option>
-
-                    )
+                  isChangingMonth && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Opening performance month...
+                    </p>
                   )
                 }
 
-              </select>
-
-              {
-                isChangingMonth && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Opening performance month...
-                  </p>
-                )
-              }
+              </div>
 
             </div>
 

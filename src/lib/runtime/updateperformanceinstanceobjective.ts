@@ -36,6 +36,8 @@ export interface UpdatePerformanceInstanceObjectiveInput {
   title: string;
 
   description?: string;
+
+  position: number;
 }
 
 /* ==========================================================
@@ -114,5 +116,8 @@ export async function updatePerformanceInstanceObjective(
 
     description:
       input.description,
+
+    position:
+      input.position,
   });
 }

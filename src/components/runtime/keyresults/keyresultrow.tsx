@@ -20,7 +20,7 @@ import {
 } from "@/app/runtime/actions";
 
 import {
-  calculatePercentageOfTarget,
+  calculateRuntimeKeyResultScore,
 } from "@/lib/runtime/keyresultscoring";
 
 import KeyResultEditor from "./keyresulteditor";
@@ -147,30 +147,49 @@ export default function KeyResultRow({
       : undefined;
 
 
-  /*
-   * The Runtime row receives the actual
-   * Performance Instance month.
-   *
-   * The scoring calculation remains unchanged
-   * in this increment. performanceMonth is
-   * available for the documented "% Into Period"
-   * scoring behavior to be implemented separately.
-   */
-  void performanceMonth;
-
-
   /* ========================================================
      Current Score
   ======================================================== */
 
-  const calculatedScore =
-    calculatePercentageOfTarget(
-      currentValue,
-      target
-    );
+  /*
+   * Runtime scoring is centralized in the Runtime scoring
+   * utility.
+   *
+   * Percentage of Target:
+   *
+   *     current / target * 100
+   *
+   * % Into Period:
+   *
+   *     actual progress / expected progress * 100
+   *
+   * The Performance Instance month is passed into the
+   * calculation so the selected month controls the
+   * calendar context for % Into Period scoring.
+   */
 
-  const score =
-    calculatedScore;
+  const hasCurrentValue =
+    String(
+      currentValue
+    ).trim() !== "";
+
+  const calculatedScore =
+    hasCurrentValue
+      ? calculateRuntimeKeyResultScore(
+          currentValue,
+
+          target,
+
+          currentKeyResult.scoringMethod,
+
+          performanceMonth
+        )
+      : 0;
+
+  const scoreDisplay =
+    hasCurrentValue
+      ? calculatedScore
+      : null;
 
 
   /* ========================================================
@@ -178,13 +197,15 @@ export default function KeyResultRow({
   ======================================================== */
 
   const progressWidth =
-    Math.min(
-      Math.max(
-        score,
-        0
-      ),
-      100
-    );
+    scoreDisplay === null
+      ? 0
+      : Math.min(
+          Math.max(
+            scoreDisplay,
+            0
+          ),
+          100
+        );
 
 
   /* ========================================================
@@ -192,7 +213,7 @@ export default function KeyResultRow({
   ======================================================== */
 
   const runtimeStatus =
-    currentValue === ""
+    !hasCurrentValue
       ? "not_started"
       : "in_progress";
 
@@ -239,6 +260,10 @@ export default function KeyResultRow({
 
         currentValue,
 
+        /*
+         * Score is calculated automatically.
+         * The user never enters the score manually.
+         */
         score:
           calculatedScore,
 
@@ -249,9 +274,9 @@ export default function KeyResultRow({
           progress.managerComment,
 
         status:
-          currentValue === ""
-            ? "not_started"
-            : "in_progress",
+          hasCurrentValue
+            ? "in_progress"
+            : "not_started",
       });
 
 
@@ -305,71 +330,94 @@ export default function KeyResultRow({
     }
   ) {
 
-    const updated =
-      await updateRuntimePerformanceInstanceKeyResultAction({
-
-        organizationId,
-
-        performanceInstanceId,
-
-        keyResultId:
-          currentKeyResult.id,
-
-        title:
-          values.title,
-
-        target:
-          values.target,
-
-        measurementType:
-          values.measurementType,
-
-        scoringMethod:
-          values.scoringMethod,
-
-        weight:
-          values.weight,
-      });
-
-
-    const runtimeUpdated:
-      RuntimePerformanceKeyResult = {
-
-      ...currentKeyResult,
-
-      title:
-        updated.title,
-
-      target:
-        updated.target,
-
-      weight:
-        updated.weight,
-
-      measurementType:
-        updated.measurementType,
-
-      scoringMethod:
-        updated.scoringMethod,
-    };
-
-
-    setCurrentKeyResult(
-      runtimeUpdated
-    );
-
-    setEditing(
-      false
-    );
-
-    setSaved(
-      false
+    setError(
+      null
     );
 
 
-    onUpdated?.(
-      runtimeUpdated
-    );
+    try {
+
+      const updated =
+        await updateRuntimePerformanceInstanceKeyResultAction({
+
+          organizationId,
+
+          performanceInstanceId,
+
+          keyResultId:
+            currentKeyResult.id,
+
+          title:
+            values.title,
+
+          target:
+            values.target,
+
+          measurementType:
+            values.measurementType,
+
+          scoringMethod:
+            values.scoringMethod,
+
+          weight:
+            values.weight,
+        });
+
+
+      const runtimeUpdated:
+        RuntimePerformanceKeyResult =
+        {
+
+          ...currentKeyResult,
+
+          title:
+            updated.title,
+
+          target:
+            updated.target,
+
+          weight:
+            updated.weight,
+
+          measurementType:
+            updated.measurementType,
+
+          scoringMethod:
+            updated.scoringMethod,
+        };
+
+
+      setCurrentKeyResult(
+        runtimeUpdated
+      );
+
+      setEditing(
+        false
+      );
+
+      setSaved(
+        false
+      );
+
+
+      onUpdated?.(
+        runtimeUpdated
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Failed to update Runtime Key Result:",
+        error
+      );
+
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update Key Result."
+      );
+    }
   }
 
 
@@ -448,12 +496,13 @@ export default function KeyResultRow({
   ) {
 
     const updated:
-      RuntimePerformanceKeyResult = {
+      RuntimePerformanceKeyResult =
+      {
 
-      ...currentKeyResult,
+        ...currentKeyResult,
 
-      initiatives,
-    };
+        initiatives,
+      };
 
 
     setCurrentKeyResult(
@@ -552,7 +601,7 @@ export default function KeyResultRow({
 
                     ? "% Into Period"
 
-                    : "% of Target"
+                    : "Percentage of Target"
                 }
 
               </span>
@@ -665,7 +714,8 @@ export default function KeyResultRow({
 
           <p className="mt-2 text-xl font-semibold">
             {
-              target
+              target ||
+              "—"
             }
           </p>
 
@@ -703,6 +753,10 @@ export default function KeyResultRow({
               setSaved(
                 false
               );
+
+              setError(
+                null
+              );
             }}
             className="mt-2 w-full rounded-md border bg-white px-3 py-2 text-xl font-semibold"
             placeholder="Enter current value"
@@ -723,9 +777,25 @@ export default function KeyResultRow({
 
 
           <p className="mt-2 text-xl font-semibold">
+
             {
-              score
-            }%
+              scoreDisplay === null
+                ? "—"
+                : `${scoreDisplay}%`
+            }
+
+          </p>
+
+
+          <p className="mt-1 text-xs text-gray-500">
+
+            {
+              currentKeyResult.scoringMethod ===
+              "percent_into_period"
+                ? "% Into Period"
+                : "Percentage of Target"
+            }
+
           </p>
 
         </div>

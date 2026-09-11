@@ -10,6 +10,7 @@ import {
   createAssignment as createAssignmentRepository,
   loadAssignment,
   updateAssignment,
+  reassignIndividualPerformanceSheet,
 } from "@/lib/repositories/assignmentrepository";
 
 import {
@@ -564,6 +565,211 @@ export async function cancelAssignment(
     status:
       "cancelled",
   });
+}
+
+
+/* ==========================================================
+   Reassign Individual Performance Sheet
+   ----------------------------------------------------------
+   Ends the current active individual assignment and creates
+   a new active individual assignment for the same member.
+
+   Existing Runtime Performance Instances remain attached
+   to the previous Assignment.
+
+   IMPORTANT:
+   Performance Sheets are individual-member assignments only.
+   This operation intentionally rejects team, department, and
+   organization assignments.
+========================================================== */
+
+export async function reassignPerformanceSheet(
+  organizationId: string,
+  currentAssignmentId: string,
+  newPerformanceSheetId: string,
+  assignedBy: string
+): Promise<Assignment> {
+
+  /* ========================================================
+     Load Current Assignment
+  ======================================================== */
+
+  const currentAssignment =
+    await loadAssignment(
+      organizationId,
+      currentAssignmentId
+    );
+
+  if (!currentAssignment) {
+    throw new Error(
+      "Current assignment not found."
+    );
+  }
+
+
+  /* ========================================================
+     Individual Assignment Only
+  ======================================================== */
+
+  if (
+    currentAssignment.assignmentType !==
+    "individual"
+  ) {
+    throw new Error(
+      "Only individual member Performance Sheet assignments can be reassigned."
+    );
+  }
+
+
+  /* ========================================================
+     Active Assignment Only
+  ======================================================== */
+
+  if (
+    currentAssignment.status !==
+    "active"
+  ) {
+    throw new Error(
+      "Only active assignments can be reassigned."
+    );
+  }
+
+
+  /* ========================================================
+     Validate Current Member
+  ======================================================== */
+
+  await validateAssignmentSubject(
+    currentAssignment
+  );
+
+
+  /* ========================================================
+     Validate Replacement Performance Sheet
+  ======================================================== */
+
+  /*
+   * Reassignment must point to an exact published
+   * Performance Sheet version.
+   */
+  const replacementPerformanceSheet =
+    await loadPublishedById(
+      organizationId,
+      newPerformanceSheetId
+    );
+
+  if (!replacementPerformanceSheet) {
+    throw new Error(
+      "The replacement Performance Sheet could not be found or is not published."
+    );
+  }
+
+
+  /* ========================================================
+     Prevent Same Sheet Reassignment
+  ======================================================== */
+
+  if (
+    currentAssignment.performanceSheetId ===
+    newPerformanceSheetId
+  ) {
+    throw new Error(
+      "The replacement Performance Sheet is the same as the current Performance Sheet."
+    );
+  }
+
+
+  /* ========================================================
+     Validate Assigned By User
+  ======================================================== */
+
+  const {
+    data: assigningUser,
+    error:
+      assigningUserError,
+  } = await supabase
+    .from("users")
+    .select(
+      "id, is_active"
+    )
+    .eq(
+      "id",
+      assignedBy
+    )
+    .maybeSingle();
+
+  if (assigningUserError) {
+    throw new Error(
+      `Failed to validate assigning user: ${assigningUserError.message}`
+    );
+  }
+
+  if (!assigningUser) {
+    throw new Error(
+      "The assigning user could not be found."
+    );
+  }
+
+  if (
+    !assigningUser.is_active
+  ) {
+    throw new Error(
+      "The assigning user is inactive."
+    );
+  }
+
+
+  /* ========================================================
+     Validate Assigned By Membership
+  ======================================================== */
+
+  const {
+    data: assigningMembership,
+    error:
+      assigningMembershipError,
+  } = await supabase
+    .from("organization_memberships")
+    .select(
+      "id"
+    )
+    .eq(
+      "user_id",
+      assignedBy
+    )
+    .eq(
+      "organization_id",
+      organizationId
+    )
+    .maybeSingle();
+
+  if (assigningMembershipError) {
+    throw new Error(
+      `Failed to validate assigning user membership: ${assigningMembershipError.message}`
+    );
+  }
+
+  if (!assigningMembership) {
+    throw new Error(
+      "The assigning user does not belong to this organization."
+    );
+  }
+
+
+  /* ========================================================
+     Atomic Reassignment
+  ======================================================== */
+
+  /*
+   * The repository calls the database-level reassignment
+   * operation so ending the old assignment and creating the
+   * replacement assignment happen together.
+   */
+  return reassignIndividualPerformanceSheet(
+    organizationId,
+    currentAssignmentId,
+    newPerformanceSheetId,
+    assignedBy
+  );
 }
 
 

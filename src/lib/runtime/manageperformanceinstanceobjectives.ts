@@ -100,6 +100,8 @@ export interface UpdateRuntimePerformanceInstanceObjectiveInput {
   title: string;
 
   description?: string;
+
+  position: number;
 }
 
 export async function updateRuntimePerformanceInstanceObjective(
@@ -136,6 +138,9 @@ export async function updateRuntimePerformanceInstanceObjective(
 
     description:
       input.description,
+
+    position:
+      input.position,
   });
 }
 

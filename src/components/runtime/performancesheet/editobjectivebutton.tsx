@@ -113,6 +113,9 @@ export default function EditObjectiveButton({
             title,
 
             description,
+
+            position:
+              objective.position,
           }
         );
 

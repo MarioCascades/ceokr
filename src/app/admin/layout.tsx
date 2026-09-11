@@ -104,11 +104,7 @@ function AdminShell({
             label="Key Results"
           />
 
-          <AdminNavLink
-            href={adminHref("/admin/initiatives")}
-            label="Initiatives"
-          />
-
+         
           <AdminNavSection title="Analytics" />
 
           <AdminNavLink
