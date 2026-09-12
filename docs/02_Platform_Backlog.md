@@ -1848,3 +1848,47 @@ priority:
 
 Do not treat the AI mock-ups as live AI functionality.
 Do not activate paid AI API usage without business approval.
+
+
+---
+
+
+# Current Milestone Update — Waypoint 26
+
+The following product-experience work is now treated as completed presentation
+work:
+
+- Super Admin Settings presentation
+- Organization Admin Settings presentation
+- Super Admin AI mock-up
+- Organization Admin AI mock-up
+- Member AI Assistant floating mock-up
+
+These items remain non-operational where AI is concerned. Live AI provider
+integration, API costs, production AI data access, and production AI
+authorization remain deferred.
+
+The next active milestone is:
+
+> Authentication + Role-Based Entry
+
+The authentication milestone should establish:
+
+- Supabase Auth session handling
+- Application User resolution
+- Platform Super Admin resolution
+- Organization Membership resolution
+- role-aware entry
+- Super Admin landing
+- Organization Admin landing
+- Member landing
+- Forgot Password
+- Password Reset
+
+Authentication must remain separate from production authorization.
+
+Do not use role selection on the client as proof of authority. Production
+authorization, tenant boundaries, permissions, server-side enforcement, and
+RLS remain security work to be completed appropriately.
+
+No Builder or Runtime rebuild is part of this milestone.

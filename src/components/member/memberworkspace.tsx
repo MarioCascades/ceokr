@@ -16,6 +16,8 @@ import type {
 
 import PerformanceSheet from "@/components/runtime/performancesheet/performancesheet";
 
+import MemberAIFloater from "@/components/member/memberaifloater";
+
 
 /* ==========================================================
    Props
@@ -550,6 +552,12 @@ export default function MemberWorkspace({
 
         memberMode
       />
+
+      {/* ==================================================
+          Member AI Assistant
+      ================================================== */}
+
+      <MemberAIFloater />
 
     </div>
   );

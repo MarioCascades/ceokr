@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-09-11
+**Last Updated:** 2026-09-12
 
 This document records architectural decisions that have been intentionally
 
@@ -2424,3 +2424,165 @@ Status
 
 Accepted
 
+
+
+---
+
+# 43. AI Presentation Mock-Ups Must Remain Non-Operational
+
+The current AI experiences are presentation-only product mock-ups.
+
+This includes:
+
+- Super Admin AI
+- Organization Admin AI
+- Member AI Assistant
+
+The current UI may demonstrate future AI interaction patterns, including
+assistant panels, sample questions, planned capabilities, preview states, and
+"Coming Soon" messaging.
+
+These experiences must not be treated as live AI services.
+
+The presentation layer must not:
+
+- call an external AI provider
+- require a paid AI API
+- expose an AI API key
+- transmit private Organization performance data to an AI provider
+- create production AI usage records
+- become an authorization mechanism
+
+The Member AI Assistant may be presented as a floating control that expands
+into a small assistant panel or dialog. Its current purpose is to demonstrate
+the future product interaction and communicate that the capability is
+coming later.
+
+The UI interaction does not establish any production AI architecture.
+
+Status
+
+Accepted
+
+---
+
+# 44. Settings Presentation Must Preserve Authority Boundaries
+
+The current Settings experiences are presentation implementations of the
+existing Settings ownership decision.
+
+The implementation must preserve the distinction between:
+
+Platform Super Admin Settings
+
+and
+
+Organization Admin Settings.
+
+Super Admin Settings remain platform-level.
+
+Organization Admin Settings remain Organization-scoped.
+
+A presentation similarity between the two pages does not make them the same
+authority or data scope.
+
+Organization Admin Settings must not gain a cross-Organization selector
+merely because the Super Admin Settings experience has one.
+
+When persistent settings are implemented, each setting must be stored and
+resolved according to the authority that owns it.
+
+The UI should not create duplicate sources of truth merely to make the
+presentation pages appear different.
+
+Status
+
+Accepted
+
+---
+
+# 45. Member AI Assistant Is a Member Experience Extension
+
+The Member AI Assistant is an extension of the existing Member Workspace
+experience.
+
+It must remain subordinate to the Member Workspace and Runtime architecture.
+
+The relationship is:
+
+```text
+Published Performance Sheet
+        ↓
+Assignment
+        ↓
+Performance Instance
+        ↓
+Runtime
+        ↓
+Member Workspace
+        ↓
+Member AI Assistant
+```
+
+The AI Assistant must not become:
+
+- a second Member Workspace
+- a second Runtime
+- a second performance engine
+- a duplicate KPI engine
+- a duplicate reporting engine
+- a replacement for Runtime authorization
+
+The assistant may eventually help a member understand the application or,
+after a separate security and product milestone, assist with authorized
+performance information.
+
+Any future data-aware Member AI capability requires explicit authentication,
+authorization, Organization scoping, and secure data-access architecture.
+
+Status
+
+Accepted
+
+---
+
+# 46. Authentication Is the Next Product-Flow Milestone
+
+Following completion of the current Settings and AI presentation increment,
+the next implementation milestone is:
+
+> Authentication + Role-Based Entry
+
+The implementation should connect the existing product experiences rather than
+create replacement systems.
+
+The intended sequence is:
+
+```text
+Authenticated User
+        ↓
+Resolve Application User
+        ↓
+Resolve Platform / Organization Membership
+        ↓
+Resolve Role Context
+        ↓
+Role-Based Landing
+        ↓
+Existing Administration / Organization / Member Experience
+```
+
+The authentication milestone should reuse the existing identity and
+membership architecture.
+
+It must not introduce a second user identity system merely for login.
+
+It must not treat a client-selected role as proof of authority.
+
+It must not rebuild Builder or Runtime.
+
+Production authorization and RLS remain separate security work.
+
+Status
+
+Accepted

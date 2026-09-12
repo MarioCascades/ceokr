@@ -1,10 +1,5 @@
-import AdminPlaceholderPage from "@/components/admin/shared/adminplaceholderpage";
+import AIPage from "@/components/admin/ai/aipage";
 
 export default function Page() {
-  return (
-    <AdminPlaceholderPage
-      title="AI Configuration"
-      description="Future AI configuration and automation controls."
-    />
-  );
+  return <AIPage />;
 }

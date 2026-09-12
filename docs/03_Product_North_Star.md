@@ -5,6 +5,7 @@ Product North Star
 Document: docs/03_Product_North_Star.md
 Status: CURRENT --- PRODUCT NORTH STAR
 Created: 2026-09-01
+Last Updated: 2026-09-12
 
 Purpose
 
@@ -806,7 +807,7 @@ re-established from the documentation.
 
 Current Project Position
 
-As of Waypoint 24:
+As of Waypoint 26:
 
 Builder: COMPLETE / ESTABLISHED
 
@@ -846,7 +847,9 @@ Dashboards: V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
 
 Reports: FUTURE
 
-AI: FUTURE
+AI Presentation Mock-Ups: ESTABLISHED / PRESENTATION-ONLY
+
+Live AI: FUTURE / BUSINESS APPROVAL REQUIRED
 
 Production Authorization / RLS: OUTSTANDING
 
@@ -860,7 +863,7 @@ Weighted Aggregation: DEFERRED
 
 The next development milestone is:
 
-Runtime Product Experience
+Authentication + Role-Based Entry
 
 Current Security Boundary
 
@@ -1339,3 +1342,178 @@ or when a major architectural or product decision is being considered.
 If the product direction changes materially, update this document
 explicitly rather than allowing the direction to change implicitly through
 code.
+
+---
+
+# Waypoint 26 Product Experience Update
+
+The North Star remains unchanged in its central product promise:
+
+> Configure once. Publish once. Assign. Generate monthly performance
+> execution repeatedly.
+
+Waypoint 26 confirms that the current product experience has advanced through
+the presentation layer without changing the underlying Builder / Runtime
+architecture.
+
+The completed presentation increment includes:
+
+- Super Admin Settings
+- Organization Admin Settings
+- Super Admin AI mock-up
+- Organization Admin AI mock-up
+- Member AI Assistant mock-up
+- CascadEffects visual direction across these experiences
+
+These additions do not create new performance engines or duplicate sources of
+truth.
+
+## AI Presentation Boundary
+
+The current AI experiences are demonstrations of future product capability.
+
+They are not live AI services.
+
+The current product must therefore continue to distinguish:
+
+```text
+AI Presentation
+        ↓
+Preview / Coming Soon Experience
+```
+
+from:
+
+```text
+Live AI
+        ↓
+Future approved production capability
+```
+
+Live AI should not be introduced until the business approves the required
+provider costs and the platform has an appropriate security, authorization,
+tenant-context, usage-control, and cost-control design.
+
+## Member AI Direction
+
+The Member AI Assistant is an extension of the existing Member Workspace.
+
+It is a future interaction point within the Runtime product experience, not a
+replacement for Runtime.
+
+The intended relationship remains:
+
+```text
+Published Performance Sheet
+        ↓
+Assignment
+        ↓
+Performance Instance
+        ↓
+Runtime
+        ↓
+Member Workspace
+        ↓
+Member AI Assistant
+```
+
+Any future AI capability that can read or act on private performance data must
+first satisfy the platform's authentication and authorization boundaries.
+
+## Settings Direction
+
+Super Admin Settings and Organization Admin Settings may share visual
+patterns and reusable components, but they represent different authority
+contexts.
+
+Super Admin settings are platform-level.
+
+Organization Admin settings are organization-scoped.
+
+The North Star therefore requires the product to preserve authority boundaries
+even when the two experiences use a consistent visual language.
+
+## Authentication Transition
+
+The product has now reached the point where authentication becomes the next
+major product-flow milestone.
+
+The intended transition is:
+
+```text
+Supabase Auth
+        ↓
+Application User
+        ↓
+Platform / Organization Membership
+        ↓
+Role Context
+        ↓
+Role-Based Landing
+        ↓
+Existing Product Experience
+```
+
+The primary authenticated actors remain:
+
+- Platform Super Admin
+- Organization Admin
+- Member
+
+Authentication establishes identity.
+
+Authorization determines what the authenticated actor may access or modify.
+
+A role selected in the client must never be treated as proof of authority.
+
+## Authentication Product Experience
+
+The future authenticated product should provide role-appropriate entry
+experiences:
+
+```text
+Platform Super Admin
+        ↓
+Super Admin Landing
+        ↓
+Administration / Organization Context
+```
+
+```text
+Organization Admin
+        ↓
+Organization Admin Landing
+        ↓
+Authorized Organization Workspace
+```
+
+```text
+Member
+        ↓
+Member Landing
+        ↓
+Member Workspace
+```
+
+These landing experiences are entry points into the existing platform
+architecture. They are not replacements for Administration, Builder, Runtime,
+or Member Workspace.
+
+## North Star Guardrail
+
+The next milestone must connect the existing product rather than create
+parallel systems.
+
+Do not:
+
+- rebuild Builder
+- rebuild Runtime
+- create a second Member performance engine
+- create duplicate Objective / Key Result / Initiative sources of truth
+- activate live AI
+- use AI as an authorization mechanism
+- treat client-side role selection as authorization
+- introduce unrelated refactoring
+
+The product remains a configurable, multi-tenant performance-management
+platform rather than a collection of customer-specific pages.
