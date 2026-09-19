@@ -2,8 +2,12 @@
 
 import { useEffect, useState } from "react";
 
+import {
+  ORGANIZATION_SETTINGS_STORAGE_KEY,
+  defaultOrganizationFeatures,
+} from "@/lib/organization/features";
+
 const CASCADEFFECTS_DEFAULT_LOGO = "/logos/CECleanlogo.png";
-const SETTINGS_STORAGE_KEY = "ce-current-organization-settings";
 
 type OrganizationSettingsState = {
   organizationName: string;
@@ -18,6 +22,15 @@ type OrganizationSettingsState = {
   systemNotifications: boolean;
   confirmBeforeDeleting: boolean;
   showHelpfulTips: boolean;
+  departmentsEnabled: boolean;
+  teamsEnabled: boolean;
+  teamPerformanceEnabled: boolean;
+  departmentPerformanceEnabled: boolean;
+  organizationPerformanceEnabled: boolean;
+  dashboardsEnabled: boolean;
+  historicalReportingEnabled: boolean;
+  employeeCommentsEnabled: boolean;
+  aiAssistanceEnabled: boolean;
 };
 
 const defaultSettings: OrganizationSettingsState = {
@@ -33,6 +46,45 @@ const defaultSettings: OrganizationSettingsState = {
   systemNotifications: true,
   confirmBeforeDeleting: true,
   showHelpfulTips: true,
+
+  /* ======================================================
+     ORGANIZATIONAL STRUCTURE DEFAULTS
+  ====================================================== */
+
+  departmentsEnabled:
+    defaultOrganizationFeatures.departments,
+
+  teamsEnabled:
+    defaultOrganizationFeatures.teams,
+
+  /* ======================================================
+     PERFORMANCE SCOPE DEFAULTS
+  ====================================================== */
+
+  teamPerformanceEnabled:
+    defaultOrganizationFeatures.teamPerformance,
+
+  departmentPerformanceEnabled:
+    defaultOrganizationFeatures.departmentPerformance,
+
+  organizationPerformanceEnabled:
+    true,
+
+  /* ======================================================
+     EXPERIENCE DEFAULTS
+  ====================================================== */
+
+  dashboardsEnabled:
+    defaultOrganizationFeatures.dashboards,
+
+  historicalReportingEnabled:
+    defaultOrganizationFeatures.historicalReporting,
+
+  employeeCommentsEnabled:
+    defaultOrganizationFeatures.employeeComments,
+
+  aiAssistanceEnabled:
+    defaultOrganizationFeatures.aiAssistance,
 };
 
 const timezoneOptions = [
@@ -82,32 +134,43 @@ const dateFormatOptions = [
 
 export default function OrganizationSettingsPage() {
   const [settings, setSettings] =
-    useState<OrganizationSettingsState>(defaultSettings);
+    useState<OrganizationSettingsState>(
+      defaultSettings,
+    );
 
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] =
+    useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const stored =
+      window.localStorage.getItem(
+        ORGANIZATION_SETTINGS_STORAGE_KEY,
+      );
 
     if (!stored) {
       return;
     }
 
     try {
-      const parsed = JSON.parse(
-        stored,
-      ) as Partial<OrganizationSettingsState>;
+      const parsed =
+        JSON.parse(
+          stored,
+        ) as Partial<OrganizationSettingsState>;
 
       setSettings({
         ...defaultSettings,
         ...parsed,
       });
     } catch {
-      window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
+      window.localStorage.removeItem(
+        ORGANIZATION_SETTINGS_STORAGE_KEY,
+      );
     }
   }, []);
 
-  const updateSetting = <K extends keyof OrganizationSettingsState>(
+  const updateSetting = <
+    K extends keyof OrganizationSettingsState
+  >(
     key: K,
     value: OrganizationSettingsState[K],
   ) => {
@@ -121,23 +184,32 @@ export default function OrganizationSettingsPage() {
 
   const handleSave = () => {
     window.localStorage.setItem(
-      SETTINGS_STORAGE_KEY,
+      ORGANIZATION_SETTINGS_STORAGE_KEY,
       JSON.stringify(settings),
     );
 
     setSaved(true);
   };
 
-  const handleOrganizationLogoChange = (logoUrl: string) => {
-    updateSetting("organizationLogo", logoUrl);
+  const handleOrganizationLogoChange = (
+    logoUrl: string,
+  ) => {
+    updateSetting(
+      "organizationLogo",
+      logoUrl,
+    );
   };
 
   const handleUseCascadEffectsDefault = () => {
-    updateSetting("organizationLogo", "");
+    updateSetting(
+      "organizationLogo",
+      "",
+    );
   };
 
   const displayedLogo =
-    settings.organizationLogo || CASCADEFFECTS_DEFAULT_LOGO;
+    settings.organizationLogo ||
+    CASCADEFFECTS_DEFAULT_LOGO;
 
   return (
     <div className="min-h-full bg-white">
@@ -165,7 +237,9 @@ export default function OrganizationSettingsPage() {
               onClick={handleSave}
               className="inline-flex h-10 items-center justify-center rounded-md bg-[#082550] px-5 text-sm font-bold text-white transition hover:bg-[#0b356d] focus:outline-none focus:ring-2 focus:ring-[#E26D5C] focus:ring-offset-2"
             >
-              {saved ? "Saved" : "Save Changes"}
+              {saved
+                ? "Saved"
+                : "Save Changes"}
             </button>
           </div>
         </div>
@@ -231,15 +305,23 @@ export default function OrganizationSettingsPage() {
                   id="organization-timezone"
                   value={settings.timezone}
                   onChange={(event) =>
-                    updateSetting("timezone", event.target.value)
+                    updateSetting(
+                      "timezone",
+                      event.target.value,
+                    )
                   }
                   className="mt-3 h-10 w-full rounded-md border border-[#B4C2D1] bg-white px-3 text-sm text-[#272D2C] outline-none focus:border-[#082550] focus:ring-1 focus:ring-[#082550]"
                 >
-                  {timezoneOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
+                  {timezoneOptions.map(
+                    (option) => (
+                      <option
+                        key={option.value}
+                        value={option.value}
+                      >
+                        {option.label}
+                      </option>
+                    ),
+                  )}
                 </select>
               </div>
 
@@ -260,15 +342,24 @@ export default function OrganizationSettingsPage() {
                   id="organization-date-format"
                   value={settings.dateFormat}
                   onChange={(event) =>
-                    updateSetting("dateFormat", event.target.value)
+                    updateSetting(
+                      "dateFormat",
+                      event.target.value,
+                    )
                   }
                   className="mt-3 h-10 w-full rounded-md border border-[#B4C2D1] bg-white px-3 text-sm text-[#272D2C] outline-none focus:border-[#082550] focus:ring-1 focus:ring-[#082550]"
                 >
-                  {dateFormatOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label} — {option.example}
-                    </option>
-                  ))}
+                  {dateFormatOptions.map(
+                    (option) => (
+                      <option
+                        key={option.value}
+                        value={option.value}
+                      >
+                        {option.label} —{" "}
+                        {option.example}
+                      </option>
+                    ),
+                  )}
                 </select>
               </div>
 
@@ -360,30 +451,44 @@ export default function OrganizationSettingsPage() {
                     type="file"
                     accept="image/png,image/jpeg,image/webp,image/svg+xml"
                     onChange={(event) => {
-                      const file = event.target.files?.[0];
+                      const file =
+                        event.target.files?.[0];
 
-                      if (!file || !file.type.startsWith("image/")) {
+                      if (
+                        !file ||
+                        !file.type.startsWith(
+                          "image/",
+                        )
+                      ) {
                         return;
                       }
 
-                      const reader = new FileReader();
+                      const reader =
+                        new FileReader();
 
                       reader.onload = () => {
-                        if (typeof reader.result === "string") {
+                        if (
+                          typeof reader.result ===
+                          "string"
+                        ) {
                           handleOrganizationLogoChange(
                             reader.result,
                           );
                         }
                       };
 
-                      reader.readAsDataURL(file);
+                      reader.readAsDataURL(
+                        file,
+                      );
                     }}
                     className="sr-only"
                   />
 
                   <button
                     type="button"
-                    onClick={handleUseCascadEffectsDefault}
+                    onClick={
+                      handleUseCascadEffectsDefault
+                    }
                     className="inline-flex h-10 items-center justify-center rounded-md border border-[#B4C2D1] bg-white px-4 text-sm font-bold text-[#082550] transition hover:bg-[#F7F9FB] focus:outline-none focus:ring-2 focus:ring-[#E26D5C] focus:ring-offset-2"
                   >
                     Use CascadEffects Default
@@ -414,7 +519,10 @@ export default function OrganizationSettingsPage() {
                   description="Main organization color used for navigation, headings, and primary actions."
                   value={settings.primaryColor}
                   onChange={(value) =>
-                    updateSetting("primaryColor", value)
+                    updateSetting(
+                      "primaryColor",
+                      value,
+                    )
                   }
                 />
 
@@ -423,7 +531,10 @@ export default function OrganizationSettingsPage() {
                   description="Supporting organization accent used for highlights and emphasis."
                   value={settings.accentColor}
                   onChange={(value) =>
-                    updateSetting("accentColor", value)
+                    updateSetting(
+                      "accentColor",
+                      value,
+                    )
                   }
                 />
               </div>
@@ -445,13 +556,15 @@ export default function OrganizationSettingsPage() {
               <div
                 className="overflow-hidden rounded-lg border border-[#B4C2D1]/70"
                 style={{
-                  borderTopColor: settings.primaryColor,
+                  borderTopColor:
+                    settings.primaryColor,
                 }}
               >
                 <div
                   className="flex items-center justify-between gap-4 px-5 py-4"
                   style={{
-                    backgroundColor: settings.primaryColor,
+                    backgroundColor:
+                      settings.primaryColor,
                   }}
                 >
                   <img
@@ -463,7 +576,8 @@ export default function OrganizationSettingsPage() {
                   <span
                     className="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wide"
                     style={{
-                      backgroundColor: settings.accentColor,
+                      backgroundColor:
+                        settings.accentColor,
                       color: "#FFFFFF",
                     }}
                   >
@@ -479,6 +593,239 @@ export default function OrganizationSettingsPage() {
                   <p className="mt-1 text-xs text-[#272D2C]/60">
                     Organization-specific workspace branding preview.
                   </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* FEATURES & MODULES */}
+          <section className="rounded-xl border border-[#B4C2D1]/70 bg-white p-6 shadow-sm">
+            <div className="mb-6">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E26D5C]">
+                ORGANIZATION FEATURES
+              </p>
+
+              <h2 className="mt-1 text-xl font-black uppercase text-[#082550]">
+                Features &amp; Modules
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#272D2C]/65">
+                Choose which optional capabilities are available in this
+                organization workspace. Turning a feature off controls its
+                availability and does not delete existing organization data.
+              </p>
+            </div>
+
+            <div className="space-y-8">
+              {/* ORGANIZATIONAL STRUCTURE */}
+              <div>
+                <div className="mb-3">
+                  <h3 className="text-sm font-black uppercase tracking-wide text-[#082550]">
+                    Organizational Structure
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
+                    Configure the organizational structures this workspace
+                    uses.
+                  </p>
+                </div>
+
+                <div className="divide-y divide-[#B4C2D1]/50 rounded-lg border border-[#B4C2D1]/60">
+                  <PreferenceRow
+                    title="Departments"
+                    description="Allow this organization to organize members by department."
+                    enabled={
+                      settings.departmentsEnabled
+                    }
+                    onChange={(value) =>
+                      updateSetting(
+                        "departmentsEnabled",
+                        value,
+                      )
+                    }
+                  />
+
+                  <PreferenceRow
+                    title="Teams"
+                    description="Allow this organization to organize members by team."
+                    enabled={
+                      settings.teamsEnabled
+                    }
+                    onChange={(value) =>
+                      updateSetting(
+                        "teamsEnabled",
+                        value,
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* PERFORMANCE */}
+              <div>
+                <div className="mb-3">
+                  <h3 className="text-sm font-black uppercase tracking-wide text-[#082550]">
+                    Performance
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
+                    Organization-level performance capabilities are available
+                    as part of the CascadEffects performance framework.
+                  </p>
+                </div>
+
+                <div className="divide-y divide-[#B4C2D1]/50 rounded-lg border border-[#B4C2D1]/60">
+                  <CoreFeatureCard
+                    title="Individual Performance"
+                  />
+
+                  <FeatureDependencyRow
+                    title="Team Performance"
+                    description="Allow performance management at the team level."
+                    enabled={
+                      settings.teamPerformanceEnabled
+                    }
+                    onChange={(value) =>
+                      updateSetting(
+                        "teamPerformanceEnabled",
+                        value,
+                      )
+                    }
+                    dependencyEnabled={
+                      settings.teamsEnabled
+                    }
+                    dependencyLabel="Requires Teams turned on"
+                  />
+
+                  <FeatureDependencyRow
+                    title="Department Performance"
+                    description="Allow performance management at the department level."
+                    enabled={
+                      settings.departmentPerformanceEnabled
+                    }
+                    onChange={(value) =>
+                      updateSetting(
+                        "departmentPerformanceEnabled",
+                        value,
+                      )
+                    }
+                    dependencyEnabled={
+                      settings.departmentsEnabled
+                    }
+                    dependencyLabel="Requires Departments turned on"
+                  />
+
+                  <CoreFeatureCard
+                    title="Organization Performance"
+                  />
+                </div>
+              </div>
+
+              {/* CORE PERFORMANCE FRAMEWORK */}
+              <div>
+                <div className="mb-3">
+                  <h3 className="text-sm font-black uppercase tracking-wide text-[#082550]">
+                    Core Performance Framework
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
+                    These capabilities are core to the CascadEffects
+                    performance framework and are always available.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  <CoreFeatureCard title="Objectives" />
+                  <CoreFeatureCard title="Key Results" />
+                  <CoreFeatureCard title="Initiatives" />
+                </div>
+              </div>
+
+              {/* EXPERIENCE */}
+              <div>
+                <div className="mb-3">
+                  <h3 className="text-sm font-black uppercase tracking-wide text-[#082550]">
+                    Experience
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
+                    Control optional organization workspace experiences.
+                  </p>
+                </div>
+
+                <div className="divide-y divide-[#B4C2D1]/50 rounded-lg border border-[#B4C2D1]/60">
+                  <PreferenceRow
+                    title="Dashboards"
+                    description="Allow dashboards to be available within the organization workspace."
+                    enabled={
+                      settings.dashboardsEnabled
+                    }
+                    onChange={(value) =>
+                      updateSetting(
+                        "dashboardsEnabled",
+                        value,
+                      )
+                    }
+                  />
+
+                  <PreferenceRow
+                    title="Historical Reporting"
+                    description="Allow access to historical performance reporting experiences."
+                    enabled={
+                      settings.historicalReportingEnabled
+                    }
+                    onChange={(value) =>
+                      updateSetting(
+                        "historicalReportingEnabled",
+                        value,
+                      )
+                    }
+                  />
+
+                  <PreferenceRow
+                    title="Employee Comments"
+                    description="Allow employees to use comments within performance workflows."
+                    enabled={
+                      settings.employeeCommentsEnabled
+                    }
+                    onChange={(value) =>
+                      updateSetting(
+                        "employeeCommentsEnabled",
+                        value,
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* AI */}
+              <div>
+                <div className="mb-3">
+                  <h3 className="text-sm font-black uppercase tracking-wide text-[#082550]">
+                    AI
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
+                    Control whether AI assistance is presented as an available
+                    organization capability. Live AI remains subject to the
+                    platform&apos;s AI rollout and authorization model.
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-[#B4C2D1]/60">
+                  <PreferenceRow
+                    title="AI Assistance"
+                    description="Allow AI assistance features to be presented within the organization workspace."
+                    enabled={
+                      settings.aiAssistanceEnabled
+                    }
+                    onChange={(value) =>
+                      updateSetting(
+                        "aiAssistanceEnabled",
+                        value,
+                      )
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -505,9 +852,14 @@ export default function OrganizationSettingsPage() {
               <PreferenceRow
                 title="Enable Organization Notifications"
                 description="Turn this on to allow organization-level notifications."
-                enabled={settings.notificationsEnabled}
+                enabled={
+                  settings.notificationsEnabled
+                }
                 onChange={(value) =>
-                  updateSetting("notificationsEnabled", value)
+                  updateSetting(
+                    "notificationsEnabled",
+                    value,
+                  )
                 }
               />
             </div>
@@ -522,8 +874,12 @@ export default function OrganizationSettingsPage() {
               <NotificationRow
                 title="Administrative Notifications"
                 description="Organization administration and configuration notifications."
-                enabled={settings.administrativeNotifications}
-                masterEnabled={settings.notificationsEnabled}
+                enabled={
+                  settings.administrativeNotifications
+                }
+                masterEnabled={
+                  settings.notificationsEnabled
+                }
                 onChange={(value) =>
                   updateSetting(
                     "administrativeNotifications",
@@ -535,8 +891,12 @@ export default function OrganizationSettingsPage() {
               <NotificationRow
                 title="Performance Notifications"
                 description="Notifications related to goals, performance activity, and workspace progress."
-                enabled={settings.performanceNotifications}
-                masterEnabled={settings.notificationsEnabled}
+                enabled={
+                  settings.performanceNotifications
+                }
+                masterEnabled={
+                  settings.notificationsEnabled
+                }
                 onChange={(value) =>
                   updateSetting(
                     "performanceNotifications",
@@ -548,10 +908,17 @@ export default function OrganizationSettingsPage() {
               <NotificationRow
                 title="System Notifications"
                 description="Important organization workspace and system notifications."
-                enabled={settings.systemNotifications}
-                masterEnabled={settings.notificationsEnabled}
+                enabled={
+                  settings.systemNotifications
+                }
+                masterEnabled={
+                  settings.notificationsEnabled
+                }
                 onChange={(value) =>
-                  updateSetting("systemNotifications", value)
+                  updateSetting(
+                    "systemNotifications",
+                    value,
+                  )
                 }
               />
             </div>
@@ -578,18 +945,28 @@ export default function OrganizationSettingsPage() {
               <PreferenceRow
                 title="Confirm Before Deleting"
                 description="Require confirmation before destructive organization actions are completed."
-                enabled={settings.confirmBeforeDeleting}
+                enabled={
+                  settings.confirmBeforeDeleting
+                }
                 onChange={(value) =>
-                  updateSetting("confirmBeforeDeleting", value)
+                  updateSetting(
+                    "confirmBeforeDeleting",
+                    value,
+                  )
                 }
               />
 
               <PreferenceRow
                 title="Show Helpful Tips"
                 description="Display helpful guidance throughout the organization workspace."
-                enabled={settings.showHelpfulTips}
+                enabled={
+                  settings.showHelpfulTips
+                }
                 onChange={(value) =>
-                  updateSetting("showHelpfulTips", value)
+                  updateSetting(
+                    "showHelpfulTips",
+                    value,
+                  )
                 }
               />
             </div>
@@ -665,13 +1042,17 @@ function ColorSetting({
         <input
           type="color"
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) =>
+            onChange(event.target.value)
+          }
           aria-label={label}
           className="h-12 w-12 shrink-0 cursor-pointer rounded-md border border-[#B4C2D1] bg-white p-1"
         />
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-[#272D2C]">{label}</p>
+          <p className="text-sm font-bold text-[#272D2C]">
+            {label}
+          </p>
 
           <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
             {description}
@@ -680,12 +1061,88 @@ function ColorSetting({
           <input
             type="text"
             value={value}
-            onChange={(event) => onChange(event.target.value)}
+            onChange={(event) =>
+              onChange(
+                event.target.value,
+              )
+            }
             className="mt-3 h-9 w-full rounded-md border border-[#B4C2D1] bg-white px-3 text-xs font-mono uppercase text-[#272D2C] outline-none focus:border-[#082550] focus:ring-1 focus:ring-[#082550]"
             aria-label={`${label} hex value`}
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+type FeatureDependencyRowProps =
+  PreferenceRowProps & {
+    dependencyEnabled: boolean;
+    dependencyLabel: string;
+  };
+
+function FeatureDependencyRow({
+  title,
+  description,
+  enabled,
+  onChange,
+  dependencyEnabled,
+  dependencyLabel,
+}: FeatureDependencyRowProps) {
+  return (
+    <div
+      className={`flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between ${
+        !dependencyEnabled
+          ? "bg-[#F7F9FB]"
+          : ""
+      }`}
+    >
+      <div className="max-w-2xl">
+        <p className="text-sm font-bold text-[#272D2C]">
+          {title}
+        </p>
+
+        <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
+          {description}
+        </p>
+
+        {!dependencyEnabled && (
+          <p className="mt-2 text-[11px] font-bold text-[#E26D5C]">
+            {dependencyLabel}
+          </p>
+        )}
+      </div>
+
+      <Toggle
+        enabled={enabled}
+        onChange={onChange}
+        disabled={!dependencyEnabled}
+        label={title}
+      />
+    </div>
+  );
+}
+
+function CoreFeatureCard({
+  title,
+}: {
+  title: string;
+}) {
+  return (
+    <div className="flex flex-col justify-center gap-2 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="max-w-2xl">
+        <p className="text-sm font-bold text-[#272D2C]">
+          {title}
+        </p>
+
+        <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
+          Core CascadEffects performance capability.
+        </p>
+      </div>
+
+      <span className="w-fit rounded-full bg-[#E9F4F8] px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-[#082550]">
+        Always On
+      </span>
     </div>
   );
 }
@@ -706,7 +1163,9 @@ function PreferenceRow({
   return (
     <div className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="max-w-2xl">
-        <p className="text-sm font-bold text-[#272D2C]">{title}</p>
+        <p className="text-sm font-bold text-[#272D2C]">
+          {title}
+        </p>
 
         <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
           {description}
@@ -740,11 +1199,15 @@ function NotificationRow({
   return (
     <div
       className={`flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between ${
-        !masterEnabled ? "opacity-55" : ""
+        !masterEnabled
+          ? "opacity-55"
+          : ""
       }`}
     >
       <div className="max-w-2xl">
-        <p className="text-sm font-bold text-[#272D2C]">{title}</p>
+        <p className="text-sm font-bold text-[#272D2C]">
+          {title}
+        </p>
 
         <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
           {description}
@@ -781,9 +1244,13 @@ function Toggle({
       aria-checked={enabled}
       aria-label={label}
       disabled={disabled}
-      onClick={() => onChange(!enabled)}
+      onClick={() =>
+        onChange(!enabled)
+      }
       className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition focus:outline-none focus:ring-2 focus:ring-[#E26D5C] focus:ring-offset-2 ${
-        enabled ? "bg-[#082550]" : "bg-[#B4C2D1]"
+        enabled
+          ? "bg-[#082550]"
+          : "bg-[#B4C2D1]"
       } ${
         disabled
           ? "cursor-not-allowed opacity-50"
@@ -792,7 +1259,9 @@ function Toggle({
     >
       <span
         className={`inline-block h-5 w-5 translate-y-0.5 rounded-full bg-white shadow-sm transition ${
-          enabled ? "translate-x-5" : "translate-x-0.5"
+          enabled
+            ? "translate-x-5"
+            : "translate-x-0.5"
         }`}
       />
     </button>

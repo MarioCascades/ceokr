@@ -1254,240 +1254,87 @@ Accepted
 
 The current development phase is:
 
-Runtime Product Experience.
+Multi-Organization Entry Selection.
 
-The platform foundations required for the current product direction are
+The Authentication + Role-Based Entry foundation has been implemented and
+browser-verified.
 
-established:
+The current platform now has:
 
-- Administration foundation
-- Organization Admin Workspace foundation
-- Builder
-- Runtime Execution Foundation
-- Member Workspace foundation
-- Monthly Performance cadence
-- Member Performance navigation
-- Runtime Objective / Key Result / Initiative editing foundation
+- authenticated Supabase session handling
+- Application User resolution
+- Platform Super Admin resolution
+- Organization Membership resolution
+- role-aware entry resolution
+- Super Admin landing
+- Organization Admin entry
+- Member entry
+- a canonical Current Entry Context
+- a server-side authentication confirmation redirect boundary
 
-The next milestone is not a new performance engine.
+The next architectural milestone is to establish explicit organization
+selection behavior for authenticated users who belong to multiple
+Organizations.
 
-The next milestone is to turn the established Runtime architecture into the
+The multi-organization model must preserve the existing authority boundary:
 
-complete product experience that organizations and members will use for
-
-day-to-day performance management.
-
-The Runtime Product Experience should make the following experience coherent
-
-and reusable:
-
-- Member identity and role context
-- Organization context
-- Member performance page
-- Monthly performance navigation
-- Previous month performance
-- Current month performance
-- Target values
-- Current values
-- Scores
-- Objectives
-- Key Results
-- Initiatives
-- Comments
-- Runtime lifecycle
-- Manager review / approval where applicable
-- Clear performance status
-- Consistent visual hierarchy
-- Data-driven rendering from the published Performance Sheet and Runtime data
-
-Mint remains the UX reference for the type of performance experience the
-
-platform must be able to generate.
-
-Mint must not become the architecture.
-
-The product experience should be generated from:
-
-Builder Definition
+Platform Super Admin
 
 ↓
 
-Published Performance Sheet Version
+Platform-level authority
 
 ↓
 
-Assignment
+Organization selection for Organization-specific experiences
+
+Organization Admin
 
 ↓
 
-Monthly Performance Instance
+Authorized Organization Membership
 
 ↓
 
-Runtime Data
-
-↓
-
-Member / Manager Performance Experience
-
-The Builder and Runtime foundations should not be rebuilt.
-
-The next product work should improve the experience and complete missing
-
-Runtime workflows without creating duplicate sources of truth.
-
-Separate high-priority architecture milestones remain:
-
-- production tenant authorization
-- production Row Level Security
-- Runtime security boundaries
-- Assignment Subject Validation
-- Performance Instance Relationship Integrity
-- Historical KPI Updates
-- generalized KPI Calculation Engine
-- weighted aggregation
-
-Status
-
-Accepted
-
----
-
-# 39. Runtime Product Experience Direction
-
-The Runtime Product Experience is the next major product milestone.
-
-The purpose of this milestone is to turn the existing Runtime execution
-
-foundation and Member Workspace foundation into the primary day-to-day
-
-performance-management experience.
-
-The product must remain data-driven.
-
-The experience must be generated from:
-
-- Organization
-- User / Member
-- Assignment
-- Published Performance Sheet Version
-- Monthly Performance Instance
-- Runtime Objectives
-- Runtime Key Results
-- Runtime Initiatives
-- Key Result Progress
-- Runtime comments
-- Runtime lifecycle state
-- Validated measurement and scoring configuration
-
-The experience should support the core monthly workflow:
+Fixed Organization context
 
 Member
 
 ↓
 
-Open My Performance
+Authorized Organization Membership
 
 ↓
 
-Select Month
+Organization-specific Member experience
 
-↓
+The selected Organization must remain navigation / query context only.
 
-Review Objectives
+It must never become the authorization boundary.
 
-↓
+The future multi-Organization entry flow should be designed so that:
 
-Review Key Results
+- users with one applicable Organization can enter that Organization context
+  without unnecessary selection
+- users with multiple applicable Organizations receive an explicit
+  Organization-selection experience
+- the selected Organization is re-resolved server-side
+- Organization Membership and role authority are validated server-side
+- client-side selection is never treated as proof of authorization
 
-↓
+Do not introduce a new authentication system to solve Organization selection.
 
-Review Previous Month
+Do not duplicate the Organization Membership model.
 
-↓
+Do not create a second role system.
 
-Enter / update Current Month value
+Do not rebuild Builder or Runtime.
 
-↓
+Production authorization and RLS remain separate security work.
 
-Review Target
-
-↓
-
-Review Score
-
-↓
-
-Add or update Initiatives when needed
-
-↓
-
-Save performance state
-
-↓
-
-Submit when ready
-
-↓
-
-Manager review / approval where applicable
-
-The exact workflow may evolve, but the architectural rule does not:
-
-Runtime owns execution.
-
-Member Workspace presents and operates Runtime state.
-
-Builder owns reusable definitions.
-
-The Member Workspace must never become a second definition system.
-
-The Runtime Product Experience should progressively support:
-
-- clearer performance-sheet presentation
-- reliable month navigation
-- member editing
-- manager review
-- lifecycle controls
-- Objective and Key Result presentation
-- Initiative presentation
-- measurement-type-aware value entry
-- scoring visibility
-- comments
-- performance status
-- historical navigation
-- future reporting
-
-Scoring remains intentionally small in the current Runtime.
-
-The current supported methods are:
-
-- Percentage of Target
-- Percent Into Period
-
-A generalized KPI Calculation Engine remains future architecture work.
-
-The platform should not introduce arbitrary formula execution into the UI.
-
-Future calculation capabilities should use validated, reusable configuration
-
-rather than arbitrary JavaScript or SQL supplied by a user.
-
-Runtime Product Experience is also where the platform must demonstrate the
-
-central product promise:
-
-Configure once.
-
-Publish once.
-
-Assign.
-
-Generate monthly performance execution repeatedly.
-
-The experience must work across organizations without hardcoded people,
-
-objectives, Key Results, dashboards, reporting structures, or KPI logic.
+Runtime Product Experience remains an active product-experience track after
+the authentication foundation, but it is not the immediate entry-routing
+milestone.
 
 Status
 
@@ -2043,8 +1890,8 @@ Accepted
 
 # 39. Authentication and Role-Based Entry
 
-Authentication is now a required product dependency for the next product-flow
-milestone.
+Authentication is an established product dependency for role-aware product
+entry.
 
 Authentication establishes who is signed in.
 
@@ -2546,17 +2393,15 @@ Accepted
 
 ---
 
-# 46. Authentication Is the Next Product-Flow Milestone
+# 46. Authentication and Role-Based Entry Foundation
 
-Following completion of the current Settings and AI presentation increment,
-the next implementation milestone is:
+The Authentication + Role-Based Entry foundation has been implemented and
+verified.
 
-> Authentication + Role-Based Entry
+The implementation connects the existing product experiences rather than
+creating replacement systems.
 
-The implementation should connect the existing product experiences rather than
-create replacement systems.
-
-The intended sequence is:
+The established sequence is:
 
 ```text
 Authenticated User
@@ -2567,21 +2412,94 @@ Resolve Platform / Organization Membership
         ↓
 Resolve Role Context
         ↓
-Role-Based Landing
+Role-Based Entry
         ↓
 Existing Administration / Organization / Member Experience
 ```
 
-The authentication milestone should reuse the existing identity and
-membership architecture.
+The authentication foundation reuses the existing identity and membership
+architecture.
 
-It must not introduce a second user identity system merely for login.
+It does not introduce a second user identity system.
 
-It must not treat a client-selected role as proof of authority.
+It does not treat a client-selected role as proof of authority.
 
-It must not rebuild Builder or Runtime.
+The current implementation establishes:
+
+- Supabase Auth session handling through the root Next.js proxy
+- Application User resolution
+- Platform Super Admin resolution
+- Organization Membership resolution
+- Membership Role resolution
+- role-aware entry routing
+- Super Admin entry
+- Organization Admin entry
+- Member entry
+- safe authentication confirmation redirects
+
+Platform Super Admin authority is evaluated before Organization-level entry
+authority.
+
+The current entry flow therefore gives Platform Super Admin precedence even
+when the same user also has Organization Membership.
 
 Production authorization and RLS remain separate security work.
+
+Status
+
+Accepted
+
+---
+
+# 47. Current Entry Context Is the Canonical Entry Boundary
+
+The Current Entry Context is the canonical server-side boundary for resolving
+the authenticated actor's initial product entry context.
+
+The context establishes:
+
+- authenticated Application User
+- Entry Actor
+- Organization ID where applicable
+- Organization name where applicable
+
+The intended relationship is:
+
+```text
+Supabase Auth
+        ↓
+Application User
+        ↓
+Current Entry Context
+        ↓
+Platform / Organization Authority
+        ↓
+Entry Actor
+        ↓
+Role-Based Entry
+```
+
+The `/entry` route should consume the Current Entry Context rather than
+independently reconstructing authentication and role authority.
+
+The Current Entry Context is responsible for resolving the existing
+Platform Super Admin, Organization Admin, and Member entry actors.
+
+This is an entry-routing boundary, not a substitute for production
+authorization.
+
+The selected Organization remains context only.
+
+Production authorization must ultimately validate:
+
+- authenticated identity
+- platform authority where applicable
+- Organization Membership
+- role assignment
+- permissions
+- Organization boundaries
+- resource ownership
+- database / RLS enforcement
 
 Status
 

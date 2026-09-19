@@ -4,7 +4,7 @@ Platform Backlog
 
 Document Status: CURRENT
 
-Last Updated: 2026-09-11
+Last Updated: 2026-09-19
 
 This document tracks intentionally deferred architecture, product
 
@@ -20,21 +20,35 @@ determining the current project state.
 
 Current Development Phase
 
-Authentication + Role-Based Entry
+Multi-Organization Entry Selection
 
 Status
 
 NEXT MILESTONE
 
-The Runtime Dashboard / member performance separation has been completed and
-verified.
+The Authentication + Role-Based Entry foundation has been completed and
+browser-verified.
 
-The next dependency is authentication because the intended product experience
-requires the platform to identify whether the authenticated actor is a
-Platform Super Admin, Organization Admin, or Member.
+The platform can now authenticate the actor and route the authenticated actor
+into the appropriate existing product experience as:
 
-This milestone establishes the smallest authentication foundation required to
-route each actor to the correct landing experience.
+- Platform Super Admin
+- Organization Admin
+- Member
+
+The next dependency is explicit Organization selection for users who belong to
+multiple Organizations.
+
+The selected Organization must remain navigation / query context only and
+must never replace server-side authorization.
+
+Users with one applicable Organization should not be forced through an
+unnecessary selector.
+
+Users with multiple applicable Organizations should receive an explicit
+Organization-selection experience, after which the selected Organization must
+be re-resolved and validated server-side.
+
 
 Completed:
 
@@ -675,7 +689,7 @@ Runtime Product Experience
 
 Status
 
-FOUNDATION CHECKPOINT COMPLETE / CONTINUING AFTER AUTHENTICATION
+FOUNDATION CHECKPOINT COMPLETE / CONTINUING
 
 The Runtime Execution Foundation and Member Workspace Foundation are
 
@@ -1154,7 +1168,7 @@ milestone is complete.
 
 Status
 
-PLANNED
+COMPLETE / PRESENTATION ESTABLISHED
 
 Build a platform-level Settings page for CascadEffects Super Admins.
 
@@ -1176,7 +1190,7 @@ Medium
 
 Status
 
-NEXT AFTER AUTHENTICATION / PLANNED
+COMPLETE / PRESENTATION ESTABLISHED
 
 Build an organization-scoped Settings page for Organization Admins.
 
@@ -1202,7 +1216,7 @@ Medium
 
 Status
 
-PLANNED / MOCK-UP FIRST
+COMPLETE / PRESENTATION MOCK-UP
 
 Create a Super Admin AI page that demonstrates the future CascadEffects AI
 experience without requiring live AI API usage.
@@ -1223,7 +1237,7 @@ Medium
 
 Status
 
-PLANNED / MOCK-UP FIRST
+COMPLETE / PRESENTATION MOCK-UP
 
 Create an Organization Admin AI page with the same future-assistant concept,
 but scoped to Organization Admin workflows.
@@ -1290,9 +1304,12 @@ Medium
 
 Status
 
-NEXT MILESTONE
+FOUNDATION COMPLETE / VERIFIED
 
-The platform must replace the current role-selection login experience with
+The Authentication + Role-Based Entry foundation has been implemented and
+browser-verified.
+
+The platform now replaces client-selected role assumptions with
 authentication-driven role recognition.
 
 Required actor types:
@@ -1301,55 +1318,79 @@ Required actor types:
 - Organization Admin
 - Member
 
-The authenticated session should resolve:
+The authenticated entry context resolves:
 
 - Supabase Auth identity
 - Application User
 - Platform Membership where applicable
 - Organization Membership where applicable
-- applicable role context
+- applicable Membership Role context
+- Entry Actor
+- Organization context where applicable
 
-Required post-login landing experiences:
+Verified post-login entry experiences:
 
 ```text
 Platform Super Admin
 ↓
-Super Admin Landing
-├── Manage Organizations
-└── Open Organization Performance
-    ↓
-Organization Selector
-
-Organization Admin
-↓
-Organization Admin Landing
-├── Open Organization Workspace
-└── Open Organization Performance
-
-Member
-↓
-Member Landing
-├── Open My Performance
-└── Open Organization Performance
+Super Admin Entry
 ```
 
-Authentication should include:
+```text
+Organization Admin
+↓
+Organization Admin Entry
+```
 
-- Login
-- authenticated session
-- identity resolution
-- role-aware routing
-- Forgot Password
-- Password Reset
+```text
+Member
+↓
+Member Entry
+```
 
-The role-selection dropdown must not be used as an authorization mechanism.
+The current implementation reuses the existing authentication, Application
+User, Platform Membership, Organization Membership, and role foundations.
 
-Production authorization and RLS remain a separate security milestone.
+The role-selection dropdown is not used as an authorization mechanism.
+
+The root Next.js proxy establishes the Supabase session-refresh request
+boundary.
+
+The authentication confirmation route validates root-relative redirect
+targets.
+
+The `/entry` route consumes the canonical Current Entry Context.
+
+Platform Super Admin authority takes precedence over Organization-level
+membership during initial entry resolution.
+
+The primary authentication and entry flows have been browser-verified for:
+
+- Mario → Super Admin
+- Heather → Super Admin
+- Organization Admin → Organization Admin entry
+- Member → Member entry
+
+The defensive unconfigured-account path exists but was not independently
+exercised because no test account was created solely for that scenario.
+
+The current defensive path remains:
+
+```text
+No valid entry context
+↓
+/login?error=account_not_configured
+```
+
+Production authorization and RLS remain separate security milestones.
+
+Remaining authentication/security work is not part of this completed
+foundation, including full production authorization enforcement, tenant
+authorization hardening, and production Row Level Security.
 
 Priority
 
-High
-
+Complete / Security Follow-Up
 
 Dashboards
 
@@ -1704,7 +1745,7 @@ FOUNDATION CHECKPOINT COMPLETE / CONTINUING AFTER AUTHENTICATION
 
 Authentication + Role-Based Entry
 
-NEXT MILESTONE
+FOUNDATION COMPLETE / VERIFIED
 
 Dashboards
 
@@ -1716,11 +1757,11 @@ FUTURE
 
 AI
 
-PLANNED MOCK-UP / LIVE AI FUTURE
+PRESENTATION MOCK-UPS COMPLETE / LIVE AI FUTURE
 
 Settings
 
-PLANNED / AUTHORITY-SCOPED
+PRESENTATION COMPLETE / AUTHORITY-SCOPED
 
 Production Authorization / RLS
 
@@ -1764,131 +1805,307 @@ Platform Backlog
 
 Product North Star
 
-Confirm the Authentication + Role-Based Entry milestone.
+Confirm the Multi-Organization Entry Selection milestone.
 
 Inspect the existing:
 
+- root Next.js proxy
 - Supabase Auth implementation
-- login page
-- authentication services
 - Application User resolution
+- Current Entry Context
 - Platform Membership resolution
 - Organization Membership resolution
-- existing role / permission foundations
+- Membership Role resolution
+- current Super Admin entry
+- current Organization Admin entry
+- current Member entry
+- existing organization context patterns
 
-Implement only the authentication foundation required for the three role-based
-landing experiences.
+The next implementation should establish explicit Organization selection
+behavior for authenticated users who belong to multiple Organizations.
 
-Required post-login entry:
+Target behavior:
 
 Platform Super Admin
 
 ↓
 
-Super Admin Landing
+Super Admin Entry
 
-├── Manage Organizations
+↓
 
-└── Open Organization Performance
+Organization-specific experience
 
-    ↓
+↓
 
-Organization Selector
+Organization Selector where required
 
 Organization Admin
 
 ↓
 
-Organization Admin Landing
+Fixed authorized Organization context
 
-├── Open Organization Workspace
+↓
 
-└── Open Organization Performance
+Organization-specific experience
 
 Member
 
 ↓
 
-Member Landing
+Authorized Organization context
 
-├── Open My Performance
+↓
 
-└── Open Organization Performance
+Member experience
 
-Authentication should include:
+For a user with one applicable Organization, avoid unnecessary selection.
 
-- Login
-- authenticated session
-- identity resolution
-- role-aware routing
-- Forgot Password
-- Password Reset
+For a user with multiple applicable Organizations, provide an explicit
+Organization selector.
 
-Do not implement full production authorization or RLS as part of this
-milestone unless an actual blocking dependency is discovered.
+The selected Organization ID is context only.
+
+The server must re-resolve and validate the selected Organization against the
+authenticated actor's actual authority.
+
+Do not use localStorage, a client-selected Organization, or a display name as
+the authorization boundary.
+
+Do not create a second Organization Membership model.
+
+Do not create a second role system.
 
 Do not rebuild Builder.
 
-Do not create a second Runtime engine.
+Do not rebuild Runtime.
 
 Do not create a second Member performance data model.
 
 Do not reintroduce an administrator-managed Reporting Period entity.
 
-After authentication is complete and verified, continue the product-experience
-roadmap in this order unless the latest Waypoint establishes a different
-priority:
+Production authorization and RLS remain separate security work unless the
+next milestone exposes a blocking dependency.
 
-1. Super Admin Settings
-2. Organization Admin Settings
-3. Super Admin AI mock-up
-4. Organization Admin AI mock-up
-5. Live AI Help Assistant after business approval
-6. Remaining Runtime Product Experience / Design & Vibe work
+After multi-Organization entry is complete and verified, continue the
+Runtime Product Experience / Design & Vibe roadmap according to the latest
+Waypoint and Platform Decisions.
 
-Do not treat the AI mock-ups as live AI functionality.
+Do not treat AI mock-ups as live AI functionality.
+
 Do not activate paid AI API usage without business approval.
-
 
 ---
 
+Current Milestone Update — Waypoint 27
 
-# Current Milestone Update — Waypoint 26
+The Authentication + Role-Based Entry foundation is now complete and verified.
 
-The following product-experience work is now treated as completed presentation
-work:
+Completed authentication foundation:
 
-- Super Admin Settings presentation
-- Organization Admin Settings presentation
-- Super Admin AI mock-up
-- Organization Admin AI mock-up
-- Member AI Assistant floating mock-up
-
-These items remain non-operational where AI is concerned. Live AI provider
-integration, API costs, production AI data access, and production AI
-authorization remain deferred.
-
-The next active milestone is:
-
-> Authentication + Role-Based Entry
-
-The authentication milestone should establish:
-
-- Supabase Auth session handling
+- root Next.js proxy session boundary confirmed
+- Supabase session refresh
 - Application User resolution
 - Platform Super Admin resolution
 - Organization Membership resolution
-- role-aware entry
-- Super Admin landing
-- Organization Admin landing
-- Member landing
-- Forgot Password
-- Password Reset
+- Membership Role resolution
+- canonical Current Entry Context
+- role-aware `/entry`
+- Super Admin entry
+- Organization Admin entry
+- Member entry
+- authentication confirmation redirect hardening
+- removal of duplicate unused current-user infrastructure
 
-Authentication must remain separate from production authorization.
+Browser verification completed for:
 
-Do not use role selection on the client as proof of authority. Production
-authorization, tenant boundaries, permissions, server-side enforcement, and
-RLS remain security work to be completed appropriately.
+- Mario → Super Admin
+- Heather → Super Admin
+- Organization Admin → Organization Admin entry
+- Member → Member entry
 
-No Builder or Runtime rebuild is part of this milestone.
+No database schema changes were required for this milestone.
+
+The existing identity, membership, role, and permission foundations were reused.
+
+The next active milestone is:
+
+> Multi-Organization Entry Selection
+
+The next milestone must solve explicit Organization selection for users with
+multiple authorized Organization memberships without changing the existing
+tenant or authorization model.
+
+Production authorization, tenant boundaries, server-side enforcement, and
+RLS remain security work to be completed separately.
+
+The Settings and AI presentation work established in Waypoint 26 remains
+complete.
+
+The current AI experiences remain presentation-only.
+
+No live AI provider integration or paid AI API usage has been introduced.
+
+No Builder or Runtime rebuild is part of the completed authentication
+milestone.
+
+---
+
+Current Project Position
+
+Builder
+
+COMPLETE / ESTABLISHED
+
+Runtime Execution Foundation
+
+COMPLETE / ESTABLISHED
+
+Administration Foundation
+
+COMPLETE / ESTABLISHED
+
+Organization
+
+COMPLETE
+
+Departments
+
+COMPLETE
+
+Teams
+
+COMPLETE
+
+Users / Members
+
+COMPLETE
+
+Roles & Permissions
+
+FUNCTIONAL FOUNDATION COMPLETE
+
+Platform Authority
+
+FOUNDATION COMPLETE
+
+Platform Memberships
+
+COMPLETE
+
+Platform Super Admin authorization foundation
+
+COMPLETE
+
+Performance Sheet Management
+
+COMPLETE
+
+Assignment Management
+
+COMPLETE
+
+Administration Page Structure / Shared Header Standardization
+
+COMPLETE
+
+Administration Organization Context / Cascading Selection
+
+COMPLETE / ESTABLISHED
+
+Organization Admin Workspace Foundation
+
+COMPLETE / ESTABLISHED
+
+Organization Admin Fixed Organization Context
+
+ESTABLISHED
+
+One Builder / Two Administrative Entry Contexts
+
+ESTABLISHED
+
+Objectives / Key Results / Initiatives
+
+BUILDER-OWNED / ESTABLISHED
+
+Monthly Performance Cadence
+
+ESTABLISHED PRODUCT RULE
+
+Member Performance Navigation
+
+ESTABLISHED
+
+Runtime Dashboard / Member Performance Separation
+
+COMPLETE / VERIFIED
+
+Runtime Product Experience
+
+FOUNDATION CHECKPOINT COMPLETE / CONTINUING
+
+Settings Presentation
+
+COMPLETE / PRESENTATION ESTABLISHED
+
+Super Admin AI Mockup
+
+COMPLETE / PRESENTATION MOCK-UP
+
+Organization Admin AI Mockup
+
+COMPLETE / PRESENTATION MOCK-UP
+
+Member AI Assistant Mockup
+
+COMPLETE / PRESENTATION MOCK-UP
+
+CascadEffects Design Direction
+
+ESTABLISHED / CONTINUING
+
+Authentication + Role-Based Entry
+
+FOUNDATION COMPLETE / VERIFIED
+
+Multi-Organization Entry Selection
+
+NEXT MILESTONE
+
+Dashboards
+
+V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
+
+Reports
+
+FUTURE
+
+Live AI Integration
+
+FUTURE / BUSINESS APPROVAL
+
+Production Authorization / RLS
+
+OUTSTANDING / LATER SECURITY MILESTONE
+
+Runtime Security Boundaries
+
+DEFERRED
+
+Historical KPI Updates
+
+DEFERRED
+
+KPI Calculation Engine
+
+DEFERRED
+
+Weighted Aggregation
+
+DEFERRED
+
+Historical Performance Reporting
+
+DEFERRED

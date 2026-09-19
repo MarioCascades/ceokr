@@ -21,6 +21,7 @@ interface RuntimeNavigationProps {
 function getDisplayName(
   record: UserManagementRecord
 ): string {
+
   return (
     record.user.display_name?.trim() ||
     `${record.user.first_name} ${record.user.last_name}`.trim() ||
@@ -107,9 +108,7 @@ export default function RuntimeNavigation({
   const dashboardHref =
     buildRuntimeHref(
       organizationId,
-
       undefined,
-
       performanceMonth
     );
 
@@ -131,9 +130,7 @@ export default function RuntimeNavigation({
     window.location.href =
       buildRuntimeHref(
         organizationId,
-
         selectedSubjectId,
-
         selectedMonth
       );
   }
@@ -170,7 +167,7 @@ export default function RuntimeNavigation({
       >
 
         {/* ==================================================
-            Platform / Context Label
+            Platform Label
         ================================================== */}
 
         <div
@@ -251,7 +248,7 @@ export default function RuntimeNavigation({
 
 
         {/* ==================================================
-            Member Divider
+            Performance Subjects
         ================================================== */}
 
         {members.length > 0 && (
@@ -268,10 +265,6 @@ export default function RuntimeNavigation({
           />
         )}
 
-
-        {/* ==================================================
-            Members
-        ================================================== */}
 
         <div
           className="
@@ -349,7 +342,7 @@ export default function RuntimeNavigation({
 
 
         {/* ==================================================
-            Month Navigation
+            Performance Month
         ================================================== */}
 
         <div
@@ -396,12 +389,11 @@ export default function RuntimeNavigation({
 
           <label
             htmlFor="runtime-performance-month"
-            className="
-              sr-only
-            "
+            className="sr-only"
           >
             Select performance month
           </label>
+
 
           <select
             id="runtime-performance-month"
@@ -416,8 +408,8 @@ export default function RuntimeNavigation({
               flex-1
               rounded-xl
               border
-              border-[#b4c2d1]
-              bg-white
+              border-input
+              bg-background
               px-4
               py-2.5
               text-sm

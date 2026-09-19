@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+
 import {
   usePathname,
   useSearchParams,
@@ -8,23 +9,34 @@ import {
 
 import type { ReactNode } from "react";
 
+import {
+  useOrganizationFeatures,
+} from "@/lib/organization/useorganizationfeatures";
+
+
 type OrganizationShellProps = {
   children: ReactNode;
 };
+
 
 type OrganizationNavLinkProps = {
   href: string;
   label: string;
 };
 
+
 function OrganizationNavLink({
   href,
   label,
 }: OrganizationNavLinkProps) {
-  const pathname = usePathname();
+
+  const pathname =
+    usePathname();
+
 
   const isActive =
     pathname === href.split("?")[0];
+
 
   return (
     <Link
@@ -32,14 +44,15 @@ function OrganizationNavLink({
       className={[
         "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
         isActive
-          ? "bg-slate-900 text-white"
-          : "text-slate-700 hover:bg-slate-100",
+          ? "bg-primary text-primary-foreground"
+          : "text-foreground hover:bg-accent hover:text-accent-foreground",
       ].join(" ")}
     >
       {label}
     </Link>
   );
 }
+
 
 function OrganizationNavSection({
   title,
@@ -48,26 +61,58 @@ function OrganizationNavSection({
   title: string;
   children: ReactNode;
 }) {
+
   return (
     <div className="space-y-1">
-      <div className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+
+      <div
+        className="
+          px-3
+          pb-1
+          pt-4
+          text-[11px]
+          font-semibold
+          uppercase
+          tracking-wider
+          text-muted-foreground
+        "
+      >
         {title}
       </div>
+
 
       <div className="space-y-1">
         {children}
       </div>
+
     </div>
   );
 }
 
+
 export default function OrganizationShell({
   children,
 }: OrganizationShellProps) {
-  const searchParams = useSearchParams();
+
+  const searchParams =
+    useSearchParams();
+
 
   const organizationId =
     searchParams.get("organizationId");
+
+
+  const {
+    isEnabled,
+  } =
+    useOrganizationFeatures();
+
+
+  const departmentsEnabled =
+    isEnabled(
+      "departments"
+    );
+
 
   /*
    * Organization Admin navigation always
@@ -77,18 +122,26 @@ export default function OrganizationShell({
    * until the authentication/RLS milestone.
    */
 
-  function organizationHref(path: string) {
+  function organizationHref(
+    path: string
+  ) {
+
     if (!organizationId) {
       return path;
     }
 
+
     const separator =
-      path.includes("?") ? "&" : "?";
+      path.includes("?")
+        ? "&"
+        : "?";
+
 
     return `${path}${separator}organizationId=${encodeURIComponent(
       organizationId
     )}`;
   }
+
 
   /*
    * ==========================================================
@@ -104,56 +157,119 @@ export default function OrganizationShell({
   const performanceWorkspaceHref =
     organizationHref("/runtime");
 
+
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div
+      className="
+        min-h-screen
+        bg-background
+      "
+    >
 
       {/* ==================================================
           Sidebar
       ================================================== */}
 
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-white lg:flex lg:flex-col">
+      <aside
+        className="
+          fixed
+          inset-y-0
+          left-0
+          z-30
+          hidden
+          w-64
+          border-r
+          border-border
+          bg-card
+          lg:flex
+          lg:flex-col
+        "
+      >
 
         {/* ==================================================
             Brand
         ================================================== */}
 
-        <div className="border-b px-5 py-5">
+        <div
+          className="
+            border-b
+            border-border
+            px-5
+            py-5
+          "
+        >
+
           <Link
             href={organizationHref("/organization")}
             className="block"
           >
-            <div className="text-lg font-semibold text-slate-900">
+
+            <div
+              className="
+                text-lg
+                font-semibold
+                text-foreground
+              "
+            >
               CascadEffects
             </div>
 
-            <div className="mt-0.5 text-xs font-medium uppercase tracking-wide text-slate-400">
+
+            <div
+              className="
+                mt-0.5
+                text-xs
+                font-medium
+                uppercase
+                tracking-wide
+                text-muted-foreground
+              "
+            >
               Organization Admin
             </div>
+
           </Link>
+
         </div>
+
 
         {/* ==================================================
             Navigation
         ================================================== */}
 
-        <nav className="flex-1 overflow-y-auto px-3 pb-6">
+        <nav
+          className="
+            flex-1
+            overflow-y-auto
+            px-3
+            pb-6
+          "
+        >
 
           {/* ==================================================
               Overview
           ================================================== */}
 
           <div className="pt-4">
+
             <OrganizationNavLink
-              href={organizationHref("/organization")}
+              href={organizationHref(
+                "/organization"
+              )}
               label="Overview"
             />
+
           </div>
+
 
           {/* ==================================================
               Organization
           ================================================== */}
 
-          <OrganizationNavSection title="Organization">
+          <OrganizationNavSection
+            title="Organization"
+          >
+
             <OrganizationNavLink
               href={organizationHref(
                 "/organization/organization"
@@ -161,12 +277,14 @@ export default function OrganizationShell({
               label="Organization"
             />
 
-            <OrganizationNavLink
-              href={organizationHref(
-                "/organization/departments"
-              )}
-              label="Departments"
-            />
+            {departmentsEnabled && (
+              <OrganizationNavLink
+                href={organizationHref(
+                  "/organization/departments"
+                )}
+                label="Departments"
+              />
+            )}
 
             <OrganizationNavLink
               href={organizationHref(
@@ -188,13 +306,17 @@ export default function OrganizationShell({
               )}
               label="Roles & Permissions"
             />
+
           </OrganizationNavSection>
+
 
           {/* ==================================================
               Performance
           ================================================== */}
 
-          <OrganizationNavSection title="Performance">
+          <OrganizationNavSection
+            title="Performance"
+          >
 
             <OrganizationNavLink
               href={performanceWorkspaceHref}
@@ -231,11 +353,15 @@ export default function OrganizationShell({
 
           </OrganizationNavSection>
 
+
           {/* ==================================================
               Analytics
           ================================================== */}
 
-          <OrganizationNavSection title="Analytics">
+          <OrganizationNavSection
+            title="Analytics"
+          >
+
             <OrganizationNavLink
               href={organizationHref(
                 "/organization/dashboards"
@@ -249,13 +375,18 @@ export default function OrganizationShell({
               )}
               label="Reports"
             />
+
           </OrganizationNavSection>
+
 
           {/* ==================================================
               Configuration
           ================================================== */}
 
-          <OrganizationNavSection title="Configuration">
+          <OrganizationNavSection
+            title="Configuration"
+          >
+
             <OrganizationNavLink
               href={organizationHref(
                 "/organization/settings"
@@ -269,21 +400,38 @@ export default function OrganizationShell({
               )}
               label="AI Configuration"
             />
+
           </OrganizationNavSection>
 
         </nav>
+
 
         {/* ==================================================
             Footer
         ================================================== */}
 
-        <div className="border-t px-5 py-4">
-          <div className="text-xs text-slate-400">
+        <div
+          className="
+            border-t
+            border-border
+            px-5
+            py-4
+          "
+        >
+
+          <div
+            className="
+              text-xs
+              text-muted-foreground
+            "
+          >
             Organization-scoped workspace
           </div>
+
         </div>
 
       </aside>
+
 
       {/* ==================================================
           Main Content
@@ -295,20 +443,51 @@ export default function OrganizationShell({
             Mobile Header
         ================================================== */}
 
-        <header className="border-b bg-white px-5 py-4 lg:hidden">
+        <header
+          className="
+            border-b
+            border-border
+            bg-card
+            px-5
+            py-4
+            lg:hidden
+          "
+        >
+
           <Link
-            href={organizationHref("/organization")}
+            href={organizationHref(
+              "/organization"
+            )}
             className="block"
           >
-            <div className="text-lg font-semibold text-slate-900">
+
+            <div
+              className="
+                text-lg
+                font-semibold
+                text-foreground
+              "
+            >
               CascadEffects
             </div>
 
-            <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
+
+            <div
+              className="
+                text-xs
+                font-medium
+                uppercase
+                tracking-wide
+                text-muted-foreground
+              "
+            >
               Organization Admin
             </div>
+
           </Link>
+
         </header>
+
 
         {/* ==================================================
             Page

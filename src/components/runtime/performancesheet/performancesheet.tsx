@@ -52,6 +52,19 @@ import EmployeeComments from "../shared/employeecomments";
 
 
 /* ==========================================================
+   Runtime Organization Presentation
+========================================================== */
+
+export interface RuntimeOrganization {
+  id: string;
+
+  company_name: string;
+
+  logo_url: string | null;
+}
+
+
+/* ==========================================================
    Props
 ========================================================== */
 
@@ -69,6 +82,14 @@ interface PerformanceSheetProps {
 
   organizationId: string;
 
+  /*
+   * Runtime provides the actual organization record.
+   *
+   * Member Workspace does not currently provide this,
+   * so the prop remains optional for compatibility.
+   */
+  organization?: RuntimeOrganization;
+
   performanceInstanceId: string;
 
   performanceInstance: PerformanceInstance;
@@ -78,8 +99,7 @@ interface PerformanceSheetProps {
   /*
    * Organization Runtime provides these.
    *
-   * Member Workspace intentionally does not need to
-   * provide them yet.
+   * Member Workspace intentionally does not need them yet.
    */
   members?: UserManagementRecord[];
 
@@ -109,6 +129,8 @@ export default function PerformanceSheet({
   previousKeyResultValues,
 
   organizationId,
+
+  organization,
 
   performanceInstanceId,
 
@@ -388,23 +410,35 @@ export default function PerformanceSheet({
 
       {/* ======================================================
           Runtime Header
+
+          Organization Runtime supplies the real organization.
+          Member Workspace does not currently supply one, so
+          the header is rendered only when organization exists.
       ====================================================== */}
 
-      <RuntimeHeader
+      {organization && (
 
-        document={
-          document
-        }
+        <RuntimeHeader
 
-        performanceInstance={
-          runtimePerformanceInstance
-        }
+          document={
+            document
+          }
 
-        subject={
-          subject
-        }
+          organization={
+            organization
+          }
 
-      />
+          performanceInstance={
+            runtimePerformanceInstance
+          }
+
+          subject={
+            subject
+          }
+
+        />
+
+      )}
 
 
       {/* ======================================================

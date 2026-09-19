@@ -3,21 +3,32 @@
  * CascadEffects Performance Platform
  * Administration Users API
  * ----------------------------------------------------------
- * Creates an invited User and Organization Membership.
+ * Creates a User and Organization Membership.
  *
- * Authorization boundary:
+ * Supported modes:
  *
- * Request
+ * invite
+ *      → Creates a Supabase Auth user through invitation.
+ *
+ * create
+ *      → Creates a Supabase Auth user directly with a
+ *        password for immediate account access.
+ *
+ * Both modes share the same provisioning pipeline:
+ *
+ * Authorization
  *      ↓
- * Authenticated Application User
+ * Organization Validation
  *      ↓
- * Authorization Context
+ * Member Role Resolution
  *      ↓
- * Organization Permission
+ * Auth User
  *      ↓
- * Organization Resource Validation
+ * Application User
  *      ↓
- * Privileged Server Operation
+ * Organization Membership
+ *      ↓
+ * Membership Role
  *
  * IMPORTANT:
  *
@@ -26,15 +37,30 @@
  * The Supabase service-role client is only used after the
  * authenticated caller has passed the authorization boundary.
  *
- * The organization_id supplied by the caller identifies the
- * requested tenant context, but does not itself establish
- * authorization.
+ * Department and Team are OPTIONAL organizational assignments.
+ *
+ * Feature availability does NOT mean the related resource
+ * is required.
+ *
+ * Example:
+ *
+ * departments = false
+ * teams = true
+ *
+ * A member may have:
+ * - no department
+ * - no team
+ *
+ * The UI determines which assignment fields are available.
+ * The API validates any supplied assignments but does not
+ * require them.
  * ==========================================================
  */
 
 import { NextResponse } from "next/server";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+
 import {
   requirePermission,
 } from "@/lib/auth/authorization";
@@ -44,14 +70,30 @@ import {
    Request Type
 ========================================================== */
 
-interface InviteUserRequest {
+type UserCreationMode =
+  | "invite"
+  | "create";
+
+
+interface UserRequest {
+  mode?: UserCreationMode;
+
   organization_id: string;
+
   first_name: string;
+
   last_name: string;
+
   display_name?: string;
+
   email: string;
-  department_id: string;
-  team_id: string;
+
+  password?: string;
+
+  department_id?: string;
+
+  team_id?: string;
+
   is_active?: boolean;
 }
 
@@ -64,7 +106,7 @@ export async function POST(
   request: Request
 ) {
 
-  let input: InviteUserRequest;
+  let input: UserRequest;
 
 
   /* ========================================================
@@ -91,6 +133,16 @@ export async function POST(
 
 
   /* ========================================================
+     Normalize Mode
+  ======================================================== */
+
+  const mode: UserCreationMode =
+    input.mode === "create"
+      ? "create"
+      : "invite";
+
+
+  /* ========================================================
      Normalize Input
   ======================================================== */
 
@@ -109,11 +161,14 @@ export async function POST(
   const email =
     input.email?.trim().toLowerCase();
 
+  const password =
+    input.password ?? "";
+
   const departmentId =
-    input.department_id?.trim();
+    input.department_id?.trim() || null;
 
   const teamId =
-    input.team_id?.trim();
+    input.team_id?.trim() || null;
 
 
   /* ========================================================
@@ -139,28 +194,14 @@ export async function POST(
   ======================================================== */
 
   /*
-   * The organization_id is only requested context.
+   * organization_id is requested tenant context only.
    *
-   * It is NOT trusted as proof that the caller belongs to
-   * the organization.
+   * It is NOT trusted as proof that the caller belongs
+   * to the organization.
    *
-   * requirePermission() resolves the authenticated
-   * application User and verifies:
-   *
-   * Platform Super Admin
-   * OR
-   * Organization Membership
-   *      ↓
-   * Membership Roles
-   *      ↓
-   * Roles
-   *      ↓
-   * Role Permissions
-   *      ↓
-   * Requested Permission
-   *
-   * No privileged database mutation occurs before this
-   * authorization boundary succeeds.
+   * requirePermission() resolves the authenticated user
+   * and verifies the appropriate platform or organization
+   * authority before privileged operations occur.
    */
 
   try {
@@ -208,6 +249,7 @@ export async function POST(
     );
   }
 
+
   if (!lastName) {
 
     return NextResponse.json(
@@ -220,6 +262,7 @@ export async function POST(
       }
     );
   }
+
 
   if (!email) {
 
@@ -234,30 +277,39 @@ export async function POST(
     );
   }
 
-  if (!departmentId) {
 
-    return NextResponse.json(
-      {
-        error:
-          "Department is required.",
-      },
-      {
-        status: 400,
-      }
-    );
-  }
+  /* ========================================================
+     Validate Password For Direct Creation
+  ======================================================== */
 
-  if (!teamId) {
+  if (mode === "create") {
 
-    return NextResponse.json(
-      {
-        error:
-          "Team is required.",
-      },
-      {
-        status: 400,
-      }
-    );
+    if (!password) {
+
+      return NextResponse.json(
+        {
+          error:
+            "Password is required when creating a member directly.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+
+    if (password.length < 8) {
+
+      return NextResponse.json(
+        {
+          error:
+            "Password must be at least 8 characters.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
   }
 
 
@@ -266,67 +318,63 @@ export async function POST(
   ======================================================== */
 
   /*
-   * The department must belong to the requested
+   * Department is optional.
+   *
+   * If supplied, it must belong to the requested
    * organization.
-   *
-   * This is resource validation.
-   *
-   * Authorization answers:
-   *
-   * "Can this caller create users in this organization?"
-   *
-   * Resource validation answers:
-   *
-   * "Does this department actually belong to this
-   * organization?"
    */
 
-  const {
-    data: department,
-    error: departmentError,
-  } =
-    await supabaseAdmin
-      .from("departments")
-      .select("id")
-      .eq(
-        "id",
-        departmentId
-      )
-      .eq(
-        "organization_id",
-        organizationId
-      )
-      .maybeSingle();
+  if (departmentId) {
 
-  if (departmentError) {
+    const {
+      data: department,
+      error: departmentError,
+    } =
+      await supabaseAdmin
+        .from("departments")
+        .select("id")
+        .eq(
+          "id",
+          departmentId
+        )
+        .eq(
+          "organization_id",
+          organizationId
+        )
+        .maybeSingle();
 
-    console.error(
-      "Failed to verify department:",
-      departmentError
-    );
 
-    return NextResponse.json(
-      {
-        error:
-          "Failed to verify department.",
-      },
-      {
-        status: 500,
-      }
-    );
-  }
+    if (departmentError) {
 
-  if (!department) {
+      console.error(
+        "Failed to verify department:",
+        departmentError
+      );
 
-    return NextResponse.json(
-      {
-        error:
-          "The selected department does not belong to this organization.",
-      },
-      {
-        status: 400,
-      }
-    );
+      return NextResponse.json(
+        {
+          error:
+            "Failed to verify department.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+
+    if (!department) {
+
+      return NextResponse.json(
+        {
+          error:
+            "The selected department does not belong to this organization.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
   }
 
 
@@ -335,45 +383,146 @@ export async function POST(
   ======================================================== */
 
   /*
-   * The team must belong to:
+   * Team is also optional.
    *
-   * requested organization
-   * AND
-   * requested department
+   * Teams are an independent organizational capability.
+   *
+   * Therefore:
+   *
+   * - Team does not require a department assignment.
+   * - If both Team and Department are supplied, the Team
+   *   must belong to that Department.
+   * - If only Team is supplied, the Team only needs to
+   *   belong to the requested organization.
+   */
+
+  if (teamId) {
+
+    const {
+      data: team,
+      error: teamError,
+    } =
+      await supabaseAdmin
+        .from("teams")
+        .select(
+          "id, department_id"
+        )
+        .eq(
+          "id",
+          teamId
+        )
+        .eq(
+          "organization_id",
+          organizationId
+        )
+        .maybeSingle();
+
+
+    if (teamError) {
+
+      console.error(
+        "Failed to verify team:",
+        teamError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Failed to verify team.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+
+    if (!team) {
+
+      return NextResponse.json(
+        {
+          error:
+            "The selected team does not belong to this organization.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+
+    /*
+     * If both assignments were supplied, enforce their
+     * relationship.
+     *
+     * This prevents assigning a member to Department A
+     * while selecting a Team that belongs to Department B.
+     */
+
+    if (
+      departmentId &&
+      team.department_id !== departmentId
+    ) {
+
+      return NextResponse.json(
+        {
+          error:
+            "The selected team does not belong to the selected department.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+  }
+
+
+  /* ========================================================
+     Resolve Member Role
+  ======================================================== */
+
+  /*
+   * Role IDs must NEVER be hardcoded.
+   *
+   * The Member role belongs to the requested organization
+   * and is resolved dynamically.
    */
 
   const {
-    data: team,
-    error: teamError,
+    data: memberRole,
+    error: memberRoleError,
   } =
     await supabaseAdmin
-      .from("teams")
-      .select("id")
-      .eq(
-        "id",
-        teamId
+      .from("roles")
+      .select(
+        "id, name, is_active"
       )
       .eq(
         "organization_id",
         organizationId
       )
       .eq(
-        "department_id",
-        departmentId
+        "name",
+        "Member"
+      )
+      .eq(
+        "is_active",
+        true
       )
       .maybeSingle();
 
-  if (teamError) {
+
+  if (memberRoleError) {
 
     console.error(
-      "Failed to verify team:",
-      teamError
+      "Failed to resolve Member role:",
+      memberRoleError
     );
 
     return NextResponse.json(
       {
         error:
-          "Failed to verify team.",
+          "Failed to resolve the Member role.",
       },
       {
         status: 500,
@@ -381,12 +530,13 @@ export async function POST(
     );
   }
 
-  if (!team) {
+
+  if (!memberRole) {
 
     return NextResponse.json(
       {
         error:
-          "The selected team does not belong to the selected department and organization.",
+          "The Member role is not configured for this organization.",
       },
       {
         status: 400,
@@ -404,53 +554,139 @@ export async function POST(
    * server-side privileged operation boundary.
    */
 
-  const {
-    data: authData,
-    error: authError,
-  } =
-    await supabaseAdmin.auth.admin.inviteUserByEmail(
-      email,
-      {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          display_name: displayName,
+  let authUserId: string;
+
+
+  if (mode === "create") {
+
+    /* ======================================================
+       Direct Account Creation
+    ====================================================== */
+
+    const {
+      data: authData,
+      error: authError,
+    } =
+      await supabaseAdmin.auth.admin.createUser(
+        {
+          email,
+
+          password,
+
+          email_confirm: true,
+
+          user_metadata: {
+            first_name:
+              firstName,
+
+            last_name:
+              lastName,
+
+            display_name:
+              displayName,
+          },
+        }
+      );
+
+
+    if (authError) {
+
+      console.error(
+        "Failed to create Auth user:",
+        authError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            authError.message,
         },
-      }
-    );
+        {
+          status: 400,
+        }
+      );
+    }
 
-  if (authError) {
 
-    console.error(
-      "Failed to invite Auth user:",
-      authError
-    );
+    if (!authData.user) {
 
-    return NextResponse.json(
-      {
-        error:
-          authError.message,
-      },
-      {
-        status: 400,
-      }
-    );
-  }
+      return NextResponse.json(
+        {
+          error:
+            "Supabase Auth did not return a user.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
 
-  const authUser =
-    authData.user;
 
-  if (!authUser) {
+    authUserId =
+      authData.user.id;
 
-    return NextResponse.json(
-      {
-        error:
-          "Supabase Auth did not return a user.",
-      },
-      {
-        status: 500,
-      }
-    );
+  } else {
+
+    /* ======================================================
+       Invitation
+    ====================================================== */
+
+    const {
+      data: authData,
+      error: authError,
+    } =
+      await supabaseAdmin.auth.admin.inviteUserByEmail(
+        email,
+        {
+          data: {
+            first_name:
+              firstName,
+
+            last_name:
+              lastName,
+
+            display_name:
+              displayName,
+          },
+        }
+      );
+
+
+    if (authError) {
+
+      console.error(
+        "Failed to invite Auth user:",
+        authError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            authError.message,
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+
+    if (!authData.user) {
+
+      return NextResponse.json(
+        {
+          error:
+            "Supabase Auth did not return a user.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+
+    authUserId =
+      authData.user.id;
   }
 
 
@@ -466,7 +702,7 @@ export async function POST(
       .from("users")
       .insert({
         auth_user_id:
-          authUser.id,
+          authUserId,
 
         first_name:
           firstName,
@@ -485,6 +721,7 @@ export async function POST(
       .select("*")
       .single();
 
+
   if (userError) {
 
     console.error(
@@ -492,17 +729,15 @@ export async function POST(
       userError
     );
 
-    /*
-     * Compensating cleanup:
-     *
-     * If the application User cannot be created,
-     * remove the newly-created Auth identity so the
-     * operation does not leave an orphaned Auth user.
-     */
+
+    /* ======================================================
+       Compensating Auth Cleanup
+    ====================================================== */
 
     await supabaseAdmin.auth.admin.deleteUser(
-      authUser.id
+      authUserId
     );
+
 
     return NextResponse.json(
       {
@@ -542,6 +777,7 @@ export async function POST(
       .select("*")
       .single();
 
+
   if (membershipError) {
 
     console.error(
@@ -549,16 +785,10 @@ export async function POST(
       membershipError
     );
 
-    /*
-     * Compensating cleanup:
-     *
-     * The Auth identity and application User were both
-     * created successfully, but the Organization Membership
-     * failed.
-     *
-     * Remove both records to avoid an incomplete user
-     * provisioning operation.
-     */
+
+    /* ======================================================
+       Compensating Cleanup
+    ====================================================== */
 
     await supabaseAdmin
       .from("users")
@@ -568,14 +798,87 @@ export async function POST(
         platformUser.id
       );
 
+
     await supabaseAdmin.auth.admin.deleteUser(
-      authUser.id
+      authUserId
     );
+
 
     return NextResponse.json(
       {
         error:
           `Failed to create organization membership: ${membershipError.message}`,
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+
+
+  /* ========================================================
+     Assign Member Role
+  ======================================================== */
+
+  const {
+    data: membershipRole,
+    error: membershipRoleError,
+  } =
+    await supabaseAdmin
+      .from("membership_roles")
+      .insert({
+        organization_membership_id:
+          membership.id,
+
+        organization_id:
+          organizationId,
+
+        role_id:
+          memberRole.id,
+      })
+      .select("*")
+      .single();
+
+
+  if (membershipRoleError) {
+
+    console.error(
+      "Failed to assign Member role:",
+      membershipRoleError
+    );
+
+
+    /* ======================================================
+       Compensating Cleanup
+    ====================================================== */
+
+    await supabaseAdmin
+      .from("organization_memberships")
+      .delete()
+      .eq(
+        "id",
+        membership.id
+      );
+
+
+    await supabaseAdmin
+      .from("users")
+      .delete()
+      .eq(
+        "id",
+        platformUser.id
+      );
+
+
+    await supabaseAdmin.auth.admin.deleteUser(
+      authUserId
+    );
+
+
+    return NextResponse.json(
+      {
+        error:
+          `Failed to assign Member role: ${membershipRoleError.message}`,
       },
       {
         status: 500,
@@ -594,6 +897,11 @@ export async function POST(
         platformUser,
 
       membership,
+
+      membership_role:
+        membershipRole,
+
+      mode,
     },
     {
       status: 201,

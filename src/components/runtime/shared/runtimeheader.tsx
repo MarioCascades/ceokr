@@ -10,21 +10,36 @@ import type {
   RuntimeSubject,
 } from "@/lib/runtime/runtimeexecution";
 
+
+interface RuntimeOrganization {
+  id: string;
+
+  company_name: string;
+
+  logo_url: string | null;
+}
+
+
 interface RuntimeHeaderProps {
   document: BuilderDocument;
+
+  organization: RuntimeOrganization;
 
   performanceInstance: PerformanceInstance;
 
   subject: RuntimeSubject | null;
 }
 
+
 function formatPerformanceMonth(
   performanceMonth: string
 ): string {
+
   const date =
     new Date(
       `${performanceMonth}T00:00:00Z`
     );
+
 
   if (
     Number.isNaN(
@@ -34,6 +49,7 @@ function formatPerformanceMonth(
     return performanceMonth;
   }
 
+
   return new Intl.DateTimeFormat(
     "en-US",
     {
@@ -41,42 +57,76 @@ function formatPerformanceMonth(
       year: "numeric",
       timeZone: "UTC",
     }
-  ).format(date);
+  ).format(
+    date
+  );
 }
+
 
 function formatStatus(
   status: PerformanceInstance["status"]
 ): string {
+
   return status.replaceAll(
     "_",
     " "
   );
 }
 
+
 function getStatusClasses(
   status: PerformanceInstance["status"]
 ): string {
+
   switch (status) {
+
     case "completed":
-      return "bg-[#e9f4f8] text-[#082550] ring-[#b4c2d1]";
+      return `
+        bg-accent
+        text-primary
+        ring-border
+      `;
+
 
     case "approved":
-      return "bg-[#e9f4f8] text-[#082550] ring-[#b4c2d1]";
+      return `
+        bg-accent
+        text-primary
+        ring-border
+      `;
+
 
     case "submitted":
-      return "bg-[#f7eee9] text-[#8f4035] ring-[#e26d5c]/30";
+      return `
+        bg-destructive/10
+        text-destructive
+        ring-destructive/20
+      `;
+
 
     case "in_progress":
-      return "bg-[#eef3f7] text-[#082550] ring-[#b4c2d1]";
+      return `
+        bg-secondary
+        text-primary
+        ring-border
+      `;
+
 
     case "not_started":
     default:
-      return "bg-[#f5f7f9] text-[#5f6d78] ring-[#d7e0e7]";
+      return `
+        bg-muted
+        text-muted-foreground
+        ring-border
+      `;
   }
 }
 
+
 export default function RuntimeHeader({
   document,
+
+  organization,
 
   performanceInstance,
 
@@ -87,17 +137,21 @@ export default function RuntimeHeader({
   const isOrganizationRuntime =
     subject === null;
 
+
   const displayName =
     subject?.displayName ??
-    document.organization.companyName;
+    organization.company_name;
+
 
   const role =
     subject
       ? document.performanceHeader.employeeRole
       : "Organization Performance";
 
+
   const organizationName =
-    document.organization.companyName;
+    organization.company_name;
+
 
   return (
     <section
@@ -140,7 +194,7 @@ export default function RuntimeHeader({
             h-56
             w-56
             rounded-full
-            bg-[#b4c2d1]/10
+            bg-secondary/10
             blur-2xl
           "
         />
@@ -155,7 +209,7 @@ export default function RuntimeHeader({
             h-40
             w-40
             rounded-full
-            bg-[#e9f4f8]/10
+            bg-accent/10
             blur-2xl
           "
         />
@@ -179,17 +233,43 @@ export default function RuntimeHeader({
 
           <div className="min-w-0">
 
+            {organization.logo_url && (
+
+              <div className="mb-4">
+
+                <img
+                  src={
+                    organization.logo_url
+                  }
+                  alt={
+                    `${organizationName} logo`
+                  }
+                  className="
+                    max-h-12
+                    w-auto
+                    max-w-[180px]
+                    object-contain
+                    object-left
+                  "
+                />
+
+              </div>
+
+            )}
+
+
             <p
               className="
                 text-xs
                 font-bold
                 uppercase
                 tracking-[0.18em]
-                text-[#b4c2d1]
+                text-secondary
               "
             >
               {organizationName}
             </p>
+
 
             <h1
               className="
@@ -206,13 +286,14 @@ export default function RuntimeHeader({
               {displayName}
             </h1>
 
+
             {role && (
               <p
                 className="
                   mt-2
                   text-sm
                   font-semibold
-                  text-[#e9f4f8]
+                  text-accent
                   md:text-base
                 "
               >
@@ -256,11 +337,12 @@ export default function RuntimeHeader({
                   font-bold
                   uppercase
                   tracking-[0.14em]
-                  text-[#b4c2d1]
+                  text-secondary
                 "
               >
                 Performance Month
               </p>
+
 
               <p
                 className="
@@ -300,11 +382,12 @@ export default function RuntimeHeader({
                   font-bold
                   uppercase
                   tracking-[0.14em]
-                  text-[#b4c2d1]
+                  text-secondary
                 "
               >
                 Status
               </p>
+
 
               <div className="mt-1">
 
@@ -387,7 +470,9 @@ export default function RuntimeHeader({
                 : "Performance Context"}
             </p>
 
+
             {isOrganizationRuntime ? (
+
               <p
                 className="
                   mt-2
@@ -400,8 +485,11 @@ export default function RuntimeHeader({
                 the published Performance Sheet and current monthly
                 performance data.
               </p>
+
             ) : (
+
               document.performanceHeader.roleDescription && (
+
                 <p
                   className="
                     mt-2
@@ -416,7 +504,9 @@ export default function RuntimeHeader({
                       .roleDescription
                   }
                 </p>
+
               )
+
             )}
 
           </div>
@@ -448,6 +538,7 @@ export default function RuntimeHeader({
               {
                 document.performanceHeader.metrics.map(
                   (metric) => (
+
                     <div
                       key={
                         metric.id
@@ -469,6 +560,7 @@ export default function RuntimeHeader({
                         }
                       </p>
 
+
                       <p
                         className="
                           mt-1
@@ -483,6 +575,7 @@ export default function RuntimeHeader({
                       </p>
 
                     </div>
+
                   )
                 )
               }

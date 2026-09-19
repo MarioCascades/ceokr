@@ -20,7 +20,7 @@ import type { Team } from "@/lib/types/domain/team";
    Props
 ========================================================== */
 
-interface InviteUserDialogProps {
+interface AddMemberDialogProps {
   open: boolean;
 
   departments: Department[];
@@ -43,7 +43,7 @@ interface InviteUserDialogProps {
    Component
 ========================================================== */
 
-export default function InviteUserDialog({
+export default function AddMemberDialog({
   open,
 
   departments,
@@ -55,12 +55,8 @@ export default function InviteUserDialog({
   onSubmit,
 
   isSaving = false,
-}: InviteUserDialogProps) {
+}: AddMemberDialogProps) {
 
-
-  /* ========================================================
-     Submit
-  ======================================================== */
 
   async function handleSubmit(
     values: UserFormValues
@@ -71,10 +67,6 @@ export default function InviteUserDialog({
     );
   }
 
-
-  /* ========================================================
-     Cancel
-  ======================================================== */
 
   function handleCancel() {
 
@@ -87,10 +79,6 @@ export default function InviteUserDialog({
     }
   }
 
-
-  /* ========================================================
-     Render
-  ======================================================== */
 
   return (
     <Dialog
@@ -113,13 +101,13 @@ export default function InviteUserDialog({
         <DialogHeader>
 
           <DialogTitle>
-            Invite User
+            Add Member
           </DialogTitle>
 
           <DialogDescription>
-            Add a user to your organization
-            and optionally assign their
-            department or team.
+            Create a member account immediately.
+            The member will be added to your
+            organization and assigned the Member role.
           </DialogDescription>
 
         </DialogHeader>
@@ -133,9 +121,11 @@ export default function InviteUserDialog({
             teams
           }
 
-          submitLabel="Send Invite"
+          submitLabel="Create Member"
 
-          savingLabel="Sending..."
+          savingLabel="Creating..."
+
+          showPassword
 
           onSubmit={
             handleSubmit
