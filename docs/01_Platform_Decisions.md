@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-08-28
+**Last Updated:** 2026-09-12
 
 This document records architectural decisions that have been intentionally
 
@@ -947,53 +947,106 @@ Accepted
 # 24. Visual Design System
 
 CascadEffects will use a centralized design system rather than independently
-
 hardcoded page styling.
 
-The design system will eventually define:
+The CascadEffects Brand Guide is the visual source of truth for the default
+platform brand.
 
-- brand colors
+The official CascadEffects palette is:
 
-- typography
+- Deep Navy: `#082550`
+- Grayish Blue: `#B4C2D1`
+- Light Blue: `#E9F4F8`
+- Dark Charcoal: `#272D2C`
+- White: `#FFFFFF`
+- Coral: `#E26D5C`
 
-- buttons
-
-- inputs
-
-- cards
-
-- dialogs
-
-- tables
-
-- navigation
-
-- status indicators
-
-- Admin components
-
-The intended CascadEffects visual direction includes:
+The four signature colors that should remain visually prominent throughout
+the platform are:
 
 - Deep Navy
-
+- Grayish Blue
+- Light Blue
 - Coral
 
-- White
+Dark Charcoal and White provide supporting text and surface treatment.
 
-- light gray surfaces
+Coral is an accent / callout color and should be used selectively for
+buttons, calls to action, and smaller emphasis areas rather than becoming
+the dominant page color.
 
-- modern SaaS styling
+The design system will define reusable tokens for:
 
-- generous spacing
+- brand colors
+- page backgrounds
+- surfaces
+- borders
+- text
+- muted text
+- typography
+- buttons
+- inputs
+- cards
+- dialogs
+- tables
+- navigation
+- status indicators
+- spacing
+- border radius
+- shadows
 
-- clean typography
+The Brand Guide typography direction is:
 
-Brand configuration should eventually be manageable through Administration.
+- Roboto Black for major headings / titles
+- Martel Sans for supporting headings / subtitles
+- Khula for body text
+
+Platform headings should generally follow the Brand Guide's all-caps
+direction where appropriate to the application experience.
+
+Iconography should favor consistent line-icon treatment with consistent
+stroke weight. Full solid iconography should not become the default platform
+icon style.
+
+The default platform experience should feel:
+
+- clean
+- modern
+- minimalist
+- structured
+- confident
+- professional
+- spacious without excessive unused space
+
+The platform should favor solid surfaces and restrained gradients where they
+improve hierarchy rather than introducing arbitrary colors or decorative
+complexity.
+
+The centralized CascadEffects design system applies to the shared platform
+experience, including:
+
+- Administration
+- Builder
+- shared application navigation
+- dashboards
+- reports
+- common UI components
+
+Runtime presentation remains architecturally separate because Runtime is the
+organization-facing performance experience and will eventually support
+organization-specific visual configuration.
+
+The CascadEffects default design system should be the fallback visual theme
+for organizations that have not configured organization-specific branding.
+
+Future organization-specific branding should use configuration and theme
+overrides rather than duplicate UI systems.
 
 Status
 
 Accepted
 
+---
 ---
 
 # 25. Deployment Configuration
@@ -1050,45 +1103,49 @@ Builder
 
 Established
 
-Runtime
+Runtime Execution Foundation
 
 Established
 
+Administration Foundation
+
+Established
+
+Member Workspace Foundation
+
+Established
+
+The current platform flow is:
+
 Administration
 
-In active development
+↓
 
-Current Administration hierarchy:
-
-Organization
+Builder
 
 ↓
 
-Departments
+Published Performance Sheet
 
 ↓
 
-Teams
+Assignment
 
 ↓
 
-Users / Members
+Monthly Performance Instance
 
 ↓
 
-Organization Membership
+Runtime Execution
 
 ↓
 
-Roles / Permissions
+Member Workspace / Performance Experience
 
 ↓
 
-Performance Sheets
-
-↓
-
-Assignments
+Historical Performance Data / Reporting
 
 Platform authority exists above the Organization hierarchy:
 
@@ -1110,25 +1167,82 @@ Platform Super Admins are not Organization Roles and do not require an
 
 Organization Membership in every Organization they administer.
 
-The Builder and Runtime architectures should not be rebuilt as part of the
+The Builder remains the authoritative construction engine for reusable
 
-current Administration completion phase.
+Performance Sheet definitions.
+
+Runtime remains the authoritative execution engine for period-specific
+
+performance state and mutable performance values.
+
+The Member Workspace is a presentation, navigation, and workflow layer
+
+over Runtime. It does not introduce a second performance engine.
 
 Current Administration foundations include:
 
 - Organization
-
 - Departments
-
 - Teams
-
 - Users / Members
-
-- Roles & Permissions
-
+- Roles & Permissions foundation
 - Performance Sheet Management
-
 - Assignment Management
+- Administration Page Structure / Shared Header Standardization
+- Super Admin Organization Context
+- Organization → Department → Team cascading context
+- Organization Admin fixed Organization context
+- One Builder / two administrative entry contexts
+
+Current Builder foundations include:
+
+- Performance Sheet definitions
+- Objectives
+- Key Results
+- Initiatives
+- Draft editing
+- Publishing
+- Published version immutability
+- Key Result measurement configuration
+- Key Result scoring configuration
+
+Current Runtime foundations include:
+
+- Assignment resolution
+- Published Performance Sheet resolution
+- Monthly Performance Instance resolution
+- Runtime Objective state
+- Runtime Key Result state
+- Runtime Initiative state
+- Key Result Progress
+- Current value
+- Score
+- Employee comments
+- Manager comments
+- Runtime lifecycle state
+- Runtime editing of the working Performance Instance
+
+Current Member Workspace foundation includes:
+
+- Member-specific Performance navigation
+- Monthly Performance Instance selection
+- Access to the member's Runtime execution
+- Member editing of their own performance state
+- Reuse of the same Runtime execution architecture used by administrative actors
+
+Monthly performance is an established product rule.
+
+The platform does not require an administrator-managed arbitrary
+
+ReportingPeriod entity to make monthly performance work.
+
+Legacy Reporting Period persistence may remain temporarily as migration
+
+or cleanup work, but Reporting Period is not a user-facing product concept
+
+and must not be reintroduced into new Assignment, Performance Instance,
+
+Runtime, Member Workspace, or Administration workflows.
 
 Status
 
@@ -1140,55 +1254,87 @@ Accepted
 
 The current development phase is:
 
-Administration completion and platform hardening.
+Multi-Organization Entry Selection.
 
-Completed Administration capabilities include:
+The Authentication + Role-Based Entry foundation has been implemented and
+browser-verified.
 
-- Organization
+The current platform now has:
 
-- Departments
+- authenticated Supabase session handling
+- Application User resolution
+- Platform Super Admin resolution
+- Organization Membership resolution
+- role-aware entry resolution
+- Super Admin landing
+- Organization Admin entry
+- Member entry
+- a canonical Current Entry Context
+- a server-side authentication confirmation redirect boundary
 
-- Teams
+The next architectural milestone is to establish explicit organization
+selection behavior for authenticated users who belong to multiple
+Organizations.
 
-- Users / Members
+The multi-organization model must preserve the existing authority boundary:
 
-- Roles & Permissions
+Platform Super Admin
 
-- Performance Sheet Management
+↓
 
-- Assignment Management
+Platform-level authority
 
-The next milestone must always be confirmed against the latest Waypoint and
+↓
 
-Platform Backlog before implementation.
+Organization selection for Organization-specific experiences
 
-The Platform Membership and Platform Super Admin authorization foundation
+Organization Admin
 
-is now established.
+↓
 
-Production authorization and security remain separate architecture
+Authorized Organization Membership
 
-milestones.
+↓
 
-High-priority future architecture includes:
+Fixed Organization context
 
-- production tenant authorization
+Member
 
-- production Row Level Security
+↓
 
-- Runtime security boundaries
+Authorized Organization Membership
 
-- Assignment Subject Validation
+↓
 
-- Performance Instance Relationship Integrity
+Organization-specific Member experience
 
-- Historical KPI Updates
+The selected Organization must remain navigation / query context only.
 
-- generalized KPI Calculation Engine
+It must never become the authorization boundary.
 
-- weighted aggregation
+The future multi-Organization entry flow should be designed so that:
 
-The Builder and Runtime foundations should not be rebuilt.
+- users with one applicable Organization can enter that Organization context
+  without unnecessary selection
+- users with multiple applicable Organizations receive an explicit
+  Organization-selection experience
+- the selected Organization is re-resolved server-side
+- Organization Membership and role authority are validated server-side
+- client-side selection is never treated as proof of authorization
+
+Do not introduce a new authentication system to solve Organization selection.
+
+Do not duplicate the Organization Membership model.
+
+Do not create a second role system.
+
+Do not rebuild Builder or Runtime.
+
+Production authorization and RLS remain separate security work.
+
+Runtime Product Experience remains an active product-experience track after
+the authentication foundation, but it is not the immediate entry-routing
+milestone.
 
 Status
 
@@ -1665,6 +1811,695 @@ relevant documentation reflects the implemented model.
 A future development session must be able to reconstruct the intended
 architecture from the repository documentation without relying on
 conversation history.
+
+Status
+
+Accepted
+---
+
+# 38. Member Workspace / Runtime Relationship
+
+The Member Workspace is a member-facing presentation and navigation layer
+over the existing Runtime execution architecture.
+
+The Member Workspace must consume existing Runtime records and relationships,
+including:
+
+- Assignments
+- Performance Instances
+- published Performance Sheet versions
+- Runtime Key Result Progress
+- Runtime aggregate state
+- Runtime lifecycle state
+- employee comments where authorized
+- manager comments where authorized
+
+The Member Workspace must not create:
+
+- a second performance engine
+- a second Performance Instance model
+- duplicate Objective definitions
+- duplicate Key Result definitions
+- duplicate Initiative definitions
+- duplicate KPI calculation logic
+- duplicate Assignment logic
+- member-specific copies of Performance Sheet definitions
+
+The architectural relationship is:
+
+Builder Definition
+
+↓
+
+Published Performance Sheet
+
+↓
+
+Assignment
+
+↓
+
+Performance Instance
+
+↓
+
+Member Workspace / Runtime Execution
+
+The Member Workspace presents and operates on the Runtime execution state
+appropriate to the authenticated member.
+
+The Member Workspace may provide member-specific navigation, presentation,
+workflow controls, and authorized views without becoming a separate
+performance execution engine.
+
+Runtime remains the authoritative execution layer for period-specific
+performance state.
+
+The Member Workspace must not modify Builder definitions as part of normal
+member performance execution.
+
+Production authorization must eventually ensure that a member can only
+access Performance Instances, Assignments, and Runtime records for which
+that member is authorized.
+
+Status
+
+Accepted
+
+---
+
+# 39. Authentication and Role-Based Entry
+
+Authentication is an established product dependency for role-aware product
+entry.
+
+Authentication establishes who is signed in.
+
+Authorization remains the later security mechanism that determines what the
+authenticated actor is allowed to access.
+
+The immediate authentication foundation should support:
+
+- Login
+- Authenticated session
+- Supabase Auth identity resolution
+- Application User resolution
+- Platform Membership resolution
+- Organization Membership resolution
+- Role-aware entry routing
+- Forgot Password
+- Password Reset
+
+The three role-based post-login entry experiences are:
+
+## Platform Super Admin
+
+Super Admin Login
+
+↓
+
+Super Admin Landing
+
+↓
+
+Manage Organizations
+
+OR
+
+Open Organization Performance
+
+↓
+
+Select Organization
+
+↓
+
+Open the existing performance / Runtime experience
+
+A Platform Super Admin operates above the Organization tenant boundary and
+therefore selects an Organization when entering an organization-specific
+performance experience.
+
+## Organization Admin
+
+Organization Admin Login
+
+↓
+
+Organization Admin Landing
+
+↓
+
+Open Organization Workspace
+
+OR
+
+Open Organization Performance
+
+The Organization Admin operates within one authorized Organization and does
+not receive a cross-Organization selector.
+
+## Member
+
+Member Login
+
+↓
+
+Member Landing
+
+↓
+
+Open My Performance
+
+OR
+
+Open Organization Performance
+
+My Performance remains the member's own editable Runtime performance
+experience.
+
+Organization Performance is a performance-facing view and does not make the
+Member an Administration actor.
+
+These landing pages are navigation entry points. They must not create
+duplicate Builder, Runtime, or performance data models.
+
+Password recovery belongs to the authentication experience and should be
+available from the login page.
+
+Authenticated users may later change their password through account/profile
+settings. Password management should not be embedded into the role landing
+pages.
+
+Production authorization and RLS remain separate future security milestones.
+
+Status
+
+Accepted
+
+---
+
+# 40. Settings Ownership and Administrative Scope
+
+Settings are owned by the administrative authority responsible for the
+configuration.
+
+## Platform Super Admin Settings
+
+Super Admin Settings represent platform-level CascadEffects configuration.
+
+They may eventually include:
+
+- platform-wide defaults
+- platform feature controls
+- global platform configuration
+- platform integrations
+- platform-level AI configuration
+- system-level operational configuration
+
+Super Admin Settings operate above the Organization tenant boundary.
+
+They must not become a collection of Organization-specific settings.
+
+## Organization Admin Settings
+
+Organization Admin Settings represent configuration for the authorized
+Organization only.
+
+They may include:
+
+- Organization-specific preferences
+- performance-management preferences that are valid at the Organization level
+- Organization notification preferences
+- Organization data / integration configuration
+- Organization-specific operational preferences
+
+Organization Admin Settings must remain fixed to the authenticated
+Organization context.
+
+An Organization Admin must not receive a cross-Organization selector merely
+to operate Settings.
+
+Organization Settings must not modify another Organization.
+
+## Ownership Rule
+
+The permanent distinction is:
+
+```text
+Platform Super Admin
+        ↓
+Platform Settings
+        ↓
+CascadEffects-wide configuration
+
+Organization Admin
+        ↓
+Organization Settings
+        ↓
+Authorized Organization configuration
+```
+
+A setting should be implemented at the narrowest authority level that actually
+owns the behavior.
+
+Do not duplicate the same setting in both locations unless there is a clearly
+defined platform default and Organization override model.
+
+Organization identity and tenant-management operations remain owned by the
+Organization administration area rather than being duplicated merely because
+a Settings page exists.
+
+The monthly performance cadence remains a product rule.
+
+Do not introduce an arbitrary administrator-managed Reporting Period entity
+through Settings.
+
+Status
+
+Accepted
+
+---
+
+# 41. AI Assistant Product Direction
+
+CascadEffects AI is a platform capability that will be introduced
+incrementally.
+
+The initial AI experience should be a product-help assistant rather than a
+data-accessing performance analyst.
+
+## Initial AI Help Assistant
+
+The first AI experience should help authenticated users understand how to use
+CascadEffects.
+
+Examples include:
+
+- finding Objectives
+- creating or locating Key Results
+- understanding Assignments
+- navigating Performance Sheets
+- using Dashboards and Reports
+- understanding the current page
+- finding the appropriate workflow
+
+The assistant should be grounded in approved CascadEffects product
+documentation and application knowledge.
+
+It must not invent functionality.
+
+It must distinguish between:
+
+- available functionality
+- planned functionality
+- future functionality
+
+## Initial UI
+
+The Super Admin and Organization Admin AI pages may initially be presented as
+a realistic product mock-up / preview.
+
+The mock-up may include:
+
+- sample questions
+- example answers or suggested prompts
+- a visible "Chat with Me" interaction
+- clear messaging that the live AI capability is still in development
+
+The mock-up must not imply that live AI processing is already enabled.
+
+The initial UI may be implemented without enabling paid AI API usage.
+
+## Live AI Architecture
+
+When the live assistant is enabled, the application should use a secure
+server-side AI API integration.
+
+The API key must never be exposed to the browser.
+
+The initial live assistant should use documentation/product context and should
+not receive private Organization performance data unless a later product and
+security milestone explicitly authorizes that capability.
+
+The AI service must not become the authorization layer.
+
+Application authentication, authorization, Organization scoping, and database
+security remain authoritative.
+
+## AI Operating Cost
+
+A live AI assistant introduces a separate usage-based API operating expense
+from the existing ChatGPT Business subscription.
+
+Therefore:
+
+- UI and architecture may be built before live API activation.
+- Paid API usage should not be enabled before business approval.
+- Usage should be monitored.
+- Model selection and response/context limits should be used to control cost.
+- Initial launch should be treated as a controlled pilot.
+
+## Future AI Expansion
+
+After the help-assistant phase, future AI capabilities may include:
+
+- objective generation
+- Key Result recommendations
+- KPI recommendations
+- performance analysis
+- trend explanation
+- initiative suggestions
+- reporting summaries
+- organizational insights
+- predictive analytics
+- workflow assistance
+
+Data-aware AI must only be introduced after the platform has the appropriate
+authentication, authorization, Organization scoping, and secure data-access
+boundaries.
+
+Status
+
+Accepted
+
+---
+
+# 42. Authentication Must Determine Role-Based Entry
+
+CascadEffects authentication must recognize the authenticated actor rather
+than asking the user to select a role from a login control.
+
+The user should log in once.
+
+The platform resolves the authenticated identity and determines the applicable
+platform / organization role context from persisted application records and
+memberships.
+
+The intended actor types are:
+
+- Platform Super Admin
+- Organization Admin
+- Member
+
+The intended flow is:
+
+```text
+Login
+  ↓
+Supabase Auth
+  ↓
+Application User
+  ↓
+Resolve Platform / Organization membership
+  ↓
+Determine authorized role context
+  ↓
+Role-based landing page
+```
+
+The login interface must not treat a role-selection dropdown as an
+authorization mechanism.
+
+Selecting "Super Admin" must never grant Super Admin authority.
+
+## Landing Experiences
+
+### Platform Super Admin
+
+```text
+Login
+  ↓
+Super Admin Landing
+  ├── Manage Organizations
+  └── Open Organization Performance
+        ↓
+      Select Organization
+```
+
+### Organization Admin
+
+```text
+Login
+  ↓
+Organization Admin Landing
+  ├── Open Organization Workspace
+  └── Open Organization Performance
+```
+
+The Organization Admin operates within the authorized Organization and does
+not receive a cross-Organization selector.
+
+### Member
+
+```text
+Login
+  ↓
+Member Landing
+  ├── Open My Performance
+  └── Open Organization Performance
+```
+
+My Performance remains the member's own Runtime performance experience.
+
+These landing pages are entry and navigation experiences. They must not
+create duplicate Builder, Runtime, or performance data models.
+
+Production authorization and RLS remain separate security milestones.
+
+Status
+
+Accepted
+
+
+
+---
+
+# 43. AI Presentation Mock-Ups Must Remain Non-Operational
+
+The current AI experiences are presentation-only product mock-ups.
+
+This includes:
+
+- Super Admin AI
+- Organization Admin AI
+- Member AI Assistant
+
+The current UI may demonstrate future AI interaction patterns, including
+assistant panels, sample questions, planned capabilities, preview states, and
+"Coming Soon" messaging.
+
+These experiences must not be treated as live AI services.
+
+The presentation layer must not:
+
+- call an external AI provider
+- require a paid AI API
+- expose an AI API key
+- transmit private Organization performance data to an AI provider
+- create production AI usage records
+- become an authorization mechanism
+
+The Member AI Assistant may be presented as a floating control that expands
+into a small assistant panel or dialog. Its current purpose is to demonstrate
+the future product interaction and communicate that the capability is
+coming later.
+
+The UI interaction does not establish any production AI architecture.
+
+Status
+
+Accepted
+
+---
+
+# 44. Settings Presentation Must Preserve Authority Boundaries
+
+The current Settings experiences are presentation implementations of the
+existing Settings ownership decision.
+
+The implementation must preserve the distinction between:
+
+Platform Super Admin Settings
+
+and
+
+Organization Admin Settings.
+
+Super Admin Settings remain platform-level.
+
+Organization Admin Settings remain Organization-scoped.
+
+A presentation similarity between the two pages does not make them the same
+authority or data scope.
+
+Organization Admin Settings must not gain a cross-Organization selector
+merely because the Super Admin Settings experience has one.
+
+When persistent settings are implemented, each setting must be stored and
+resolved according to the authority that owns it.
+
+The UI should not create duplicate sources of truth merely to make the
+presentation pages appear different.
+
+Status
+
+Accepted
+
+---
+
+# 45. Member AI Assistant Is a Member Experience Extension
+
+The Member AI Assistant is an extension of the existing Member Workspace
+experience.
+
+It must remain subordinate to the Member Workspace and Runtime architecture.
+
+The relationship is:
+
+```text
+Published Performance Sheet
+        ↓
+Assignment
+        ↓
+Performance Instance
+        ↓
+Runtime
+        ↓
+Member Workspace
+        ↓
+Member AI Assistant
+```
+
+The AI Assistant must not become:
+
+- a second Member Workspace
+- a second Runtime
+- a second performance engine
+- a duplicate KPI engine
+- a duplicate reporting engine
+- a replacement for Runtime authorization
+
+The assistant may eventually help a member understand the application or,
+after a separate security and product milestone, assist with authorized
+performance information.
+
+Any future data-aware Member AI capability requires explicit authentication,
+authorization, Organization scoping, and secure data-access architecture.
+
+Status
+
+Accepted
+
+---
+
+# 46. Authentication and Role-Based Entry Foundation
+
+The Authentication + Role-Based Entry foundation has been implemented and
+verified.
+
+The implementation connects the existing product experiences rather than
+creating replacement systems.
+
+The established sequence is:
+
+```text
+Authenticated User
+        ↓
+Resolve Application User
+        ↓
+Resolve Platform / Organization Membership
+        ↓
+Resolve Role Context
+        ↓
+Role-Based Entry
+        ↓
+Existing Administration / Organization / Member Experience
+```
+
+The authentication foundation reuses the existing identity and membership
+architecture.
+
+It does not introduce a second user identity system.
+
+It does not treat a client-selected role as proof of authority.
+
+The current implementation establishes:
+
+- Supabase Auth session handling through the root Next.js proxy
+- Application User resolution
+- Platform Super Admin resolution
+- Organization Membership resolution
+- Membership Role resolution
+- role-aware entry routing
+- Super Admin entry
+- Organization Admin entry
+- Member entry
+- safe authentication confirmation redirects
+
+Platform Super Admin authority is evaluated before Organization-level entry
+authority.
+
+The current entry flow therefore gives Platform Super Admin precedence even
+when the same user also has Organization Membership.
+
+Production authorization and RLS remain separate security work.
+
+Status
+
+Accepted
+
+---
+
+# 47. Current Entry Context Is the Canonical Entry Boundary
+
+The Current Entry Context is the canonical server-side boundary for resolving
+the authenticated actor's initial product entry context.
+
+The context establishes:
+
+- authenticated Application User
+- Entry Actor
+- Organization ID where applicable
+- Organization name where applicable
+
+The intended relationship is:
+
+```text
+Supabase Auth
+        ↓
+Application User
+        ↓
+Current Entry Context
+        ↓
+Platform / Organization Authority
+        ↓
+Entry Actor
+        ↓
+Role-Based Entry
+```
+
+The `/entry` route should consume the Current Entry Context rather than
+independently reconstructing authentication and role authority.
+
+The Current Entry Context is responsible for resolving the existing
+Platform Super Admin, Organization Admin, and Member entry actors.
+
+This is an entry-routing boundary, not a substitute for production
+authorization.
+
+The selected Organization remains context only.
+
+Production authorization must ultimately validate:
+
+- authenticated identity
+- platform authority where applicable
+- Organization Membership
+- role assignment
+- permissions
+- Organization boundaries
+- resource ownership
+- database / RLS enforcement
 
 Status
 

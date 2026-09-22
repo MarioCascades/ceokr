@@ -44,13 +44,92 @@ function BuilderContent() {
   const searchParams =
     useSearchParams();
 
+  /*
+   * ========================================================
+   * Organization Context
+   * ========================================================
+   *
+   * The Builder is shared by both administrative contexts.
+   *
+   * Super Admin:
+   *
+   * /builder?organizationId=123
+   *
+   * Organization Admin:
+   *
+   * /builder?organizationId=123&from=organization
+   *
+   * from=organization is navigation context only.
+   * It is NOT an authorization mechanism.
+   */
+
   const selectedOrganizationId =
-    searchParams.get("organizationId");
+    searchParams.get(
+      "organizationId"
+    );
+
+  const isOrganizationContext =
+    searchParams.get(
+      "from"
+    ) === "organization";
+
+  /*
+   * ========================================================
+   * Navigation
+   * ========================================================
+   */
+
+  const encodedOrganizationId =
+    selectedOrganizationId
+      ? encodeURIComponent(
+          selectedOrganizationId
+        )
+      : null;
+
+  /*
+   * Back to Performance Sheets
+   *
+   * The destination depends on which administrative
+   * context opened the Builder.
+   */
 
   const performanceSheetsHref =
-    selectedOrganizationId
-      ? `/admin/performancesheets?organizationId=${selectedOrganizationId}`
-      : "/admin/performancesheets";
+    encodedOrganizationId
+      ? isOrganizationContext
+        ? `/organization/performancesheets?organizationId=${encodedOrganizationId}`
+        : `/admin/performancesheets?organizationId=${encodedOrganizationId}`
+      : isOrganizationContext
+        ? "/organization/performancesheets"
+        : "/admin/performancesheets";
+
+  /*
+   * Back to Organization Workspace
+   *
+   * Only available when the Builder was opened from
+   * the Organization Admin workspace.
+   */
+
+  const organizationWorkspaceHref =
+    encodedOrganizationId
+      ? `/organization?organizationId=${encodedOrganizationId}`
+      : "/organization";
+
+  /*
+   * Back to Administration
+   *
+   * Only available for the Super Admin context.
+   */
+
+  const administrationHref =
+    encodedOrganizationId
+      ? `/admin?organizationId=${encodedOrganizationId}`
+      : "/admin";
+
+  /*
+   * ========================================================
+   * Builder State
+   * ========================================================
+   */
 
   const {
     editMode,
@@ -75,7 +154,9 @@ function BuilderContent() {
   const [
     statusMessage,
     setStatusMessage,
-  ] = useState<string | null>(null);
+  ] = useState<string | null>(
+    null
+  );
 
   const [
     validationResult,
@@ -85,10 +166,12 @@ function BuilderContent() {
   );
 
   const isDraft =
-    performanceSheetStatus === "draft";
+    performanceSheetStatus ===
+    "draft";
 
   const isPublished =
-    performanceSheetStatus === "published";
+    performanceSheetStatus ===
+    "published";
 
   /* ========================================================
      Preview
@@ -109,6 +192,7 @@ function BuilderContent() {
      * A published definition must first become
      * a new draft revision before editing.
      */
+
     if (!isDraft) {
       return;
     }
@@ -126,9 +210,13 @@ function BuilderContent() {
         builderDocument
       );
 
-    setValidationResult(result);
+    setValidationResult(
+      result
+    );
 
-    setStatusMessage(null);
+    setStatusMessage(
+      null
+    );
   }
 
   /* ========================================================
@@ -136,7 +224,9 @@ function BuilderContent() {
   ======================================================== */
 
   async function handleSave() {
-    setStatusMessage(null);
+    setStatusMessage(
+      null
+    );
 
     try {
       await saveBuilder();
@@ -157,7 +247,9 @@ function BuilderContent() {
   ======================================================== */
 
   async function handlePublish() {
-    setStatusMessage(null);
+    setStatusMessage(
+      null
+    );
 
     try {
       const result =
@@ -167,7 +259,10 @@ function BuilderContent() {
        * publishBuilder validates before doing
        * any database publication.
        */
-      setValidationResult(result);
+
+      setValidationResult(
+        result
+      );
 
       if (!result.valid) {
         setStatusMessage(
@@ -189,12 +284,17 @@ function BuilderContent() {
   }
 
   /* ========================================================
-     Create Revision
+     Create New Version
   ======================================================== */
 
   async function handleCreateRevision() {
-    setStatusMessage(null);
-    setValidationResult(null);
+    setStatusMessage(
+      null
+    );
+
+    setValidationResult(
+      null
+    );
 
     try {
       await createRevision();
@@ -243,36 +343,79 @@ function BuilderContent() {
         rightContent={
           <>
 
-            {/* ================= Navigation ================= */}
+            {/* =================================================
+                Administrative Navigation
+            ================================================= */}
+
+            {!isOrganizationContext && (
+              <Button
+                asChild
+                variant="outline"
+              >
+                <Link
+                  href={
+                    administrationHref
+                  }
+                >
+                  Administration
+                </Link>
+              </Button>
+            )}
+
+            {/* =================================================
+                Performance Sheet Management
+            ================================================= */}
 
             <Button
               asChild
               variant="outline"
             >
-              <Link href="/admin">
-                Administration
-              </Link>
-            </Button>
-
-            <Button
-              asChild
-              variant="outline"
-            >
-              <Link href={performanceSheetsHref}>
+              <Link
+                href={
+                  performanceSheetsHref
+                }
+              >
                 Back to Performance Sheets
               </Link>
             </Button>
 
-            <Button
-              asChild
-              variant="outline"
-            >
-              <Link href="/">
-                Back to Main
-              </Link>
-            </Button>
+            {/* =================================================
+                Organization Workspace
+            ================================================= */}
 
-            {/* ================= Preview ================= */}
+            {isOrganizationContext && (
+              <Button
+                asChild
+                variant="outline"
+              >
+                <Link
+                  href={
+                    organizationWorkspaceHref
+                  }
+                >
+                  Back to Organization Workspace
+                </Link>
+              </Button>
+            )}
+
+            {/* =================================================
+                Main Application
+            ================================================= */}
+
+            {!isOrganizationContext && (
+              <Button
+                asChild
+                variant="outline"
+              >
+                <Link href="/">
+                  Back to Main
+                </Link>
+              </Button>
+            )}
+
+            {/* =================================================
+                Preview
+            ================================================= */}
 
             <Button
               variant={
@@ -280,36 +423,47 @@ function BuilderContent() {
                   ? "default"
                   : "outline"
               }
-              onClick={handlePreview}
+              onClick={
+                handlePreview
+              }
             >
               Preview
             </Button>
 
-            {/* ================= Draft Controls ================= */}
+            {/* =================================================
+                Draft Controls
+            ================================================= */}
 
             {isDraft && (
               <>
+
                 <Button
                   variant={
                     editMode
                       ? "default"
                       : "outline"
                   }
-                  onClick={handleEdit}
+                  onClick={
+                    handleEdit
+                  }
                 >
                   Edit
                 </Button>
 
                 <Button
                   variant="outline"
-                  onClick={handleValidate}
+                  onClick={
+                    handleValidate
+                  }
                 >
                   Validate
                 </Button>
 
                 <Button
                   variant="outline"
-                  onClick={handleSave}
+                  onClick={
+                    handleSave
+                  }
                   disabled={
                     isSavingBuilder ||
                     isPublishingBuilder
@@ -321,7 +475,9 @@ function BuilderContent() {
                 </Button>
 
                 <Button
-                  onClick={handlePublish}
+                  onClick={
+                    handlePublish
+                  }
                   disabled={
                     isSavingBuilder ||
                     isPublishingBuilder
@@ -331,10 +487,13 @@ function BuilderContent() {
                     ? "Publishing..."
                     : "Publish"}
                 </Button>
+
               </>
             )}
 
-            {/* ================= Published Controls ================= */}
+            {/* =================================================
+                Published Controls
+            ================================================= */}
 
             {isPublished && (
               <Button
@@ -342,7 +501,7 @@ function BuilderContent() {
                   handleCreateRevision
                 }
               >
-                Create Revision
+                Create New Version
               </Button>
             )}
 
@@ -350,9 +509,15 @@ function BuilderContent() {
         }
       />
 
+      {/* ======================================================
+          Builder Content
+      ====================================================== */}
+
       <div className="mx-auto max-w-7xl space-y-8 px-8 py-12">
 
-        {/* ================= Performance Sheet Status ================= */}
+        {/* ==================================================
+            Performance Sheet Status
+        ================================================== */}
 
         <div className="flex flex-wrap items-center gap-6 rounded-xl border bg-white p-6 shadow-sm">
 
@@ -362,7 +527,8 @@ function BuilderContent() {
             </p>
 
             <p className="mt-1 font-semibold">
-              Version {performanceSheetVersion}
+              Version{" "}
+              {performanceSheetVersion}
             </p>
           </div>
 
@@ -380,13 +546,15 @@ function BuilderContent() {
 
           {isPublished && (
             <div className="text-sm text-muted-foreground">
-              This version is locked. Create a revision to make changes.
+              This version is locked. Create a new version to make changes.
             </div>
           )}
 
         </div>
 
-        {/* ================= Status Message ================= */}
+        {/* ==================================================
+            Status Message
+        ================================================== */}
 
         {statusMessage && (
           <div className="rounded-lg border bg-white px-4 py-3">
@@ -396,7 +564,9 @@ function BuilderContent() {
           </div>
         )}
 
-        {/* ================= Error ================= */}
+        {/* ==================================================
+            Error
+        ================================================== */}
 
         {builderError && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
@@ -406,26 +576,38 @@ function BuilderContent() {
           </div>
         )}
 
-        {/* ================= Validation ================= */}
+        {/* ==================================================
+            Validation
+        ================================================== */}
 
         {validationResult && (
           <ValidationPanel
-            result={validationResult}
+            result={
+              validationResult
+            }
             onClose={() =>
-              setValidationResult(null)
+              setValidationResult(
+                null
+              )
             }
           />
         )}
 
-        {/* ================= Organization ================= */}
+        {/* ==================================================
+            Organization
+        ================================================== */}
 
         <OrganizationSection />
 
-        {/* ================= Navigation ================= */}
+        {/* ==================================================
+            Navigation Tabs
+        ================================================== */}
 
         <NavigationTabsManager />
 
-        {/* ================= Performance Sheet ================= */}
+        {/* ==================================================
+            Performance Sheet
+        ================================================== */}
 
         <PerformanceSheet>
 
@@ -467,7 +649,11 @@ function BuilderLoadingFallback() {
 
 export default function BuilderPage() {
   return (
-    <Suspense fallback={<BuilderLoadingFallback />}>
+    <Suspense
+      fallback={
+        <BuilderLoadingFallback />
+      }
+    >
       <BuilderProvider>
         <BuilderContent />
       </BuilderProvider>

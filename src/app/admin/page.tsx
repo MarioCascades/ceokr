@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 
+import AdminOrganizationSelector from "@/components/admin/shared/adminorganizationselector";
+
 import { getOrganization } from "@/services/organization.service";
 
 export default async function AdminPage({
@@ -50,7 +52,8 @@ export default async function AdminPage({
         ================================================== */}
 
         <section className="rounded-2xl border border-gray-300 bg-white p-6 shadow-sm lg:p-7">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Currently administering
@@ -74,11 +77,18 @@ export default async function AdminPage({
               )}
             </div>
 
-            {organizationId && organization && (
-              <div className="rounded-md border bg-gray-50 px-4 py-2 text-xs text-muted-foreground">
-                Organization context active
-              </div>
-            )}
+            <div className="flex flex-col items-stretch gap-3 sm:min-w-[260px] sm:items-end">
+
+              <AdminOrganizationSelector />
+
+              {organizationId && organization && (
+                <div className="rounded-md border bg-gray-50 px-4 py-2 text-xs text-muted-foreground">
+                  Organization context active
+                </div>
+              )}
+
+            </div>
+
           </div>
         </section>
 
@@ -151,12 +161,6 @@ export default async function AdminPage({
             title="📈 Key Results"
             description="View measurable outcomes defined within your Performance Sheets."
             href={adminHref("/admin/keyresults")}
-          />
-
-          <AdminCard
-            title="🚀 Initiatives"
-            description="View initiatives defined within your Performance Sheets."
-            href={adminHref("/admin/initiatives")}
           />
         </AdminSection>
 

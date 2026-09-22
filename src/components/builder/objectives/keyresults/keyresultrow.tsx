@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import {
+import type {
   BuilderInitiative,
   BuilderKeyResult,
 } from "@/lib/types/builderdocument";
@@ -51,6 +51,10 @@ export default function KeyResultRow({
   ] = useState<BuilderInitiative | null>(null);
 
   function handleAddInitiative() {
+    if (keyResult.initiatives.length >= 3) {
+      return;
+    }
+
     setSelectedInitiative(null);
     setInitiativeDialogOpen(true);
   }
@@ -97,9 +101,24 @@ export default function KeyResultRow({
     setSelectedInitiative(null);
   }
 
+  const measurementLabel =
+    keyResult.measurementType ===
+    "percentage"
+      ? "Percentage"
+      : keyResult.measurementType ===
+        "financial"
+        ? "Financial ($)"
+        : "Numeric";
+
+  const scoringLabel =
+    keyResult.scoringMethod ===
+    "percent_into_period"
+      ? "% Into Period"
+      : "Percentage of Target";
+
   return (
     <>
-      <div className="rounded-lg border bg-card p-5 shadow-sm space-y-6">
+      <div className="space-y-6 rounded-lg border bg-card p-5 shadow-sm">
 
         {/* ================= Header ================= */}
 
@@ -108,7 +127,8 @@ export default function KeyResultRow({
           <div className="flex-1 space-y-3">
 
             <h4 className="text-base font-semibold">
-              {keyResult.title || "Untitled Key Result"}
+              {keyResult.title ||
+                "Untitled Key Result"}
             </h4>
 
             <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
@@ -118,23 +138,29 @@ export default function KeyResultRow({
                   Target
                 </p>
 
-                <p>{keyResult.target}</p>
+                <p>
+                  {keyResult.target}
+                </p>
               </div>
 
               <div>
                 <p className="text-muted-foreground">
-                  Current
+                  Measurement
                 </p>
 
-                <p>{keyResult.current}</p>
+                <p>
+                  {measurementLabel}
+                </p>
               </div>
 
               <div>
                 <p className="text-muted-foreground">
-                  Score
+                  Scoring
                 </p>
 
-                <p>{keyResult.score}</p>
+                <p>
+                  {scoringLabel}
+                </p>
               </div>
 
               <div>
@@ -142,7 +168,9 @@ export default function KeyResultRow({
                   Weight
                 </p>
 
-                <p>{keyResult.weight}%</p>
+                <p>
+                  {keyResult.weight}%
+                </p>
               </div>
 
             </div>
@@ -150,13 +178,14 @@ export default function KeyResultRow({
           </div>
 
           {editMode && (
-
             <div className="flex gap-2">
 
               <Button
                 size="icon"
                 variant="outline"
-                onClick={() => onEdit?.(keyResult)}
+                onClick={() =>
+                  onEdit?.(keyResult)
+                }
               >
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -164,13 +193,14 @@ export default function KeyResultRow({
               <Button
                 size="icon"
                 variant="destructive"
-                onClick={() => onDelete?.(keyResult.id)}
+                onClick={() =>
+                  onDelete?.(keyResult.id)
+                }
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
 
             </div>
-
           )}
 
         </div>
@@ -178,11 +208,15 @@ export default function KeyResultRow({
         {/* ================= Initiatives ================= */}
 
         <Initiatives
-          initiatives={keyResult.initiatives}
+          initiatives={
+            keyResult.initiatives
+          }
           editMode={editMode}
           onAdd={handleAddInitiative}
           onEdit={handleEditInitiative}
-          onDelete={handleDeleteInitiative}
+          onDelete={
+            handleDeleteInitiative
+          }
         />
 
       </div>

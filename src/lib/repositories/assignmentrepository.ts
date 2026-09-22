@@ -308,3 +308,57 @@ export async function loadActiveAssignment(
     data as AssignmentRow
   );
 }
+
+/* ==========================================================
+   Reassign Individual Performance Sheet
+   ----------------------------------------------------------
+   Atomically ends the current individual assignment and
+   creates a new active individual assignment pointing to
+   another published Performance Sheet version.
+
+   Historical Runtime records remain attached to the
+   previous Assignment.
+========================================================== */
+
+export async function reassignIndividualPerformanceSheet(
+  organizationId: string,
+  currentAssignmentId: string,
+  newPerformanceSheetId: string,
+  assignedBy: string
+): Promise<Assignment> {
+  const {
+    data,
+    error,
+  } = await supabase.rpc(
+    "reassign_individual_performance_sheet",
+    {
+      p_organization_id:
+        organizationId,
+
+      p_current_assignment_id:
+        currentAssignmentId,
+
+      p_new_performance_sheet_id:
+        newPerformanceSheetId,
+
+      p_assigned_by:
+        assignedBy,
+    }
+  );
+
+  if (error) {
+    throw new Error(
+      `Failed to reassign Performance Sheet: ${error.message}`
+    );
+  }
+
+  if (!data) {
+    throw new Error(
+      "Performance Sheet reassignment did not return the new assignment."
+    );
+  }
+
+  return toAssignment(
+    data as AssignmentRow
+  );
+}

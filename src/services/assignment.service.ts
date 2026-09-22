@@ -10,10 +10,11 @@ import {
   createAssignment as createAssignmentRepository,
   loadAssignment,
   updateAssignment,
+  reassignIndividualPerformanceSheet,
 } from "@/lib/repositories/assignmentrepository";
 
 import {
-  findPerformanceInstancesByOrganization,
+  findPerformanceInstanceByAssignmentAndMonth,
 } from "@/lib/repositories/performanceinstancerepository";
 
 import {
@@ -568,12 +569,324 @@ export async function cancelAssignment(
 
 
 /* ==========================================================
-   Create Performance Execution From Assignment
+   Reassign Individual Performance Sheet
+   ----------------------------------------------------------
+   Ends the current active individual assignment and creates
+   a new active individual assignment for the same member.
+
+   Existing Runtime Performance Instances remain attached
+   to the previous Assignment.
+
+   IMPORTANT:
+   Performance Sheets are individual-member assignments only.
+   This operation intentionally rejects team, department, and
+   organization assignments.
 ========================================================== */
 
-export async function createPerformanceExecutionFromAssignment(
+export async function reassignPerformanceSheet(
   organizationId: string,
-  assignmentId: string
+  currentAssignmentId: string,
+  newPerformanceSheetId: string,
+  assignedBy: string
+): Promise<Assignment> {
+
+  /* ========================================================
+     Load Current Assignment
+  ======================================================== */
+
+  const currentAssignment =
+    await loadAssignment(
+      organizationId,
+      currentAssignmentId
+    );
+
+  if (!currentAssignment) {
+    throw new Error(
+      "Current assignment not found."
+    );
+  }
+
+
+  /* ========================================================
+     Individual Assignment Only
+  ======================================================== */
+
+  if (
+    currentAssignment.assignmentType !==
+    "individual"
+  ) {
+    throw new Error(
+      "Only individual member Performance Sheet assignments can be reassigned."
+    );
+  }
+
+
+  /* ========================================================
+     Active Assignment Only
+  ======================================================== */
+
+  if (
+    currentAssignment.status !==
+    "active"
+  ) {
+    throw new Error(
+      "Only active assignments can be reassigned."
+    );
+  }
+
+
+  /* ========================================================
+     Validate Current Member
+  ======================================================== */
+
+  await validateAssignmentSubject(
+    currentAssignment
+  );
+
+
+  /* ========================================================
+     Validate Replacement Performance Sheet
+  ======================================================== */
+
+  /*
+   * Reassignment must point to an exact published
+   * Performance Sheet version.
+   */
+  const replacementPerformanceSheet =
+    await loadPublishedById(
+      organizationId,
+      newPerformanceSheetId
+    );
+
+  if (!replacementPerformanceSheet) {
+    throw new Error(
+      "The replacement Performance Sheet could not be found or is not published."
+    );
+  }
+
+
+  /* ========================================================
+     Prevent Same Sheet Reassignment
+  ======================================================== */
+
+  if (
+    currentAssignment.performanceSheetId ===
+    newPerformanceSheetId
+  ) {
+    throw new Error(
+      "The replacement Performance Sheet is the same as the current Performance Sheet."
+    );
+  }
+
+
+  /* ========================================================
+     Validate Assigned By User
+  ======================================================== */
+
+  const {
+    data: assigningUser,
+    error:
+      assigningUserError,
+  } = await supabase
+    .from("users")
+    .select(
+      "id, is_active"
+    )
+    .eq(
+      "id",
+      assignedBy
+    )
+    .maybeSingle();
+
+  if (assigningUserError) {
+    throw new Error(
+      `Failed to validate assigning user: ${assigningUserError.message}`
+    );
+  }
+
+  if (!assigningUser) {
+    throw new Error(
+      "The assigning user could not be found."
+    );
+  }
+
+  if (
+    !assigningUser.is_active
+  ) {
+    throw new Error(
+      "The assigning user is inactive."
+    );
+  }
+
+
+  /* ========================================================
+     Validate Assigned By Membership
+  ======================================================== */
+
+  const {
+    data: assigningMembership,
+    error:
+      assigningMembershipError,
+  } = await supabase
+    .from("organization_memberships")
+    .select(
+      "id"
+    )
+    .eq(
+      "user_id",
+      assignedBy
+    )
+    .eq(
+      "organization_id",
+      organizationId
+    )
+    .maybeSingle();
+
+  if (assigningMembershipError) {
+    throw new Error(
+      `Failed to validate assigning user membership: ${assigningMembershipError.message}`
+    );
+  }
+
+  if (!assigningMembership) {
+    throw new Error(
+      "The assigning user does not belong to this organization."
+    );
+  }
+
+
+  /* ========================================================
+     Atomic Reassignment
+  ======================================================== */
+
+  /*
+   * The repository calls the database-level reassignment
+   * operation so ending the old assignment and creating the
+   * replacement assignment happen together.
+   */
+  return reassignIndividualPerformanceSheet(
+    organizationId,
+    currentAssignmentId,
+    newPerformanceSheetId,
+    assignedBy
+  );
+}
+
+
+/* ==========================================================
+   Normalize Performance Month
+   ----------------------------------------------------------
+   Canonical Runtime month format:
+   YYYY-MM-01
+========================================================== */
+
+function normalizePerformanceMonth(
+  performanceMonth: string
+): string {
+
+  const trimmed =
+    performanceMonth.trim();
+
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      trimmed
+    )
+  ) {
+    throw new Error(
+      "Performance month must use YYYY-MM-DD format."
+    );
+  }
+
+  const [
+    year,
+    month,
+    day,
+  ] =
+    trimmed.split("-");
+
+  const numericMonth =
+    Number(month);
+
+  const numericDay =
+    Number(day);
+
+  if (
+    numericMonth < 1 ||
+    numericMonth > 12
+  ) {
+    throw new Error(
+      "Performance month contains an invalid month."
+    );
+  }
+
+  if (
+    numericDay < 1 ||
+    numericDay > 31
+  ) {
+    throw new Error(
+      "Performance month contains an invalid day."
+    );
+  }
+
+  return `${year}-${month}-01`;
+}
+
+
+/* ==========================================================
+   Validate Requested Performance Month
+========================================================== */
+
+function validatePerformanceMonth(
+  performanceMonth: string
+): string {
+
+  const normalizedMonth =
+    normalizePerformanceMonth(
+      performanceMonth
+    );
+
+  const currentDate =
+    new Date();
+
+  const currentMonth =
+    [
+      currentDate
+        .getFullYear()
+        .toString()
+        .padStart(4, "0"),
+
+      (currentDate.getMonth() + 1)
+        .toString()
+        .padStart(2, "0"),
+
+      "01",
+    ].join("-");
+
+  if (
+    normalizedMonth >
+    currentMonth
+  ) {
+    throw new Error(
+      "Future performance months cannot be created."
+    );
+  }
+
+  return normalizedMonth;
+}
+
+
+/* ==========================================================
+   Create Or Get Performance Execution For Month
+   ----------------------------------------------------------
+   Monthly Runtime identity:
+   one Performance Instance per Assignment per
+   calendar month.
+========================================================== */
+
+export async function getOrCreatePerformanceExecutionForMonth(
+  organizationId: string,
+  assignmentId: string,
+  performanceMonth: string
 ): Promise<PerformanceInstance> {
 
   const assignment =
@@ -599,6 +912,16 @@ export async function createPerformanceExecutionFromAssignment(
 
 
   /* ========================================================
+     Validate Requested Month
+  ======================================================== */
+
+  const normalizedMonth =
+    validatePerformanceMonth(
+      performanceMonth
+    );
+
+
+  /* ========================================================
      Load Exact Published Performance Sheet
   ======================================================== */
 
@@ -610,53 +933,40 @@ export async function createPerformanceExecutionFromAssignment(
 
   if (!performanceSheet) {
     throw new Error(
-      "The published Performance Sheet assigned to this assignment could not be found."
+      "The Performance Sheet assigned to this assignment could not be found."
     );
   }
 
 
   /* ========================================================
-     Prevent Duplicate Active Executions
+     Find Existing Instance
   ======================================================== */
 
-  const existingInstances =
-    await findPerformanceInstancesByOrganization(
-      organizationId
+  const existingInstance =
+    await findPerformanceInstanceByAssignmentAndMonth(
+      organizationId,
+      assignment.id,
+      normalizedMonth
     );
 
-  const existingExecution =
-    existingInstances.find(
-      (instance) =>
-        instance.assignmentId ===
-          assignment.id &&
-        (
-          instance.status ===
-            "not_started" ||
-          instance.status ===
-            "in_progress" ||
-          instance.status ===
-            "submitted" ||
-          instance.status ===
-            "approved"
-        )
-    );
-
-  if (existingExecution) {
+  if (existingInstance) {
 
     /*
-     * Runtime initialization is intentionally idempotent.
+     * Initialization is idempotent.
+     *
+     * Existing Runtime progress is never overwritten.
      */
     await initializePerformanceInstance(
-      existingExecution,
+      existingInstance,
       performanceSheet.document
     );
 
-    return existingExecution;
+    return existingInstance;
   }
 
 
   /* ========================================================
-     Create Performance Execution
+     Create Requested Monthly Instance
   ======================================================== */
 
   const performanceInstance =
@@ -669,6 +979,9 @@ export async function createPerformanceExecutionFromAssignment(
 
         performanceSheetId:
           performanceSheet.id,
+
+        performanceMonth:
+          normalizedMonth,
 
         overallScore:
           0,
@@ -702,4 +1015,39 @@ export async function createPerformanceExecutionFromAssignment(
     );
 
   return performanceInstance;
+}
+
+
+/* ==========================================================
+   Create Performance Execution From Assignment
+   ----------------------------------------------------------
+   Convenience wrapper for the current calendar month.
+========================================================== */
+
+export async function createPerformanceExecutionFromAssignment(
+  organizationId: string,
+  assignmentId: string
+): Promise<PerformanceInstance> {
+
+  const now =
+    new Date();
+
+  const performanceMonth =
+    [
+      now.getFullYear()
+        .toString()
+        .padStart(4, "0"),
+
+      (now.getMonth() + 1)
+        .toString()
+        .padStart(2, "0"),
+
+      "01",
+    ].join("-");
+
+  return getOrCreatePerformanceExecutionForMonth(
+    organizationId,
+    assignmentId,
+    performanceMonth
+  );
 }

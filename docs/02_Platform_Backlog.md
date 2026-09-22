@@ -4,7 +4,7 @@ Platform Backlog
 
 Document Status: CURRENT
 
-Last Updated: 2026-09-02
+Last Updated: 2026-09-19
 
 This document tracks intentionally deferred architecture, product
 
@@ -20,13 +20,35 @@ determining the current project state.
 
 Current Development Phase
 
-Administration Completion
+Multi-Organization Entry Selection
 
 Status
 
-IN PROGRESS
+NEXT MILESTONE
 
-The platform is currently completing the Administration management layer.
+The Authentication + Role-Based Entry foundation has been completed and
+browser-verified.
+
+The platform can now authenticate the actor and route the authenticated actor
+into the appropriate existing product experience as:
+
+- Platform Super Admin
+- Organization Admin
+- Member
+
+The next dependency is explicit Organization selection for users who belong to
+multiple Organizations.
+
+The selected Organization must remain navigation / query context only and
+must never replace server-side authorization.
+
+Users with one applicable Organization should not be forced through an
+unnecessary selector.
+
+Users with multiple applicable Organizations should receive an explicit
+Organization-selection experience, after which the selected Organization must
+be re-resolved and validated server-side.
+
 
 Completed:
 
@@ -62,12 +84,12 @@ Administration Organization Context / Cascading Selection
 
 Status
 
-RECONCILIATION REQUIRED
+COMPLETE / ESTABLISHED
 
-The Super Admin Administration experience must preserve an explicit
-Organization context across child Administration pages.
+The Super Admin Administration experience preserves explicit Organization
+context across child Administration pages.
 
-The required product pattern is:
+The established product pattern is:
 
 Organization
 ↓
@@ -78,13 +100,12 @@ Team
 The Organization page is the top-level tenant-management page and does not
 require an Organization selector above it.
 
-Child Administration pages must allow the Super Admin to select the
-Organization being administered where applicable.
+Child Administration pages use the selected Organization where applicable.
 
-Department and Team selectors must be dependent on the selected parent
+Department and Team context are dependent on the selected parent
 Organization.
 
-Changing the selected Organization must reset dependent Department and Team
+Changing the selected Organization resets dependent Department and Team
 context.
 
 The selected Organization ID is navigation and query context only.
@@ -117,26 +138,20 @@ Settings
 
 Organization Admin context is different.
 
-An Organization Admin operates within their authorized Organization and
-does not require an Organization-switching selector.
+An Organization Admin operates within one fixed Organization context and does
+not provide an Organization-switching selector.
 
 The Builder remains one shared engine for both administrative entry
 contexts.
 
-This work is a product/UX continuity requirement and must be completed
-before additional Administration page expansion is treated as stable.
-
-Current Administration focus:
-
-Additional Administration capabilities
+The Administration context reconciliation work is complete for the current
+scope.
 
 Production authorization and security hardening remain separate
-
 architecture milestones.
 
-The Builder and Runtime foundations already exist and should not be
-
-rebuilt during this Administration phase.
+The Builder and Runtime foundations already exist and are not rebuilt as part
+of this Administration work.
 
 Administration Roadmap
 
@@ -542,9 +557,9 @@ Platform Super Admin Administration Context
 
 Status
 
-RECONCILIATION REQUIRED
+ESTABLISHED
 
-The Super Admin Administration experience is platform-level and must support
+The Super Admin Administration experience is platform-level and supports
 administration across Organizations through explicit Organization context.
 
 The selected Organization is a UI/query context and must not replace
@@ -554,36 +569,42 @@ Organization Admin Workspace
 
 Status
 
-FUTURE
+COMPLETE / ESTABLISHED
 
-Create a separate Organization Admin workspace after the Super Admin
-Administration context is stable.
+The Organization Admin workspace has been established as a separate
+organization-scoped administrative entry context.
 
-The Organization Admin workspace must:
+The Organization Admin workspace:
 
-operate on the Organization determined by the authenticated user's
-organization authorization
+operates within one fixed Organization context
 
-not provide cross-Organization switching
+does not provide cross-Organization switching
 
-provide access to organization configuration and Builder capabilities
-according to Organization Roles and Permissions
+provides access to organization configuration and administrative capabilities
+according to the current product scope
 
-use the same underlying Builder engine as the Super Admin experience
+uses the same underlying Builder engine as the Super Admin experience
 
-Do not create a second Builder.
+does not create a second Builder
+
+The current Organization Admin workspace establishes the intended UX and
+navigation contract.
+
+Production authorization must eventually derive and validate the
+Organization Admin scope from authenticated Organization membership, role,
+and permissions.
 
 Priority
 
-High
+Complete
 
 3B. Administration Context Components
 
 Status
 
-RECONCILIATION REQUIRED
+ESTABLISHED
 
-Standardize reusable Administration context components for:
+The reusable Administration context pattern has been standardized for:
 
 Organization selection
 
@@ -591,15 +612,18 @@ Department selection
 
 Team selection
 
-The component pattern should reset dependent selections when a parent
-context changes and should pass IDs rather than names.
+The component pattern resets dependent selections when a parent context
+changes and passes IDs rather than names.
 
 These components are UX/navigation context helpers, not authorization
 mechanisms.
 
+The Organization Admin workspace intentionally uses fixed Organization
+context rather than an Organization-switching selector.
+
 Priority
 
-High
+Complete
 
 Runtime
 
@@ -661,29 +685,73 @@ The current scoring utility intentionally remains small.
 
 A generalized KPI Calculation Engine remains future platform work.
 
-Runtime Workspace Enhancements
+Runtime Product Experience
 
 Status
 
-FUTURE
+FOUNDATION CHECKPOINT COMPLETE / CONTINUING
 
-Future enhancements may include:
+The Runtime Execution Foundation and Member Workspace Foundation are
 
-richer Runtime workspace presentation
+established.
 
-weighted aggregation
+The next milestone is to turn those foundations into the complete
 
-additional KPI visualization
+day-to-day performance-management experience.
 
-historical updates
+Priority areas include:
 
-expanded workflow controls
+- richer Runtime workspace presentation
+- member performance workflow
+- monthly navigation
+- previous/current/target performance presentation
+- measurement-type-aware value entry
+- score visibility
+- Objective / Key Result / Initiative presentation
+- initiative add/edit/remove workflow
+- employee comments
+- manager comments
+- Runtime lifecycle presentation
+- manager review / approval experience
+- clear performance status
+- historical month navigation
+- consistent performance-sheet visual hierarchy
 
-additional reporting context
+The work must reuse the existing Runtime engine.
 
-improved member experience
+Do not create a second performance engine or a second Member performance
 
-Runtime Workspace is NOT the current milestone.
+data model.
+
+Mint remains a UX reference, not an architecture to rebuild.
+
+The Runtime Product Experience must remain generated from:
+
+Builder Definition
+
+↓
+
+Published Performance Sheet
+
+↓
+
+Assignment
+
+↓
+
+Monthly Performance Instance
+
+↓
+
+Runtime Data
+
+↓
+
+Member / Manager Experience
+
+Priority
+
+High
 
 Architecture
 
@@ -1087,6 +1155,243 @@ Priority
 
 High
 
+
+---
+
+Settings and AI Product Experience
+
+Settings and AI work should follow the administrative authority model and
+remain separate from the authentication foundation until the authentication
+milestone is complete.
+
+## Super Admin Settings
+
+Status
+
+COMPLETE / PRESENTATION ESTABLISHED
+
+Build a platform-level Settings page for CascadEffects Super Admins.
+
+Initial scope:
+
+- platform-level configuration areas
+- global defaults where appropriate
+- platform feature controls
+- future global AI configuration
+- clearly identified future settings
+
+Do not duplicate Organization-specific configuration here.
+
+Priority
+
+Medium
+
+## Organization Admin Settings
+
+Status
+
+COMPLETE / PRESENTATION ESTABLISHED
+
+Build an organization-scoped Settings page for Organization Admins.
+
+Initial scope:
+
+- Organization preferences
+- organization performance-management preferences where appropriate
+- notification preferences
+- organization integrations / data configuration where appropriate
+- clearly identified future settings
+
+The page must use the authenticated Organization context.
+
+Do not provide an Organization-switching selector.
+
+Do not reintroduce administrator-managed Reporting Period configuration.
+
+Priority
+
+Medium
+
+## Super Admin AI Mock-up
+
+Status
+
+COMPLETE / PRESENTATION MOCK-UP
+
+Create a Super Admin AI page that demonstrates the future CascadEffects AI
+experience without requiring live AI API usage.
+
+Initial UI may include:
+
+- sample questions
+- suggested prompts
+- example help responses
+- "Chat with Me" interaction
+- visible future-capability messaging
+
+Priority
+
+Medium
+
+## Organization Admin AI Mock-up
+
+Status
+
+COMPLETE / PRESENTATION MOCK-UP
+
+Create an Organization Admin AI page with the same future-assistant concept,
+but scoped to Organization Admin workflows.
+
+Initial UI may include:
+
+- sample organization-management questions
+- suggested prompts
+- example help responses
+- "Chat with Me" interaction
+- visible future-capability messaging
+
+Priority
+
+Medium
+
+## Live AI Help Assistant
+
+Status
+
+FUTURE / BUSINESS APPROVAL REQUIRED
+
+Implement the live documentation/product-help assistant after business
+approval for the separate AI API operating expense.
+
+Requirements include:
+
+- secure server-side API integration
+- approved CascadEffects documentation context
+- relevant-document retrieval
+- no browser-exposed API keys
+- usage monitoring
+- cost controls
+- no private performance-data access in Phase 1
+
+Priority
+
+Medium
+
+## AI Data-Aware Expansion
+
+Status
+
+FUTURE
+
+Future phases may add:
+
+- performance analysis
+- KPI insights
+- planning assistance
+- reporting summaries
+- recommendations
+- predictive analytics
+
+This requires completed authentication, authorization, Organization scoping,
+and secure data-access architecture before private performance data is
+provided to the AI.
+
+Priority
+
+Medium
+
+## Authentication and Role-Based Entry
+
+Status
+
+FOUNDATION COMPLETE / VERIFIED
+
+The Authentication + Role-Based Entry foundation has been implemented and
+browser-verified.
+
+The platform now replaces client-selected role assumptions with
+authentication-driven role recognition.
+
+Required actor types:
+
+- Platform Super Admin
+- Organization Admin
+- Member
+
+The authenticated entry context resolves:
+
+- Supabase Auth identity
+- Application User
+- Platform Membership where applicable
+- Organization Membership where applicable
+- applicable Membership Role context
+- Entry Actor
+- Organization context where applicable
+
+Verified post-login entry experiences:
+
+```text
+Platform Super Admin
+↓
+Super Admin Entry
+```
+
+```text
+Organization Admin
+↓
+Organization Admin Entry
+```
+
+```text
+Member
+↓
+Member Entry
+```
+
+The current implementation reuses the existing authentication, Application
+User, Platform Membership, Organization Membership, and role foundations.
+
+The role-selection dropdown is not used as an authorization mechanism.
+
+The root Next.js proxy establishes the Supabase session-refresh request
+boundary.
+
+The authentication confirmation route validates root-relative redirect
+targets.
+
+The `/entry` route consumes the canonical Current Entry Context.
+
+Platform Super Admin authority takes precedence over Organization-level
+membership during initial entry resolution.
+
+The primary authentication and entry flows have been browser-verified for:
+
+- Mario → Super Admin
+- Heather → Super Admin
+- Organization Admin → Organization Admin entry
+- Member → Member entry
+
+The defensive unconfigured-account path exists but was not independently
+exercised because no test account was created solely for that scenario.
+
+The current defensive path remains:
+
+```text
+No valid entry context
+↓
+/login?error=account_not_configured
+```
+
+Production authorization and RLS remain separate security milestones.
+
+Remaining authentication/security work is not part of this completed
+foundation, including full production authorization enforcement, tenant
+authorization hardening, and production Row Level Security.
+
+Priority
+
+Complete / Security Follow-Up
+
 Dashboards
 
 Dynamic Dashboard System
@@ -1159,25 +1464,65 @@ CascadEffects Design System
 
 Status
 
-FUTURE
+PARTIALLY ESTABLISHED / CONTINUE AFTER AUTHENTICATION
 
-Create centralized design tokens for:
+The next product-experience increment should establish the centralized
+CascadEffects default design system before broad page-by-page visual
+refinement.
+
+Official Brand Guide colors:
 
 Deep Navy
 
-Coral
+#082550
+
+Grayish Blue
+
+#B4C2D1
+
+Light Blue
+
+#E9F4F8
+
+Dark Charcoal
+
+#272D2C
 
 White
 
-light gray surfaces
+#FFFFFF
+
+Coral
+
+#E26D5C
+
+The four signature brand colors that should remain visually prominent are:
+
+Deep Navy
+
+Grayish Blue
+
+Light Blue
+
+Coral
+
+Coral is a selective callout / action color.
+
+The design system should centralize reusable tokens for:
+
+page backgrounds
+
+surfaces
+
+cards
+
+borders
 
 typography
 
 buttons
 
 forms
-
-cards
 
 dialogs
 
@@ -1187,21 +1532,60 @@ navigation
 
 status indicators
 
-The design system should be reusable across:
+spacing
+
+radius
+
+shadows
+
+iconography
+
+The Brand Guide typography direction should be reflected where appropriate:
+
+Roboto Black
+
+Martel Sans
+
+Khula
+
+The platform should favor consistent line iconography and consistent stroke
+treatment.
+
+The visual experience should feel:
+
+clean
+
+modern
+
+minimalist
+
+structured
+
+confident
+
+professional
+
+The centralized design system should be reusable across:
 
 Administration
 
 Builder
 
-Runtime
+shared platform navigation
 
 Dashboards
 
 Reports
 
-Organization-specific branding should eventually be configurable through
+Runtime
 
+Runtime may later apply organization-specific visual configuration.
+
+Organization-specific branding should eventually be configurable through
 Administration.
+
+The CascadEffects default theme should remain the platform fallback.
+
 
 Deployment / Environment Configuration
 
@@ -1275,9 +1659,9 @@ Runtime Execution Foundation
 
 COMPLETE / ESTABLISHED
 
-Administration
+Administration Foundation
 
-IN PROGRESS
+COMPLETE / ESTABLISHED
 
 Organization
 
@@ -1323,6 +1707,46 @@ Administration Page Structure / Shared Header Standardization
 
 COMPLETE
 
+Administration Organization Context / Cascading Selection
+
+COMPLETE / ESTABLISHED
+
+Organization Admin Workspace Foundation
+
+COMPLETE / ESTABLISHED
+
+Organization Admin Fixed Organization Context
+
+ESTABLISHED
+
+One Builder / Two Administrative Entry Contexts
+
+ESTABLISHED
+
+Objectives / Key Results / Initiatives
+
+BUILDER-OWNED / ESTABLISHED
+
+Monthly Performance Cadence
+
+ESTABLISHED PRODUCT RULE
+
+Member Performance Navigation
+
+ESTABLISHED
+
+Runtime Dashboard / Member Performance Separation
+
+COMPLETE / VERIFIED
+
+Runtime Product Experience
+
+FOUNDATION CHECKPOINT COMPLETE / CONTINUING AFTER AUTHENTICATION
+
+Authentication + Role-Based Entry
+
+FOUNDATION COMPLETE / VERIFIED
+
 Dashboards
 
 V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
@@ -1333,11 +1757,39 @@ FUTURE
 
 AI
 
-FUTURE
+PRESENTATION MOCK-UPS COMPLETE / LIVE AI FUTURE
+
+Settings
+
+PRESENTATION COMPLETE / AUTHORITY-SCOPED
 
 Production Authorization / RLS
 
-OUTSTANDING
+OUTSTANDING / LATER SECURITY MILESTONE
+
+Runtime Security Boundaries
+
+DEFERRED
+
+Historical KPI Updates
+
+DEFERRED
+
+KPI Calculation Engine
+
+DEFERRED
+
+Weighted Aggregation
+
+DEFERRED
+
+Historical Performance Reporting
+
+DEFERRED
+
+CascadEffects Design System
+
+PARTIALLY ESTABLISHED / CONTINUE AFTER AUTHENTICATION
 
 Next Development Session
 
@@ -1351,138 +1803,309 @@ Platform Decisions
 
 Platform Backlog
 
-Confirm the next Administration milestone before implementation.
+Product North Star
 
-The following Administration capabilities are functionally established:
+Confirm the Multi-Organization Entry Selection milestone.
 
-Organization
+Inspect the existing:
 
-Departments
+- root Next.js proxy
+- Supabase Auth implementation
+- Application User resolution
+- Current Entry Context
+- Platform Membership resolution
+- Organization Membership resolution
+- Membership Role resolution
+- current Super Admin entry
+- current Organization Admin entry
+- current Member entry
+- existing organization context patterns
 
-Teams
+The next implementation should establish explicit Organization selection
+behavior for authenticated users who belong to multiple Organizations.
 
-Users / Members
+Target behavior:
 
-Roles & Permissions
+Platform Super Admin
 
-Performance Sheet Management
+↓
 
-Assignment Management
+Super Admin Entry
 
-Administration Page Structure / Shared Header Standardization
+↓
 
-The following Administration continuity work must be reconciled and verified:
+Organization-specific experience
 
-Super Admin Organization context
+↓
 
-Organization → Department → Team cascading selection
+Organization Selector where required
 
-Organization context across child Administration pages
+Organization Admin
 
-Organization Admin fixed Organization context
+↓
 
-One Builder / two administrative entry contexts
+Fixed authorized Organization context
 
-Objectives / Key Results / Initiatives remaining Builder-owned
+↓
 
-Monthly cadence without an administrator-managed Reporting Period entity
+Organization-specific experience
 
-The next development phase should be selected based on platform value,
+Member
 
-architectural priority, and the current documented roadmap.
+↓
 
-The Platform Membership / Super Admin foundation is complete but is not
+Authorized Organization context
 
-yet production security hardening.
+↓
 
-High-priority architectural hardening remains:
+Member experience
 
-Production Tenant Authorization
+For a user with one applicable Organization, avoid unnecessary selection.
 
-Production Row Level Security
+For a user with multiple applicable Organizations, provide an explicit
+Organization selector.
 
-Platform Administration UI / Super Admin Management
+The selected Organization ID is context only.
 
-Runtime Security Boundaries
+The server must re-resolve and validate the selected Organization against the
+authenticated actor's actual authority.
 
-Assignment Subject Validation
+Do not use localStorage, a client-selected Organization, or a display name as
+the authorization boundary.
 
-Performance Instance Relationship Integrity
+Do not create a second Organization Membership model.
 
-Other future Administration capabilities may include:
-
-advanced Performance Sheet management
-
-additional management workflows
-
-Dashboards
-
-Reports
-
-AI configuration
+Do not create a second role system.
 
 Do not rebuild Builder.
 
-Do not duplicate Runtime execution logic.
+Do not rebuild Runtime.
 
-The repository remains the authoritative engineering record.
+Do not create a second Member performance data model.
 
-Current Deferred Priorities
+Do not reintroduce an administrator-managed Reporting Period entity.
 
-Priority: High
+Production authorization and RLS remain separate security work unless the
+next milestone exposes a blocking dependency.
+
+After multi-Organization entry is complete and verified, continue the
+Runtime Product Experience / Design & Vibe roadmap according to the latest
+Waypoint and Platform Decisions.
+
+Do not treat AI mock-ups as live AI functionality.
+
+Do not activate paid AI API usage without business approval.
+
+---
+
+Current Milestone Update — Waypoint 27
+
+The Authentication + Role-Based Entry foundation is now complete and verified.
+
+Completed authentication foundation:
+
+- root Next.js proxy session boundary confirmed
+- Supabase session refresh
+- Application User resolution
+- Platform Super Admin resolution
+- Organization Membership resolution
+- Membership Role resolution
+- canonical Current Entry Context
+- role-aware `/entry`
+- Super Admin entry
+- Organization Admin entry
+- Member entry
+- authentication confirmation redirect hardening
+- removal of duplicate unused current-user infrastructure
+
+Browser verification completed for:
+
+- Mario → Super Admin
+- Heather → Super Admin
+- Organization Admin → Organization Admin entry
+- Member → Member entry
+
+No database schema changes were required for this milestone.
+
+The existing identity, membership, role, and permission foundations were reused.
+
+The next active milestone is:
+
+> Multi-Organization Entry Selection
+
+The next milestone must solve explicit Organization selection for users with
+multiple authorized Organization memberships without changing the existing
+tenant or authorization model.
+
+Production authorization, tenant boundaries, server-side enforcement, and
+RLS remain security work to be completed separately.
+
+The Settings and AI presentation work established in Waypoint 26 remains
+complete.
+
+The current AI experiences remain presentation-only.
+
+No live AI provider integration or paid AI API usage has been introduced.
+
+No Builder or Runtime rebuild is part of the completed authentication
+milestone.
+
+---
+
+Current Project Position
+
+Builder
+
+COMPLETE / ESTABLISHED
+
+Runtime Execution Foundation
+
+COMPLETE / ESTABLISHED
+
+Administration Foundation
+
+COMPLETE / ESTABLISHED
+
+Organization
+
+COMPLETE
+
+Departments
+
+COMPLETE
+
+Teams
+
+COMPLETE
+
+Users / Members
+
+COMPLETE
+
+Roles & Permissions
+
+FUNCTIONAL FOUNDATION COMPLETE
+
+Platform Authority
+
+FOUNDATION COMPLETE
+
+Platform Memberships
+
+COMPLETE
+
+Platform Super Admin authorization foundation
+
+COMPLETE
+
+Performance Sheet Management
+
+COMPLETE
+
+Assignment Management
+
+COMPLETE
+
+Administration Page Structure / Shared Header Standardization
+
+COMPLETE
 
 Administration Organization Context / Cascading Selection
 
+COMPLETE / ESTABLISHED
+
 Organization Admin Workspace Foundation
 
-Production Tenant Authorization
+COMPLETE / ESTABLISHED
 
-Production Row Level Security
+Organization Admin Fixed Organization Context
 
-Runtime Security Boundaries
+ESTABLISHED
 
-Historical KPI Updates
+One Builder / Two Administrative Entry Contexts
 
-KPI Calculation Engine
+ESTABLISHED
 
-Weighted Aggregation
+Objectives / Key Results / Initiatives
 
-Historical Performance Reporting
+BUILDER-OWNED / ESTABLISHED
 
-Priority: Medium
+Monthly Performance Cadence
 
-Assignment Subject Validation
+ESTABLISHED PRODUCT RULE
 
-Performance Instance Relationship Integrity
+Member Performance Navigation
 
-Organization Domain Model
+ESTABLISHED
 
-Repository Mappers
+Runtime Dashboard / Member Performance Separation
 
-Organization table naming standardization
+COMPLETE / VERIFIED
 
-Priority: Future Product
+Runtime Product Experience
 
-Multiple Performance Sheet Definitions
+FOUNDATION CHECKPOINT COMPLETE / CONTINUING
 
-Performance Sheet Library
+Settings Presentation
 
-Archive
+COMPLETE / PRESENTATION ESTABLISHED
 
-Duplicate
+Super Admin AI Mockup
 
-Search
+COMPLETE / PRESENTATION MOCK-UP
 
-Filtering
+Organization Admin AI Mockup
+
+COMPLETE / PRESENTATION MOCK-UP
+
+Member AI Assistant Mockup
+
+COMPLETE / PRESENTATION MOCK-UP
+
+CascadEffects Design Direction
+
+ESTABLISHED / CONTINUING
+
+Authentication + Role-Based Entry
+
+FOUNDATION COMPLETE / VERIFIED
+
+Multi-Organization Entry Selection
+
+NEXT MILESTONE
 
 Dashboards
 
+V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
+
 Reports
 
-AI-Assisted Planning
+FUTURE
 
-Predictive Analytics
+Live AI Integration
 
-CascadEffects Design System
+FUTURE / BUSINESS APPROVAL
 
-Environment Validation
+Production Authorization / RLS
+
+OUTSTANDING / LATER SECURITY MILESTONE
+
+Runtime Security Boundaries
+
+DEFERRED
+
+Historical KPI Updates
+
+DEFERRED
+
+KPI Calculation Engine
+
+DEFERRED
+
+Weighted Aggregation
+
+DEFERRED
+
+Historical Performance Reporting
+
+DEFERRED

@@ -1,10 +1,5 @@
-import AdminPlaceholderPage from "@/components/admin/shared/adminplaceholderpage";
+import SettingsPage from "@/components/admin/settings/settingspage";
 
 export default function Page() {
-  return (
-    <AdminPlaceholderPage
-      title="Settings"
-      description="Organization-aware platform settings."
-    />
-  );
+  return <SettingsPage />;
 }

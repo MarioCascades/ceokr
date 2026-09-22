@@ -5,27 +5,49 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { useOrganizationFeatures } from "@/lib/organization/useorganizationfeatures";
+
 import type { Department } from "@/lib/types/domain/department";
 import type { Team } from "@/lib/types/domain/team";
 
+/* ==========================================================
+   Form Values
+========================================================== */
+
 export interface UserFormValues {
   first_name: string;
+
   last_name: string;
+
   display_name: string;
+
   email: string;
+
+  password?: string;
+
   department_id: string;
+
   team_id: string;
+
   is_active: boolean;
 }
 
+/* ==========================================================
+   Props
+========================================================== */
+
 interface UserFormProps {
   departments: Department[];
+
   teams: Team[];
 
   initialValues?: UserFormValues;
 
   submitLabel?: string;
+
   savingLabel?: string;
+
+  showPassword?: boolean;
 
   onSubmit: (
     values: UserFormValues
@@ -36,19 +58,38 @@ interface UserFormProps {
   isSaving?: boolean;
 }
 
+/* ==========================================================
+   Component
+========================================================== */
+
 export default function UserForm({
   departments,
+
   teams,
+
   initialValues,
 
   submitLabel = "Invite User",
+
   savingLabel = "Inviting...",
 
+  showPassword = false,
+
   onSubmit,
+
   onCancel,
 
   isSaving = false,
 }: UserFormProps) {
+  const { features } =
+    useOrganizationFeatures();
+
+  const departmentsEnabled =
+    features.departments;
+
+  const teamsEnabled =
+    features.teams;
+
   const [firstName, setFirstName] =
     useState(
       initialValues?.first_name ?? ""
@@ -69,6 +110,9 @@ export default function UserForm({
       initialValues?.email ?? ""
     );
 
+  const [password, setPassword] =
+    useState("");
+
   const [departmentId, setDepartmentId] =
     useState(
       initialValues?.department_id ?? ""
@@ -87,6 +131,10 @@ export default function UserForm({
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
 
+  /* ========================================================
+     Reset Form When Initial Values Change
+  ======================================================== */
+
   useEffect(() => {
     setFirstName(
       initialValues?.first_name ?? ""
@@ -104,6 +152,8 @@ export default function UserForm({
       initialValues?.email ?? ""
     );
 
+    setPassword("");
+
     setDepartmentId(
       initialValues?.department_id ?? ""
     );
@@ -119,22 +169,57 @@ export default function UserForm({
     setErrorMessage(null);
   }, [initialValues]);
 
-  /*
-   * Only show teams belonging to the selected department.
-   */
+  /* ========================================================
+     Clear Disabled Feature Values
+     
+     If an organization turns a feature off, the form should
+     never continue submitting stale department/team values.
+  ======================================================== */
+
+  useEffect(() => {
+    if (!departmentsEnabled) {
+      setDepartmentId("");
+    }
+
+    if (!teamsEnabled) {
+      setTeamId("");
+    }
+  }, [
+    departmentsEnabled,
+    teamsEnabled,
+  ]);
+
+  /* ========================================================
+     Available Teams
+
+     Teams are independent from the Departments feature.
+
+     If Departments are enabled:
+       - show teams belonging to the selected department.
+
+     If Departments are disabled:
+       - show all available teams.
+
+     Team assignment remains optional either way.
+  ======================================================== */
+
   const availableTeams =
-    departmentId
-      ? teams.filter(
-          (team) =>
-            team.department_id ===
-            departmentId
-        )
+    teamsEnabled
+      ? departmentsEnabled
+        ? departmentId
+          ? teams.filter(
+              (team) =>
+                team.department_id ===
+                departmentId
+            )
+          : []
+        : teams
       : [];
 
-  /*
-   * Changing the department can invalidate
-   * the currently selected team.
-   */
+  /* ========================================================
+     Department Change
+  ======================================================== */
+
   function handleDepartmentChange(
     value: string
   ) {
@@ -145,13 +230,26 @@ export default function UserForm({
       !teams.some(
         (team) =>
           team.id === teamId &&
-          team.department_id ===
-            value
+          team.department_id === value
       )
     ) {
       setTeamId("");
     }
   }
+
+  /* ========================================================
+     Team Change
+  ======================================================== */
+
+  function handleTeamChange(
+    value: string
+  ) {
+    setTeamId(value);
+  }
+
+  /* ========================================================
+     Submit
+  ======================================================== */
 
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>
@@ -169,6 +267,13 @@ export default function UserForm({
 
     const trimmedEmail =
       email.trim();
+
+    const trimmedPassword =
+      password;
+
+    /* ======================================================
+       Validation
+    ====================================================== */
 
     if (!trimmedFirstName) {
       setErrorMessage(
@@ -194,7 +299,39 @@ export default function UserForm({
       return;
     }
 
-    if (!departmentId) {
+    if (
+      showPassword &&
+      !trimmedPassword
+    ) {
+      setErrorMessage(
+        "Password is required."
+      );
+
+      return;
+    }
+
+    if (
+      showPassword &&
+      trimmedPassword.length < 8
+    ) {
+      setErrorMessage(
+        "Password must be at least 8 characters."
+      );
+
+      return;
+    }
+
+    /*
+      Department is only required as a field when the
+      Departments feature is enabled.
+
+      Even when enabled, this remains a required assignment
+      only for workflows where the form currently requires it.
+    */
+    if (
+      departmentsEnabled &&
+      !departmentId
+    ) {
       setErrorMessage(
         "Department is required."
       );
@@ -202,15 +339,22 @@ export default function UserForm({
       return;
     }
 
-    if (!teamId) {
-      setErrorMessage(
-        "Team is required."
-      );
+    /*
+      Team is only required as a field when the Teams feature
+      is enabled.
 
-      return;
-    }
+      IMPORTANT:
+      Feature availability does not mean every member must
+      belong to a team.
+
+      Therefore Team is intentionally NOT required here.
+    */
 
     setErrorMessage(null);
+
+    /* ======================================================
+       Submit Values
+    ====================================================== */
 
     try {
       await onSubmit({
@@ -226,11 +370,22 @@ export default function UserForm({
         email:
           trimmedEmail,
 
+        ...(showPassword
+          ? {
+              password:
+                trimmedPassword,
+            }
+          : {}),
+
         department_id:
-          departmentId,
+          departmentsEnabled
+            ? departmentId
+            : "",
 
         team_id:
-          teamId,
+          teamsEnabled
+            ? teamId
+            : "",
 
         is_active:
           isActive,
@@ -249,12 +404,15 @@ export default function UserForm({
     }
   }
 
+  /* ========================================================
+     Render
+  ======================================================== */
+
   return (
     <form
       onSubmit={handleSubmit}
       className="space-y-5"
     >
-
       {/* First Name */}
 
       <div>
@@ -333,78 +491,119 @@ export default function UserForm({
         />
       </div>
 
+      {/* Password */}
+
+      {showPassword && (
+        <div>
+          <label className="mb-2 block text-sm font-medium">
+            Password
+          </label>
+
+          <Input
+            type="password"
+            value={password}
+            onChange={(event) =>
+              setPassword(
+                event.target.value
+              )
+            }
+            placeholder="Minimum 8 characters"
+            disabled={isSaving}
+            autoComplete="new-password"
+          />
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            This account will be created immediately
+            and can log in without an invitation email.
+          </p>
+        </div>
+      )}
+
       {/* Department */}
 
-      <div>
-        <label className="mb-2 block text-sm font-medium">
-          Department
-        </label>
+      {departmentsEnabled && (
+        <div>
+          <label className="mb-2 block text-sm font-medium">
+            Department
+          </label>
 
-        <select
-          value={departmentId}
-          onChange={(event) =>
-            handleDepartmentChange(
-              event.target.value
-            )
-          }
-          disabled={isSaving}
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-        >
-          <option value="">
-            Select department
-          </option>
+          <select
+            value={departmentId}
+            onChange={(event) =>
+              handleDepartmentChange(
+                event.target.value
+              )
+            }
+            disabled={isSaving}
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          >
+            <option value="">
+              Select department
+            </option>
 
-          {departments.map(
-            (department) => (
-              <option
-                key={department.id}
-                value={department.id}
-              >
-                {department.name}
-              </option>
-            )
-          )}
-        </select>
-      </div>
+            {departments.map(
+              (department) => (
+                <option
+                  key={department.id}
+                  value={department.id}
+                >
+                  {department.name}
+                </option>
+              )
+            )}
+          </select>
+        </div>
+      )}
 
       {/* Team */}
 
-      <div>
-        <label className="mb-2 block text-sm font-medium">
-          Team
-        </label>
+      {teamsEnabled && (
+        <div>
+          <label className="mb-2 block text-sm font-medium">
+            Team
+          </label>
 
-        <select
-          value={teamId}
-          onChange={(event) =>
-            setTeamId(
-              event.target.value
-            )
-          }
-          disabled={
-            isSaving ||
-            !departmentId
-          }
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-        >
-          <option value="">
-            {departmentId
-              ? "Select team"
-              : "Select department first"}
-          </option>
+          <select
+            value={teamId}
+            onChange={(event) =>
+              handleTeamChange(
+                event.target.value
+              )
+            }
+            disabled={
+              isSaving ||
+              (
+                departmentsEnabled &&
+                !departmentId
+              )
+            }
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+          >
+            <option value="">
+              {departmentsEnabled
+                ? departmentId
+                  ? "Select team (optional)"
+                  : "Select department first"
+                : "Select team (optional)"}
+            </option>
 
-          {availableTeams.map(
-            (team) => (
-              <option
-                key={team.id}
-                value={team.id}
-              >
-                {team.name}
-              </option>
-            )
-          )}
-        </select>
-      </div>
+            {availableTeams.map(
+              (team) => (
+                <option
+                  key={team.id}
+                  value={team.id}
+                >
+                  {team.name}
+                </option>
+              )
+            )}
+          </select>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            Team assignment is optional.
+          </p>
+        </div>
+      )}
 
       {/* Active */}
 
@@ -438,7 +637,6 @@ export default function UserForm({
       {/* Actions */}
 
       <div className="flex justify-end gap-3">
-
         <Button
           type="button"
           variant="outline"
@@ -456,9 +654,7 @@ export default function UserForm({
             ? savingLabel
             : submitLabel}
         </Button>
-
       </div>
-
     </form>
   );
 }

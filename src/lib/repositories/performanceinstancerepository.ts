@@ -17,6 +17,8 @@ interface PerformanceInstanceRecord {
 
   performance_sheet_id: string;
 
+  performance_month: string;
+
   overall_score: number;
 
   progress: number;
@@ -48,7 +50,8 @@ function mapRecordToPerformanceInstance(
   record: PerformanceInstanceRecord
 ): PerformanceInstance {
   return {
-    id: record.id,
+    id:
+      record.id,
 
     organizationId:
       record.organization_id,
@@ -58,6 +61,9 @@ function mapRecordToPerformanceInstance(
 
     performanceSheetId:
       record.performance_sheet_id,
+
+    performanceMonth:
+      record.performance_month,
 
     overallScore:
       record.overall_score,
@@ -69,25 +75,31 @@ function mapRecordToPerformanceInstance(
       record.status,
 
     employeeComments:
-      record.employee_comments ?? undefined,
+      record.employee_comments ??
+      undefined,
 
     managerComments:
-      record.manager_comments ?? undefined,
+      record.manager_comments ??
+      undefined,
 
     createdAt:
       record.created_at,
 
     startedAt:
-      record.started_at ?? undefined,
+      record.started_at ??
+      undefined,
 
     submittedAt:
-      record.submitted_at ?? undefined,
+      record.submitted_at ??
+      undefined,
 
     approvedAt:
-      record.approved_at ?? undefined,
+      record.approved_at ??
+      undefined,
 
     completedAt:
-      record.completed_at ?? undefined,
+      record.completed_at ??
+      undefined,
   };
 }
 
@@ -101,47 +113,51 @@ export async function createPerformanceInstance(
     "id" | "createdAt"
   >
 ): Promise<PerformanceInstance> {
-  const { data, error } = await supabase
-    .from("performance_instances")
-    .insert({
-      organization_id:
-        performanceInstance.organizationId,
+  const { data, error } =
+    await supabase
+      .from("performance_instances")
+      .insert({
+        organization_id:
+          performanceInstance.organizationId,
 
-      assignment_id:
-        performanceInstance.assignmentId,
+        assignment_id:
+          performanceInstance.assignmentId,
 
-      performance_sheet_id:
-        performanceInstance.performanceSheetId,
+        performance_sheet_id:
+          performanceInstance.performanceSheetId,
 
-      overall_score:
-        performanceInstance.overallScore,
+        performance_month:
+          performanceInstance.performanceMonth,
 
-      progress:
-        performanceInstance.progress,
+        overall_score:
+          performanceInstance.overallScore,
 
-      status:
-        performanceInstance.status,
+        progress:
+          performanceInstance.progress,
 
-      employee_comments:
-        performanceInstance.employeeComments,
+        status:
+          performanceInstance.status,
 
-      manager_comments:
-        performanceInstance.managerComments,
+        employee_comments:
+          performanceInstance.employeeComments,
 
-      started_at:
-        performanceInstance.startedAt,
+        manager_comments:
+          performanceInstance.managerComments,
 
-      submitted_at:
-        performanceInstance.submittedAt,
+        started_at:
+          performanceInstance.startedAt,
 
-      approved_at:
-        performanceInstance.approvedAt,
+        submitted_at:
+          performanceInstance.submittedAt,
 
-      completed_at:
-        performanceInstance.completedAt,
-    })
-    .select()
-    .single();
+        approved_at:
+          performanceInstance.approvedAt,
+
+        completed_at:
+          performanceInstance.completedAt,
+      })
+      .select()
+      .single();
 
   if (error) {
     throw new Error(
@@ -161,46 +177,50 @@ export async function createPerformanceInstance(
 export async function updatePerformanceInstance(
   performanceInstance: PerformanceInstance
 ): Promise<PerformanceInstance> {
-  const { data, error } = await supabase
-    .from("performance_instances")
-    .update({
-      overall_score:
-        performanceInstance.overallScore,
+  const { data, error } =
+    await supabase
+      .from("performance_instances")
+      .update({
+        performance_month:
+          performanceInstance.performanceMonth,
 
-      progress:
-        performanceInstance.progress,
+        overall_score:
+          performanceInstance.overallScore,
 
-      status:
-        performanceInstance.status,
+        progress:
+          performanceInstance.progress,
 
-      employee_comments:
-        performanceInstance.employeeComments,
+        status:
+          performanceInstance.status,
 
-      manager_comments:
-        performanceInstance.managerComments,
+        employee_comments:
+          performanceInstance.employeeComments,
 
-      started_at:
-        performanceInstance.startedAt,
+        manager_comments:
+          performanceInstance.managerComments,
 
-      submitted_at:
-        performanceInstance.submittedAt,
+        started_at:
+          performanceInstance.startedAt,
 
-      approved_at:
-        performanceInstance.approvedAt,
+        submitted_at:
+          performanceInstance.submittedAt,
 
-      completed_at:
-        performanceInstance.completedAt,
-    })
-    .eq(
-      "id",
-      performanceInstance.id
-    )
-    .eq(
-      "organization_id",
-      performanceInstance.organizationId
-    )
-    .select()
-    .single();
+        approved_at:
+          performanceInstance.approvedAt,
+
+        completed_at:
+          performanceInstance.completedAt,
+      })
+      .eq(
+        "id",
+        performanceInstance.id
+      )
+      .eq(
+        "organization_id",
+        performanceInstance.organizationId
+      )
+      .select()
+      .single();
 
   if (error) {
     throw new Error(
@@ -221,17 +241,18 @@ export async function deletePerformanceInstance(
   organizationId: string,
   performanceInstanceId: string
 ): Promise<void> {
-  const { error } = await supabase
-    .from("performance_instances")
-    .delete()
-    .eq(
-      "id",
-      performanceInstanceId
-    )
-    .eq(
-      "organization_id",
-      organizationId
-    );
+  const { error } =
+    await supabase
+      .from("performance_instances")
+      .delete()
+      .eq(
+        "id",
+        performanceInstanceId
+      )
+      .eq(
+        "organization_id",
+        organizationId
+      );
 
   if (error) {
     throw new Error(
@@ -248,18 +269,19 @@ export async function findPerformanceInstanceById(
   organizationId: string,
   performanceInstanceId: string
 ): Promise<PerformanceInstance | null> {
-  const { data, error } = await supabase
-    .from("performance_instances")
-    .select("*")
-    .eq(
-      "id",
-      performanceInstanceId
-    )
-    .eq(
-      "organization_id",
-      organizationId
-    )
-    .maybeSingle();
+  const { data, error } =
+    await supabase
+      .from("performance_instances")
+      .select("*")
+      .eq(
+        "id",
+        performanceInstanceId
+      )
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .maybeSingle();
 
   if (error) {
     throw new Error(
@@ -277,22 +299,113 @@ export async function findPerformanceInstanceById(
 }
 
 /* ==========================================================
+   Find By Assignment And Month
+   ----------------------------------------------------------
+   Monthly Runtime identity:
+   Assignment + Performance Month
+========================================================== */
+
+export async function findPerformanceInstanceByAssignmentAndMonth(
+  organizationId: string,
+  assignmentId: string,
+  performanceMonth: string
+): Promise<PerformanceInstance | null> {
+  const { data, error } =
+    await supabase
+      .from("performance_instances")
+      .select("*")
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .eq(
+        "assignment_id",
+        assignmentId
+      )
+      .eq(
+        "performance_month",
+        performanceMonth
+      )
+      .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Failed to load monthly performance instance: ${error.message}`
+    );
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return mapRecordToPerformanceInstance(
+    data as PerformanceInstanceRecord
+  );
+}
+
+/* ==========================================================
+   Find By Assignment
+   ----------------------------------------------------------
+   Used for monthly Runtime history.
+========================================================== */
+
+export async function findPerformanceInstancesByAssignment(
+  organizationId: string,
+  assignmentId: string
+): Promise<PerformanceInstance[]> {
+  const { data, error } =
+    await supabase
+      .from("performance_instances")
+      .select("*")
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .eq(
+        "assignment_id",
+        assignmentId
+      )
+      .order(
+        "performance_month",
+        {
+          ascending: false,
+        }
+      );
+
+  if (error) {
+    throw new Error(
+      `Failed to load performance instance history: ${error.message}`
+    );
+  }
+
+  return (
+    data as PerformanceInstanceRecord[]
+  ).map(
+    mapRecordToPerformanceInstance
+  );
+}
+
+/* ==========================================================
    Find By Organization
 ========================================================== */
 
 export async function findPerformanceInstancesByOrganization(
   organizationId: string
 ): Promise<PerformanceInstance[]> {
-  const { data, error } = await supabase
-    .from("performance_instances")
-    .select("*")
-    .eq(
-      "organization_id",
-      organizationId
-    )
-    .order("created_at", {
-      ascending: false,
-    });
+  const { data, error } =
+    await supabase
+      .from("performance_instances")
+      .select("*")
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .order(
+        "performance_month",
+        {
+          ascending: false,
+        }
+      );
 
   if (error) {
     throw new Error(

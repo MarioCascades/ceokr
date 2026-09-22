@@ -39,6 +39,18 @@ export interface PerformanceInstance {
   performanceSheetId: PerformanceSheet["id"];
 
   /**
+   * Calendar month represented by this
+   * Performance Instance.
+   *
+   * Stored as the first day of the month.
+   *
+   * Examples:
+   * 2026-09-01
+   * 2026-10-01
+   */
+  performanceMonth: string;
+
+  /**
    * Overall weighted performance score.
    *
    * Range:

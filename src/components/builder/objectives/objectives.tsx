@@ -98,6 +98,7 @@ export default function Objectives() {
                 <ObjectiveCard
                   key={objective.id}
                   objective={objective}
+                   objectives={builderDocument.objectives}
                   onEdit={() =>
                     handleEditObjective(objective)
                   }

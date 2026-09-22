@@ -13,6 +13,8 @@ interface KeyResultProgressRecord {
 
   performance_instance_id: string;
 
+  performance_instance_key_result_id: string | null;
+
   objective_id: string;
 
   key_result_id: string;
@@ -41,11 +43,20 @@ interface KeyResultProgressRecord {
 function mapRecordToKeyResultProgress(
   record: KeyResultProgressRecord
 ): KeyResultProgress {
+  if (!record.performance_instance_key_result_id) {
+    throw new Error(
+      "Key result progress is missing its performance instance key result relationship."
+    );
+  }
+
   return {
     id: record.id,
 
     performanceInstanceId:
       record.performance_instance_id,
+
+    performanceInstanceKeyResultId:
+      record.performance_instance_key_result_id,
 
     objectiveId:
       record.objective_id,
@@ -94,6 +105,9 @@ export async function createKeyResultProgress(
     .insert({
       performance_instance_id:
         progress.performanceInstanceId,
+
+      performance_instance_key_result_id:
+        progress.performanceInstanceKeyResultId,
 
       objective_id:
         progress.objectiveId,

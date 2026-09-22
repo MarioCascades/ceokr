@@ -1,0 +1,669 @@
+# Waypoint 27 — Authentication and Role-Based Entry Foundation
+
+**Date:** 2026-09-19  
+**Status:** AUTHENTICATION + ROLE-BASED ENTRY FOUNDATION COMPLETE / VERIFIED  
+**Previous Waypoint:** Waypoint 26 — Product Experience Completion and Authentication Direction  
+**Next Milestone:** MULTI-ORGANIZATION ENTRY SELECTION
+
+---
+
+# Overview
+
+The Authentication + Role-Based Entry foundation has been implemented,
+compiled successfully, and browser-verified.
+
+This milestone connects the existing CascadEffects product experiences to
+authenticated application identity and persisted platform / organization
+membership and role context.
+
+The implementation does not rebuild Builder, Runtime, Administration, or the
+Member Workspace.
+
+The established flow is:
+
+```text
+Login
+  ↓
+Supabase Auth
+  ↓
+Application User
+  ↓
+Platform / Organization Membership
+  ↓
+Role Context
+  ↓
+Current Entry Context
+  ↓
+Role-Based Entry
+  ↓
+Existing Product Experience
+```
+
+The three supported entry actors remain:
+
+- Platform Super Admin
+- Organization Admin
+- Member
+
+Authentication establishes identity.
+
+Production authorization remains a separate security milestone.
+
+---
+
+# Completed Work
+
+## Supabase Session Boundary
+
+The existing root-level Next.js `proxy.ts` was confirmed as the correct
+request boundary.
+
+The root proxy invokes:
+
+```text
+src/lib/supabase/proxy.ts
+```
+
+The existing Supabase SSR session-refresh implementation was reused.
+
+No duplicate session-refresh implementation was introduced.
+
+---
+
+## Application User Resolution
+
+The existing:
+
+```text
+src/lib/auth/currentserveruser.ts
+```
+
+remains the canonical server-side bridge between Supabase Auth identity and
+the application User record.
+
+The duplicate unused:
+
+```text
+src/lib/auth/currentuser.ts
+```
+
+was removed.
+
+---
+
+## Current Entry Context
+
+Updated:
+
+```text
+src/lib/auth/currententry.ts
+```
+
+The Current Entry Context now carries:
+
+- authenticated Application User
+- Entry Actor
+- Organization ID where applicable
+- Organization name where applicable
+
+The Current Entry Context is now the canonical server-side entry-resolution
+boundary.
+
+The current resolution precedence is:
+
+```text
+Platform Super Admin
+        ↓
+Organization Admin
+        ↓
+Member
+```
+
+Platform Super Admin authority is resolved before Organization-level entry
+authority.
+
+---
+
+## `/entry`
+
+Updated:
+
+```text
+src/app/entry/page.tsx
+```
+
+The `/entry` route now consumes the canonical Current Entry Context rather than
+independently reconstructing the authenticated user and platform authority.
+
+The resulting responsibility boundary is:
+
+```text
+CurrentEntryContext
+    ↓
+resolve entry actor / organization context
+
+/entry
+    ↓
+route or render
+
+RoleEntryLaunchpad
+    ↓
+present available destinations
+```
+
+The entry page does not determine authority itself.
+
+---
+
+## Authentication Confirmation
+
+Updated:
+
+```text
+src/app/auth/confirm/route.ts
+```
+
+The authentication confirmation route now validates the optional `next`
+redirect parameter as a root-relative path.
+
+Protocol-relative redirects such as:
+
+```text
+//example.com
+```
+
+are rejected.
+
+This prevents the authentication confirmation route from being used as an
+external redirect mechanism.
+
+---
+
+# Verified Entry Flows
+
+The following primary browser flows were verified successfully.
+
+## Platform Super Admin — Mario
+
+```text
+Login
+  ↓
+/entry
+  ↓
+/superadmin
+```
+
+Verified.
+
+---
+
+## Platform Super Admin — Heather
+
+```text
+Login
+  ↓
+/entry
+  ↓
+/superadmin
+```
+
+Verified.
+
+---
+
+## Organization Admin
+
+```text
+Login
+  ↓
+/entry
+  ↓
+Organization Admin Entry
+```
+
+Verified.
+
+---
+
+## Member
+
+```text
+Login
+  ↓
+/entry
+  ↓
+Member Entry
+```
+
+Verified.
+
+---
+
+## Unconfigured Account
+
+The defensive unconfigured-account path was not independently exercised.
+
+No test account was created solely to simulate an unconfigured authenticated
+actor.
+
+The defensive behavior remains:
+
+```text
+No valid entry context
+        ↓
+/login?error=account_not_configured
+```
+
+This does not block completion of the primary Authentication + Role-Based
+Entry foundation.
+
+---
+
+# Architecture Decisions
+
+## Authentication Does Not Select the Role
+
+The login experience does not establish authority by asking the user to
+select a role.
+
+The platform resolves the authenticated actor from persisted application
+records.
+
+The authority model is:
+
+```text
+Supabase Auth
+    ↓
+Application User
+    ↓
+Platform Membership
+OR
+Organization Membership
+    ↓
+Role Context
+```
+
+A client-selected role must never be treated as proof of authority.
+
+---
+
+## Platform Super Admin Precedence
+
+Platform Super Admin authority exists above the Organization hierarchy.
+
+A Platform Super Admin may also have Organization Membership without being
+forced into the Organization-level entry experience.
+
+The current entry resolver therefore evaluates Platform Super Admin
+membership before Organization-level role context.
+
+---
+
+## Current Entry Context
+
+`CurrentEntryContext` is the canonical server-side entry boundary.
+
+It establishes:
+
+- authenticated Application User
+- Entry Actor
+- Organization context where applicable
+
+The `/entry` route consumes this context instead of independently rebuilding
+identity and authority resolution.
+
+This prevents multiple competing entry-resolution paths.
+
+---
+
+## Authentication vs Authorization
+
+Authentication answers:
+
+> Who is this user?
+
+Authorization answers:
+
+> What is this user allowed to access or modify?
+
+This milestone establishes authentication and role-aware product entry.
+
+It does not constitute complete production authorization.
+
+Production authorization and RLS remain separate work.
+
+---
+
+# Files Modified
+
+```text
+src/lib/auth/currententry.ts
+
+src/app/entry/page.tsx
+
+src/app/auth/confirm/route.ts
+```
+
+---
+
+# Files Removed
+
+```text
+src/lib/auth/currentuser.ts
+```
+
+---
+
+# Files Added
+
+No application source files were added as part of the authentication
+foundation.
+
+The existing root-level:
+
+```text
+proxy.ts
+```
+
+was confirmed to be the correct Next.js request-boundary location.
+
+---
+
+# Database Changes
+
+```text
+None
+```
+
+No database migrations were required.
+
+The existing models were reused:
+
+- users
+- organizations
+- organization_memberships
+- membership_roles
+- roles
+- permissions
+- role_permissions
+- platform_memberships
+
+The authentication milestone did not introduce a second identity model or
+second membership model.
+
+---
+
+# Verification
+
+The application build passed after each implementation change.
+
+Verified:
+
+- Supabase request/session boundary
+- Current Entry Context
+- `/entry`
+- authentication confirmation redirect
+- Platform Super Admin entry
+- Organization Admin entry
+- Member entry
+
+The root-level proxy location was also corrected and runtime-verified.
+
+The final authentication and role-entry behavior is functioning in the
+development environment.
+
+---
+
+# Technical Debt
+
+The following remain intentionally deferred:
+
+- Explicit multi-Organization entry selection
+- Production tenant authorization
+- Production Row Level Security
+- Complete server-side authorization enforcement
+- Complete API authorization enforcement
+- Resource ownership enforcement
+- Assignment Subject Validation
+- Performance Instance Relationship Integrity
+- Historical KPI Updates
+- Generalized KPI Calculation Engine
+- Weighted Aggregation
+- Historical Performance Reporting
+- Dynamic Dashboard System
+- Organization-specific branding persistence
+- Live AI provider integration
+- AI data-aware performance analysis
+- broader CascadEffects Design System refinement
+
+The current authentication implementation should not be expanded into a
+replacement authorization architecture.
+
+---
+
+# Known Entry Architecture Limitation
+
+A user may belong to multiple Organizations.
+
+The current entry-resolution implementation can select an applicable
+Organization using the existing membership ordering behavior.
+
+This is not the final multi-tenant entry experience.
+
+The next milestone is explicit multi-Organization entry selection.
+
+The intended direction to evaluate is:
+
+```text
+/entry
+  ↓
+Platform Super Admin?
+  ├── YES → Super Admin
+  └── NO
+       ↓
+Organization Membership Count
+       ↓
+  ┌────┴────┐
+  ↓         ↓
+ One       Many
+  ↓         ↓
+Role Entry  Organization Selector
+                ↓
+        Server-side validation
+                ↓
+             Role Entry
+```
+
+This behavior must be confirmed architecturally before implementation.
+
+The selected Organization must remain context only.
+
+It must not become the authorization boundary.
+
+---
+
+# Documentation Updated
+
+The following current documentation is being reconciled with this
+Waypoint:
+
+```text
+docs/01_Platform_Decisions.md
+
+docs/02_Platform_Backlog.md
+
+docs/waypoints/
+```
+
+No change is required to:
+
+```text
+docs/00_Engineering_Process.md
+
+docs/03_Product_North_Star.md
+```
+
+The Engineering Process remains unchanged.
+
+The Product North Star remains unchanged.
+
+Historical Waypoint 26 remains unchanged.
+
+---
+
+# Next Session
+
+## Milestone
+
+> Multi-Organization Entry Selection
+
+Start from:
+
+```text
+Waypoint 27
+    ↓
+Platform Decisions
+    ↓
+Platform Backlog
+    ↓
+Product North Star
+```
+
+Then inspect:
+
+- current entry resolver
+- organization membership model
+- client organization context
+- organization selector patterns
+- Super Admin organization selection
+- Organization Admin fixed organization context
+- Member organization context
+
+The goal is to establish a clear entry experience for users who belong to
+multiple Organizations.
+
+The implementation must preserve:
+
+- tenant boundaries
+- server-side authority
+- existing membership architecture
+- one Builder
+- one Runtime
+- one Member performance model
+
+Do not use client-side Organization selection as authorization.
+
+Do not create duplicate membership records or duplicate role systems.
+
+---
+
+# Milestone Status
+
+```text
+Foundation
+    COMPLETE
+
+Persistence
+    COMPLETE
+
+Administration
+    COMPLETE
+
+Organization Management
+    COMPLETE
+
+Organization Admin Foundation
+    COMPLETE
+
+Runtime Foundation
+    COMPLETE
+
+Runtime Product Experience
+    FOUNDATION CHECKPOINT COMPLETE / CONTINUING
+
+Settings Presentation
+    COMPLETE
+
+Super Admin AI Mockup
+    COMPLETE
+
+Organization Admin AI Mockup
+    COMPLETE
+
+Member AI Assistant Mockup
+    COMPLETE
+
+CascadEffects Design Direction
+    ESTABLISHED / CONTINUING
+
+Authentication Session Foundation
+    COMPLETE / VERIFIED
+
+Application User Resolution
+    COMPLETE / VERIFIED
+
+Platform Super Admin Resolution
+    COMPLETE / VERIFIED
+
+Organization Membership Resolution
+    COMPLETE / VERIFIED
+
+Role-Based Entry
+    COMPLETE / VERIFIED
+
+Authentication + Role-Based Entry
+    FOUNDATION COMPLETE / VERIFIED
+
+Multi-Organization Entry Selection
+    NEXT MILESTONE
+
+Production Authorization / RLS
+    LATER SECURITY MILESTONE
+
+Live AI Integration
+    FUTURE / BUSINESS APPROVAL
+
+Historical KPI Engine
+    FUTURE
+
+Dynamic Dashboards
+    FUTURE
+
+Historical Reporting
+    FUTURE
+```
+
+---
+
+# Final Handoff
+
+Waypoint 27 establishes the Authentication + Role-Based Entry foundation as
+the current completed milestone.
+
+The existing product architecture remains intact:
+
+```text
+Administration
+      ↓
+Builder
+      ↓
+Published Performance Sheet
+      ↓
+Assignment
+      ↓
+Performance Instance
+      ↓
+Runtime
+      ↓
+Member / Manager Experience
+```
+
+Authentication now provides the identity and entry context needed to connect
+users to those existing experiences.
+
+The next architectural problem is explicit multi-Organization entry
+selection.
+
+Production authorization and RLS remain separate security milestones.
+
+The repository documentation remains the authoritative engineering record.
