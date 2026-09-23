@@ -17,31 +17,90 @@ export default function NavigationTabsManager() {
     editMode,
   } = useBuilder();
 
-  const tabs =
-    builderDocument.navigation.tabs;
+  const tabs = builderDocument.navigation.tabs;
 
   /*
    * ========================================================
-   * Ensure the Builder has a system Main tab
+   * Normalize Builder Navigation
    * ========================================================
    *
-   * The initial Builder document intentionally contains no
-   * sample tabs.
+   * The Builder must always contain exactly one system
+   * Main tab.
    *
-   * Main is a structural Builder tab rather than a user,
-   * team, or organization record.
+   * Main is identified by the stable id:
    *
-   * Once created, it becomes part of the persisted
-   * BuilderDocument.
+   *     dashboard
+   *
+   * This normalization protects the Builder from persisted
+   * documents that may contain duplicate dashboard entries.
+   *
+   * We intentionally fix the BuilderDocument state itself
+   * rather than hiding duplicate React keys at render time.
    */
 
   useEffect(() => {
-    const hasMainTab =
+    const dashboardTabs = tabs.filter(
+      (tab) => tab.id === "dashboard"
+    );
+
+    const nonDashboardTabs = tabs.filter(
+      (tab) => tab.id !== "dashboard"
+    );
+
+    /*
+     * Keep the first existing dashboard tab.
+     *
+     * If no dashboard exists, create the system Main tab.
+     */
+    const dashboardTab =
+      dashboardTabs[0] ?? {
+        id: "dashboard",
+        label: "Main",
+        visible: true,
+        order: 0,
+      };
+
+    /*
+     * Rebuild the navigation collection so that:
+     *
+     * 1. There is exactly one dashboard tab.
+     * 2. Dashboard is always first.
+     * 3. Remaining tabs retain their identity.
+     * 4. Orders are normalized.
+     */
+    const normalizedTabs = [
+      {
+        ...dashboardTab,
+        id: "dashboard",
+        label: "Main",
+        visible: true,
+        order: 0,
+      },
+
+      ...nonDashboardTabs.map(
+        (tab, index) => ({
+          ...tab,
+          order: index + 1,
+        })
+      ),
+    ];
+
+    /*
+     * Determine whether the current state actually needs
+     * normalization before writing anything back.
+     */
+    const needsNormalization =
+      dashboardTabs.length !== 1 ||
+      tabs.length !== normalizedTabs.length ||
       tabs.some(
-        (tab) => tab.id === "dashboard"
+        (tab, index) =>
+          tab.id !==
+            normalizedTabs[index]?.id ||
+          tab.order !==
+            normalizedTabs[index]?.order
       );
 
-    if (hasMainTab) {
+    if (!needsNormalization) {
       return;
     }
 
@@ -52,27 +111,29 @@ export default function NavigationTabsManager() {
         navigation: {
           ...current.navigation,
 
-          tabs: [
-            {
-              id: "dashboard",
-              label: "Main",
-              visible: true,
-              order: 0,
-            },
-
-            ...current.navigation.tabs.map(
-              (tab, index) => ({
-                ...tab,
-                order: index + 1,
-              })
-            ),
-          ],
+          tabs: normalizedTabs,
         },
       })
     );
+
+    /*
+     * If the active tab was one of the duplicate dashboard
+     * entries, Main remains the active Builder context.
+     */
+    if (
+      activeSheet === "dashboard" ||
+      dashboardTabs.some(
+        (tab) =>
+          tab.id === activeSheet
+      )
+    ) {
+      setActiveSheet("dashboard");
+    }
   }, [
     tabs,
+    activeSheet,
     setBuilderDocument,
+    setActiveSheet,
   ]);
 
   /*
@@ -81,13 +142,12 @@ export default function NavigationTabsManager() {
    * ========================================================
    */
 
-  const orderedTabs =
-    useMemo(() => {
-      return [...tabs].sort(
-        (a, b) =>
-          a.order - b.order
-      );
-    }, [tabs]);
+  const orderedTabs = useMemo(() => {
+    return [...tabs].sort(
+      (a, b) =>
+        a.order - b.order
+    );
+  }, [tabs]);
 
   /*
    * ========================================================
@@ -111,16 +171,12 @@ export default function NavigationTabsManager() {
       return;
     }
 
-    const trimmedName =
-      name.trim();
+    const trimmedName = name.trim();
 
     const newTab = {
       id: crypto.randomUUID(),
-
       label: trimmedName,
-
       visible: true,
-
       order: tabs.length,
     };
 

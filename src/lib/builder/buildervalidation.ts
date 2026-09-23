@@ -70,10 +70,16 @@ export function validateBuilderDocument(
 ): BuilderValidationResult {
   const issues: BuilderValidationIssue[] = [];
 
-  validateOrganization(
-    document,
-    issues
-  );
+  /*
+   * Organization identity is intentionally NOT validated here.
+   *
+   * The Builder is opened within an existing Organization
+   * Admin context, so the organization is already known.
+   *
+   * The Builder should not create a second source of truth
+   * by requiring organization identity to be duplicated
+   * inside the performance-sheet definition.
+   */
 
   validatePerformanceHeader(
     document,
@@ -104,37 +110,6 @@ export function validateBuilderDocument(
 
     issues,
   };
-}
-
-/* ==========================================================
-   Organization
-========================================================== */
-
-function validateOrganization(
-  document: BuilderDocument,
-  issues: BuilderValidationIssue[]
-) {
-  /*
-   * Organization identity is part of the
-   * performance-sheet definition.
-   *
-   * A published definition should identify
-   * the organization it belongs to.
-   */
-  if (
-    !document.organization.companyName.trim()
-  ) {
-    issues.push({
-      id: "organization-company-name",
-
-      severity: "error",
-
-      section: "organization",
-
-      message:
-        "Organization name is required before publishing.",
-    });
-  }
 }
 
 /* ==========================================================
@@ -205,19 +180,38 @@ function validateObjectives(
   }
 
   /*
-   * Once Objectives exist, they represent
-   * actual configuration and their weights
-   * must form a complete allocation.
+   * Objective weight rule:
+   *
+   *   > 0% = scoring Objective
+   *    0%   = Display Only
+   *   < 0%  = invalid
+   *
+   * Only positive-weight Objectives participate
+   * in the scoring allocation.
+   *
+   * If scoring Objectives exist, their weights
+   * must total 100%.
+   *
+   * If every Objective is 0%, the collection is
+   * treated as Display Only and is not blocked
+   * from publication.
    */
-  const totalObjectiveWeight =
-    document.objectives.reduce(
+  const scoringObjectives =
+    document.objectives.filter(
+      (objective) =>
+        objective.weight > 0
+    );
+
+  const totalScoringObjectiveWeight =
+    scoringObjectives.reduce(
       (total, objective) =>
         total + objective.weight,
       0
     );
 
   if (
-    totalObjectiveWeight !== 100
+    scoringObjectives.length > 0 &&
+    totalScoringObjectiveWeight !== 100
   ) {
     issues.push({
       id: "objective-total-weight",
@@ -227,7 +221,22 @@ function validateObjectives(
       section: "objectives",
 
       message:
-        `Objective weights must total 100%. Current total: ${totalObjectiveWeight}%.`,
+        `Scoring Objective weights must total 100%. Display-only Objectives with 0% weight are excluded. Current scoring total: ${totalScoringObjectiveWeight}%.`,
+    });
+  }
+
+  if (
+    scoringObjectives.length === 0
+  ) {
+    issues.push({
+      id: "objectives-display-only",
+
+      severity: "warning",
+
+      section: "objectives",
+
+      message:
+        "All configured Objectives have 0% weight and are Display Only. No Objective contributes to scoring.",
     });
   }
 
@@ -268,8 +277,15 @@ function validateObjective(
     });
   }
 
+  /*
+   * Weight 0 is valid.
+   *
+   * A zero-weight Objective is Display Only.
+   *
+   * Negative weights remain invalid.
+   */
   if (
-    objective.weight <= 0
+    objective.weight < 0
   ) {
     issues.push({
       id:
@@ -283,7 +299,7 @@ function validateObjective(
         objective.id,
 
       message:
-        `"${objective.title || "Untitled Objective"}" must have a weight greater than 0%.`,
+        `"${objective.title || "Untitled Objective"}" cannot have a negative weight.`,
     });
   }
 
@@ -317,19 +333,38 @@ function validateObjective(
   }
 
   /*
-   * Once Key Results exist, they represent
-   * actual configuration and their weights
+   * Key Result weight rule:
+   *
+   *   > 0% = scoring Key Result
+   *    0%   = Display Only
+   *   < 0%  = invalid
+   *
+   * Only positive-weight Key Results participate
+   * in the scoring allocation.
+   *
+   * If scoring Key Results exist, their weights
    * must total 100% within the Objective.
+   *
+   * If every Key Result is 0%, the Objective
+   * contains display-only information and is
+   * not blocked from publication.
    */
-  const totalKeyResultWeight =
-    objective.keyResults.reduce(
+  const scoringKeyResults =
+    objective.keyResults.filter(
+      (keyResult) =>
+        keyResult.weight > 0
+    );
+
+  const totalScoringKeyResultWeight =
+    scoringKeyResults.reduce(
       (total, keyResult) =>
         total + keyResult.weight,
       0
     );
 
   if (
-    totalKeyResultWeight !== 100
+    scoringKeyResults.length > 0 &&
+    totalScoringKeyResultWeight !== 100
   ) {
     issues.push({
       id:
@@ -343,7 +378,26 @@ function validateObjective(
         objective.id,
 
       message:
-        `Key Result weights for "${objective.title || "Untitled Objective"}" must total 100%. Current total: ${totalKeyResultWeight}%.`,
+        `Scoring Key Result weights for "${objective.title || "Untitled Objective"}" must total 100%. Display-only Key Results with 0% weight are excluded. Current scoring total: ${totalScoringKeyResultWeight}%.`,
+    });
+  }
+
+  if (
+    scoringKeyResults.length === 0
+  ) {
+    issues.push({
+      id:
+        `key-results-display-only-${objective.id}`,
+
+      severity: "warning",
+
+      section: "keyResults",
+
+      objectiveId:
+        objective.id,
+
+      message:
+        `"${objective.title || "Untitled Objective"}" contains only 0% Key Results. All Key Results are Display Only and none contributes to scoring.`,
     });
   }
 
@@ -389,8 +443,16 @@ function validateKeyResult(
     });
   }
 
+  /*
+   * Weight 0 is valid.
+   *
+   * A zero-weight Key Result is Display Only
+   * and does not contribute to scoring.
+   *
+   * Negative weights remain invalid.
+   */
   if (
-    keyResult.weight <= 0
+    keyResult.weight < 0
   ) {
     issues.push({
       id:
@@ -407,7 +469,7 @@ function validateKeyResult(
         keyResult.id,
 
       message:
-        `"${keyResult.title || "Untitled Key Result"}" must have a weight greater than 0%.`,
+        `"${keyResult.title || "Untitled Key Result"}" cannot have a negative weight.`,
     });
   }
 

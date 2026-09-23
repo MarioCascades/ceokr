@@ -81,6 +81,32 @@ export default function UsersList({
 
 
   /* ========================================================
+     Open Member OKR Management
+  ======================================================== */
+
+  function openMemberOKRs(
+    userId: string
+  ) {
+
+    const params =
+      new URLSearchParams();
+
+    params.set(
+      "organizationId",
+      organizationId
+    );
+
+    params.set(
+      "subjectId",
+      userId
+    );
+
+    window.location.href =
+      `/organization/users/okrs?${params.toString()}`;
+  }
+
+
+  /* ========================================================
      Render Users
   ======================================================== */
 
@@ -192,6 +218,27 @@ export default function UsersList({
 
 
                   {/* ========================================
+                      OKRs
+                  ========================================= */}
+
+                  {
+                    user.is_active && (
+                      <button
+                        type="button"
+                        className="rounded-md border px-3 py-1.5 text-sm"
+                        onClick={() =>
+                          openMemberOKRs(
+                            user.id
+                          )
+                        }
+                      >
+                        OKRs
+                      </button>
+                    )
+                  }
+
+
+                  {/* ========================================
                       Edit
                   ========================================= */}
 
@@ -210,7 +257,7 @@ export default function UsersList({
 
                   {/* ========================================
                       Deactivate
-                  ========================================= */}
+                  ======================================== */}
 
                   {
                     user.is_active && (
