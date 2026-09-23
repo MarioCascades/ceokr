@@ -19,8 +19,6 @@ import DeactivateUserDialog from "@/components/admin/users/deactivateuserdialog"
 
 import {
   listUserManagementRecords,
-  updateUser,
-  updateOrganizationMembership,
   deactivateUser,
 } from "@/services/user.service";
 
@@ -517,16 +515,24 @@ export default function UsersPage() {
     values: UserFormValues
   ) {
 
-    if (
-      !organization ||
-      !selectedUser
-    ) {
+   if (
+  !organization ||
+  !selectedUser
+) {
 
-      throw new Error(
-        "No user is selected."
-      );
+  throw new Error(
+    "No user is selected."
+  );
 
-    }
+}
+
+if (!selectedUser.membership) {
+
+  throw new Error(
+    "The selected user does not have an organization membership."
+  );
+
+}
 
 
     setIsSaving(true);
@@ -536,41 +542,63 @@ export default function UsersPage() {
 
     try {
 
-      await updateUser(
-        selectedUser.user.id,
-        {
-          first_name:
-            values.first_name,
-
-          last_name:
-            values.last_name,
-
-          display_name:
-            values.display_name ||
-            null,
-
-          email:
-            values.email,
-
-          is_active:
-            values.is_active,
-        }
-      );
-
-
-      if (
-        selectedUser.membership
-      ) {
-
-        await updateOrganizationMembership(
-          selectedUser.membership.id,
+      const response =
+        await fetch(
+          "/api/admin/users",
           {
-            department_id:
-              values.department_id,
+            method: "PATCH",
 
-            team_id:
-              values.team_id,
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+
+              organization_id:
+                organization.id,
+
+              user_id:
+                selectedUser.user.id,
+
+              membership_id:
+                selectedUser.membership.id,
+
+              first_name:
+                values.first_name,
+
+              last_name:
+                values.last_name,
+
+              display_name:
+                values.display_name,
+
+              email:
+                values.email,
+
+              department_id:
+                values.department_id,
+
+              team_id:
+                values.team_id,
+
+              is_active:
+                values.is_active,
+
+            }),
           }
+        );
+
+
+      const result =
+        await response.json();
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          result?.error ??
+            "Failed to update user."
         );
 
       }
