@@ -145,7 +145,8 @@ export default function RuntimeHeader({
 
   const role =
     subject
-      ? document.performanceHeader.employeeRole
+      ? document.performanceHeader.title ||
+        document.performanceHeader.subtitle
       : "Organization Performance";
 
 
@@ -488,7 +489,7 @@ export default function RuntimeHeader({
 
             ) : (
 
-              document.performanceHeader.roleDescription && (
+              document.performanceHeader.description && (
 
                 <p
                   className="
@@ -501,7 +502,7 @@ export default function RuntimeHeader({
                   {
                     document
                       .performanceHeader
-                      .roleDescription
+                      .description
                   }
                 </p>
 

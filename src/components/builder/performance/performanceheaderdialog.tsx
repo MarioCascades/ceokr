@@ -28,42 +28,64 @@ export default function PerformanceHeaderDialog({
   open,
   onClose,
 }: PerformanceHeaderDialogProps) {
-  const { updatePerformanceHeader } = useBuilder();
+  const {
+    updatePerformanceHeader,
+  } = useBuilder();
 
-  const [employeeName, setEmployeeName] = useState("");
+  const [
+    title,
+    setTitle,
+  ] = useState("");
 
-  const [employeeRole, setEmployeeRole] = useState("");
+  const [
+    subtitle,
+    setSubtitle,
+  ] = useState("");
 
-  const [roleDescription, setRoleDescription] =
-    useState("");
+  const [
+    description,
+    setDescription,
+  ] = useState("");
 
-  const [metrics, setMetrics] = useState<
-    BuilderMetric[]
-  >([]);
+  const [
+    metrics,
+    setMetrics,
+  ] = useState<BuilderMetric[]>(
+    []
+  );
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
 
-    setEmployeeName(
-      performanceHeader.employeeName
+    setTitle(
+      performanceHeader.title
     );
 
-    setEmployeeRole(
-      performanceHeader.employeeRole
+    setSubtitle(
+      performanceHeader.subtitle
     );
 
-    setRoleDescription(
-      performanceHeader.roleDescription
+    setDescription(
+      performanceHeader.description
     );
 
-    setMetrics(performanceHeader.metrics);
-  }, [performanceHeader, open]);
+    setMetrics(
+      performanceHeader.metrics
+    );
+  }, [
+    performanceHeader,
+    open,
+  ]);
 
   function updateMetric(
     index: number,
     value: string
   ) {
-    const updated = [...metrics];
+    const updated = [
+      ...metrics,
+    ];
 
     updated[index] = {
       ...updated[index],
@@ -75,9 +97,9 @@ export default function PerformanceHeaderDialog({
 
   function handleSave() {
     updatePerformanceHeader({
-      employeeName,
-      employeeRole,
-      roleDescription,
+      title,
+      subtitle,
+      description,
       metrics,
     });
 
@@ -93,7 +115,7 @@ export default function PerformanceHeaderDialog({
         }
       }}
       title="Configure Performance Header"
-      description="Configure the employee header displayed on the Performance Sheet."
+      description="Configure the reusable header displayed on the Performance Sheet."
       size="xl"
       footer={
         <>
@@ -104,7 +126,9 @@ export default function PerformanceHeaderDialog({
             Cancel
           </Button>
 
-          <Button onClick={handleSave}>
+          <Button
+            onClick={handleSave}
+          >
             Save
           </Button>
         </>
@@ -112,66 +136,89 @@ export default function PerformanceHeaderDialog({
     >
       <div className="space-y-6">
 
+        {/* ==================================================
+            Title
+        ================================================== */}
+
         <CEField
-          label="Employee Name"
+          label="Header Title"
           required
         >
           <CEInput
-            value={employeeName}
+            value={title}
             onChange={(e) =>
-              setEmployeeName(
+              setTitle(
                 e.target.value
               )
             }
+            placeholder="Performance Review"
           />
         </CEField>
 
+        {/* ==================================================
+            Subtitle
+        ================================================== */}
+
         <CEField
-          label="Employee Role"
+          label="Subtitle"
         >
           <CEInput
-            value={employeeRole}
+            value={subtitle}
             onChange={(e) =>
-              setEmployeeRole(
+              setSubtitle(
                 e.target.value
               )
             }
+            placeholder="Performance Management"
           />
         </CEField>
+
+        {/* ==================================================
+            Description
+        ================================================== */}
 
         <CEField
-          label="Role Description"
+          label="Description"
         >
           <CETextArea
-            value={roleDescription}
+            value={description}
             onChange={(e) =>
-              setRoleDescription(
+              setDescription(
                 e.target.value
               )
             }
+            placeholder="Describe the purpose or context of this performance sheet."
           />
         </CEField>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {/* ==================================================
+            Metrics
+        ================================================== */}
 
-          {metrics.map((metric, index) => (
-            <CEField
-              key={metric.id}
-              label={metric.title}
-            >
-              <CEInput
-                value={metric.value}
-                onChange={(e) =>
-                  updateMetric(
-                    index,
-                    e.target.value
-                  )
-                }
-              />
-            </CEField>
-          ))}
+        {metrics.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
-        </div>
+            {metrics.map(
+              (metric, index) => (
+                <CEField
+                  key={metric.id}
+                  label={metric.title}
+                >
+                  <CEInput
+                    value={metric.value}
+                    onChange={(e) =>
+                      updateMetric(
+                        index,
+                        e.target.value
+                      )
+                    }
+                  />
+                </CEField>
+              )
+            )}
+
+          </div>
+        )}
 
       </div>
     </CEDialog>

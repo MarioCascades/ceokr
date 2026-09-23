@@ -440,10 +440,10 @@ export default function PerformanceSheetsPage() {
 
       return userRecords
         .filter(
-  (record) =>
-    record.user.is_active !==
-    false
-)
+          (record) =>
+            record.user.is_active !==
+            false
+        )
         .map(
           (record) => {
 
@@ -616,6 +616,26 @@ export default function PerformanceSheetsPage() {
 
 
   /* ========================================================
+     Navigation
+  ======================================================== */
+
+  const builderHref =
+    selectedOrganizationId
+      ? `/builder?organizationId=${encodeURIComponent(
+          selectedOrganizationId
+        )}&new=true`
+      : "/builder?new=true";
+
+
+  const assignmentsHref =
+    selectedOrganizationId
+      ? `/admin/assignments?organizationId=${encodeURIComponent(
+          selectedOrganizationId
+        )}`
+      : "/admin/assignments";
+
+
+  /* ========================================================
      Render
   ======================================================== */
 
@@ -631,25 +651,44 @@ export default function PerformanceSheetsPage() {
         ================================================== */}
 
         <AdminPageHeader
-          title="Performance"
-          description="Manage the active Performance Sheet experience for each member of the selected organization."
+          title="Performance Sheets"
+          description="Create Performance Sheets, publish reusable definitions, and manage member performance assignments."
           actions={
-            <Button
-              asChild
-              variant="outline"
-            >
-              <Link
-                href={
-                  selectedOrganizationId
-                    ? `/builder?organizationId=${encodeURIComponent(
-                        selectedOrganizationId
-                      )}`
-                    : "/builder"
-                }
+
+            <div className="flex flex-wrap gap-2">
+
+              <Button
+                asChild
+                variant="outline"
               >
-                Open Builder
-              </Link>
-            </Button>
+
+                <Link
+                  href={
+                    assignmentsHref
+                  }
+                >
+                  Manage Assignments
+                </Link>
+
+              </Button>
+
+
+              <Button
+                asChild
+              >
+
+                <Link
+                  href={
+                    builderHref
+                  }
+                >
+                  Create Performance Sheet
+                </Link>
+
+              </Button>
+
+            </div>
+
           }
         />
 
@@ -1040,6 +1079,7 @@ export default function PerformanceSheetsPage() {
                                           asChild
                                           size="sm"
                                         >
+
                                           <Link
                                             href={
                                               manageHref
@@ -1047,6 +1087,7 @@ export default function PerformanceSheetsPage() {
                                           >
                                             Manage
                                           </Link>
+
                                         </Button>
 
                                       ) : (
@@ -1056,17 +1097,15 @@ export default function PerformanceSheetsPage() {
                                           size="sm"
                                           variant="outline"
                                         >
+
                                           <Link
                                             href={
-                                              selectedOrganizationId
-                                                ? `/admin/assignments?organizationId=${encodeURIComponent(
-                                                    selectedOrganizationId
-                                                  )}`
-                                                : "/admin/assignments"
+                                              assignmentsHref
                                             }
                                           >
                                             Assign
                                           </Link>
+
                                         </Button>
 
                                       )}
@@ -1136,17 +1175,15 @@ export default function PerformanceSheetsPage() {
                   asChild
                   variant="outline"
                 >
+
                   <Link
                     href={
-                      selectedOrganizationId
-                        ? `/admin/assignments?organizationId=${encodeURIComponent(
-                            selectedOrganizationId
-                          )}`
-                        : "/admin/assignments"
+                      assignmentsHref
                     }
                   >
                     Manage Assignments
                   </Link>
+
                 </Button>
 
               </div>

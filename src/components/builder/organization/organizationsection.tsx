@@ -2,79 +2,240 @@
 
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import CECard from "@/components/ui/cecard";
-
-import BuilderSection from "@/components/builder/shared/buildersection";
+import { useBuilder } from "@/components/builder/context/buildercontext";
 import OrganizationDialog from "./organizationdialog";
 
-import { useBuilder } from "@/components/builder/context/buildercontext";
-
 export default function OrganizationSection() {
-  const { builderDocument } = useBuilder();
+  const {
+    builderDocument,
+    organizationContext,
+    editMode,
+  } = useBuilder();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] =
+    useState(false);
+
+  /*
+   * ========================================================
+   * Organization Presentation
+   * ========================================================
+   *
+   * The Performance Sheet definition owns the organization
+   * presentation shown on the sheet.
+   *
+   * The live organization context is kept separate and is
+   * used for real departments, teams, and members.
+   */
+
+  const companyName =
+    builderDocument.organization.companyName ||
+    "Organization";
+
+  const tagline =
+    builderDocument.organization.tagline;
+
+  /*
+   * ========================================================
+   * Real Organization Context
+   * ========================================================
+   *
+   * These values come from the organization currently
+   * loaded by BuilderContext.
+   *
+   * They are intentionally NOT stored inside BuilderDocument.
+   */
+
+  const departmentCount =
+    organizationContext?.departments.length ?? 0;
+
+  const teamCount =
+    organizationContext?.teams.length ?? 0;
+
+  const memberCount =
+    organizationContext?.members.length ?? 0;
 
   return (
     <>
-      <BuilderSection
-        title="Organization"
-        toolbar={
-          <Button
-            variant="outline"
-            onClick={() => setDialogOpen(true)}
-          >
-            Configure
-          </Button>
-        }
-      >
-        <CECard>
-          <div className="flex flex-col items-center rounded-xl bg-slate-50 px-10 py-12 text-center">
+      <section className="rounded-xl border bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-6">
 
-            {/* Logo */}
+          {/* ==================================================
+              Organization Header
+          ================================================== */}
 
-            <div className="flex h-28 w-28 items-center justify-center rounded-full border-2 border-dashed border-slate-300 bg-white overflow-hidden">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 
-              {builderDocument.organization.logoUrl ? (
-                <img
-                  src={builderDocument.organization.logoUrl}
-                  alt={builderDocument.organization.companyName}
-                  className="h-full w-full object-contain"
-                />
-              ) : (
-                <span className="text-sm italic text-slate-400">
-                  Logo Placeholder
-                </span>
-              )}
+            <div className="flex items-start gap-4">
+
+              {/* Organization Logo */}
+
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted">
+
+                {builderDocument.organization.logoUrl ? (
+                  <img
+                    src={
+                      builderDocument.organization.logoUrl
+                    }
+                    alt={`${companyName} logo`}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <span className="text-lg font-semibold text-muted-foreground">
+                    {companyName
+                      .slice(0, 1)
+                      .toUpperCase()}
+                  </span>
+                )}
+
+              </div>
+
+              {/* Organization Identity */}
+
+              <div className="min-w-0">
+
+                <h2 className="text-xl font-semibold tracking-tight">
+                  {companyName}
+                </h2>
+
+                {tagline ? (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {tagline}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Performance Management
+                  </p>
+                )}
+
+              </div>
 
             </div>
 
-            {/* Organization */}
+            {/* ==================================================
+                Configure
+            ================================================== */}
 
-            <h2 className="mt-8 text-4xl font-bold text-slate-800">
-
-              {builderDocument.organization.companyName}
-
-            </h2>
-
-            <p className="mt-3 text-lg font-medium text-slate-600">
-              Performance Management Platform
-            </p>
-
-            <p className="mt-2 italic text-slate-500">
-
-              {builderDocument.organization.tagline}
-
-            </p>
+            {editMode && (
+              <button
+                type="button"
+                onClick={() =>
+                  setDialogOpen(true)
+                }
+                className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Configure
+              </button>
+            )}
 
           </div>
-        </CECard>
-      </BuilderSection>
+
+          {/* ==================================================
+              Organization Context
+          ================================================== */}
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+
+            {/* Members */}
+
+            <div className="rounded-lg border bg-muted/30 p-4">
+
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Members
+              </p>
+
+              <p className="mt-1 text-2xl font-semibold">
+                {memberCount}
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Organization members
+              </p>
+
+            </div>
+
+            {/* Departments */}
+
+            <div className="rounded-lg border bg-muted/30 p-4">
+
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Departments
+              </p>
+
+              <p className="mt-1 text-2xl font-semibold">
+                {departmentCount}
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Organization departments
+              </p>
+
+            </div>
+
+            {/* Teams */}
+
+            <div className="rounded-lg border bg-muted/30 p-4">
+
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Teams
+              </p>
+
+              <p className="mt-1 text-2xl font-semibold">
+                {teamCount}
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Organization teams
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* ==================================================
+              Organization Context Note
+          ================================================== */}
+
+          {organizationContext && (
+            <div className="rounded-lg border border-dashed p-4">
+
+              <p className="text-sm font-medium">
+                Builder Organization
+              </p>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+
+                This Performance Sheet is being built for{" "}
+
+                <span className="font-medium text-foreground">
+                  {companyName}
+                </span>
+                .
+
+                {" "}The Builder is connected to the
+                organization&apos;s real departments,
+                teams, and members without duplicating
+                those records inside the Performance Sheet.
+
+              </p>
+
+            </div>
+          )}
+
+        </div>
+      </section>
+
+      {/* ======================================================
+          Organization Configuration Dialog
+      ====================================================== */}
 
       <OrganizationDialog
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        organization={builderDocument.organization}
+        onClose={() =>
+          setDialogOpen(false)
+        }
+        organization={
+          builderDocument.organization
+        }
       />
     </>
   );

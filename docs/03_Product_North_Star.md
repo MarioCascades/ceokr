@@ -1517,3 +1517,79 @@ Do not:
 
 The product remains a configurable, multi-tenant performance-management
 platform rather than a collection of customer-specific pages.
+
+
+---
+
+## Performance Builder Is the Composition Layer
+
+The Performance Builder should be understood as the composition layer of
+the performance experience, not as the implementation home for every
+performance-management feature.
+
+Reusable performance products are built and managed within Organization
+Administration.
+
+The initial product family includes:
+
+- Member OKR Sheets
+- Dashboards
+- Tables
+- Charts
+- Reports
+
+The Performance Builder calls/assembles these products into the experience
+that Runtime will display.
+
+Conceptually:
+
+```text
+Organization Administration
+        ↓
+Build / configure performance products
+        ↓
+Performance Builder
+        ↓
+Compose the configured products
+        ↓
+Runtime
+        ↓
+Period-specific performance experience
+```
+
+### Member Tabs
+
+Member tabs are the user/member tabs represented by the reference Mint
+experience.
+
+They are not organizational sections such as Operations, Leadership, or
+Development.
+
+A member tab represents a performance context for an actual organization
+member.
+
+The Users administration page is the entry point for creating member OKRs.
+
+For example:
+
+```text
+John Smith
+[Create OKRs]
+```
+
+The Create OKRs action opens the existing OKR/Builder capability in the
+context of John Smith.
+
+The Performance Builder then composes the resulting member performance
+experience rather than creating a separate OKR implementation.
+
+The same composition model will eventually allow dashboards, tables,
+charts, and reports created through Administration to be called into the
+member performance experience.
+
+This is an architectural direction, not a requirement to implement all
+five product families immediately.
+
+The Performance Builder should remain a thin composition layer so that
+new performance products can be added without rebuilding the Builder or
+creating organization-specific pages.

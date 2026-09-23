@@ -41,11 +41,11 @@ export const initialBuilderDocument: BuilderDocument = {
   ======================================================== */
 
   performanceHeader: {
-    employeeName: "",
+    title: "",
 
-    employeeRole: "",
+    subtitle: "",
 
-    roleDescription: "",
+    description: "",
 
     metrics: [],
   },
@@ -61,7 +61,8 @@ export const initialBuilderDocument: BuilderDocument = {
   ======================================================== */
 
   comments: {
-    label: "Manager / Employee Comments",
+    label:
+      "Manager / Employee Comments",
 
     placeholder:
       "Enter comments...",

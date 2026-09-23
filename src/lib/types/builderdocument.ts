@@ -55,12 +55,28 @@ export interface BuilderNavigationTab {
    Performance Header
 ========================================================== */
 
+/**
+ * The Performance Header defines the reusable presentation
+ * of the top section of a Performance Sheet.
+ *
+ * It intentionally does NOT store a specific employee.
+ *
+ * Runtime identity such as:
+ *
+ * - Member name
+ * - Role
+ * - Department
+ * - Team
+ * - Manager
+ *
+ * belongs to the assigned Performance Sheet runtime context.
+ */
 export interface BuilderPerformanceHeader {
-  employeeName: string;
+  title: string;
 
-  employeeRole: string;
+  subtitle: string;
 
-  roleDescription: string;
+  description: string;
 
   metrics: BuilderMetric[];
 }
@@ -106,9 +122,14 @@ export interface BuilderKeyResult {
 
   weight: number;
 
-  measurementType?: "percentage" | "numeric" | "financial";
+  measurementType?:
+    | "percentage"
+    | "numeric"
+    | "financial";
 
-  scoringMethod?: "percent_into_period" | "percentage_of_target";
+  scoringMethod?:
+    | "percent_into_period"
+    | "percentage_of_target";
 
   initiatives: BuilderInitiative[];
 }

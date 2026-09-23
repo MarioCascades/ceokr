@@ -2504,3 +2504,84 @@ Production authorization must ultimately validate:
 Status
 
 Accepted
+
+
+---
+
+# 37. Performance Builder as Composition Layer
+
+Status
+
+ACCEPTED — PRODUCT / ARCHITECTURE DIRECTION
+
+The Performance Builder is the composition layer for the performance experience.
+
+The Builder is not the implementation home for every performance-management
+product. Reusable products and capabilities are created and managed through
+Organization Administration, and the Performance Builder calls/assembles
+those products into the organization's performance experience.
+
+The intended product family includes:
+
+- Member OKR Sheets
+- Dashboards
+- Tables
+- Charts
+- Reports
+
+The Builder should provide the composition experience for these products
+without becoming a second implementation of each product.
+
+The intended relationship is:
+
+Organization Administration
+↓
+Build / configure reusable performance products
+↓
+Performance Builder
+↓
+Compose the products into the performance experience
+↓
+Runtime
+↓
+Execute and display period-specific performance data
+
+Member tabs are user/member performance contexts.
+
+A member tab is not an organizational section such as Department,
+Leadership, or Operations. Member tabs are created/configured through the
+member workflow in Organization Administration.
+
+The Users administration experience should provide the entry point for
+member-specific OKR creation through a "Create OKRs" action. That action
+should open/use the existing OKR/Builder capability in the context of the
+selected member rather than creating a second OKR system.
+
+The Performance Builder should therefore remain focused on:
+
+- performance experience composition
+- reusable header configuration where applicable
+- member-tab presentation/navigation
+- calling or placing configured performance products
+
+It should not become a duplicate product-management system for OKRs,
+dashboards, tables, charts, or reports.
+
+This direction preserves the platform rule:
+
+Configure once, generate repeatedly.
+
+It also preserves the duplicate-source-of-truth rule:
+
+- Organization Administration manages the relevant product/configuration
+  workflows.
+- The Performance Builder composes those products.
+- Runtime executes period-specific state.
+- The Performance Builder does not create an independent copy of Runtime
+  performance data.
+
+The existing Mint member-tab experience remains a reference for the
+desired user experience only. The CascadEffects implementation must
+generate member tabs and their contents from organization data,
+assignments, product definitions, and configuration rather than hardcoding
+employee names, tabs, or pages.

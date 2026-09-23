@@ -2109,3 +2109,47 @@ DEFERRED
 Historical Performance Reporting
 
 DEFERRED
+
+
+---
+
+# Product Composition Direction
+
+Status
+
+DIRECTION / FUTURE IMPLEMENTATION
+
+The Performance Builder is being refined as a composition layer rather than
+the implementation home for every performance product.
+
+The intended reusable product family is:
+
+- Member OKR Sheets
+- Dashboards
+- Tables
+- Charts
+- Reports
+
+These products should be built/configured through Organization
+Administration and then called/assembled by the Performance Builder.
+
+Member OKR Sheets are expected to be initiated from the Users workflow
+through a member-level "Create OKRs" action.
+
+The Performance Builder should provide the member-tab composition and
+navigation experience for those products.
+
+Important architectural rule:
+
+Do not create duplicate product engines inside the Builder.
+
+The Builder should compose reusable product definitions/configuration and
+hand the resulting experience to Runtime.
+
+Future implementation work should determine the exact persistence and
+composition contracts before adding separate product-specific database
+models.
+
+This direction supersedes any interpretation of Builder tabs as
+organizational sections. Member tabs refer to actual organization member
+performance contexts.

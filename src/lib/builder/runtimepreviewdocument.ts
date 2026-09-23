@@ -1,4 +1,7 @@
-import type { BuilderDocument } from "@/lib/types/builderdocument";
+import type {
+  BuilderDocument,
+} from "@/lib/types/builderdocument";
+
 
 export const runtimePreviewDocument: BuilderDocument = {
   id: "runtime-preview",
@@ -14,9 +17,9 @@ export const runtimePreviewDocument: BuilderDocument = {
   },
 
   performanceHeader: {
-    employeeName: "Jimmy",
-    employeeRole: "Senior Software Architect",
-    roleDescription:
+    title: "Performance Management",
+    subtitle: "Senior Software Architect",
+    description:
       "Responsible for designing and developing the CascadEffects Performance Platform.",
 
     metrics: [
