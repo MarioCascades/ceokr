@@ -1,781 +1,618 @@
-CascadEffects Performance Platform
+# CascadEffects Performance Platform
 
-Product North Star
+# Product North Star
 
-Document: docs/03_Product_North_Star.md
-Status: CURRENT --- PRODUCT NORTH STAR
-Created: 2026-09-01
-Last Updated: 2026-09-12
+**Document:** docs/03_Product_North_Star.md
 
-Purpose
+**Status:** CURRENT
+
+**Last Updated:** 2026-09-24
+
+---
+
+# Purpose
 
 This document defines the product North Star for the CascadEffects
 Performance Platform.
 
-It exists to prevent development from drifting into isolated features,
-rebuilding completed systems, or confusing the Administration layer with
-the Builder or Runtime.
+It prevents development from drifting into isolated features, rebuilding
+completed systems, or confusing Administration, Builder, Member OKRs, and
+Runtime.
 
 The repository documentation remains the engineering source of truth.
-This document adds the permanent product-level direction that every
-future feature should support.
 
-The North Star
+---
 
-CascadEffects is a multi-tenant SaaS platform that allows
-CascadEffects Platform Super Admins to create, configure, publish, and
-manage performance-management systems for multiple organizations ---
-without custom software development for each organization.
+# The North Star
+
+CascadEffects is a multi-tenant SaaS platform that allows CascadEffects
+Platform Super Admins and authorized Organization Admins to create,
+configure, publish, and operate performance-management systems for multiple
+organizations without custom software development for each organization.
 
 The platform is not Mint rebuilt in another codebase.
 
-Mint is a reference implementation that demonstrates the kind of
-performance experience the platform must be able to generate.
+Mint is a reference implementation that demonstrates the kind of performance
+experience CascadEffects must be able to generate.
 
-The platform must allow each customer organization to have its own
-people, structure, roles, performance definitions, dashboards, reporting
-experience, and operational performance data.
+The platform must allow each customer organization to have its own:
 
-The Core Product Model
+- people
+- structure
+- roles
+- permissions
+- performance presentation
+- member OKRs
+- operational performance data
+- dashboards
+- reporting experience
 
-The platform has three major layers:
+---
 
+# The Core Product Model
+
+The platform has four connected domains:
+
+```text
 ADMINISTRATION
 |
 | manages organizations, people,
-| permissions, definitions, assignments
+| memberships, permissions, and
+| performance configuration
 v
-BUILDER
+MEMBER OKRs
 |
-| creates reusable Performance Sheet definitions
-v
-PUBLISHED PERFORMANCE SHEET
-|
-| assigned to a person, team,
-| department, or organization
+| owns employee Objectives,
+| Key Results, Initiatives,
+| and performance values
 v
 RUNTIME
 |
-| records period-specific performance
+| records period-specific execution
+| and historical state
 v
 PERFORMANCE DATA / REPORTING
+```
 
-The critical architectural boundary remains:
+Separately:
 
-Builder Definition
-↓
-Published Performance Sheet Version
-↓
-Assignment
-↓
-Performance Instance
-↓
-Runtime Execution
-↓
-Historical Performance / Reporting
-
-Builder definitions must remain separate from period-specific Runtime
-state.
-
-CascadEffects Platform Super Admin
-
-The CascadEffects Platform Super Admin is a platform-level
-administrator.
-
-The Super Admin is responsible for operating the SaaS platform across
-organizations.
-
-A Super Admin may:
-
-create and manage organizations
-
-enter and administer an organization
-
-manage organization structure
-
-manage users and memberships
-
-manage roles and permissions
-
-manage Performance Sheets
-
-open and use the Builder
-
-create and publish Performance Sheet definitions
-
-assign published Performance Sheets
-
-administer organization performance configuration
-
-manage platform-level administration
-
-eventually manage other CascadEffects Super Admins
-
-A Platform Super Admin is NOT an Organization Role.
-
-Platform authority is represented separately through Platform
-Memberships.
-
-A Super Admin does not need an Organization Membership merely to
-administer an organization.
-
-Organization Admin
-
-An Organization Admin belongs to a specific customer organization.
-
-The Organization Admin manages that organization's operational
-configuration according to the permissions granted through the
-organization Roles & Permissions system.
-
-The conceptual relationship is:
-
-CascadEffects Platform
+```text
+PERFORMANCE BUILDER
 |
-+-- Platform Super Admin
-|
-+-- Organization A
-|      |
-|      +-- Organization Admin
-|      +-- Departments
-|      +-- Teams
-|      +-- Users / Members
-|      +-- Roles / Permissions
-|      +-- Performance Sheets
-|      +-- Assignments
-|
-+-- Organization B
-|
-+-- Organization Admin
-+-- Departments
-+-- Teams
-+-- Users / Members
-+-- Roles / Permissions
-+-- Performance Sheets
-+-- Assignments
-
-The important product rule is:
-
-The Super Admin operates above the organization boundary and can
-administer the organization; the Organization Admin operates within
-the organization according to organization-level authorization.
-
-Production authorization and RLS will enforce these boundaries.
-
-Organizations Are Independent Tenants
-
-Each organization is its own tenant.
-
-For example:
-
-Mint Orthodontics
-
-might have:
-
-its own branding
-
-its own departments
-
-its own teams
-
-its own users
-
-its own roles
-
-its own Performance Sheets
-
-its own objectives
-
-its own Key Results
-
-its own initiatives
-
-its own assignments
-
-its own Runtime performance data
-
-its own dashboards
-
-its own reports
-
-Another organization may configure all of these differently.
-
-The platform must not assume that every organization has the same
-hierarchy, roles, KPIs, objectives, or dashboard design.
-
-The Performance Sheet Is the Central Product Artifact
-
-The Performance Sheet is the configurable performance-management
-definition created through the Builder.
-
-A Performance Sheet can define, for example:
-
-Performance Header
-
-Possible fields may include:
-
-date updated
-
-period progress
-
-reporting period / time frame
-
-other organization-specific performance context
-
-Objectives
-
-An organization may define any number of objectives.
-
-Example:
-
-Patient Starts
-
-New Patient Conversion
-
-Key Results
-
-Each Objective may contain multiple Key Results.
-
-Example:
-
-Starts @ Home
-
-Total Starts
-
-SDS
-
-Total Production
-
-Collections from Starts
-
-Initiatives
-
-Initiatives remain lightweight execution notes attached to Key Results.
-
-They are not project-management objects.
-
-Comments
-
-Comments may be part of the performance experience where supported by
-the Builder/Runtime architecture.
-
-The Builder owns the reusable definition.
-
-Runtime owns period-specific execution values.
-
-Mint Is the Reference --- Not the Architecture
-
-The existing Mint OKR application demonstrates the desired type of
-employee performance experience.
-
-For example, a member-facing performance sheet may display:
-
-employee name
-
-employee role
-
-role definition
-
-objectives
-
-Key Results
-
-previous-period values
-
-target values
-
-current-period values
-
-score
-
-initiatives
-
-date updated
-
-percentage into the period
-
-OKR time frame
-
-This is a reference for the experience.
-
-The CascadEffects platform must generate this kind of experience from
-data and configuration rather than hardcoding Mint's users, objectives,
-KPIs, teams, or pages.
-
-One Organization Can Have Many Users
-
-An organization may have many members.
-
-Each member can have:
-
-a unique application identity
-
-a name
-
-a role
-
-department association
-
-team association
-
-organization membership
-
-permissions
-
-assigned Performance Sheets
-
-Runtime performance records
-
-The platform must support individual, team, department, and
-organization-level performance.
-
-Performance Is Time-Bound
-
-Performance data is not simply a single current number.
-
-The platform must support time-bound performance.
-
-Conceptually:
-
+| defines reusable presentation
+| and composition
+v
+PUBLISHED PERFORMANCE SHEET
+```
+
+The Builder configuration and Member OKRs are composed to produce the member
+performance experience.
+
+The critical product relationship is:
+
+```text
+Organization Membership
+↓
+Member
+↓
+Member OKRs
+↓
+Monthly Performance Execution
+↓
+Historical Performance
+```
+
+and:
+
+```text
 Performance Sheet Definition
 ↓
-Assignment
+Published Presentation Configuration
 ↓
-Performance Instance
-↓
-KPI Updates
-↓
-Score / Aggregation
-↓
-Historical Record
+Member Performance Experience
+```
 
-This is necessary for:
+---
 
-monthly performance cadence
+# Member OKRs Are the Employee Performance Data
 
-historical reporting
+This is a core product rule.
 
-trend analysis
+The employee's specific performance data is their Member OKR.
 
-comparisons
+A member's OKR consists of:
 
-auditability
+- Objectives
+- Key Results
+- Initiatives
+- Key Result performance values
+- comments and applicable execution state
 
-future predictive analytics
+The source of truth is the Member OKR domain.
 
-Runtime values must not overwrite the reusable Builder definition.
+The same Member OKR data must feed:
 
-Administration Is the Management Layer
+- Member OKR management
+- Member performance
+- Runtime
+- monthly history
+- dashboards
+- tables
+- charts
+- reports
+- future AI analysis
 
-The Administration area exists to manage the business and platform data
-that supports the performance system.
+The platform must not create a second employee-performance data model for
+any of these experiences.
 
-The current Administration hierarchy is:
+---
 
+# Organization Membership Automatically Includes the Member
+
+A member belongs to the organization's performance environment because the
+member has an Organization Membership.
+
+There is no product requirement to manually assign an employee to a
+Performance Sheet in order for that employee to participate.
+
+The product relationship is:
+
+```text
 Organization
-↓
-Departments
-↓
-Teams
-↓
-Users / Members
 ↓
 Organization Membership
 ↓
-Roles / Permissions
+Member
 ↓
-Performance Sheets
+Member OKRs
+```
+
+Assignments are therefore not part of the long-term product participation
+model.
+
+Existing Assignment infrastructure may remain temporarily for migration and
+historical compatibility.
+
+---
+
+# Performance Builder Is the Composition Layer
+
+The Performance Builder is not the place where employee Objectives, Key
+Results, or Initiatives are created.
+
+The Builder configures how the performance experience is composed and
+presented.
+
+Builder configuration may include:
+
+- Performance Header
+- Member Navigation
+- Layout
+- Sections
+- Fields
+- Tables
+- Charts
+- Reports
+- display configuration
+- reusable presentation rules
+- publishing
+- versioning
+
+The Builder answers:
+
+> How should this organization's performance experience look and behave?
+
+Member OKRs answer:
+
+> What is this member's actual performance?
+
+---
+
+# The Performance Product Family
+
+CascadEffects should be capable of generating reusable performance products
+such as:
+
+1. Member OKR Sheets
+2. Dashboards
+3. Tables
+4. Charts
+5. Reports
+
+The Builder is the composition engine used to configure how these products
+are presented.
+
+The underlying data remains owned by the appropriate domain.
+
+For Member OKR Sheets:
+
+```text
+Organization Membership
 ↓
-Assignments
-
-Platform authority exists above this hierarchy:
-
-CascadEffects Platform
+Member OKRs
 ↓
-Platform Membership
+Builder presentation
+```
+
+For dashboards and reports:
+
+```text
+Member OKRs
++
+Runtime history
++
+authorized organization data
 ↓
-Platform Super Admin
+Builder composition
+```
+
+---
+
+# Member Navigation
+
+Member navigation is data-driven.
+
+A performance experience may show:
+
+```text
+Main | Mario | Mari | Emily | Jordyn
+```
+
+The member tabs are generated from Organization Membership.
+
+They are not hardcoded.
+
+When a member is selected:
+
+```text
+Selected Member
 ↓
-Organizations
+Organization Membership
+↓
+Member OKRs
+↓
+Member Performance Experience
+```
 
-The Administration home page is therefore a control center, not the
-performance application itself.
+Selecting Mari loads Mari's OKRs.
 
-Administration Areas
+Selecting Mario loads Mario's OKRs.
 
-The Super Admin Administration experience is intended to provide access
-to:
+No Assignment lookup is required to establish the member's participation.
 
-Organization
+---
 
-Organization profile, branding, and configuration.
+# Member OKR Hierarchy
 
-Departments
+The product hierarchy is:
 
-Create and manage organization departments.
+```text
+Member
+│
+└── Objectives
+    │
+    └── Key Results
+        │
+        └── Initiatives
+```
 
-Teams
+Each member can have their own performance objectives and measurable
+outcomes.
 
-Create and manage organization teams.
+The exact number and structure of Objectives, Key Results, and Initiatives
+must remain data-driven.
 
-Users
+---
 
-Invite and manage organization users/members.
+# Runtime Is the Execution Layer
 
-Roles & Permissions
+Runtime is responsible for time-bound performance execution.
 
-Define organization roles and control access through permissions.
+Runtime records:
 
-Performance Sheets
+- monthly execution state
+- current values
+- scores
+- comments
+- lifecycle state
+- aggregate state
+- historical execution context
 
-Manage reusable Performance Sheet definitions and open them in the
-Builder.
+Runtime must not modify the reusable Builder configuration.
 
-Assignments
+Runtime must not become the permanent source of Member OKRs.
 
-Assign published Performance Sheets to:
+The relationship is:
 
-individuals
+```text
+Member OKRs
+↓
+Monthly Performance Execution
+↓
+Historical Performance
+```
 
-teams
+---
 
-departments
+# Monthly Performance
 
-organizations
+Monthly performance is a product cadence.
 
-Objectives
+The platform does not require an administrator-managed arbitrary
+Reporting Period entity to operate monthly performance.
 
-Provide administration visibility into Performance Sheet objectives.
+Historical performance should be derived from dated execution records.
 
-The Objectives area must remain connected to the Builder definition
-rather than becoming a second source of truth.
+The exact published Performance Sheet configuration used during a month
+must be preserved for historical presentation.
 
-Key Results
+---
 
-Provide administration visibility into measurable outcomes defined by
-Performance Sheets.
+# Performance Sheet
 
-The Key Results area must remain connected to the Builder definition.
+A Performance Sheet is the reusable presentation/configuration artifact.
 
-Initiatives
+It can define:
 
-Provide administration visibility into initiatives associated with Key
-Results.
+- Performance Header
+- navigation
+- layout
+- sections
+- fields
+- tables
+- charts
+- reports/display composition
 
-Dashboards
-
-Future capability for configurable dashboards generated from platform
-data.
-
-Reports
-
-Future capability for historical and organizational performance
-reporting.
-
-Settings
-
-Platform and organization configuration.
-
-AI Configuration
-
-Future configuration for AI-assisted planning, recommendations,
-analysis, and reporting.
-
-Important Rule: Do Not Create Duplicate Sources of Truth
-
-A feature should not create a second independent representation of a
-concept already owned elsewhere.
-
-Examples:
-
-Builder owns Performance Sheet definitions.
-
-Runtime owns period-specific execution state.
-
-Organization owns organizational identity.
-
-Memberships connect users to organizations.
-
-Roles and Permissions own organization authorization.
-
-Platform Memberships own platform-level authority.
-
-If an Administration screen displays Objectives, it should read from the
-appropriate Performance Sheet definition rather than maintaining a
-separate Objective database simply because the screen is called
-"Objectives."
-
-The same principle applies to Key Results and other Builder-owned
-definitions.
-
-Builder Is the Construction Engine
-
-The Builder is not a one-off editor for Mint.
-
-It is the reusable construction engine of CascadEffects.
-
-The Builder must allow administrators to configure Performance Sheet
-definitions including:
-
-organization presentation
-
-navigation
-
-performance header
-
-objectives
-
-Key Results
-
-initiatives
-
-comments
-
-validation
-
-draft persistence
-
-publishing
-
-revision creation
-
-published version preservation
+A Performance Sheet does not own a specific employee's Objectives, Key
+Results, or Initiatives.
 
 Published versions are immutable.
 
-Changes to a published Performance Sheet create a new draft revision.
+Changes create new draft revisions.
 
-Runtime Is the Execution Engine
+The same published configuration can be used to present different members'
+OKRs.
 
-Runtime is the operational performance experience.
+---
 
-Runtime is responsible for:
+# Mint Is the Reference — Not the Architecture
 
-Performance Instance state
+Mint demonstrates the desired class of employee performance experience.
 
-Key Result progress
+For example, a member-facing performance experience may display:
 
-current values
+- employee identity
+- employee role
+- role context
+- objectives
+- Key Results
+- previous values
+- target values
+- current values
+- score
+- initiatives
+- date updated
+- percentage into the period
+- OKR time frame
 
-scores
+CascadEffects must generate this experience from data and configuration.
 
-employee comments
+It must not hardcode Mint's users, objectives, teams, KPIs, or pages.
 
-manager comments
+---
 
-Runtime status
+# Organizations Are Independent Tenants
 
-aggregate Runtime state
+Each organization is its own tenant.
 
-Runtime must not modify Builder definitions.
+An organization may have:
 
-The member-facing experience shown by the Mint reference should
-ultimately be generated by this Runtime layer from the assigned
-published Performance Sheet version and its period-specific performance
-data.
+- its own branding
+- departments
+- teams
+- users
+- memberships
+- roles
+- permissions
+- Member OKRs
+- Performance Sheet configurations
+- Runtime performance data
+- dashboards
+- reports
 
-The Platform Must Be Data-Driven
+The platform must not assume every organization has the same hierarchy,
+roles, KPIs, Objectives, or dashboard design.
 
-Avoid hardcoding:
+---
 
-users
+# Administration Is the Management Layer
 
-names
+Administration manages the platform and organization data supporting the
+performance system.
 
-organizations
+Administration areas include:
 
-departments
+- Organization
+- Departments
+- Teams
+- Users / Members
+- Roles & Permissions
+- Performance Sheets
+- Member OKRs
+- Dashboards
+- Reports
+- Settings
+- AI configuration
 
-teams
+Administration must not create duplicate performance engines.
 
-roles
+Examples:
 
-objectives
+Performance Sheet Administration → manages Builder definitions.
 
-Key Results
+Member OKR Administration → manages actual member OKR data.
 
-dashboards
+Runtime → manages period-specific execution.
 
-reporting structures
+---
 
-KPI calculations
+# Source-of-Truth Rule
 
-Prefer:
+One business concept must have one authoritative source.
 
-database records
+Examples:
 
-IDs
+Organization → Organization domain
 
-relationships
+Organization Membership → Membership domain
 
-configuration
+Roles / Permissions → Authorization domain
 
-reusable definitions
+Member Objectives → Member OKR domain
 
-published versions
+Member Key Results → Member OKR domain
 
-assignments
+Member Initiatives → Member OKR domain
 
-permissions
+Performance Sheet → Builder configuration domain
 
-data-driven rendering
+Monthly execution → Runtime domain
 
-The goal is:
+Historical KPI updates → Historical performance domain
 
-Configure once, generate repeatedly.
+Dashboards / Reports → presentation/query layers over authoritative data
 
-The Super Admin Product Journey
+No Administration page, dashboard, report, Builder screen, Runtime screen, or
+AI feature may create a competing source of truth for these concepts.
 
-The intended high-level journey is:
+---
 
+# Super Admin Product Journey
+
+The high-level product journey becomes:
+
+```text
 Super Admin creates Organization
 ↓
-
 Configure Organization
 ↓
-
 Create Departments / Teams
 ↓
-
 Add Users / Members
 ↓
-
 Configure Roles & Permissions
 ↓
-
-Create Performance Sheet
+Members automatically enter performance environment
 ↓
-
-Open Performance Sheet in Builder
+Create / configure Performance Sheet
 ↓
-
-Build Objectives
+Open Builder
 ↓
-
-Add Key Results
+Configure presentation
 ↓
-
-Add Initiatives
-↓
-
-Validate
-↓
-
 Publish
 ↓
-
-Assign published version
+Members manage their own OKRs
 ↓
-
-Runtime generates working performance experience
+Member Performance Experience renders those OKRs
 ↓
-
-Members update performance
+Monthly Runtime records execution
 ↓
-
-Managers review / approve where applicable
+Managers review where applicable
 ↓
-
 Historical performance becomes reportable
+```
 
-This is the product journey we are building toward.
+There is no required Assignment step between membership and performance
+participation.
 
-The Super Admin Must Be Able to Administer What the Organization Admin Can
+---
 
-A core product requirement is:
+# Member Product Journey
 
-A CascadEffects Super Admin must be able to administer an
-organization without being artificially blocked by that organization's
-membership structure.
+The intended member journey is:
 
-This means the Super Admin should ultimately be able to:
+```text
+Member signs in
+↓
+Authorized Organization context
+↓
+Member Workspace
+↓
+Member selects month / performance view
+↓
+Member sees their OKRs
+↓
+Member updates performance
+↓
+Runtime records period-specific execution
+↓
+Historical performance accumulates
+```
 
-inspect organization configuration
+A member's organization membership is the basis for access to their
+performance environment.
 
-edit organization configuration
+Production authorization remains a separate security requirement.
 
-manage departments
+---
 
-manage teams
+# Manager / Administrator Product Journey
 
-manage users
+Managers and authorized administrators will eventually be able to:
 
-manage memberships
+- view authorized member performance
+- review OKRs
+- review monthly execution
+- add manager comments
+- approve or complete performance where applicable
+- analyze historical performance
 
-manage roles and permissions
+These workflows must consume the same Member OKR and Runtime sources.
 
-manage Performance Sheets
+---
 
-open Performance Sheets in Builder
-
-administer assignments
-
-administer organization performance configuration
-
-The Super Admin authority must remain platform-level.
-
-The Organization Admin remains organization-scoped.
-
-This distinction must be preserved in the authorization architecture.
-
-What We Are NOT Building
+# What We Are NOT Building
 
 We are NOT:
 
-rebuilding Mint
-
-hardcoding one customer's performance sheet
-
-creating separate custom software for every organization
-
-rebuilding the Builder
-
-rebuilding the Runtime foundation
-
-creating duplicate Objective or Key Result sources of truth
-
-creating custom dashboards for each customer
-
-treating Administration screens as separate performance engines
+- rebuilding Mint
+- hardcoding one customer's performance sheet
+- creating separate custom software for every organization
+- putting employee Objectives/KRs/Initiatives inside the Builder
+- requiring Assignment for organization membership
+- creating duplicate Member performance models
+- creating custom dashboards for each customer
+- treating Administration screens as separate performance engines
+- creating a second Runtime engine
 
 We ARE building the platform that can generate systems like Mint.
 
-Product Decision Rule
+---
+
+# Product Decision Rule
 
 Before implementing a feature, ask:
 
-Question 1
+1. Does it help CascadEffects create, configure, administer, execute, or
+   understand an organization's performance system?
+2. Is it reusable across many organizations?
+3. Does it preserve the Builder / Member OKR / Runtime boundaries?
+4. Does it maintain one source of truth?
+5. Does it respect platform-level versus organization-level authorization?
+6. Does it move the platform toward configurable performance management
+   rather than a hardcoded customer application?
 
-Does this help CascadEffects create, configure, administer, execute, or
-understand an organization's performance system?
-
-Question 2
-
-Is the feature reusable across many organizations?
-
-Question 3
-
-Does it preserve the Builder / Runtime boundary?
-
-Question 4
-
-Does it maintain one source of truth?
-
-Question 5
-
-Does it respect platform-level versus organization-level authorization?
-
-Question 6
-
-Does it move the platform toward configurable performance management
-rather than toward a hardcoded customer application?
-
-If the answer is no or unclear, stop and discuss the architecture before
+If the answer is no or unclear, stop and reconcile the architecture before
 coding.
 
-Development Guardrail
+---
+
+# Development Guardrail
 
 At the beginning of every development session:
 
+```text
 READ PRODUCT NORTH STAR
 ↓
 READ LATEST WAYPOINT
@@ -786,9 +623,9 @@ READ PLATFORM BACKLOG
 ↓
 CONFIRM CURRENT MILESTONE
 ↓
-IDENTIFY THE SPECIFIC FEATURE
+IDENTIFY SPECIFIC FEATURE
 ↓
-VERIFY IT SUPPORTS THE NORTH STAR
+VERIFY IT SUPPORTS NORTH STAR
 ↓
 BUILD
 ↓
@@ -801,253 +638,149 @@ COMMIT
 UPDATE DOCUMENTATION
 ↓
 CREATE NEW WAYPOINT
+```
 
 No implementation should begin until the current milestone has been
-re-established from the documentation.
-
-Current Project Position
-
-As of Waypoint 26:
-
-Builder: COMPLETE / ESTABLISHED
-
-Runtime Execution Foundation: COMPLETE / ESTABLISHED
-
-Administration Foundation: COMPLETE / ESTABLISHED
-
-Organization Admin Workspace Foundation: COMPLETE / ESTABLISHED
-
-Member Workspace Foundation: COMPLETE / ESTABLISHED
-
-Organization: COMPLETE
-
-Departments: COMPLETE
-
-Teams: COMPLETE
-
-Users / Members: COMPLETE
-
-Roles & Permissions: FUNCTIONAL FOUNDATION COMPLETE
-
-Platform Memberships: COMPLETE
-
-Platform Super Admin Authorization Foundation: COMPLETE
-
-Performance Sheet Management: COMPLETE
-
-Assignment Management: COMPLETE
-
-Objectives / Key Results / Initiatives: BUILDER-OWNED / ESTABLISHED
-
-Monthly Performance Cadence: ESTABLISHED PRODUCT RULE
-
-Member Performance Navigation: ESTABLISHED
-
-Dashboards: V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
-
-Reports: FUTURE
-
-AI Presentation Mock-Ups: ESTABLISHED / PRESENTATION-ONLY
-
-Live AI: FUTURE / BUSINESS APPROVAL REQUIRED
-
-Production Authorization / RLS: OUTSTANDING
-
-Runtime Security Boundaries: DEFERRED
-
-Historical KPI Updates: DEFERRED
-
-KPI Calculation Engine: DEFERRED
-
-Weighted Aggregation: DEFERRED
-
-The next development milestone is:
-
-Authentication + Role-Based Entry
-
-Current Security Boundary
-
-Platform Super Admin authority is established as a separate
-platform-level authority.
-
-The current authorization model is conceptually:
-
-Supabase Auth
-↓
-Application User
-↓
-├── Platform Membership
-│        ↓
-│   Platform Super Admin
-│
-OR
-│
-└── Organization Membership
-↓
-Membership Roles
-↓
-Organization Roles
-↓
-Role Permissions
-↓
-Permission
-
-The current foundation is not yet complete production authorization.
-
-Production enforcement must eventually cover:
-
-authenticated identity
-
-active platform membership where required
-
-organization membership where required
-
-role assignment
-
-permission assignment
-
-organization context
-
-resource ownership
-
-UI
-
-server services
-
-API routes
-
-database / RLS
-
-Runtime Is the Product Experience
-
-The Runtime layer is the execution engine that turns a published
-Performance Sheet into a working performance-management experience.
-
-The intended product flow is:
-
-Builder Definition
-
-↓
-
-Published Performance Sheet Version
-
-↓
-
-Assignment
-
-↓
-
-Monthly Performance Instance
-
-↓
-
-Runtime Execution
-
-↓
-
-Member / Manager Performance Experience
-
-↓
-
-Historical Performance
-
-The Member Workspace is a presentation, navigation, and workflow layer
-over Runtime.
-
-It must not become a second performance engine.
-
-Members operate on their own authorized Runtime performance state.
-
-Administrators and managers may operate on Runtime state according to their
-eventual authorization scope.
-
-Mint remains the Version 1 operational and UX reference for the type of
-performance experience CascadEffects must be able to generate.
-
-The platform is not rebuilding Mint.
-
-Instead, the platform must generate equivalent classes of performance
-experiences dynamically from reusable definitions, assignments, monthly
-execution data, and permissions.
-
-The Runtime Product Experience should ultimately provide:
-
-- member identity and role context
-- organization context
-- month selection
-- previous month performance
-- current month performance
-- target values
-- current values
-- scores
-- Objectives
-- Key Results
-- Initiatives
-- employee comments
-- manager comments
-- lifecycle state
-- manager review / approval where applicable
-- historical navigation
-
-The experience must remain data-driven and reusable across organizations.
-
-No organization-specific person, Objective, Key Result, dashboard, reporting
-structure, or KPI calculation should be hardcoded into the product.
-
-Monthly performance is a product rule.
-
-The platform does not require an administrator-managed arbitrary Reporting
-Period entity to operate monthly performance.
-
-Historical performance should be derived from dated Performance Instances
-and Runtime records.
-
-The current Runtime scoring model remains intentionally small:
-
-- Percentage of Target
-- Percent Into Period
-
-A generalized KPI Calculation Engine remains future platform work.
-
-The final product promise remains:
-
-Configure once.
-
-Publish once.
-
-Assign.
-
-Generate monthly performance execution repeatedly.
+re-established from documentation.
 
 ---
 
-The Final Test
+# Current Product Position
 
-When we are unsure what to build next, return to this sentence:
+Builder
 
-We are building CascadEffects so a Super Admin can create a
-configurable performance-management system for an organization, and
-that system can then operate for its users through Builder → Published
-Performance Sheet → Assignment → Runtime → Historical Performance.
+ESTABLISHED / COMPOSITION ENGINE
 
-If a proposed feature moves us toward that outcome, it belongs on the
-roadmap.
+Runtime Execution Foundation
 
-If it moves us sideways, duplicates an existing source of truth,
-rebuilds completed architecture, or only solves one customer's hardcoded
-problem, we should stop and reconsider.
+ESTABLISHED
 
-Relationship to Other Documentation
+Administration Foundation
+
+ESTABLISHED
+
+Organization
+
+COMPLETE
+
+Departments
+
+COMPLETE
+
+Teams
+
+COMPLETE
+
+Users / Members
+
+COMPLETE
+
+Roles & Permissions
+
+FUNCTIONAL FOUNDATION COMPLETE
+
+Platform Memberships
+
+COMPLETE
+
+Performance Sheet Management
+
+COMPLETE
+
+Assignment Management
+
+LEGACY / TRANSITIONAL
+
+Member Workspace
+
+FOUNDATION COMPLETE
+
+Member OKR Domain
+
+NEXT ARCHITECTURAL MILESTONE
+
+Authentication + Role-Based Entry
+
+FOUNDATION COMPLETE / VERIFIED
+
+Dashboards
+
+V1 ESTABLISHED / DYNAMIC FUTURE
+
+Reports
+
+FUTURE
+
+AI Presentation Mock-Ups
+
+ESTABLISHED / PRESENTATION-ONLY
+
+Live AI
+
+FUTURE / BUSINESS APPROVAL REQUIRED
+
+Production Authorization / RLS
+
+OUTSTANDING
+
+---
+
+# Final Product Promise
+
+The platform promise is:
+
+> Configure the performance experience once, define each member's
+> performance through their own OKRs, execute performance monthly, and
+> generate reusable historical performance experiences without custom
+> software development.
+
+The final architecture is:
+
+```text
+Organization
+↓
+Organization Membership
+↓
+Member
+↓
+Member OKRs
+↓
+Monthly Performance Execution
+↓
+Historical Performance
+```
+
+with:
+
+```text
+Performance Sheet
+↓
+Builder
+↓
+Published Presentation Configuration
+↓
+Member Performance Experience
+```
+
+The Builder composes.
+
+Member OKRs provide the employee performance data.
+
+Runtime executes and preserves time-bound performance.
+
+Dashboards, Tables, Charts, Reports, and future AI consume the same
+authoritative data.
+
+---
+
+# Relationship to Other Documentation
 
 This document does not replace:
 
-docs/waypoints/
-
-docs/01_Platform_Decisions.md
-
-docs/02_Platform_Backlog.md
-
-docs/00_Engineering_Process.md
+- docs/waypoints/
+- docs/01_Platform_Decisions.md
+- docs/02_Platform_Backlog.md
+- docs/00_Engineering_Process.md
 
 Instead:
 
@@ -1059,537 +792,33 @@ Platform Decisions define architectural rules.
 
 Platform Backlog defines intentionally deferred work.
 
-Engineering Process defines how we execute and preserve
-continuity.
+Engineering Process defines how we execute and preserve continuity.
 
-Together these documents are the guardrail against development drift.
+Together these documents prevent development drift.
 
-Administrative Actor and Organization Context Model
+---
 
-CascadEffects has two distinct administrative experiences.
+# Documentation Continuity Guardrail
 
-Platform Super Admin
+If implementation behavior conflicts with this Product North Star, stop before
+coding and reconcile the documentation and architecture first.
 
-The Platform Super Admin is a platform-level administrator operating above
-the organization tenant boundary.
+When a requirement materially changes:
 
-The Super Admin Administration experience is cross-organization.
+- actor responsibilities
+- organization context
+- authorization boundaries
+- source-of-truth ownership
+- Builder / Member OKR / Runtime boundaries
+- database relationships
 
-When a Super Admin operates on organization-owned resources, the Super Admin
-selects an Organization context.
-
-The selected Organization determines which tenant's resources are displayed
-and managed.
-
-A Super Admin does not need an Organization Membership merely to administer
-an organization.
-
-Organization Admin
-
-The Organization Admin is an organization-scoped administrator.
-
-The Organization Admin operates only within the organization for which the
-administrator is authorized.
-
-The Organization Admin does not receive a cross-tenant Organization selector.
-
-The Organization context is established by the authenticated user's
-organization authorization.
-
-The Organization Admin can manage the organization's configuration and
-performance-management system according to the organization's Roles &
-Permissions.
-
-The permanent distinction is:
-
-Platform Super Admin
-↓
-Platform authority
-↓
-Select Organization
-↓
-Administer selected organization
-
-Organization Admin
-↓
-Organization authority
-↓
-Authorized Organization
-↓
-Administer that organization
-
-One Builder, Two Administrative Entry Contexts
-
-CascadEffects has one reusable Builder engine.
-
-There is not a separate Super Admin Builder and Organization Admin Builder.
-
-Both administrative actors may enter the same Builder when authorized.
-
-Super Admin entry:
-
-Platform Administration
-↓
-Select Organization
-↓
-Performance Sheets
-↓
-Open Builder
-↓
-Edit selected organization's Performance Sheet
-
-Organization Admin entry:
-
-Organization Administration / Workspace
-↓
-Authorized Organization
-↓
-Performance Sheets
-↓
-Open Builder
-↓
-Edit that organization's Performance Sheet
-
-The Builder remains the single authoritative construction engine.
-
-Organization context determines which organization's definition is being
-edited.
-
-Authorization determines whether the actor may edit that definition.
-
-Super Admin Administration Context Contract
-
-The Platform Super Admin Administration experience is operated by the
-Platform Super Admin.
-
-The Organization page is the special top-level tenant-management page.
-It does not require an Organization selector above it because it is where
-organizations themselves are created and managed.
-
-Every organization-child Administration page must operate against an
-explicitly selected Organization context.
-
-Expected context:
-
-Departments
-↓
-Organization selector
-↓
-Department management
-
-Teams
-↓
-Organization selector
-↓
-Department selector
-↓
-Team management
-
-Users / Members
-↓
-Organization selector
-↓
-User management
-
-Roles & Permissions
-↓
-Organization selector
-↓
-Role management
-
-Performance Sheets
-↓
-Organization selector
-↓
-Performance Sheet management
-↓
-Builder
-
-Assignments
-↓
-Organization selector
-↓
-Assignment management
-
-Objectives / Key Results / Initiatives
-↓
-Organization selector
-↓
-Read Builder-owned definitions
-↓
-Open Builder when editing is required
-
-Dashboards / Reports / Settings
-↓
-Organization selector
-↓
-Organization-scoped experience
-
-Changing the selected Organization must reset dependent Department and
-Team selections.
-
-Every child Administration page should provide a clear return path to the
-Administration home.
-
-The Organization selector is an application/UX context mechanism. It is
-not a database entity and does not replace authorization.
-
-Organization Admin Context Contract
-
-The Organization Admin experience is separate from the cross-organization
-Super Admin Administration experience.
-
-An Organization Admin:
-
-operates only within the organization they are authorized to administer
-
-cannot switch between organizations
-
-does not receive a tenant-switching Organization selector
-
-manages organization configuration according to Roles & Permissions
-
-may access the shared Builder when authorized
-
-uses the same underlying organization data and Builder definitions as the
-Platform Super Admin
-
-The Organization Admin's organization context is established by
-authorization rather than by a Super Admin-style organization selector.
-
-Administration Source-of-Truth Rule
-
-Administration screens must not become duplicate sources of truth.
-
-Builder owns reusable Performance Sheet definitions, including Objectives,
-Key Results, Initiatives, validation, drafts, publishing, and revisions.
-
-Runtime owns period-specific execution state and performance values.
-
-Organization owns organizational identity and configuration.
-
-Memberships connect users to organizations.
-
-Roles and Permissions own organization authorization.
-
-Platform Memberships own platform-level authority.
-
-Therefore:
-
-Objectives Administration reads Builder-owned Objectives.
-
-Key Results Administration reads Builder-owned Key Results.
-
-Initiatives Administration reads Builder-owned Initiatives.
-
-Performance Sheet Administration manages the Builder entry point rather
-than creating a second definition system.
-
-Monthly Reporting Cadence Rule
-
-Monthly performance is a product cadence.
-
-The platform does not require administrator-managed arbitrary Reporting
-Period records to make monthly performance work.
-
-Historical and monthly reporting should derive from dated performance and
-Runtime activity.
-
-A Performance Sheet may still define a reporting period, time frame, or
-other performance-header context when that is part of the configurable
-performance experience. This does not imply a separate administrator-
-managed Reporting Period entity in Assignment or Performance Instance.
-
-Do not reintroduce Reporting Period administration into Assignment or
-Performance Instance architecture unless a future product decision
-explicitly requires it.
-
-Documentation Continuity Guardrail
-
-The product model above is part of the permanent North Star.
-
-If implementation behavior conflicts with this model, stop before coding and
-reconcile the documentation and architecture first.
-
-When a new requirement materially changes:
-
-actor responsibilities
-
-organization context
-
-authorization boundaries
-
-source-of-truth ownership
-
-Builder / Runtime boundaries
-
-database relationships
-
-the requirement must first be documented in the appropriate repository
+the requirement must first be reflected in the appropriate repository
 documents.
 
 The conversation is not sufficient evidence to change the product model.
 
 The repository documentation is the authoritative record.
 
-Status
+**Status**
 
-CURRENT --- PRODUCT NORTH STAR
-
-This document should be reviewed whenever a new development session begins
-or when a major architectural or product decision is being considered.
-
-If the product direction changes materially, update this document
-explicitly rather than allowing the direction to change implicitly through
-code.
-
----
-
-# Waypoint 26 Product Experience Update
-
-The North Star remains unchanged in its central product promise:
-
-> Configure once. Publish once. Assign. Generate monthly performance
-> execution repeatedly.
-
-Waypoint 26 confirms that the current product experience has advanced through
-the presentation layer without changing the underlying Builder / Runtime
-architecture.
-
-The completed presentation increment includes:
-
-- Super Admin Settings
-- Organization Admin Settings
-- Super Admin AI mock-up
-- Organization Admin AI mock-up
-- Member AI Assistant mock-up
-- CascadEffects visual direction across these experiences
-
-These additions do not create new performance engines or duplicate sources of
-truth.
-
-## AI Presentation Boundary
-
-The current AI experiences are demonstrations of future product capability.
-
-They are not live AI services.
-
-The current product must therefore continue to distinguish:
-
-```text
-AI Presentation
-        ↓
-Preview / Coming Soon Experience
-```
-
-from:
-
-```text
-Live AI
-        ↓
-Future approved production capability
-```
-
-Live AI should not be introduced until the business approves the required
-provider costs and the platform has an appropriate security, authorization,
-tenant-context, usage-control, and cost-control design.
-
-## Member AI Direction
-
-The Member AI Assistant is an extension of the existing Member Workspace.
-
-It is a future interaction point within the Runtime product experience, not a
-replacement for Runtime.
-
-The intended relationship remains:
-
-```text
-Published Performance Sheet
-        ↓
-Assignment
-        ↓
-Performance Instance
-        ↓
-Runtime
-        ↓
-Member Workspace
-        ↓
-Member AI Assistant
-```
-
-Any future AI capability that can read or act on private performance data must
-first satisfy the platform's authentication and authorization boundaries.
-
-## Settings Direction
-
-Super Admin Settings and Organization Admin Settings may share visual
-patterns and reusable components, but they represent different authority
-contexts.
-
-Super Admin settings are platform-level.
-
-Organization Admin settings are organization-scoped.
-
-The North Star therefore requires the product to preserve authority boundaries
-even when the two experiences use a consistent visual language.
-
-## Authentication Transition
-
-The product has now reached the point where authentication becomes the next
-major product-flow milestone.
-
-The intended transition is:
-
-```text
-Supabase Auth
-        ↓
-Application User
-        ↓
-Platform / Organization Membership
-        ↓
-Role Context
-        ↓
-Role-Based Landing
-        ↓
-Existing Product Experience
-```
-
-The primary authenticated actors remain:
-
-- Platform Super Admin
-- Organization Admin
-- Member
-
-Authentication establishes identity.
-
-Authorization determines what the authenticated actor may access or modify.
-
-A role selected in the client must never be treated as proof of authority.
-
-## Authentication Product Experience
-
-The future authenticated product should provide role-appropriate entry
-experiences:
-
-```text
-Platform Super Admin
-        ↓
-Super Admin Landing
-        ↓
-Administration / Organization Context
-```
-
-```text
-Organization Admin
-        ↓
-Organization Admin Landing
-        ↓
-Authorized Organization Workspace
-```
-
-```text
-Member
-        ↓
-Member Landing
-        ↓
-Member Workspace
-```
-
-These landing experiences are entry points into the existing platform
-architecture. They are not replacements for Administration, Builder, Runtime,
-or Member Workspace.
-
-## North Star Guardrail
-
-The next milestone must connect the existing product rather than create
-parallel systems.
-
-Do not:
-
-- rebuild Builder
-- rebuild Runtime
-- create a second Member performance engine
-- create duplicate Objective / Key Result / Initiative sources of truth
-- activate live AI
-- use AI as an authorization mechanism
-- treat client-side role selection as authorization
-- introduce unrelated refactoring
-
-The product remains a configurable, multi-tenant performance-management
-platform rather than a collection of customer-specific pages.
-
-
----
-
-## Performance Builder Is the Composition Layer
-
-The Performance Builder should be understood as the composition layer of
-the performance experience, not as the implementation home for every
-performance-management feature.
-
-Reusable performance products are built and managed within Organization
-Administration.
-
-The initial product family includes:
-
-- Member OKR Sheets
-- Dashboards
-- Tables
-- Charts
-- Reports
-
-The Performance Builder calls/assembles these products into the experience
-that Runtime will display.
-
-Conceptually:
-
-```text
-Organization Administration
-        ↓
-Build / configure performance products
-        ↓
-Performance Builder
-        ↓
-Compose the configured products
-        ↓
-Runtime
-        ↓
-Period-specific performance experience
-```
-
-### Member Tabs
-
-Member tabs are the user/member tabs represented by the reference Mint
-experience.
-
-They are not organizational sections such as Operations, Leadership, or
-Development.
-
-A member tab represents a performance context for an actual organization
-member.
-
-The Users administration page is the entry point for creating member OKRs.
-
-For example:
-
-```text
-John Smith
-[Create OKRs]
-```
-
-The Create OKRs action opens the existing OKR/Builder capability in the
-context of John Smith.
-
-The Performance Builder then composes the resulting member performance
-experience rather than creating a separate OKR implementation.
-
-The same composition model will eventually allow dashboards, tables,
-charts, and reports created through Administration to be called into the
-member performance experience.
-
-This is an architectural direction, not a requirement to implement all
-five product families immediately.
-
-The Performance Builder should remain a thin composition layer so that
-new performance products can be added without rebuilding the Builder or
-creating organization-specific pages.
+CURRENT — PRODUCT NORTH STAR

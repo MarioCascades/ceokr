@@ -1,1285 +1,712 @@
-CascadEffects Performance Platform
+# CascadEffects Performance Platform
 
-Platform Backlog
+# Platform Backlog
 
-Document Status: CURRENT
+**Document Status:** CURRENT
 
-Last Updated: 2026-09-19
+**Last Updated:** 2026-09-24
 
 This document tracks intentionally deferred architecture, product
+capabilities, migration work, and future platform work.
 
-capabilities, and future platform work.
+Completed work belongs in Waypoints.
 
-It is not a historical development log.
+The latest Waypoint and current Platform Decisions determine the current
+project state.
 
-Completed work should be recorded in Waypoints.
+---
 
-The latest Waypoint and current Platform Decisions take precedence when
+# Current Development Phase
 
-determining the current project state.
+## Member OKR Performance Architecture
 
-Current Development Phase
+**Status**
 
-Multi-Organization Entry Selection
+NEXT MILESTONE / ARCHITECTURE MIGRATION
 
-Status
+The platform is transitioning from Assignment-owned employee performance to
+Member-owned OKRs.
 
-NEXT MILESTONE
-
-The Authentication + Role-Based Entry foundation has been completed and
-browser-verified.
-
-The platform can now authenticate the actor and route the authenticated actor
-into the appropriate existing product experience as:
-
-- Platform Super Admin
-- Organization Admin
-- Member
-
-The next dependency is explicit Organization selection for users who belong to
-multiple Organizations.
-
-The selected Organization must remain navigation / query context only and
-must never replace server-side authorization.
-
-Users with one applicable Organization should not be forced through an
-unnecessary selector.
-
-Users with multiple applicable Organizations should receive an explicit
-Organization-selection experience, after which the selected Organization must
-be re-resolved and validated server-side.
-
-
-Completed:
-
-Organization
-
-Departments
-
-Teams
-
-Users / Members --- Invitation Foundation
-
-Users / Members --- User Edit
-
-Users / Members --- User Deactivate
-
-Roles & Permissions --- Role Foundation
-
-Roles & Permissions --- Permission Assignment
-
-Roles & Permissions --- Permission Removal
-
-Roles & Permissions --- Membership Role Assignment
-
-Roles & Permissions --- Membership Role Removal
-
-Performance Sheet Management
-
-Assignment Management
-
-Administration Page Structure / Shared Header Standardization
-
-Administration Organization Context / Cascading Selection
-
-Status
-
-COMPLETE / ESTABLISHED
-
-The Super Admin Administration experience preserves explicit Organization
-context across child Administration pages.
-
-The established product pattern is:
+The new source-of-truth model is:
 
 Organization
 ↓
-Department
+Organization Membership
 ↓
-Team
+Member
+↓
+Member OKRs
+↓
+Monthly Performance Execution
+↓
+Historical Performance
 
-The Organization page is the top-level tenant-management page and does not
-require an Organization selector above it.
+The Performance Builder is the composition/presentation layer.
 
-Child Administration pages use the selected Organization where applicable.
+It does not own employee-specific Objectives, Key Results, or Initiatives.
 
-Department and Team context are dependent on the selected parent
-Organization.
+---
 
-Changing the selected Organization resets dependent Department and Team
-context.
+# Completed / Established Foundations
 
-The selected Organization ID is navigation and query context only.
+- Organization
+- Departments
+- Teams
+- Users / Members
+- Roles & Permissions foundation
+- Platform Memberships
+- Platform Super Admin foundation
+- Performance Sheet Management
+- Builder foundation
+- Runtime foundation
+- Member Workspace foundation
+- Administration context
+- Organization Admin workspace
+- Authentication + Role-Based Entry foundation
+- CascadEffects visual direction
+- Settings presentation
+- AI presentation mock-ups
 
-It is not the authorization boundary.
+These foundations remain in place unless explicitly superseded by a new
+Waypoint.
 
-Server-side authorization and eventual production RLS remain authoritative.
+---
 
-The same Organization context pattern applies to:
+# Member OKR Architecture
 
-Users / Members
+## Member OKR Persistence
 
-Roles & Permissions
+**Status**
 
-Performance Sheets
+NEXT
 
-Assignments
+Create the persistent Member OKR source of truth.
 
-Objectives
+Target relationship:
 
-Key Results
+organization_memberships
+↓
+member_objectives
+↓
+member_key_results
+↓
+member_initiatives
 
-Initiatives
+Requirements:
 
-Dashboards
+- organization membership ownership
+- normalized relationships
+- IDs rather than names
+- organization integrity
+- ordering/position
+- objective weights where applicable
+- KR measurement configuration
+- KR current performance value
+- initiative management
 
-Reports
+Do not create a duplicate Member OKR parent model unless a future product
+requirement demonstrates the need.
 
-Settings
+Priority
 
-Organization Admin context is different.
+Critical
 
-An Organization Admin operates within one fixed Organization context and does
-not provide an Organization-switching selector.
+---
 
-The Builder remains one shared engine for both administrative entry
-contexts.
+## Member OKR Repository
 
-The Administration context reconciliation work is complete for the current
-scope.
+**Status**
 
-Production authorization and security hardening remain separate
-architecture milestones.
+NEXT
 
-The Builder and Runtime foundations already exist and are not rebuilt as part
-of this Administration work.
+Create repositories/services for:
 
-Administration Roadmap
+- load member objectives
+- create objective
+- update objective
+- delete objective
+- load key results
+- create key result
+- update key result
+- delete key result
+- load initiatives
+- create initiative
+- update initiative
+- delete initiative
 
-Organization
+All operations must be scoped through Organization Membership.
 
-Status
+Priority
 
-COMPLETE
+Critical
 
-Departments
+---
 
-Status
+## Users → Member OKRs
 
-COMPLETE
+**Status**
 
-Teams
+NEXT
 
-Status
+The Users / Members experience should provide:
 
-COMPLETE
+Performance
+OKRs
+Edit
+Deactivate
 
-Users / Members
+The OKRs action opens the selected member's actual persistent OKR data.
 
-Status
+No Assignment lookup should be required.
 
-COMPLETE
+Priority
 
-The Users / Members foundation establishes:
+Critical
 
-application user profile
+---
 
-organization membership
+## Member Navigation
 
-Department association
+**Status**
 
-Team association
+NEXT
 
-active / inactive state
+Member navigation must be generated automatically from Organization
+Membership.
 
-Supabase Auth relationship
+Example:
 
-Completed:
+Main | Mario | Mari | Emily | Jordyn
 
-User database foundation
+Selecting a member loads that member's OKRs.
 
-Organization Membership database foundation
+Member navigation must never be hardcoded.
 
-User domain model
+Priority
 
-Organization Membership domain model
+High
 
-User Management read model
+---
 
-User service
+# Performance Builder
 
-Users Administration page
+## Remove Employee OKR Ownership from Builder
 
-Invite User workflow
+**Status**
 
-Department → Team filtering
+NEXT
 
-Server-side Supabase Admin workflow
+Refactor BuilderDocument so it no longer owns:
 
-Auth invitation
+- employee Objectives
+- employee Key Results
+- employee Initiatives
 
-Organization Membership creation
+Builder remains responsible for:
 
-User Edit workflow
+- Header
+- Navigation
+- Layout
+- Sections
+- Fields
+- Tables
+- Charts
+- Reports/display composition
+- Publishing
+- Versioning
 
-User profile editing
+Priority
 
-Department editing
+Critical
 
-Team association editing
+---
 
-Active / inactive state editing
+## Builder Performance Composition
 
-User Deactivate workflow
+**Status**
 
-Membership Role management from User Edit
+NEXT
 
-Remaining Users work:
+Builder must compose the member performance experience from:
 
-Production tenant authorization
+Published Performance Sheet configuration
++
+Organization Membership
++
+Member OKRs
 
-Production Row Level Security
+Builder does not create or assign members.
 
-Platform Authority
+Priority
 
-Status
+Critical
 
-FOUNDATION COMPLETE
+---
 
-The platform-level administrative authority foundation is established.
+# Member Page
 
-Completed:
+## Rebuild Member Performance Loading
 
-Platform Membership database foundation
+**Status**
 
-Platform Super Admin role model
+NEXT
 
-Platform Super Admin persistence
+Remove the current dependency:
 
-Server-side Platform Super Admin resolution
+Member
+↓
+Assignment
+↓
+Performance Instance
 
-Platform Super Admin authorization boundary
+Replace with:
 
-Platform Super Admin authority above Organization Roles
+Member
+↓
+Organization Membership
+↓
+Member OKRs
+↓
+Performance configuration
+↓
+Monthly execution where required
 
-A Platform Super Admin does not require an Organization Membership in every
+Priority
 
-Organization they administer.
+Critical
 
-Platform Super Admins are not Organization Roles.
+---
 
-Platform Super Admins can administer organization-owned resources across
+## Member Performance Workspace
 
-Organizations on behalf of those Organizations.
+**Status**
 
-Organization Admins remain restricted to resources belonging to their own
+NEXT
 
-Organization.
+The Member Workspace should render:
 
-Remaining Platform Authority work:
+- member identity
+- role/context
+- month
+- Objectives
+- Key Results
+- Initiatives
+- target
+- current value
+- score
+- comments
+- historical context
 
-Platform Administration UI
+The workspace must use the same Member OKR source as the Users → OKRs
+experience.
 
-Super Admin assignment workflow
+Do not create a second Member performance data model.
 
-Super Admin management workflow
+Priority
 
-Production platform authorization enforcement
+High
 
-Production Row Level Security
+---
 
-Roles & Permissions
+# Runtime Migration
 
-Status
+## Runtime Member Identity
 
-FUNCTIONAL FOUNDATION COMPLETE
+**Status**
 
-The Roles & Permissions foundation establishes:
+NEXT
 
-reusable global Permissions
+Move Runtime ownership away from Assignment.
 
-organization-scoped Roles
+Target identity:
 
-Role Permissions
+organization_id
++
+member_id
++
+performance_month
 
-Membership Roles
+The exact schema should use the existing application identity/membership
+architecture consistently.
 
-organization-aware database integrity
+Priority
 
-Role domain model
+Critical
 
-Permission domain model
+---
 
-Role Permission domain model
+## Runtime Initialization
 
-Membership Role domain model
+**Status**
 
-Role service
+NEXT
 
-Permission service
+Replace:
 
-Role Permission service
+Builder Objectives
+↓
+Performance Instance Objectives
 
-Membership Role service
+with:
 
-Roles Administration UI
+Member OKRs
+↓
+Monthly Performance Snapshot
 
-Completed:
+The Performance Sheet contributes presentation configuration, not the
+employee's Objectives/KRs/Initiatives.
 
-Permission database foundation
+Priority
 
-Permission catalog
+Critical
 
-Role database foundation
+---
 
-Role Permission database foundation
+## Historical Runtime Preservation
 
-Membership Role database foundation
+**Status**
 
-organization-aware integrity constraints
+NEXT
 
-Role CRUD
+Preserve existing:
 
-Permission assignment
+- Performance Instances
+- Runtime Objectives
+- Runtime Key Results
+- Runtime Initiatives
+- Key Result Progress
+- KPI Updates
 
-Permission removal
+where they represent historical execution.
 
-Membership Role assignment
+Existing historical records must remain readable after the migration.
 
-Membership Role removal
+Priority
 
-User / Membership Role Administration workflow
+Critical
 
-TypeScript verification
+---
 
-real database CRUD verification
+# Assignment Retirement
 
-User Edit integration
+## Assignment Usage Audit
 
-Remaining Roles & Permissions work:
+**Status**
 
-Production tenant authorization
+NEXT
 
-Production Row Level Security
+Identify every remaining application dependency on:
 
-Full authorization enforcement across UI, services, APIs, and
+- assignments table
+- assignment repository
+- active assignment resolution
+- assignment-based Runtime loading
+- assignment-based Performance Instance creation
+- assignment Administration UI
 
-database/RLS
+Priority
 
-Platform-level authorization integration
+Critical
 
-Performance Sheet Management
+---
 
-Status
+## Assignment Migration
 
-COMPLETE
+**Status**
 
-The Administration Performance Sheet management workflow is complete.
+DEFERRED UNTIL MEMBER OKR FOUNDATION IS VERIFIED
 
-Completed:
+Migrate Runtime consumers away from Assignment.
 
-Performance Sheet listing
+Do not delete Assignment records before historical Runtime dependencies are
+safe.
 
-Create Performance Sheet
+Priority
 
-Select Performance Sheet
+Critical
 
-Open Builder
+---
 
-Draft management
+## Assignment Removal
 
-Published version management
+**Status**
 
-Exact version selection
+FUTURE / CLEANUP
 
-Version history
+After migration:
 
-Published version navigation
+- remove Assignment UI
+- remove active Assignment resolution
+- remove obsolete Assignment repository usage
+- remove obsolete service dependencies
+- remove obsolete database relationships
+- remove Assignment table only after production data migration is verified
 
-Draft revision navigation
+Priority
 
-Builder navigation
+High
 
-Administration navigation
+---
 
-Published → Revision workflow
+# Performance Sheets
 
-Performance Sheet lifecycle entry point
+## Performance Sheet Composition
 
-Builder remains responsible for Performance Sheet definition and editing.
+**Status**
+
+NEXT
+
+Performance Sheet definitions should contain presentation/composition
+configuration rather than employee-specific OKRs.
 
 Published versions remain immutable.
 
-The existing performance_sheets records provide version history.
+Performance Sheet versioning remains reusable across members.
 
-Deferred:
+Priority
 
-Archive
+High
 
-Duplicate
+---
 
-Search
+## Multiple Performance Sheet Definitions
 
-Filtering
-
-Advanced Performance Sheet management
-
-Assignment Management
-
-Status
-
-COMPLETE
-
-Assignment Management connects published Performance Sheet versions to
-
-Runtime subjects.
-
-Completed:
-
-Assignment listing
-
-Assignment creation
-
-Assignment subject selection
-
-Individual assignments
-
-Team assignments
-
-Department assignments
-
-Organization assignments
-
-Assignment lifecycle
-
-Draft state
-
-Active state
-
-Completed state
-
-Cancelled state
-
-Published Performance Sheet association
-
-Performance timeframe / monthly cadence context
-
-Assignment → Performance Instance integration
-
-Runtime subject resolution
-
-Individual User identity resolution
-
-Assignment Management remains an Administration capability.
-
-Builder remains responsible for Performance Sheet definition.
-
-Runtime remains responsible for Performance Instance execution.
-
-Assignments reference exact published Performance Sheet versions.
-
-Deferred hardening:
-
-Assignment Subject Validation
-
-Performance Instance Relationship Integrity
-
-Production authorization
-
-Production Row Level Security
-
-Runtime security boundaries
-
-Builder
-
-Builder Definition Lifecycle
-
-Status
-
-ESTABLISHED
-
-The Builder already supports the core definition lifecycle.
-
-The Builder should not be rebuilt as part of Administration development.
-
-The established lifecycle is:
-
-Draft
-
-↓
-
-Validate
-
-↓
-
-Publish
-
-↓
-
-Published Version
-
-↓
-
-Create Revision
-
-↓
-
-New Draft
-
-Published definitions remain immutable.
-
-Multiple Performance Sheet Definitions
-
-Status
+**Status**
 
 DEFERRED
 
-Future organizations will manage multiple logical Performance Sheets.
+Future organizations may manage multiple logical Performance Sheet
+definitions.
 
-The platform should support:
+The platform should continue supporting:
 
-sheet_key
+- sheet_key
+- Performance Sheet Library
+- versions
+- organization-scoped definitions
+- published versions
 
-Performance Sheet Library
-
-multiple definitions
-
-version selection
-
-organization-scoped definitions
-
-Runtime assignments should continue referencing the exact published
-
-version.
-
-3A. Administrative Entry Contexts
-
-Platform Super Admin Administration Context
-
-Status
-
-ESTABLISHED
-
-The Super Admin Administration experience is platform-level and supports
-administration across Organizations through explicit Organization context.
-
-The selected Organization is a UI/query context and must not replace
-server-side authorization.
-
-Organization Admin Workspace
-
-Status
-
-COMPLETE / ESTABLISHED
-
-The Organization Admin workspace has been established as a separate
-organization-scoped administrative entry context.
-
-The Organization Admin workspace:
-
-operates within one fixed Organization context
-
-does not provide cross-Organization switching
-
-provides access to organization configuration and administrative capabilities
-according to the current product scope
-
-uses the same underlying Builder engine as the Super Admin experience
-
-does not create a second Builder
-
-The current Organization Admin workspace establishes the intended UX and
-navigation contract.
-
-Production authorization must eventually derive and validate the
-Organization Admin scope from authenticated Organization membership, role,
-and permissions.
+The selected Performance Sheet configuration must not determine whether a
+member participates in performance management.
 
 Priority
 
-Complete
+Medium
 
-3B. Administration Context Components
+---
 
-Status
+# Runtime
 
-ESTABLISHED
+## Runtime Product Experience
 
-The reusable Administration context pattern has been standardized for:
+**Status**
 
-Organization selection
+FOUNDATION COMPLETE / CONTINUING
 
-Department selection
+Continue improving:
 
-Team selection
-
-The component pattern resets dependent selections when a parent context
-changes and passes IDs rather than names.
-
-These components are UX/navigation context helpers, not authorization
-mechanisms.
-
-The Organization Admin workspace intentionally uses fixed Organization
-context rather than an Organization-switching selector.
-
-Priority
-
-Complete
-
-Runtime
-
-Runtime Execution Foundation
-
-Status
-
-ESTABLISHED
-
-The Runtime architecture has established:
-
-Performance Instance resolution
-
-Assignment resolution
-
-exact published Performance Sheet resolution
-
-time-bound execution context / monthly cadence
-
-Runtime subject resolution
-
-Key Result Progress
-
-Current Value
-
-Score
-
-employee comments
-
-manager comments
-
-aggregate recalculation
-
-Runtime lifecycle state
-
-Builder and Runtime remain separate architectural layers.
-
-Confidence is not part of the current Runtime Key Result update workflow.
-
-Runtime Scoring Utility
-
-Status
-
-ESTABLISHED
-
-The Runtime currently includes a small scoring utility.
-
-Current scoring method:
-
-Percentage of Target
-
-current value ÷ target value × 100
-
-Scores are stored internally on a 0–100 scale.
-
-The Runtime UI displays the score as a percentage.
-
-The current scoring utility intentionally remains small.
-
-A generalized KPI Calculation Engine remains future platform work.
-
-Runtime Product Experience
-
-Status
-
-FOUNDATION CHECKPOINT COMPLETE / CONTINUING
-
-The Runtime Execution Foundation and Member Workspace Foundation are
-
-established.
-
-The next milestone is to turn those foundations into the complete
-
-day-to-day performance-management experience.
-
-Priority areas include:
-
-- richer Runtime workspace presentation
-- member performance workflow
 - monthly navigation
-- previous/current/target performance presentation
+- previous/current/target performance
 - measurement-type-aware value entry
 - score visibility
 - Objective / Key Result / Initiative presentation
-- initiative add/edit/remove workflow
 - employee comments
 - manager comments
-- Runtime lifecycle presentation
-- manager review / approval experience
-- clear performance status
-- historical month navigation
-- consistent performance-sheet visual hierarchy
+- lifecycle presentation
+- manager review
+- historical navigation
 
-The work must reuse the existing Runtime engine.
+All improvements must consume Member OKRs and the Runtime execution layer.
 
-Do not create a second performance engine or a second Member performance
-
-data model.
-
-Mint remains a UX reference, not an architecture to rebuild.
-
-The Runtime Product Experience must remain generated from:
-
-Builder Definition
-
-↓
-
-Published Performance Sheet
-
-↓
-
-Assignment
-
-↓
-
-Monthly Performance Instance
-
-↓
-
-Runtime Data
-
-↓
-
-Member / Manager Experience
+Do not create a second performance engine.
 
 Priority
 
 High
 
-Architecture
+---
 
-Organization Table Naming
+## Runtime Security
 
-Current
-
-organization
-
-Future
-
-organizations
-
-Reason
-
-Standardize naming across database tables.
-
-Priority
-
-Medium
-
-Status
-
-Deferred
-
-Organization Domain Model
-
-Current
-
-src/lib/types/organization.ts
-
-Future
-
-src/lib/domain/organization.ts
-
-Introduce persistence row types separately where appropriate.
-
-Reason
-
-Separate persistence models from domain models.
-
-Priority
-
-Medium
-
-Status
-
-Deferred
-
-Repository Row Naming
-
-Rename:
-
-PerformanceSheetRecord
-
-to:
-
-PerformanceSheetRow
-
-Reason
-
-Improve naming consistency.
-
-Priority
-
-Low
-
-Status
-
-Deferred
-
-Repository Mappers
-
-Create:
-
-src/lib/supabase/mappers/
-
-Reason
-
-Separate persistence mapping from repository logic.
-
-Priority
-
-Medium
-
-Status
-
-Deferred
-
-Security
-
-Tenant Authorization Hardening
-
-Status
+**Status**
 
 DEFERRED
 
-Production authorization must enforce Organization boundaries across
+Production Runtime operations require:
 
-repositories and services.
-
-Organization Admin authorization is restricted to resources belonging to
-
-their own Organization.
-
-Platform Super Admin authorization may administer organization-owned
-
-resources across Organizations on behalf of those Organizations.
-
-The authorization boundary must be enforced server-side and through
-
-production RLS rather than relying only on UI visibility.
+- authenticated actor
+- authorized Organization
+- authorized member/resource
+- server-side enforcement
+- eventual production RLS
 
 Priority
 
 High
 
-Production Row Level Security
+---
 
-Status
+# Historical Performance
+
+## Historical KPI Updates
+
+**Status**
 
 DEFERRED
 
-Implement and validate production-ready Supabase RLS policies.
+Create durable time-series KPI update records supporting:
 
-RLS must preserve Organization tenant isolation while allowing the
-
-platform-level Super Admin authority defined by Platform Decisions.
+- member
+- Key Result
+- measured value
+- calculated score
+- timestamp
+- performance month
+- update source where appropriate
 
 Priority
 
 High
 
-Runtime Security Boundaries
+---
 
-Status
+## KPI Calculation Engine
+
+**Status**
 
 DEFERRED
 
-Establish appropriate server-side service boundaries and authorization
+Create generalized KPI calculation capabilities for:
 
-checks for production Runtime operations.
+- numeric
+- currency
+- percentage
+- time-bound
+- reverse scoring
+- shared metrics
+- team metrics
+- department metrics
+- organization metrics
 
 Priority
 
 High
 
-User / Role Authorization
+---
 
-Status
+## Weighted Aggregation
 
-DEFERRED
-
-After Users / Members and Roles / Permissions are established, implement
-
-consistent authorization across:
-
-UI
-
-server services
-
-database / RLS
-
-Organization Admin access must remain organization-scoped.
-
-Platform Super Admin access must support platform-level administration
-
-across Organizations.
-
-Priority
-
-High
-
-Runtime Data Architecture
-
-Assignment Subject Validation
-
-Status
-
-DEFERRED
-
-Validate that subjectId belongs to the entity represented by
-
-assignmentType.
-
-Examples:
-
-individual → valid User
-
-team → valid Team
-
-department → valid Department
-
-organization → valid Organization
-
-Reason
-
-Prevent invalid polymorphic assignment references.
-
-Priority
-
-Medium
-
-Performance Instance Relationship Integrity
-
-Status
-
-DEFERRED
-
-Enforce consistency between Performance Instance and Assignment.
-
-The Performance Instance should remain consistent with:
-
-Assignment
-
-Organization
-
-time-bound execution context / monthly cadence
-
-Exact Performance Sheet version
-
-Reason
-
-Prevent duplicated Runtime references from becoming inconsistent.
-
-Priority
-
-Medium
-
-Reporting Cadence / Historical Time Model
-
-Status
-
-ESTABLISHED PRODUCT RULE / ARCHITECTURAL HARDENING FUTURE
-
-Monthly performance is a product cadence, not an administrator-managed
-Reporting Period entity.
-
-The platform should derive time-bound performance context from assignment,
-performance instance, and dated Runtime records.
-
-Do not reintroduce reportingPeriodId into Assignment or PerformanceInstance
-unless a future product decision explicitly changes this rule.
-
-Historical KPI Updates remain responsible for durable time-series records
-needed for reporting, trends, auditability, and future analytics.
-
-Priority
-
-High
-
-Historical KPI Updates
-
-Status
-
-DEFERRED
-
-Create a durable time-series KPI Update model.
-
-The model should preserve:
-
-Performance Instance
-
-Key Result
-
-measured value
-
-calculated score
-
-timestamp
-
-reporting context
-
-update source where appropriate
-
-Reason
-
-Support historical reporting, trend analysis, auditability, and future
-
-predictive analytics.
-
-Priority
-
-High
-
-KPI Calculation Engine
-
-Status
-
-DEFERRED
-
-Create a generalized KPI calculation engine supporting future KPI types
-
-such as:
-
-numeric
-
-currency
-
-percentage
-
-time-bound
-
-reverse scoring
-
-shared/team metrics
-
-department metrics
-
-organization metrics
-
-Reason
-
-Separate reusable KPI definitions from Runtime calculations.
-
-Priority
-
-High
-
-Weighted Aggregation
-
-Status
+**Status**
 
 DEFERRED
 
 Formalize weighted aggregation at:
 
-Key Result level
-
-Objective level
-
-Performance Instance level
-
-Reason
-
-Runtime aggregation should eventually honor Performance Sheet weights.
+- Key Result
+- Objective
+- Member Performance
+- organizational levels
 
 Priority
 
 High
 
-Runtime Workflow
+---
 
-Runtime Lifecycle
+## Historical Reporting
 
-Status
-
-ESTABLISHED / FUTURE ENHANCEMENTS
-
-The core Runtime lifecycle has been implemented and verified.
-
-Current lifecycle:
-
-In Progress
-
-↓
-
-Submitted
-
-↓
-
-Approved
-
-↓
-
-Completed
-
-Future work may refine:
-
-transition rules
-
-authorization
-
-workflow controls
-
-manager approval behavior
-
-Historical Reporting
-
-Historical Performance Reporting
-
-Status
+**Status**
 
 FUTURE
 
 Support:
 
-previous reporting periods
-
-performance trends
-
-team comparisons
-
-department comparisons
-
-organizational comparisons
-
-historical performance records
+- previous months
+- performance trends
+- team comparisons
+- department comparisons
+- organization comparisons
+- historical performance records
 
 Priority
 
 High
 
+---
+
+# Dashboards
+
+## Dynamic Dashboard System
+
+**Status**
+
+FUTURE
+
+Dashboards must be generated from platform data and configuration.
+
+Potential levels:
+
+- individual
+- team
+- department
+- executive
+- organization
+
+Priority
+
+High
 
 ---
 
-Settings and AI Product Experience
+# Reports
 
-Settings and AI work should follow the administrative authority model and
-remain separate from the authentication foundation until the authentication
-milestone is complete.
+## Dynamic Reports
 
-## Super Admin Settings
+**Status**
 
-Status
+FUTURE
 
-COMPLETE / PRESENTATION ESTABLISHED
+Reports should consume the same Member OKR and historical performance
+sources.
 
-Build a platform-level Settings page for CascadEffects Super Admins.
-
-Initial scope:
-
-- platform-level configuration areas
-- global defaults where appropriate
-- platform feature controls
-- future global AI configuration
-- clearly identified future settings
-
-Do not duplicate Organization-specific configuration here.
+Reports must not create a second KPI/performance data model.
 
 Priority
 
 Medium
 
-## Organization Admin Settings
+---
 
-Status
+# AI
 
-COMPLETE / PRESENTATION ESTABLISHED
+## AI-Assisted Planning
 
-Build an organization-scoped Settings page for Organization Admins.
+**Status**
 
-Initial scope:
+FUTURE
 
-- Organization preferences
-- organization performance-management preferences where appropriate
-- notification preferences
-- organization integrations / data configuration where appropriate
-- clearly identified future settings
+Potential capabilities:
 
-The page must use the authenticated Organization context.
+- objective generation
+- Key Result recommendations
+- KPI suggestions
+- goal quality analysis
+- initiative recommendations
+- performance insights
+- planning assistance
+- reporting summaries
 
-Do not provide an Organization-switching selector.
-
-Do not reintroduce administrator-managed Reporting Period configuration.
-
-Priority
-
-Medium
-
-## Super Admin AI Mock-up
-
-Status
-
-COMPLETE / PRESENTATION MOCK-UP
-
-Create a Super Admin AI page that demonstrates the future CascadEffects AI
-experience without requiring live AI API usage.
-
-Initial UI may include:
-
-- sample questions
-- suggested prompts
-- example help responses
-- "Chat with Me" interaction
-- visible future-capability messaging
+AI must consume authorized platform data only.
 
 Priority
 
 Medium
 
-## Organization Admin AI Mock-up
-
-Status
-
-COMPLETE / PRESENTATION MOCK-UP
-
-Create an Organization Admin AI page with the same future-assistant concept,
-but scoped to Organization Admin workflows.
-
-Initial UI may include:
-
-- sample organization-management questions
-- suggested prompts
-- example help responses
-- "Chat with Me" interaction
-- visible future-capability messaging
-
-Priority
-
-Medium
-
-## Live AI Help Assistant
-
-Status
-
-FUTURE / BUSINESS APPROVAL REQUIRED
-
-Implement the live documentation/product-help assistant after business
-approval for the separate AI API operating expense.
-
-Requirements include:
-
-- secure server-side API integration
-- approved CascadEffects documentation context
-- relevant-document retrieval
-- no browser-exposed API keys
-- usage monitoring
-- cost controls
-- no private performance-data access in Phase 1
-
-Priority
-
-Medium
+---
 
 ## AI Data-Aware Expansion
 
-Status
+**Status**
 
 FUTURE
 
@@ -1287,393 +714,161 @@ Future phases may add:
 
 - performance analysis
 - KPI insights
-- planning assistance
+- planning
 - reporting summaries
 - recommendations
 - predictive analytics
 
-This requires completed authentication, authorization, Organization scoping,
-and secure data-access architecture before private performance data is
-provided to the AI.
+Authentication and authorization must be complete before private
+performance data is exposed to AI.
 
 Priority
 
 Medium
 
-## Authentication and Role-Based Entry
+---
 
-Status
+# Authentication and Organization Entry
 
-FOUNDATION COMPLETE / VERIFIED
+## Multi-Organization Entry Selection
 
-The Authentication + Role-Based Entry foundation has been implemented and
-browser-verified.
+**Status**
 
-The platform now replaces client-selected role assumptions with
-authentication-driven role recognition.
+DEFERRED / RE-EVALUATE AFTER MEMBER OKR ARCHITECTURE FOUNDATION
 
-Required actor types:
+The previous roadmap identified explicit Organization selection as the next
+entry-routing milestone.
 
-- Platform Super Admin
-- Organization Admin
-- Member
+That work remains valid but must not interrupt the more fundamental Member
+OKR architecture migration.
 
-The authenticated entry context resolves:
+When resumed:
 
-- Supabase Auth identity
-- Application User
-- Platform Membership where applicable
-- Organization Membership where applicable
-- applicable Membership Role context
-- Entry Actor
-- Organization context where applicable
-
-Verified post-login entry experiences:
-
-```text
-Platform Super Admin
-↓
-Super Admin Entry
-```
-
-```text
-Organization Admin
-↓
-Organization Admin Entry
-```
-
-```text
-Member
-↓
-Member Entry
-```
-
-The current implementation reuses the existing authentication, Application
-User, Platform Membership, Organization Membership, and role foundations.
-
-The role-selection dropdown is not used as an authorization mechanism.
-
-The root Next.js proxy establishes the Supabase session-refresh request
-boundary.
-
-The authentication confirmation route validates root-relative redirect
-targets.
-
-The `/entry` route consumes the canonical Current Entry Context.
-
-Platform Super Admin authority takes precedence over Organization-level
-membership during initial entry resolution.
-
-The primary authentication and entry flows have been browser-verified for:
-
-- Mario → Super Admin
-- Heather → Super Admin
-- Organization Admin → Organization Admin entry
-- Member → Member entry
-
-The defensive unconfigured-account path exists but was not independently
-exercised because no test account was created solely for that scenario.
-
-The current defensive path remains:
-
-```text
-No valid entry context
-↓
-/login?error=account_not_configured
-```
-
-Production authorization and RLS remain separate security milestones.
-
-Remaining authentication/security work is not part of this completed
-foundation, including full production authorization enforcement, tenant
-authorization hardening, and production Row Level Security.
+- one applicable Organization should not require unnecessary selection
+- multiple Organizations should provide explicit selection
+- selected Organization is context only
+- server-side authorization must re-resolve the Organization
+- client selection must never be treated as authorization
 
 Priority
 
-Complete / Security Follow-Up
+High
 
-Dashboards
+---
 
-Dynamic Dashboard System
+# Security
 
-Status
+## Tenant Authorization Hardening
 
-FUTURE
+**Status**
 
-Dashboards should be generated from platform data rather than
+DEFERRED
 
-custom-built for individual organizations.
+Production authorization must enforce Organization boundaries across:
 
-Potential dashboard levels:
+- UI
+- services
+- API routes
+- database / RLS
 
-individual
+Priority
 
-team
+Critical
 
-department
+---
 
-executive
+## Production Row Level Security
 
-organization
+**Status**
 
-AI
+DEFERRED
 
-AI-Assisted Planning
+Implement and validate production Supabase RLS policies.
 
-Status
+Priority
 
-FUTURE
+Critical
 
-Potential capabilities:
+---
 
-objective generation
+## Platform Authorization
 
-Key Result recommendations
+**Status**
 
-KPI suggestions
+DEFERRED
 
-goal quality analysis
+Complete enforcement of Platform Super Admin authority separately from
+Organization Roles.
 
-initiative recommendations
+Priority
 
-performance insights
+High
 
-strategic planning assistance
+---
 
-automated reporting summaries
+# Architecture Cleanup
 
-Predictive Analytics
+## Domain / Persistence Separation
 
-Status
+**Status**
 
-FUTURE
+DEFERRED
 
-Potential capabilities:
+Future architecture work may introduce:
 
-performance trend analysis
+src/lib/domain/
 
-risk detection
+and:
 
-forecasting
+src/lib/supabase/mappers/
 
-organizational performance insights
+Do not perform broad refactoring during the Member OKR migration unless
+required.
 
-Visual Design System
+Priority
 
-CascadEffects Design System
+Medium
 
-Status
+---
 
-PARTIALLY ESTABLISHED / CONTINUE AFTER AUTHENTICATION
+# Documentation
 
-The next product-experience increment should establish the centralized
-CascadEffects default design system before broad page-by-page visual
-refinement.
+## Member OKR Architecture Documentation
 
-Official Brand Guide colors:
+**Status**
 
-Deep Navy
+CURRENT MILESTONE
 
-#082550
+Update:
 
-Grayish Blue
+- Platform Decisions
+- Platform Backlog
+- Product North Star
+- Waypoint
 
-#B4C2D1
+when the Member OKR architecture milestone is completed.
 
-Light Blue
+Do not rewrite historical Waypoints.
 
-#E9F4F8
+Priority
 
-Dark Charcoal
+Critical
 
-#272D2C
+---
 
-White
-
-#FFFFFF
-
-Coral
-
-#E26D5C
-
-The four signature brand colors that should remain visually prominent are:
-
-Deep Navy
-
-Grayish Blue
-
-Light Blue
-
-Coral
-
-Coral is a selective callout / action color.
-
-The design system should centralize reusable tokens for:
-
-page backgrounds
-
-surfaces
-
-cards
-
-borders
-
-typography
-
-buttons
-
-forms
-
-dialogs
-
-tables
-
-navigation
-
-status indicators
-
-spacing
-
-radius
-
-shadows
-
-iconography
-
-The Brand Guide typography direction should be reflected where appropriate:
-
-Roboto Black
-
-Martel Sans
-
-Khula
-
-The platform should favor consistent line iconography and consistent stroke
-treatment.
-
-The visual experience should feel:
-
-clean
-
-modern
-
-minimalist
-
-structured
-
-confident
-
-professional
-
-The centralized design system should be reusable across:
-
-Administration
+# Current Project Position
 
 Builder
 
-shared platform navigation
-
-Dashboards
-
-Reports
-
-Runtime
-
-Runtime may later apply organization-specific visual configuration.
-
-Organization-specific branding should eventually be configurable through
-Administration.
-
-The CascadEffects default theme should remain the platform fallback.
-
-
-Deployment / Environment Configuration
-
-Environment Validation
-
-Status
-
-FUTURE
-
-Future deployment hardening should include:
-
-environment variable validation
-
-missing environment detection
-
-production health checks
-
-Supabase connectivity verification
-
-clear deployment diagnostics
-
-separation of public configuration from server-only secrets
-
-Current Milestone Rule
-
-The current milestone must always be determined from:
-
-Latest Waypoint
-
-Platform Decisions
-
-Platform Backlog
-
-Historical Waypoints must not be treated as current task lists.
-
-If an older document says something is "Next Milestone" but a newer
-
-Waypoint shows that work has already progressed beyond it, the older
-
-statement is historical and must not redirect development.
-
-Documentation Maintenance
-
-When a major milestone is completed:
-
-Update the relevant Platform Decisions if architecture changed.
-
-Update this Platform Backlog if roadmap status changed.
-
-Compile successfully.
-
-Test the implementation.
-
-Commit the implementation.
-
-Push to GitHub.
-
-Create a new Waypoint.
-
-Confirm the new Waypoint is the current project checkpoint.
-
-Do not modify historical Waypoints merely to make them current.
-
-Current Project Position
-
-Builder
-
-COMPLETE / ESTABLISHED
+ESTABLISHED
 
 Runtime Execution Foundation
 
-COMPLETE / ESTABLISHED
+ESTABLISHED
 
 Administration Foundation
 
-COMPLETE / ESTABLISHED
-
-Organization
-
-COMPLETE
-
-Departments
-
-COMPLETE
-
-Teams
-
-COMPLETE
+ESTABLISHED
 
 Users / Members
 
@@ -1687,89 +882,29 @@ Platform Authority
 
 FOUNDATION COMPLETE
 
-Platform Memberships
-
-COMPLETE
-
-Platform Super Admin authorization foundation
-
-COMPLETE
-
 Performance Sheet Management
 
 COMPLETE
 
 Assignment Management
 
-COMPLETE
+LEGACY / TRANSITIONAL
 
-Administration Page Structure / Shared Header Standardization
+Member Workspace
 
-COMPLETE
-
-Administration Organization Context / Cascading Selection
-
-COMPLETE / ESTABLISHED
-
-Organization Admin Workspace Foundation
-
-COMPLETE / ESTABLISHED
-
-Organization Admin Fixed Organization Context
-
-ESTABLISHED
-
-One Builder / Two Administrative Entry Contexts
-
-ESTABLISHED
-
-Objectives / Key Results / Initiatives
-
-BUILDER-OWNED / ESTABLISHED
-
-Monthly Performance Cadence
-
-ESTABLISHED PRODUCT RULE
-
-Member Performance Navigation
-
-ESTABLISHED
-
-Runtime Dashboard / Member Performance Separation
-
-COMPLETE / VERIFIED
-
-Runtime Product Experience
-
-FOUNDATION CHECKPOINT COMPLETE / CONTINUING AFTER AUTHENTICATION
+FOUNDATION COMPLETE
 
 Authentication + Role-Based Entry
 
 FOUNDATION COMPLETE / VERIFIED
 
-Dashboards
+Member OKR Domain
 
-V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
-
-Reports
-
-FUTURE
-
-AI
-
-PRESENTATION MOCK-UPS COMPLETE / LIVE AI FUTURE
-
-Settings
-
-PRESENTATION COMPLETE / AUTHORITY-SCOPED
+NEW / NEXT
 
 Production Authorization / RLS
 
-OUTSTANDING / LATER SECURITY MILESTONE
-
-Runtime Security Boundaries
-
-DEFERRED
+OUTSTANDING
 
 Historical KPI Updates
 
@@ -1787,369 +922,45 @@ Historical Performance Reporting
 
 DEFERRED
 
-CascadEffects Design System
+Dashboards
 
-PARTIALLY ESTABLISHED / CONTINUE AFTER AUTHENTICATION
+V1 ESTABLISHED / DYNAMIC FUTURE
 
-Next Development Session
+AI
+
+PRESENTATION MOCK-UPS / LIVE FUTURE
+
+---
+
+# Next Development Session
 
 Start from the latest Waypoint.
 
 Review:
 
-Latest Waypoint
-
-Platform Decisions
-
-Platform Backlog
-
-Product North Star
-
-Confirm the Multi-Organization Entry Selection milestone.
-
-Inspect the existing:
-
-- root Next.js proxy
-- Supabase Auth implementation
-- Application User resolution
-- Current Entry Context
-- Platform Membership resolution
-- Organization Membership resolution
-- Membership Role resolution
-- current Super Admin entry
-- current Organization Admin entry
-- current Member entry
-- existing organization context patterns
-
-The next implementation should establish explicit Organization selection
-behavior for authenticated users who belong to multiple Organizations.
-
-Target behavior:
-
-Platform Super Admin
-
-↓
-
-Super Admin Entry
-
-↓
-
-Organization-specific experience
-
-↓
-
-Organization Selector where required
-
-Organization Admin
-
-↓
-
-Fixed authorized Organization context
-
-↓
-
-Organization-specific experience
-
-Member
-
-↓
-
-Authorized Organization context
-
-↓
-
-Member experience
-
-For a user with one applicable Organization, avoid unnecessary selection.
-
-For a user with multiple applicable Organizations, provide an explicit
-Organization selector.
-
-The selected Organization ID is context only.
-
-The server must re-resolve and validate the selected Organization against the
-authenticated actor's actual authority.
-
-Do not use localStorage, a client-selected Organization, or a display name as
-the authorization boundary.
-
-Do not create a second Organization Membership model.
-
-Do not create a second role system.
-
-Do not rebuild Builder.
-
-Do not rebuild Runtime.
-
-Do not create a second Member performance data model.
-
-Do not reintroduce an administrator-managed Reporting Period entity.
-
-Production authorization and RLS remain separate security work unless the
-next milestone exposes a blocking dependency.
-
-After multi-Organization entry is complete and verified, continue the
-Runtime Product Experience / Design & Vibe roadmap according to the latest
-Waypoint and Platform Decisions.
-
-Do not treat AI mock-ups as live AI functionality.
-
-Do not activate paid AI API usage without business approval.
-
----
-
-Current Milestone Update — Waypoint 27
-
-The Authentication + Role-Based Entry foundation is now complete and verified.
-
-Completed authentication foundation:
-
-- root Next.js proxy session boundary confirmed
-- Supabase session refresh
-- Application User resolution
-- Platform Super Admin resolution
-- Organization Membership resolution
-- Membership Role resolution
-- canonical Current Entry Context
-- role-aware `/entry`
-- Super Admin entry
-- Organization Admin entry
-- Member entry
-- authentication confirmation redirect hardening
-- removal of duplicate unused current-user infrastructure
-
-Browser verification completed for:
-
-- Mario → Super Admin
-- Heather → Super Admin
-- Organization Admin → Organization Admin entry
-- Member → Member entry
-
-No database schema changes were required for this milestone.
-
-The existing identity, membership, role, and permission foundations were reused.
-
-The next active milestone is:
-
-> Multi-Organization Entry Selection
-
-The next milestone must solve explicit Organization selection for users with
-multiple authorized Organization memberships without changing the existing
-tenant or authorization model.
-
-Production authorization, tenant boundaries, server-side enforcement, and
-RLS remain security work to be completed separately.
-
-The Settings and AI presentation work established in Waypoint 26 remains
-complete.
-
-The current AI experiences remain presentation-only.
-
-No live AI provider integration or paid AI API usage has been introduced.
-
-No Builder or Runtime rebuild is part of the completed authentication
-milestone.
-
----
-
-Current Project Position
-
-Builder
-
-COMPLETE / ESTABLISHED
-
-Runtime Execution Foundation
-
-COMPLETE / ESTABLISHED
-
-Administration Foundation
-
-COMPLETE / ESTABLISHED
-
-Organization
-
-COMPLETE
-
-Departments
-
-COMPLETE
-
-Teams
-
-COMPLETE
-
-Users / Members
-
-COMPLETE
-
-Roles & Permissions
-
-FUNCTIONAL FOUNDATION COMPLETE
-
-Platform Authority
-
-FOUNDATION COMPLETE
-
-Platform Memberships
-
-COMPLETE
-
-Platform Super Admin authorization foundation
-
-COMPLETE
-
-Performance Sheet Management
-
-COMPLETE
-
-Assignment Management
-
-COMPLETE
-
-Administration Page Structure / Shared Header Standardization
-
-COMPLETE
-
-Administration Organization Context / Cascading Selection
-
-COMPLETE / ESTABLISHED
-
-Organization Admin Workspace Foundation
-
-COMPLETE / ESTABLISHED
-
-Organization Admin Fixed Organization Context
-
-ESTABLISHED
-
-One Builder / Two Administrative Entry Contexts
-
-ESTABLISHED
-
-Objectives / Key Results / Initiatives
-
-BUILDER-OWNED / ESTABLISHED
-
-Monthly Performance Cadence
-
-ESTABLISHED PRODUCT RULE
-
-Member Performance Navigation
-
-ESTABLISHED
-
-Runtime Dashboard / Member Performance Separation
-
-COMPLETE / VERIFIED
-
-Runtime Product Experience
-
-FOUNDATION CHECKPOINT COMPLETE / CONTINUING
-
-Settings Presentation
-
-COMPLETE / PRESENTATION ESTABLISHED
-
-Super Admin AI Mockup
-
-COMPLETE / PRESENTATION MOCK-UP
-
-Organization Admin AI Mockup
-
-COMPLETE / PRESENTATION MOCK-UP
-
-Member AI Assistant Mockup
-
-COMPLETE / PRESENTATION MOCK-UP
-
-CascadEffects Design Direction
-
-ESTABLISHED / CONTINUING
-
-Authentication + Role-Based Entry
-
-FOUNDATION COMPLETE / VERIFIED
-
-Multi-Organization Entry Selection
-
-NEXT MILESTONE
-
-Dashboards
-
-V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
-
-Reports
-
-FUTURE
-
-Live AI Integration
-
-FUTURE / BUSINESS APPROVAL
-
-Production Authorization / RLS
-
-OUTSTANDING / LATER SECURITY MILESTONE
-
-Runtime Security Boundaries
-
-DEFERRED
-
-Historical KPI Updates
-
-DEFERRED
-
-KPI Calculation Engine
-
-DEFERRED
-
-Weighted Aggregation
-
-DEFERRED
-
-Historical Performance Reporting
-
-DEFERRED
-
-
----
-
-# Product Composition Direction
-
-Status
-
-DIRECTION / FUTURE IMPLEMENTATION
-
-The Performance Builder is being refined as a composition layer rather than
-the implementation home for every performance product.
-
-The intended reusable product family is:
-
-- Member OKR Sheets
-- Dashboards
-- Tables
-- Charts
-- Reports
-
-These products should be built/configured through Organization
-Administration and then called/assembled by the Performance Builder.
-
-Member OKR Sheets are expected to be initiated from the Users workflow
-through a member-level "Create OKRs" action.
-
-The Performance Builder should provide the member-tab composition and
-navigation experience for those products.
-
-Important architectural rule:
-
-Do not create duplicate product engines inside the Builder.
-
-The Builder should compose reusable product definitions/configuration and
-hand the resulting experience to Runtime.
-
-Future implementation work should determine the exact persistence and
-composition contracts before adding separate product-specific database
-models.
-
-This direction supersedes any interpretation of Builder tabs as
-organizational sections. Member tabs refer to actual organization member
-performance contexts.
+- latest Waypoint
+- Platform Decisions
+- Platform Backlog
+- Product North Star
+
+Confirm the Member OKR Performance Architecture milestone.
+
+Then:
+
+1. Audit database migrations.
+2. Verify the Member OKR migration.
+3. Build Member OKR repositories.
+4. Build Users → OKRs.
+5. Rebuild Member page loading.
+6. Refactor BuilderDocument.
+7. Migrate Runtime away from Assignment.
+8. Preserve historical Runtime data.
+9. Retire Assignment after verification.
+10. Compile.
+11. Test.
+12. Commit.
+13. Update documentation.
+14. Create the next Waypoint.
+
+Do not begin the next feature until the current milestone is documented and
+verified.
