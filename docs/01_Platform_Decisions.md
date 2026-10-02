@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-09-24
+**Last Updated:** 2026-09-30
 
 This document records architectural decisions that have been intentionally
 adopted for the CascadEffects Performance Platform.
@@ -621,7 +621,118 @@ Accepted
 
 ---
 
-# 21. Visual Design System
+
+# 21. OKR Template Library
+
+The platform supports reusable OKR Templates as a separate domain from
+Member OKRs.
+
+OKR Templates are reusable starting configurations for Objectives, Key
+Results, and Initiatives. They do not become the source of truth for an
+employee's actual OKRs.
+
+The template hierarchy is:
+
+```text
+OKR Template
+↓
+Template Objective
+↓
+Template Key Result
+↓
+Template Initiative
+```
+
+The platform provides one shared OKR Template Workspace for both Platform
+Super Admins and authorized Organization Admins.
+
+The Template Workspace is a common product experience. The difference
+between the two roles is authorization scope, not a separate template
+management interface.
+
+Templates have two supported scopes:
+
+- Global Templates
+- Organization Templates
+
+Global Templates are platform-level reusable definitions managed by Platform
+Super Admins and made available for use across organizations.
+
+Organization Templates belong to a specific Organization and are managed by
+authorized Organization Admins within that Organization.
+
+The access and management model is:
+
+```text
+Platform Super Admin
+↓
+OKR Template Workspace
+↓
+Platform-level template authority
+↓
+Global Templates
++
+Organization Templates within authorized administrative scope
+
+Organization Admin
+↓
+OKR Template Workspace
+↓
+Organization-level template authority
+↓
+Templates belonging to the authorized Organization
+```
+
+Organization Admins may create, manage, and delete templates within their
+authorized Organization.
+
+Platform Super Admins may create, manage, and delete templates at the
+platform level, including Global Templates and Organization Templates within
+their authorized administrative scope.
+
+Both Platform Super Admins and Organization Admins may assign an available
+template to an authorized Organization member.
+
+Assigning a template is a copy operation:
+
+```text
+OKR Template
+↓
+Apply / Copy
+↓
+Member Objectives
+↓
+Member Key Results
+↓
+Member Initiatives
+```
+
+The selected Organization member becomes the owner of the resulting Member
+OKR data through the existing Member OKR domain.
+
+After application, the Member OKR data is independent of the template.
+Changes to a template must not silently modify an existing member's OKRs.
+
+This preserves the existing Member OKR source-of-truth rule and prevents the
+template system from becoming a competing employee-performance data model.
+
+Template data must remain organization-aware where applicable. Global
+templates have no organization ownership. Organization templates belong to
+one Organization.
+
+Template lifecycle should support active and archived states so reusable
+definitions can be retired without destroying historical meaning. A user-facing
+delete action must respect the platform's historical integrity requirements.
+
+The Template Workspace is separate from the Performance Builder. The Builder
+defines presentation/composition; OKR Templates define reusable starting
+content for Member OKRs.
+
+Status
+
+Accepted
+
+# 22. Visual Design System
 
 The CascadEffects Brand Guide remains the visual source of truth.
 
@@ -668,7 +779,7 @@ Accepted
 
 ---
 
-# 22. Deployment Configuration
+# 23. Deployment Configuration
 
 The platform uses:
 
@@ -691,7 +802,7 @@ Accepted
 
 ---
 
-# 23. Authorization and Security Boundary
+# 24. Authorization and Security Boundary
 
 The authorization hierarchy remains:
 
@@ -727,7 +838,7 @@ Accepted
 
 ---
 
-# 24. Platform Membership and Super Admin Authority
+# 25. Platform Membership and Super Admin Authority
 
 Platform Memberships represent CascadEffects platform-level authority.
 
@@ -742,7 +853,7 @@ Accepted
 
 ---
 
-# 25. Organization Context
+# 26. Organization Context
 
 Platform Super Admin:
 
@@ -770,7 +881,7 @@ Accepted
 
 ---
 
-# 26. Reporting Cadence Is Product Behavior
+# 27. Reporting Cadence Is Product Behavior
 
 Monthly performance is a product cadence.
 
@@ -786,7 +897,7 @@ Accepted
 
 ---
 
-# 27. Current Architecture
+# 28. Current Architecture
 
 The current target platform architecture is:
 
@@ -834,7 +945,7 @@ Accepted
 
 ---
 
-# 28. Documentation Continuity
+# 29. Documentation Continuity
 
 Historical Waypoints are permanent engineering records.
 

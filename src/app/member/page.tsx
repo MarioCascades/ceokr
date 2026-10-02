@@ -1,37 +1,49 @@
-import MemberWorkspace from "@/components/member/memberworkspace";
+import MemberOKRPerformance from "@/components/member/memberokrperformance";
 
 import {
-  loadMemberPerformance,
-} from "@/lib/runtime/loadmemberperformance";
+  loadMemberOKRPerformance,
+} from "@/lib/member/loadmemberokrperformance";
 
 import {
   getOrganization,
 } from "@/services/organization.service";
 
 import {
-  getUser,
+  listUserManagementRecords,
 } from "@/services/user.service";
+
 
 interface MemberPageProps {
   searchParams: Promise<{
     organizationId?: string;
+
     subjectId?: string;
+
     performanceMonth?: string;
   }>;
 }
 
+
 export default async function MemberPage({
   searchParams,
 }: MemberPageProps) {
+
   const params =
     await searchParams;
+
+
+  /* ========================================================
+     Member Context
+  ======================================================== */
 
   if (
     !params.organizationId ||
     !params.subjectId
   ) {
+
     return (
       <main className="mx-auto max-w-5xl p-8">
+
         <h1 className="text-2xl font-semibold">
           Member context required
         </h1>
@@ -40,18 +52,27 @@ export default async function MemberPage({
           Select an organization and member
           from the Development Workspace.
         </p>
+
       </main>
     );
   }
+
+
+  /* ========================================================
+     Organization
+  ======================================================== */
 
   const organization =
     await getOrganization(
       params.organizationId
     );
 
+
   if (!organization) {
+
     return (
       <main className="mx-auto max-w-5xl p-8">
+
         <h1 className="text-2xl font-semibold">
           Organization not found
         </h1>
@@ -60,55 +81,100 @@ export default async function MemberPage({
           The requested organization could not
           be found.
         </p>
+
       </main>
     );
   }
 
-  const user =
-    await getUser(
-      params.subjectId
-    );
 
-  if (!user) {
-    return (
-      <main className="mx-auto max-w-5xl p-8">
-        <h1 className="text-2xl font-semibold">
-          Member not found
-        </h1>
+  /* ========================================================
+     Member Performance + Organization Members
+     --------------------------------------------------------
+     The selected member provides the displayed
+     Performance Sheet.
 
-        <p className="mt-2 text-sm text-muted-foreground">
-          The requested member could not
-          be found.
-        </p>
-      </main>
-    );
-  }
+     The organization membership list provides
+     the automatic Performance Sheet tabs.
+  ======================================================== */
 
-  const execution =
-    await loadMemberPerformance(
-      user,
+  const [
+    performance,
+    memberRecords,
+  ] = await Promise.all([
+
+    loadMemberOKRPerformance(
       organization.id,
+      params.subjectId,
       params.performanceMonth
-    );
+    ),
 
-  if (!execution) {
+    listUserManagementRecords(
+      organization.id
+    ),
+
+  ]);
+
+
+  if (!performance) {
+
     return (
       <main className="mx-auto max-w-5xl p-8">
+
         <h1 className="text-2xl font-semibold">
-          No performance instance found
+          Member not available
         </h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
-          No monthly performance instance is
-          available for this member.
+          The requested member is not an active
+          member of this organization.
         </p>
+
       </main>
     );
   }
+
+
+  /* ========================================================
+     Automatic Performance Sheet Tabs
+     --------------------------------------------------------
+     Every active organization member becomes
+     a Performance Sheet tab automatically.
+
+     No manual tab creation is required.
+  ======================================================== */
+
+  const memberTabs =
+    memberRecords
+      .filter(
+        (record) =>
+          record.user.is_active
+      )
+      .map(
+        (record) => ({
+          id:
+            record.user.id,
+
+          label:
+            record.user.display_name?.trim() ||
+            `${record.user.first_name} ${record.user.last_name}`.trim() ||
+            record.user.email,
+        })
+      );
+
+
+  /* ========================================================
+     Member Performance Experience
+  ======================================================== */
 
   return (
-    <MemberWorkspace
-      execution={execution}
+    <MemberOKRPerformance
+      performance={
+        performance
+      }
+
+      memberTabs={
+        memberTabs
+      }
     />
   );
 }

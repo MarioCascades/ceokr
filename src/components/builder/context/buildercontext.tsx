@@ -34,7 +34,6 @@ import {
   loadLatestPublishedForOrganization,
   saveBuilderDocument,
   publishPerformanceSheet,
-  createDraftRevision,
 } from "@/lib/repositories/performancesheetrepository";
 
 import {
@@ -170,8 +169,6 @@ type BuilderContextType = {
 
   publishBuilder: () =>
     Promise<BuilderValidationResult>;
-
-  createRevision: () => Promise<void>;
 
   updateOrganization: (
     organization: BuilderOrganization
@@ -499,6 +496,18 @@ export function BuilderProvider({
             return;
           }
 
+          /*
+           * The repository may return null when the requested
+           * workspace does not exist.
+           */
+          if (!selectedSheet) {
+            setBuilderError(
+              "The requested Performance Workspace could not be found."
+            );
+
+            return;
+          }
+
           setPerformanceSheetId(
             selectedSheet.id
           );
@@ -520,9 +529,7 @@ export function BuilderProvider({
           );
 
           /*
-           * Drafts and published sheets both open in
-           * preview mode. The administrator explicitly
-           * chooses Edit.
+           * The single workspace remains available for editing.
            */
           setEditMode(false);
 
@@ -533,7 +540,7 @@ export function BuilderProvider({
          * --------------------------------------------------
          * 5. No selected sheet.
          *
-         * Preserve existing behavior:
+         * Preserve existing compatibility behavior:
          *
          * latest draft
          *       ↓
@@ -699,19 +706,11 @@ export function BuilderProvider({
     }
 
     /*
-     * Published definitions are immutable.
+     * The Performance Workspace is editable regardless of
+     * its current publication status.
+     *
+     * Publication no longer acts as an editing lock.
      */
-    if (
-      performanceSheetStatus !==
-      "draft"
-    ) {
-      const message =
-        "Published performance sheets cannot be edited. Create a new revision first.";
-
-      setBuilderError(message);
-
-      throw new Error(message);
-    }
 
     setIsSavingBuilder(true);
     setBuilderError(null);
@@ -778,8 +777,7 @@ export function BuilderProvider({
       );
 
     /*
-     * Drafts may be incomplete and saved,
-     * but invalid drafts cannot be published.
+     * Invalid Builder documents cannot be published.
      */
     if (!validation.valid) {
       return validation;
@@ -794,17 +792,13 @@ export function BuilderProvider({
       throw new Error(message);
     }
 
-    if (
-      performanceSheetStatus !==
-      "draft"
-    ) {
-      const message =
-        "Only draft performance sheets can be published.";
-
-      setBuilderError(message);
-
-      throw new Error(message);
-    }
+    /*
+     * Publication is no longer restricted to draft status.
+     *
+     * The organization has one Performance Workspace.
+     * Publishing records the current valid workspace state
+     * without turning the Builder into a versioned workflow.
+     */
 
     setIsPublishingBuilder(true);
     setBuilderError(null);
@@ -852,9 +846,9 @@ export function BuilderProvider({
       );
 
       /*
-       * Published definitions are locked.
+       * The workspace remains editable after publication.
        */
-      setEditMode(false);
+      setEditMode(true);
 
       return validation;
     } catch (error) {
@@ -872,88 +866,6 @@ export function BuilderProvider({
       throw error;
     } finally {
       setIsPublishingBuilder(false);
-    }
-  }
-
-  /* ========================================================
-     Create Revision
-  ======================================================== */
-
-  async function createRevision() {
-    if (
-      !organizationId ||
-      !performanceSheetId
-    ) {
-      const message =
-        "Cannot create a revision because no published performance sheet is available.";
-
-      setBuilderError(message);
-
-      throw new Error(message);
-    }
-
-    if (
-      performanceSheetStatus !==
-      "published"
-    ) {
-      const message =
-        "A new revision can only be created from a published performance sheet.";
-
-      setBuilderError(message);
-
-      throw new Error(message);
-    }
-
-    setIsLoadingBuilder(true);
-    setBuilderError(null);
-
-    try {
-      const revision =
-        await createDraftRevision(
-          organizationId,
-          performanceSheetId
-        );
-
-      setPerformanceSheetId(
-        revision.id
-      );
-
-      setPerformanceSheetKey(
-        revision.sheet_key
-      );
-
-      setPerformanceSheetStatus(
-        revision.status
-      );
-
-      setPerformanceSheetVersion(
-        revision.version
-      );
-
-      setBuilderDocument(
-        revision.document
-      );
-
-      /*
-       * New revision immediately becomes
-       * the editable working draft.
-       */
-      setEditMode(true);
-    } catch (error) {
-      console.error(
-        "Failed to create revision:",
-        error
-      );
-
-      setBuilderError(
-        error instanceof Error
-          ? error.message
-          : "Failed to create revision."
-      );
-
-      throw error;
-    } finally {
-      setIsLoadingBuilder(false);
     }
   }
 
@@ -1179,7 +1091,6 @@ export function BuilderProvider({
 
         saveBuilder,
         publishBuilder,
-        createRevision,
 
         updateOrganization,
         updatePerformanceHeader,

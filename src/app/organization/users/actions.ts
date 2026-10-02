@@ -5,52 +5,120 @@ import {
 } from "@/services/user.service";
 
 import {
-  loadActiveAssignment,
-} from "@/lib/repositories/assignmentrepository";
-
-import {
-  getOrCreatePerformanceExecutionForMonth,
-} from "@/services/assignment.service";
-
-import {
-  loadMemberPerformance,
-} from "@/lib/runtime/loadmemberperformance";
+  loadOrganizationMembershipForMember,
+  loadMemberOKRs,
+  createMemberObjective,
+  updateMemberObjective,
+  deleteMemberObjective,
+  createMemberKeyResult,
+  updateMemberKeyResult,
+  deleteMemberKeyResult,
+  createMemberInitiative,
+  updateMemberInitiative,
+  deleteMemberInitiative,
+} from "@/lib/repositories/memberokrrepository";
 
 import type {
-  MemberPerformanceExecution,
-} from "@/lib/runtime/loadmemberperformance";
+  MemberObjective,
+  MemberKeyResult,
+  MemberInitiative,
+  CreateMemberObjectiveInput,
+  UpdateMemberObjectiveInput,
+  CreateMemberKeyResultInput,
+  UpdateMemberKeyResultInput,
+  CreateMemberInitiativeInput,
+  UpdateMemberInitiativeInput,
+} from "@/lib/domain/memberokr";
+
 
 /* ==========================================================
-   Load Or Create Member OKR Workspace
+   Member OKR Workspace
    ----------------------------------------------------------
    Organization Administration entry point for managing a
-   member's Objectives, Key Results, and Initiatives.
+   member's persistent Objectives, Key Results, and
+   Initiatives.
 
-   This does not create a new OKR data model.
-
-   It resolves the existing:
+   Persistent ownership:
 
    User
       ↓
-   Active Individual Assignment
+   Organization Membership
       ↓
-   Monthly Performance Instance
+   Member Objective
       ↓
-   Runtime Objective / KR / Initiative snapshots
+   Member Key Result
+      ↓
+   Member Initiative
+
+   IMPORTANT:
+
+   This action intentionally does NOT:
+
+   - load an Assignment
+   - require an Assignment
+   - create a Performance Instance
+   - load Runtime snapshots
+   - modify Runtime data
+   - resolve a Performance Sheet assignment
+
+   Runtime remains responsible for monthly execution and
+   historical snapshots.
+
+   The Member OKR domain is the persistent source of truth
+   for the member's Objectives, Key Results, and Initiatives.
 ========================================================== */
 
-export interface LoadOrCreateMemberOKRWorkspaceInput {
+
+/* ==========================================================
+   Load Member OKR Workspace Input
+========================================================== */
+
+export interface LoadMemberOKRWorkspaceInput {
   organizationId: string;
+
   subjectId: string;
-  performanceMonth: string;
 }
 
-export async function loadOrCreateMemberOKRWorkspace(
-  input: LoadOrCreateMemberOKRWorkspaceInput
-): Promise<MemberPerformanceExecution> {
-  const user = await getUser(
-    input.subjectId
-  );
+
+/* ==========================================================
+   Member OKR Workspace
+========================================================== */
+
+export interface MemberOKRWorkspace {
+  organizationId: string;
+
+  membershipId: string;
+
+  subject: {
+    type: "individual";
+
+    id: string;
+
+    displayName: string;
+
+    email: string;
+  };
+
+  objectives: MemberObjective[];
+}
+
+
+/* ==========================================================
+   Load Member OKR Workspace
+========================================================== */
+
+export async function loadMemberOKRWorkspace(
+  input: LoadMemberOKRWorkspaceInput
+): Promise<MemberOKRWorkspace> {
+
+  /* ========================================================
+     Load Application User
+  ======================================================== */
+
+  const user =
+    await getUser(
+      input.subjectId
+    );
 
   if (!user) {
     throw new Error(
@@ -58,61 +126,236 @@ export async function loadOrCreateMemberOKRWorkspace(
     );
   }
 
+
+  /* ========================================================
+     Active Member Validation
+  ======================================================== */
+
   if (!user.is_active) {
     throw new Error(
       "Inactive members cannot have OKRs managed."
     );
   }
 
-  const assignment =
-    await loadActiveAssignment(
+
+  /* ========================================================
+     Resolve Organization Membership
+     --------------------------------------------------------
+     Organization Membership is the authoritative relationship
+     between the User and the selected Organization.
+  ======================================================== */
+
+  const membership =
+    await loadOrganizationMembershipForMember(
       input.organizationId,
       user.id
     );
 
-  if (!assignment) {
+  if (!membership) {
     throw new Error(
-      "This member does not have an active Performance Sheet assignment."
+      "This member does not belong to the selected organization."
     );
   }
 
-  if (
-    assignment.assignmentType !==
-      "individual" ||
-    assignment.subjectId !==
-      user.id
-  ) {
-    throw new Error(
-      "The member's active assignment is not an individual assignment."
-    );
-  }
 
-  /*
-   * Create the monthly Performance Instance when
-   * one does not already exist.
-   *
-   * The existing performance execution architecture
-   * initializes the instance from the exact published
-   * Performance Sheet assigned to this member.
-   */
-  await getOrCreatePerformanceExecutionForMonth(
-    input.organizationId,
-    assignment.id,
-    input.performanceMonth
+  /* ========================================================
+     Load Persistent Member OKRs
+  ======================================================== */
+
+  const objectives =
+    await loadMemberOKRs(
+      input.organizationId,
+      membership.id
+    );
+
+
+  /* ========================================================
+     Resolve Display Name
+  ======================================================== */
+
+  const displayName =
+    user.display_name?.trim()
+    ||
+    `${user.first_name} ${user.last_name}`.trim()
+    ||
+    user.email;
+
+
+  /* ========================================================
+     Return Member OKR Workspace
+  ======================================================== */
+
+  return {
+    organizationId:
+      input.organizationId,
+
+    membershipId:
+      membership.id,
+
+    subject: {
+      type:
+        "individual",
+
+      id:
+        user.id,
+
+      displayName,
+
+      email:
+        user.email,
+    },
+
+    objectives,
+  };
+}
+
+
+/* ==========================================================
+   Create Member Objective
+========================================================== */
+
+export async function createMemberObjectiveAction(
+  organizationId: string,
+  input: CreateMemberObjectiveInput
+): Promise<MemberObjective> {
+  return createMemberObjective(
+    organizationId,
+    input
   );
+}
 
-  const execution =
-    await loadMemberPerformance(
-      user,
-      input.organizationId,
-      input.performanceMonth
-    );
 
-  if (!execution) {
-    throw new Error(
-      "The member Performance Instance could not be loaded."
-    );
-  }
+/* ==========================================================
+   Update Member Objective
+========================================================== */
 
-  return execution;
+export async function updateMemberObjectiveAction(
+  organizationId: string,
+  membershipId: string,
+  input: UpdateMemberObjectiveInput
+): Promise<MemberObjective> {
+  return updateMemberObjective(
+    organizationId,
+    membershipId,
+    input
+  );
+}
+
+
+/* ==========================================================
+   Delete Member Objective
+========================================================== */
+
+export async function deleteMemberObjectiveAction(
+  organizationId: string,
+  membershipId: string,
+  objectiveId: string
+): Promise<void> {
+  return deleteMemberObjective(
+    organizationId,
+    membershipId,
+    objectiveId
+  );
+}
+
+
+/* ==========================================================
+   Create Member Key Result
+========================================================== */
+
+export async function createMemberKeyResultAction(
+  organizationId: string,
+  membershipId: string,
+  input: CreateMemberKeyResultInput
+): Promise<MemberKeyResult> {
+  return createMemberKeyResult(
+    organizationId,
+    membershipId,
+    input
+  );
+}
+
+
+/* ==========================================================
+   Update Member Key Result
+========================================================== */
+
+export async function updateMemberKeyResultAction(
+  organizationId: string,
+  membershipId: string,
+  input: UpdateMemberKeyResultInput
+): Promise<MemberKeyResult> {
+  return updateMemberKeyResult(
+    organizationId,
+    membershipId,
+    input
+  );
+}
+
+
+/* ==========================================================
+   Delete Member Key Result
+========================================================== */
+
+export async function deleteMemberKeyResultAction(
+  organizationId: string,
+  membershipId: string,
+  keyResultId: string
+): Promise<void> {
+  return deleteMemberKeyResult(
+    organizationId,
+    membershipId,
+    keyResultId
+  );
+}
+
+
+/* ==========================================================
+   Create Member Initiative
+========================================================== */
+
+export async function createMemberInitiativeAction(
+  organizationId: string,
+  membershipId: string,
+  input: CreateMemberInitiativeInput
+): Promise<MemberInitiative> {
+  return createMemberInitiative(
+    organizationId,
+    membershipId,
+    input
+  );
+}
+
+
+/* ==========================================================
+   Update Member Initiative
+========================================================== */
+
+export async function updateMemberInitiativeAction(
+  organizationId: string,
+  membershipId: string,
+  input: UpdateMemberInitiativeInput
+): Promise<MemberInitiative> {
+  return updateMemberInitiative(
+    organizationId,
+    membershipId,
+    input
+  );
+}
+
+
+/* ==========================================================
+   Delete Member Initiative
+========================================================== */
+
+export async function deleteMemberInitiativeAction(
+  organizationId: string,
+  membershipId: string,
+  initiativeId: string
+): Promise<void> {
+  return deleteMemberInitiative(
+    organizationId,
+    membershipId,
+    initiativeId
+  );
 }

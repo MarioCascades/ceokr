@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-09-24
+**Last Updated:** 2026-09-30
 
 This document tracks intentionally deferred architecture, product
 capabilities, migration work, and future platform work.
@@ -18,16 +18,29 @@ project state.
 
 # Current Development Phase
 
+## OKR Template Library
+
+**Status**
+
+NEXT PRODUCT MILESTONE
+
+The Member OKR foundation is established and verified. The next product
+milestone is the reusable OKR Template Library, built as a separate domain
+that creates independent Member OKRs when a template is applied.
+
+The platform continues to preserve the Member-owned OKR source-of-truth model.
+
+---
+
 ## Member OKR Performance Architecture
 
 **Status**
 
-NEXT MILESTONE / ARCHITECTURE MIGRATION
+FOUNDATION ESTABLISHED / VERIFIED
 
-The platform is transitioning from Assignment-owned employee performance to
-Member-owned OKRs.
+The platform has established the Member-owned OKR source-of-truth model.
 
-The new source-of-truth model is:
+The source-of-truth model is:
 
 Organization
 ↓
@@ -495,6 +508,224 @@ Medium
 
 ---
 
+
+# OKR Template Library
+
+## OKR Template Domain
+
+**Status**
+
+PLANNED / NEW PRODUCT CAPABILITY
+
+Create a reusable OKR Template domain separate from Member OKR ownership.
+
+Target relationship:
+
+```text
+okr_templates
+↓
+okr_template_objectives
+↓
+okr_template_key_results
+↓
+okr_template_initiatives
+```
+
+Requirements:
+
+- global template scope
+- organization template scope
+- organization ownership for organization templates
+- active / archived lifecycle
+- normalized relationships
+- ordering / position
+- objective weights
+- Key Result measurement configuration
+- Key Result scoring configuration
+- initiative management
+- creator / ownership metadata
+
+Templates must not become a second source of truth for employee OKRs.
+
+Priority
+
+High
+
+---
+
+## Global OKR Templates
+
+**Status**
+
+PLANNED
+
+Provide Platform Super Admins with a Global OKR Template Library.
+
+Global templates must be reusable by authorized Organizations but editable only
+through the platform-level template management context.
+
+Capabilities:
+
+- create global template
+- edit global template
+- add / edit / remove Objectives
+- add / edit / remove Key Results
+- add / edit / remove Initiatives
+- archive template
+- view template
+
+Priority
+
+High
+
+---
+
+## Organization OKR Templates
+
+**Status**
+
+PLANNED
+
+Provide Organization Admins with an Organization-scoped Template Library.
+
+Organization Admins may:
+
+- view available Global Templates
+- use Global Templates
+- create Organization Templates
+- edit their Organization Templates
+- archive their Organization Templates
+- use Organization Templates
+
+Organization Admins must not modify Global Templates.
+
+Priority
+
+High
+
+---
+
+## Apply Template to Member
+
+**Status**
+
+PLANNED
+
+Allow an authorized Organization Admin to apply an OKR Template when creating
+or configuring a Member OKR Sheet.
+
+The operation must copy:
+
+- Objectives
+- Key Results
+- Initiatives
+- applicable weights
+- measurement configuration
+- scoring configuration
+- ordering / position
+
+into the existing Member OKR domain.
+
+The resulting Member OKR records are independent of the source template.
+
+Changing a template later must not silently change existing Member OKRs.
+
+Priority
+
+High
+
+---
+
+## OKR Template Repository
+
+**Status**
+
+PLANNED
+
+Create a dedicated repository/service layer for OKR Templates.
+
+The repository should provide operations for:
+
+- load templates
+- load template
+- create template
+- update template
+- archive template
+- create / update / delete template Objectives
+- create / update / delete template Key Results
+- create / update / delete template Initiatives
+- apply template to Member OKRs
+
+All Organization-scoped operations must resolve through the Organization
+context and authorization model.
+
+Priority
+
+High
+
+---
+
+## OKR Template Authorization
+
+**Status**
+
+PLANNED
+
+Enforce the distinction between platform-level Global Template authority and
+Organization-level Template authority.
+
+Target model:
+
+```text
+Platform Super Admin
+↓
+Global Templates
+
+Organization Admin
+↓
+Organization Templates
+↓
+Authorized Organization
+```
+
+Global Templates are readable / usable by authorized Organizations but are not
+editable through the Organization Admin context.
+
+Organization Templates must never be visible or editable outside their owning
+Organization.
+
+Priority
+
+Critical
+
+---
+
+## OKR Template Functional Verification
+
+**Status**
+
+PLANNED
+
+Verify the complete lifecycle:
+
+1. Super Admin creates a Global Template.
+2. Multiple Organizations can see and use the Global Template.
+3. Organization Admin cannot modify the Global Template.
+4. Organization Admin creates an Organization Template.
+5. Other Organizations cannot see that Organization Template.
+6. Organization Admin applies a template to a member.
+7. Member receives independent Objectives, Key Results, and Initiatives.
+8. Editing the source template does not alter existing Member OKRs.
+9. Archived templates cannot be selected for new applications unless explicitly
+   restored.
+10. Existing Member OKRs remain intact throughout the lifecycle.
+
+Priority
+
+High
+
+---
+
 # Runtime
 
 ## Runtime Product Experience
@@ -900,7 +1131,11 @@ FOUNDATION COMPLETE / VERIFIED
 
 Member OKR Domain
 
-NEW / NEXT
+FOUNDATION COMPLETE / VERIFIED
+
+OKR Template Library
+
+PLANNED / NEW PRODUCT CAPABILITY
 
 Production Authorization / RLS
 
@@ -943,24 +1178,23 @@ Review:
 - Platform Backlog
 - Product North Star
 
-Confirm the Member OKR Performance Architecture milestone.
+Confirm the OKR Template Library milestone.
 
 Then:
 
-1. Audit database migrations.
-2. Verify the Member OKR migration.
-3. Build Member OKR repositories.
-4. Build Users → OKRs.
-5. Rebuild Member page loading.
-6. Refactor BuilderDocument.
-7. Migrate Runtime away from Assignment.
-8. Preserve historical Runtime data.
-9. Retire Assignment after verification.
-10. Compile.
-11. Test.
-12. Commit.
-13. Update documentation.
-14. Create the next Waypoint.
+1. Audit the current Supabase schema and Member OKR relationships.
+2. Create the OKR Template database migration.
+3. Build the OKR Template repository.
+4. Build the Global Template Library for Platform Super Admin.
+5. Build the Organization Template Library for Organization Admin.
+6. Build the Apply Template → Member OKR workflow.
+7. Verify Global versus Organization template authorization.
+8. Verify copy-on-apply independence from the source template.
+9. Compile.
+10. Browser / functional test.
+11. Commit.
+12. Update documentation.
+13. Create the next Waypoint.
 
 Do not begin the next feature until the current milestone is documented and
 verified.

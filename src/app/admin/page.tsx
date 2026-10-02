@@ -146,6 +146,12 @@ export default async function AdminPage({
           />
 
           <AdminCard
+            title="🎯 OKR Templates"
+            description="Create and manage reusable OKR templates for organizational performance."
+            href={adminHref("/admin/okrtemplates")}
+          />
+
+          <AdminCard
             title="📋 Assignments"
             description="Assign published Performance Sheets to users, teams, departments or the organization."
             href={adminHref("/admin/assignments")}

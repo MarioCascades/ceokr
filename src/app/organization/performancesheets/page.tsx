@@ -309,12 +309,6 @@ export default function OrganizationPerformanceSheetsPage() {
       : "/organization/assignments";
 
 
-  const overviewHref =
-    encodedOrganizationId
-      ? `/organization?organizationId=${encodedOrganizationId}`
-      : "/organization";
-
-
   /* ========================================================
      Render
   ======================================================== */
@@ -356,22 +350,6 @@ export default function OrganizationPerformanceSheetsPage() {
               gap-2
             "
           >
-
-            <Button
-              asChild
-              variant="outline"
-            >
-
-              <Link
-                href={
-                  overviewHref
-                }
-              >
-                Back to Overview
-              </Link>
-
-            </Button>
-
 
             <Button
               asChild

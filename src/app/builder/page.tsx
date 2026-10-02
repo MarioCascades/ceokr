@@ -137,9 +137,6 @@ function BuilderContent() {
 
     builderDocument,
 
-    performanceSheetStatus,
-    performanceSheetVersion,
-
     isLoadingBuilder,
     isSavingBuilder,
     isPublishingBuilder,
@@ -148,7 +145,6 @@ function BuilderContent() {
 
     saveBuilder,
     publishBuilder,
-    createRevision,
   } = useBuilder();
 
   const [
@@ -165,14 +161,6 @@ function BuilderContent() {
     null
   );
 
-  const isDraft =
-    performanceSheetStatus ===
-    "draft";
-
-  const isPublished =
-    performanceSheetStatus ===
-    "published";
-
   /* ========================================================
      Preview
   ======================================================== */
@@ -187,15 +175,11 @@ function BuilderContent() {
 
   function handleEdit() {
     /*
-     * Published definitions are immutable.
+     * There is only one Performance Workspace.
      *
-     * A published definition must first become
-     * a new draft revision before editing.
+     * The Builder remains editable regardless of whether
+     * the workspace has previously been published.
      */
-
-    if (!isDraft) {
-      return;
-    }
 
     setEditMode(true);
   }
@@ -232,7 +216,7 @@ function BuilderContent() {
       await saveBuilder();
 
       setStatusMessage(
-        `Draft version ${performanceSheetVersion} saved successfully.`
+        "Performance workspace saved successfully."
       );
     } catch (error) {
       console.error(
@@ -273,38 +257,11 @@ function BuilderContent() {
       }
 
       setStatusMessage(
-        `Performance sheet version ${performanceSheetVersion} published successfully.`
+        "Performance workspace published successfully."
       );
     } catch (error) {
       console.error(
         "Builder publish failed:",
-        error
-      );
-    }
-  }
-
-  /* ========================================================
-     Create New Version
-  ======================================================== */
-
-  async function handleCreateRevision() {
-    setStatusMessage(
-      null
-    );
-
-    setValidationResult(
-      null
-    );
-
-    try {
-      await createRevision();
-
-      setStatusMessage(
-        `Draft version ${performanceSheetVersion + 1} created successfully.`
-      );
-    } catch (error) {
-      console.error(
-        "Create revision failed:",
         error
       );
     }
@@ -431,79 +388,71 @@ function BuilderContent() {
             </Button>
 
             {/* =================================================
-                Draft Controls
+                Edit
             ================================================= */}
 
-            {isDraft && (
-              <>
-
-                <Button
-                  variant={
-                    editMode
-                      ? "default"
-                      : "outline"
-                  }
-                  onClick={
-                    handleEdit
-                  }
-                >
-                  Edit
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={
-                    handleValidate
-                  }
-                >
-                  Validate
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={
-                    handleSave
-                  }
-                  disabled={
-                    isSavingBuilder ||
-                    isPublishingBuilder
-                  }
-                >
-                  {isSavingBuilder
-                    ? "Saving..."
-                    : "Save"}
-                </Button>
-
-                <Button
-                  onClick={
-                    handlePublish
-                  }
-                  disabled={
-                    isSavingBuilder ||
-                    isPublishingBuilder
-                  }
-                >
-                  {isPublishingBuilder
-                    ? "Publishing..."
-                    : "Publish"}
-                </Button>
-
-              </>
-            )}
+            <Button
+              variant={
+                editMode
+                  ? "default"
+                  : "outline"
+              }
+              onClick={
+                handleEdit
+              }
+            >
+              Edit
+            </Button>
 
             {/* =================================================
-                Published Controls
+                Validate
             ================================================= */}
 
-            {isPublished && (
-              <Button
-                onClick={
-                  handleCreateRevision
-                }
-              >
-                Create New Version
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              onClick={
+                handleValidate
+              }
+            >
+              Validate
+            </Button>
+
+            {/* =================================================
+                Save
+            ================================================= */}
+
+            <Button
+              variant="outline"
+              onClick={
+                handleSave
+              }
+              disabled={
+                isSavingBuilder ||
+                isPublishingBuilder
+              }
+            >
+              {isSavingBuilder
+                ? "Saving..."
+                : "Save"}
+            </Button>
+
+            {/* =================================================
+                Publish
+            ================================================= */}
+
+            <Button
+              onClick={
+                handlePublish
+              }
+              disabled={
+                isSavingBuilder ||
+                isPublishingBuilder
+              }
+            >
+              {isPublishingBuilder
+                ? "Publishing..."
+                : "Publish"}
+            </Button>
 
           </>
         }
@@ -516,39 +465,36 @@ function BuilderContent() {
       <div className="mx-auto max-w-7xl space-y-8 px-8 py-12">
 
         {/* ==================================================
-            Performance Sheet Status
+            Performance Workspace Status
         ================================================== */}
 
         <div className="flex flex-wrap items-center gap-6 rounded-xl border bg-white p-6 shadow-sm">
 
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Performance Sheet
+              Performance Workspace
             </p>
 
             <p className="mt-1 font-semibold">
-              Version{" "}
-              {performanceSheetVersion}
+              Organization Performance Sheet
             </p>
           </div>
 
           <div
             className={
-              isPublished
-                ? "rounded-full border border-green-200 bg-green-50 px-3 py-1 text-sm font-medium text-green-700"
-                : "rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700"
+              editMode
+                ? "rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700"
+                : "rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700"
             }
           >
-            {isPublished
-              ? "Published"
-              : "Draft"}
+            {editMode
+              ? "Editing"
+              : "Preview"}
           </div>
 
-          {isPublished && (
-            <div className="text-sm text-muted-foreground">
-              This version is locked. Create a new version to make changes.
-            </div>
-          )}
+          <div className="text-sm text-muted-foreground">
+            One editable Performance Workspace for the organization.
+          </div>
 
         </div>
 

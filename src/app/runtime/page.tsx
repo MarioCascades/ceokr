@@ -1,5 +1,7 @@
 import PerformanceSheet from "@/components/runtime/performancesheet/performancesheet";
 
+import MemberOKRPerformance from "@/components/member/memberokrperformance";
+
 import RuntimeNavigation from "@/components/runtime/shared/runtimenavigation";
 
 import RuntimeOverview from "@/components/runtime/shared/runtimeoverview";
@@ -7,14 +9,6 @@ import RuntimeOverview from "@/components/runtime/shared/runtimeoverview";
 import {
   loadRuntimeExecution,
 } from "@/lib/runtime/runtimeexecution";
-
-import {
-  findAssignmentsByOrganization,
-} from "@/lib/repositories/assignmentrepository";
-
-import {
-  findPerformanceInstancesByOrganization,
-} from "@/lib/repositories/performanceinstancerepository";
 
 import {
   getOrganization,
@@ -28,6 +22,10 @@ import {
   loadDashboard,
 } from "@/services/dashboard.service";
 
+import {
+  loadMemberOKRPerformance,
+} from "@/lib/member/loadmemberokrperformance";
+
 
 interface RuntimePageProps {
   searchParams: Promise<{
@@ -39,6 +37,34 @@ interface RuntimePageProps {
   }>;
 }
 
+
+/* ==========================================================
+   Helpers
+========================================================== */
+
+function getCurrentPerformanceMonth(): string {
+
+  const now =
+    new Date();
+
+  const year =
+    now.getUTCFullYear();
+
+  const month =
+    String(
+      now.getUTCMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    );
+
+  return `${year}-${month}`;
+}
+
+
+/* ==========================================================
+   Runtime Page
+========================================================== */
 
 export default async function RuntimePage({
   searchParams,
@@ -57,7 +83,9 @@ export default async function RuntimePage({
       params.organizationId
     );
 
+
   if (!organization) {
+
     return (
       <main className="mx-auto max-w-5xl p-8">
 
@@ -75,39 +103,34 @@ export default async function RuntimePage({
 
 
   /* ========================================================
-     Runtime + Members + Assignments + Instances + Dashboard
+     Performance Month
+     --------------------------------------------------------
+     The Workspace itself must be able to render before a
+     member has been selected.
+
+     Therefore the month is independent of Runtime Execution.
+  ======================================================== */
+
+  const performanceMonth =
+    params.performanceMonth ||
+    getCurrentPerformanceMonth();
+
+
+  /* ========================================================
+     Organization Members + Dashboard
+     --------------------------------------------------------
+     Organization membership is the authoritative source
+     for Performance Workspace navigation.
   ======================================================== */
 
   const [
-    runtimeExecution,
-
     members,
-
-    assignments,
-
-    performanceInstances,
 
     dashboard,
 
   ] = await Promise.all([
 
-    loadRuntimeExecution(
-      organization.id,
-
-      params.subjectId,
-
-      params.performanceMonth
-    ),
-
     listUserManagementRecords(
-      organization.id
-    ),
-
-    findAssignmentsByOrganization(
-      organization.id
-    ),
-
-    findPerformanceInstancesByOrganization(
       organization.id
     ),
 
@@ -119,119 +142,30 @@ export default async function RuntimePage({
 
 
   /* ========================================================
-     Runtime Execution Missing
-  ======================================================== */
-
-  if (!runtimeExecution) {
-    return (
-      <main className="mx-auto max-w-5xl p-8">
-
-        <h1 className="text-2xl font-semibold">
-          Performance execution not found
-        </h1>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          No performance execution is available
-          for this organization and selected member.
-        </p>
-
-        <p className="mt-4 text-sm text-muted-foreground">
-          Make sure the organization has an active
-          assignment with a monthly Performance Instance
-          generated from a published Performance Sheet.
-        </p>
-
-      </main>
-    );
-  }
-
-
-  /* ========================================================
-     Runtime Performance Subjects
-
-     Only active individual assignments that have at least
-     one Performance Instance are eligible for Runtime
-     subject navigation.
-  ======================================================== */
-
-  const individualAssignmentIds =
-    new Set(
-      assignments
-        .filter(
-          (assignment) =>
-            assignment.assignmentType ===
-              "individual" &&
-            assignment.status ===
-              "active"
-        )
-        .map(
-          (assignment) =>
-            assignment.id
-        )
-    );
-
-
-  const performanceAssignmentIds =
-    new Set(
-      performanceInstances
-        .filter(
-          (instance) =>
-            individualAssignmentIds.has(
-              instance.assignmentId
-            )
-        )
-        .map(
-          (instance) =>
-            instance.assignmentId
-        )
-    );
-
-
-  const performanceSubjectIds =
-    new Set(
-      assignments
-        .filter(
-          (assignment) =>
-            assignment.assignmentType ===
-              "individual" &&
-            assignment.status ===
-              "active" &&
-            performanceAssignmentIds.has(
-              assignment.id
-            ) &&
-            Boolean(
-              assignment.subjectId
-            )
-        )
-        .map(
-          (assignment) =>
-            assignment.subjectId
-        )
-    );
-
-
-  /* ========================================================
      Active Performance Members
+     --------------------------------------------------------
+     Every active organization member is automatically
+     available in the Performance Workspace.
 
-     User Management remains the authoritative source for
-     user/member details.
-
-     Runtime eligibility comes from Assignment +
-     Performance Instance state.
+     No Assignment or Performance Instance is required
+     merely to appear as a Performance tab.
   ======================================================== */
 
   const activeMembers =
     members.filter(
       (record) =>
-        record.user.is_active !== false &&
-        performanceSubjectIds.has(
-          record.user.id
-        )
+        record.user.is_active !== false
     );
 
 
   /* ========================================================
-     Organization Dashboard
+     Organization Performance Workspace
+     --------------------------------------------------------
+     This MUST render before Runtime Execution is required.
+
+     The Workspace exists at the organization level.
+
+     Member selection happens through RuntimeNavigation.
   ======================================================== */
 
   if (!params.subjectId) {
@@ -262,14 +196,11 @@ export default async function RuntimePage({
           }
 
           performanceMonth={
-            runtimeExecution
-              .performanceInstance
-              .performanceMonth
+            performanceMonth
           }
 
           performanceMonths={
-            runtimeExecution
-              .performanceMonths
+            [performanceMonth]
           }
 
         />
@@ -289,7 +220,108 @@ export default async function RuntimePage({
 
 
   /* ========================================================
-     Individual Member Performance
+     Selected Member Runtime
+     --------------------------------------------------------
+     Once a member is selected, attempt the existing Runtime
+     execution path.
+  ======================================================== */
+
+  const runtimeExecution =
+    await loadRuntimeExecution(
+      organization.id,
+
+      params.subjectId,
+
+      performanceMonth
+    );
+
+
+  /* ========================================================
+     New Member OKR Performance
+     --------------------------------------------------------
+     If the selected member does not have the old Runtime
+     Performance Instance, use the new Member OKR domain.
+
+     This removes Assignment / Performance Instance as a
+     requirement for the new Member Performance experience.
+  ======================================================== */
+
+  if (!runtimeExecution) {
+
+    const memberOKRPerformance =
+      await loadMemberOKRPerformance(
+        organization.id,
+
+        params.subjectId,
+
+        performanceMonth
+      );
+
+
+    if (
+      memberOKRPerformance
+    ) {
+
+      return (
+        <main className="min-h-screen bg-background">
+
+          <RuntimeNavigation
+
+            organizationId={
+              organization.id
+            }
+
+            members={
+              activeMembers
+            }
+
+            selectedSubjectId={
+              params.subjectId
+            }
+
+            performanceMonth={
+              performanceMonth
+            }
+
+            performanceMonths={
+              [performanceMonth]
+            }
+
+          />
+
+
+          <MemberOKRPerformance
+            performance={
+              memberOKRPerformance
+            }
+          />
+
+        </main>
+      );
+    }
+
+
+    return (
+      <main className="mx-auto max-w-5xl p-8">
+
+        <h1 className="text-2xl font-semibold">
+          Performance Sheet not configured
+        </h1>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          This member does not currently have a
+          configured Member OKR Sheet.
+        </p>
+
+      </main>
+    );
+  }
+
+
+  /* ========================================================
+     Existing Runtime Member Performance
+     --------------------------------------------------------
+     Historical Runtime execution remains untouched.
   ======================================================== */
 
   return (
