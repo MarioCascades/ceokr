@@ -11,63 +11,121 @@ import { useBuilder } from "@/components/builder/context/buildercontext";
 import PerformanceHeaderDialog from "./performanceheaderdialog";
 
 export default function PerformanceHeader() {
-  const { builderDocument } = useBuilder();
+  const {
+    builderDocument,
+    editMode,
+  } = useBuilder();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [
+    dialogOpen,
+    setDialogOpen,
+  ] = useState(false);
+
+  const header =
+    builderDocument.performanceHeader;
 
   return (
     <>
       <BuilderSection
         title="Performance Header"
         toolbar={
-          <Button
-            variant="outline"
-            onClick={() => setDialogOpen(true)}
-          >
-            Configure
-          </Button>
+          editMode ? (
+            <Button
+              variant="outline"
+              onClick={() =>
+                setDialogOpen(true)
+              }
+            >
+              Configure
+            </Button>
+          ) : undefined
         }
       >
         <CECard>
           <div className="space-y-6">
 
-            {/* Header */}
+            {/* ==================================================
+                Header
+            ================================================== */}
 
             <div className="flex items-start justify-between">
 
               <div className="max-w-3xl space-y-2">
 
                 <h2 className="text-3xl font-bold text-slate-900">
-                  {builderDocument.performanceHeader.employeeName}
+                  {header.title ||
+                    "Performance Header"}
                 </h2>
 
-                <p className="text-lg font-medium text-slate-600">
-                  {builderDocument.performanceHeader.employeeRole}
-                </p>
+                {header.subtitle && (
+                  <p className="text-lg font-medium text-slate-600">
+                    {header.subtitle}
+                  </p>
+                )}
 
-                <p className="text-sm leading-7 text-slate-500">
-                  {builderDocument.performanceHeader.roleDescription}
-                </p>
+                {header.description && (
+                  <p className="text-sm leading-7 text-slate-500">
+                    {header.description}
+                  </p>
+                )}
 
               </div>
 
             </div>
 
-            {/* Metrics */}
+            {/* ==================================================
+                Metrics
+            ================================================== */}
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {header.metrics.length > 0 && (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 
-              {builderDocument.performanceHeader.metrics.map(
-                (metric) => (
-                  <MetricCard
-                    key={metric.id}
-                    title={metric.title}
-                    value={metric.value}
-                  />
-                )
+                {header.metrics.map(
+                  (metric) => (
+                    <MetricCard
+                      key={metric.id}
+                      title={metric.title}
+                      value={metric.value}
+                    />
+                  )
+                )}
+
+              </div>
+            )}
+
+            {/* ==================================================
+                Empty State
+            ================================================== */}
+
+            {!header.title &&
+              !header.subtitle &&
+              !header.description &&
+              header.metrics.length === 0 && (
+                <div className="rounded-lg border border-dashed bg-slate-50 p-8 text-center">
+
+                  <p className="text-sm font-medium text-slate-700">
+                    Performance Header
+                  </p>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Configure the reusable header
+                    for this Performance Sheet.
+                  </p>
+
+                  {editMode && (
+                    <Button
+                      variant="outline"
+                      className="mt-4"
+                      onClick={() =>
+                        setDialogOpen(true)
+                      }
+                    >
+                      Configure Header
+                    </Button>
+                  )}
+
+                </div>
               )}
-
-            </div>
 
           </div>
         </CECard>
@@ -75,7 +133,9 @@ export default function PerformanceHeader() {
 
       <PerformanceHeaderDialog
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
+        onClose={() =>
+          setDialogOpen(false)
+        }
         performanceHeader={
           builderDocument.performanceHeader
         }

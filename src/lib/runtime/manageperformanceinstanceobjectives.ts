@@ -3,6 +3,7 @@ import {
 } from "@/lib/repositories/performanceinstancerepository";
 
 import {
+  findPerformanceInstanceObjectives,
   createPerformanceInstanceObjective,
   deletePerformanceInstanceObjective,
   updatePerformanceInstanceObjective,
@@ -61,6 +62,11 @@ export async function createRuntimePerformanceInstanceObjective(
    * Member-created Objectives do not have a Builder
    * source Objective.
    */
+  const existingObjectives =
+    await findPerformanceInstanceObjectives(
+      input.performanceInstanceId
+    );
+
   return createPerformanceInstanceObjective({
     performanceInstanceId:
       input.performanceInstanceId,
@@ -82,7 +88,7 @@ export async function createRuntimePerformanceInstanceObjective(
       undefined,
 
     position:
-      1,
+      existingObjectives.length + 1,
   });
 }
 

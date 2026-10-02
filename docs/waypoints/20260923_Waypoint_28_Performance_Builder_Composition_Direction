@@ -1,0 +1,671 @@
+# CascadEffects Performance Platform
+
+# Waypoint 28 — Performance Builder Composition Direction & Member Product Model
+
+**Date:** 2026-09-23  
+**Status:** ARCHITECTURE / PRODUCT DIRECTION CHECKPOINT  
+**Previous Waypoint:** Waypoint 27 — Authentication and Role-Based Entry Foundation
+
+---
+
+# 1. Overview
+
+This Waypoint records the product and architecture direction established after
+real-world testing of the Organization Admin Performance Sheet workflow and
+the current Builder.
+
+The project has reached the point where the existing Builder should no longer
+be treated as the place where every performance feature is independently
+implemented.
+
+The new direction is:
+
+> **Organization Administration builds and configures reusable performance
+> products. The Performance Builder is the composition layer that calls and
+> assembles those products into the organization's performance experience.**
+
+The Builder is therefore a caller / composition surface, not a second product
+factory.
+
+This Waypoint exists so the direction is recoverable in the next development
+session without relying on conversation memory.
+
+---
+
+# 2. Previous Architecture Preserved
+
+The established core architecture remains intact:
+
+```text
+Organization Administration
+        ↓
+Performance Builder
+        ↓
+Published Performance Sheet
+        ↓
+Assignment
+        ↓
+Monthly Performance Instance
+        ↓
+Runtime
+        ↓
+Member / Manager Performance Experience
+```
+
+Builder remains responsible for reusable definitions and publishing.
+
+Runtime remains responsible for execution.
+
+The Member Workspace remains a presentation, navigation, and workflow layer
+over Runtime.
+
+No second Builder, Runtime, or Member performance engine should be created.
+
+---
+
+# 3. New Performance Builder Direction
+
+The Performance Builder should become the place where an administrator
+assembles the performance experience from products already built within
+Organization Administration.
+
+The Builder should not independently reimplement every performance product.
+
+Conceptually:
+
+```text
+Organization Admin
+│
+├── Users / Members
+│     └── Create OKRs
+│
+├── Member OKR Sheets
+├── Dashboards
+├── Tables
+├── Charts
+└── Reports
+        │
+        ▼
+Performance Builder
+        │
+        ├── Performance Header
+        ├── Member Tabs
+        └── Calls / places configured products
+```
+
+The Builder therefore acts as a composition / orchestration layer.
+
+---
+
+# 4. Product Family
+
+The performance product family identified for the platform is:
+
+- Member OKR Sheets
+- Dashboards
+- Tables
+- Charts
+- Reports
+
+These are reusable platform capabilities.
+
+They should be developed and configured through the appropriate
+Organization Admin experiences rather than being duplicated inside the
+Performance Builder.
+
+The exact database relationships for these products are not being invented
+or implemented by this Waypoint.
+
+They must be designed deliberately when each product is built.
+
+---
+
+# 5. Member Tabs
+
+The term "tabs" in this product direction means **member / performance
+context tabs**, consistent with the Version 1 Mint operational experience.
+
+Tabs are not intended to represent organizational sections such as
+"Operations", "Leadership", or "Development".
+
+The intended experience is closer to:
+
+```text
+Main | John | Sarah | Maria | Team A
+```
+
+where the available member/team contexts are generated from actual
+organization data rather than hardcoded names.
+
+The platform must never hardcode individual users or teams into the Builder.
+
+---
+
+# 6. Member OKR Creation
+
+Member-specific OKR configuration should begin from the Users / Members
+experience.
+
+The intended entry point is:
+
+```text
+Organization Admin
+        ↓
+Users
+        ↓
+Member
+        ↓
+Create OKRs
+```
+
+The system already knows the organization and member context.
+
+The Create OKRs action should launch the existing OKR / Builder capability
+in the context of that member rather than create a second OKR engine.
+
+The member's resulting performance context can then be represented as a
+member tab in the assembled Performance experience.
+
+The exact persistence model must continue to respect the existing
+Performance Sheet → Published Version → Assignment → Performance Instance
+architecture.
+
+Do not introduce a duplicate member-performance data model merely to support
+this UI flow.
+
+---
+
+# 7. Performance Header
+
+The Performance Header remains a reusable Performance Sheet configuration.
+
+The current direction is:
+
+```text
+Title
+Subtitle
+Description
+Metrics
+```
+
+Employee identity, employee role, and role description are not reusable
+Performance Sheet header definition fields.
+
+Those belong to the member / Runtime context.
+
+The Builder should not duplicate organization identity merely because the
+Builder is opened from an Organization Admin page.
+
+The Organization context is already known from the authorized
+Organization Admin workspace.
+
+The Performance Header provides the actual performance-experience context.
+
+---
+
+# 8. Dashboards, Tables, Charts, and Reports
+
+Dashboards, Tables, Charts, and Reports should follow the same product pattern
+as Member OKR Sheets.
+
+They are reusable performance products that can eventually be configured
+through Organization Administration and then called by the Performance
+Builder.
+
+The intended conceptual model is:
+
+```text
+Build product
+      ↓
+Store product definition
+      ↓
+Performance Builder calls product
+      ↓
+Product renders in the appropriate member / performance context
+      ↓
+Runtime provides execution data where applicable
+```
+
+The Builder should not become a collection of unrelated implementations for
+every visualization or reporting feature.
+
+Future additions should be able to follow the same composition pattern.
+
+---
+
+# 9. Builder Scope for the Next Implementation
+
+The current Builder should be simplified toward:
+
+## Performance Header
+
+Configure the reusable header.
+
+## Member Tabs / Navigation
+
+Provide the navigation shell for the performance contexts that have been
+configured through Organization Administration.
+
+## Product Composition
+
+Provide the place where the configured products are called / assembled.
+
+The Builder should not become responsible for independently creating every
+Organization Admin product.
+
+This is an architectural direction, not permission to remove working
+functionality blindly.
+
+Existing Objective / Key Result / Initiative functionality must be evaluated
+against this direction before being removed or relocated.
+
+---
+
+# 10. Current Builder Testing Findings
+
+Real Organization Admin data is now reaching the Builder.
+
+The Builder has been tested against the actual organization context rather
+than the old prototype/sample people.
+
+The current real Builder experience shows:
+
+- CASCADEFFECTS organization context
+- 8 members
+- 1 department
+- 1 team
+- real Performance Sheet draft/version state
+- configurable Performance Header
+- Objectives
+- Key Results
+- Initiatives
+- Comments
+
+The old hardcoded prototype employee tabs/data are no longer the intended
+product model.
+
+This confirms that the Builder can now be tested as a real organization
+product rather than only as a prototype.
+
+---
+
+# 11. Known Builder Issues From This Checkpoint
+
+## Duplicate Dashboard Navigation Key
+
+During real Builder testing, the browser reported:
+
+```text
+Encountered two children with the same key, `dashboard`.
+```
+
+This indicates duplicate `dashboard` tabs are being produced/rendered.
+
+The next implementation must inspect the current:
+
+```text
+src/components/builder/navigation/navigationtabsmanager.tsx
+```
+
+before making a replacement.
+
+Do not hide the problem by switching React keys to array indexes.
+
+The underlying BuilderDocument / navigation state should be corrected so
+system navigation does not contain duplicate dashboard entries.
+
+---
+
+## Organization Validation Redundancy
+
+The current validation requires:
+
+```text
+document.organization.companyName
+```
+
+even though the Builder is opened inside an already-authorized
+Organization Admin context and the organization is already known.
+
+The product direction established in this Waypoint is that organization
+identity should not be duplicated merely for Builder validation.
+
+Before changing the implementation, inspect the current Builder document
+shape and validation implementation.
+
+The desired direction is to avoid creating a second source of truth for
+organization identity.
+
+---
+
+# 12. Display-Only Weight Rule
+
+A product rule was identified during real OKR testing:
+
+> **Weight = 0% means Display Only.**
+
+The intended behavior is:
+
+```text
+Weight > 0%
+    = scoring / weighted item
+
+Weight = 0%
+    = display-only item
+    = does not contribute to scoring
+```
+
+This applies to Key Results.
+
+An Objective with 0% weight may also represent a display-only objective if
+that is consistent with the final validation implementation.
+
+Weighted items must still satisfy the appropriate 100% aggregation rules.
+
+For example:
+
+```text
+KR A     50%
+KR B     50%
+KR C      0%   ← Display Only
+----------------
+          100%
+```
+
+is valid.
+
+This rule must be implemented deliberately in Builder validation and UI
+language.
+
+Do not silently weaken all weight validation.
+
+---
+
+# 13. Runtime Reference Experience
+
+The Version 1 Mint experience remains a UX reference, not an architecture
+to copy.
+
+The reference experience demonstrates a member-oriented performance view
+containing elements such as:
+
+- member identity
+- job role
+- reporting context
+- previous/current performance
+- targets
+- scores
+- Objectives
+- Key Results
+- Initiatives
+- tables / data presentation
+- visualizations
+
+The new platform should generate equivalent classes of experiences from
+reusable data and configuration.
+
+No Mint-specific person, tab, dashboard, or reporting structure should be
+hardcoded.
+
+---
+
+# 14. Architectural Guardrails
+
+The following rules are reinforced by this Waypoint:
+
+- Do not hardcode users.
+- Do not hardcode member tabs.
+- Do not hardcode organizations.
+- Do not hardcode Objectives or Key Results.
+- Do not create a second Builder.
+- Do not create a second Runtime.
+- Do not create a second Member performance engine.
+- Do not duplicate Organization Membership.
+- Do not create a second role system.
+- Do not duplicate organization identity as a new source of truth.
+- Do not turn the Builder into five independent product engines.
+- Prefer reusable products and composition.
+- Preserve the Builder / Runtime boundary.
+- Preserve multi-tenant organization context.
+- Preserve the existing monthly performance cadence.
+- Production authorization / RLS remains a separate security milestone.
+- Live AI remains future / business approval required.
+
+---
+
+# 15. What Is NOT Being Implemented by This Waypoint
+
+This Waypoint does not by itself implement:
+
+- a new Dashboard engine
+- a new Table engine
+- a new Chart engine
+- a new Report engine
+- a new Member OKR database model
+- production RLS
+- generalized KPI calculation
+- historical reporting
+- live AI
+- a new authentication system
+- a second Runtime
+
+Those remain future implementation work unless explicitly brought into a
+subsequent milestone.
+
+---
+
+# 16. Next Development Session
+
+Start from this Waypoint.
+
+Then review, in order:
+
+1. `docs/01_Platform_Decisions.md`
+2. `docs/02_Platform_Backlog.md`
+3. `docs/03_Product_North_Star.md`
+4. Current Builder implementation
+5. Current Users / Members implementation
+6. Current Performance Sheet repository / persistence
+7. Current Runtime assignment architecture
+
+## First implementation task
+
+Before writing new code:
+
+### A. Inspect the current Builder navigation
+
+```text
+src/components/builder/navigation/navigationtabsmanager.tsx
+```
+
+Resolve the duplicate `dashboard` navigation state correctly.
+
+### B. Inspect Builder validation
+
+```text
+src/lib/builder/buildervalidation.ts
+```
+
+Implement the confirmed:
+
+```text
+0% = Display Only
+```
+
+rule without breaking the existing weighted scoring validation.
+
+### C. Inspect Builder organization context
+
+Confirm how the authorized Organization Admin context reaches the Builder and
+remove unnecessary duplicate organization identity requirements where
+appropriate.
+
+### D. Reassess the Builder UI
+
+Reshape the Builder toward:
+
+```text
+Header
+Member Tabs / Navigation
+Product Composition
+```
+
+without prematurely deleting working Objective / Key Result / Initiative
+functionality.
+
+### E. Design the Users → Create OKRs flow
+
+The first reusable product to operationalize through this new composition
+direction should be the **Member OKR Sheet**.
+
+The intended first user journey is:
+
+```text
+Organization Admin
+        ↓
+Users
+        ↓
+Select Member
+        ↓
+Create OKRs
+        ↓
+Configure Member OKR Sheet
+        ↓
+Member becomes available in Performance experience
+        ↓
+Performance Builder composes the experience
+        ↓
+Published Performance Sheet
+        ↓
+Assignment
+        ↓
+Runtime
+```
+
+Do not create a duplicate performance engine to achieve this.
+
+---
+
+# 17. Verification Required
+
+Before considering this direction implemented:
+
+- compile successfully
+- browser-test the real Organization Admin workflow
+- create an actual member OKR configuration
+- verify the member context is represented correctly
+- verify the Performance Builder can call the configured member product
+- verify no hardcoded prototype users remain
+- verify `0%` display-only behavior
+- verify navigation contains no duplicate `dashboard` entry
+- verify existing publishing/versioning behavior remains intact
+- review Git diff
+- commit the completed milestone
+- update Platform Decisions / Backlog / North Star as required
+- create the next Waypoint
+
+---
+
+# 18. Milestone Status
+
+```text
+Foundation
+    COMPLETE
+
+Persistence
+    COMPLETE
+
+Administration
+    COMPLETE
+
+Organization Management
+    COMPLETE
+
+Organization Admin Foundation
+    COMPLETE
+
+Runtime Foundation
+    COMPLETE
+
+Runtime Product Experience
+    FOUNDATION CHECKPOINT COMPLETE / CONTINUING
+
+Authentication + Role-Based Entry
+    FOUNDATION COMPLETE / VERIFIED
+
+Multi-Organization Entry Selection
+    DOCUMENTED NEXT MILESTONE / VERIFY CURRENT IMPLEMENTATION STATE
+
+Performance Sheet Management
+    COMPLETE / ESTABLISHED
+
+Assignment Management
+    COMPLETE / ESTABLISHED
+
+Current Builder
+    REAL ORGANIZATION WORKFLOW VERIFIED / REFINEMENT IN PROGRESS
+
+Performance Builder Composition Direction
+    NEW ARCHITECTURAL DIRECTION / ESTABLISHED BY WAYPOINT 28
+
+Member OKR Sheets
+    NEXT PRODUCT TO OPERATIONALIZE
+
+Dashboards
+    V1 ESTABLISHED / DYNAMIC SYSTEM FUTURE
+
+Tables
+    FUTURE PRODUCT
+
+Charts
+    FUTURE PRODUCT
+
+Reports
+    FUTURE PRODUCT
+
+Production Authorization / RLS
+    OUTSTANDING / LATER SECURITY MILESTONE
+
+Runtime Security
+    DEFERRED
+
+Historical KPI Updates
+    DEFERRED
+
+KPI Calculation Engine
+    DEFERRED
+
+Weighted Aggregation
+    DEFERRED
+
+Historical Performance Reporting
+    DEFERRED
+
+Live AI
+    FUTURE / BUSINESS APPROVAL REQUIRED
+```
+
+---
+
+# 19. Final Handoff
+
+The most important sentence to carry into the next session is:
+
+> **The Performance Builder is the composition layer, not the place where every
+> performance product is built.**
+
+Organization Administration builds and configures the reusable products.
+
+The Performance Builder calls and assembles them.
+
+Runtime executes the resulting published experience.
+
+The first product to operationalize through this model is:
+
+> **Users → Create OKRs → Member OKR Sheet → Performance Builder → Runtime**
+
+The repository remains the authoritative engineering record.
+
+The next session should begin by reading this Waypoint and the current
+Platform Decisions, Platform Backlog, and Product North Star before any new
+implementation is proposed.

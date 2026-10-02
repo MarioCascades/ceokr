@@ -3,9 +3,9 @@
  * CascadEffects Performance Platform
  * Administration Users API
  * ----------------------------------------------------------
- * Creates a User and Organization Membership.
+ * Creates and updates Users and Organization Memberships.
  *
- * Supported modes:
+ * Supported POST modes:
  *
  * invite
  *      → Creates a Supabase Auth user through invitation.
@@ -14,7 +14,11 @@
  *      → Creates a Supabase Auth user directly with a
  *        password for immediate account access.
  *
- * Both modes share the same provisioning pipeline:
+ * PATCH
+ *      → Updates an existing Application User and its
+ *        Organization Membership.
+ *
+ * Both POST modes share the same provisioning pipeline:
  *
  * Authorization
  *      ↓
@@ -38,22 +42,6 @@
  * authenticated caller has passed the authorization boundary.
  *
  * Department and Team are OPTIONAL organizational assignments.
- *
- * Feature availability does NOT mean the related resource
- * is required.
- *
- * Example:
- *
- * departments = false
- * teams = true
- *
- * A member may have:
- * - no department
- * - no team
- *
- * The UI determines which assignment fields are available.
- * The API validates any supplied assignments but does not
- * require them.
  * ==========================================================
  */
 
@@ -67,7 +55,7 @@ import {
 
 
 /* ==========================================================
-   Request Type
+   Request Types
 ========================================================== */
 
 type UserCreationMode =
@@ -93,6 +81,30 @@ interface UserRequest {
   department_id?: string;
 
   team_id?: string;
+
+  is_active?: boolean;
+}
+
+
+interface UserUpdateRequest {
+
+  organization_id: string;
+
+  user_id: string;
+
+  membership_id: string;
+
+  first_name: string;
+
+  last_name: string;
+
+  display_name?: string | null;
+
+  email: string;
+
+  department_id?: string | null;
+
+  team_id?: string | null;
 
   is_active?: boolean;
 }
@@ -192,17 +204,6 @@ export async function POST(
   /* ========================================================
      Authorization Boundary
   ======================================================== */
-
-  /*
-   * organization_id is requested tenant context only.
-   *
-   * It is NOT trusted as proof that the caller belongs
-   * to the organization.
-   *
-   * requirePermission() resolves the authenticated user
-   * and verifies the appropriate platform or organization
-   * authority before privileged operations occur.
-   */
 
   try {
 
@@ -317,13 +318,6 @@ export async function POST(
      Validate Department Tenant Ownership
   ======================================================== */
 
-  /*
-   * Department is optional.
-   *
-   * If supplied, it must belong to the requested
-   * organization.
-   */
-
   if (departmentId) {
 
     const {
@@ -382,20 +376,6 @@ export async function POST(
      Validate Team Tenant Ownership
   ======================================================== */
 
-  /*
-   * Team is also optional.
-   *
-   * Teams are an independent organizational capability.
-   *
-   * Therefore:
-   *
-   * - Team does not require a department assignment.
-   * - If both Team and Department are supplied, the Team
-   *   must belong to that Department.
-   * - If only Team is supplied, the Team only needs to
-   *   belong to the requested organization.
-   */
-
   if (teamId) {
 
     const {
@@ -451,14 +431,6 @@ export async function POST(
     }
 
 
-    /*
-     * If both assignments were supplied, enforce their
-     * relationship.
-     *
-     * This prevents assigning a member to Department A
-     * while selecting a Team that belongs to Department B.
-     */
-
     if (
       departmentId &&
       team.department_id !== departmentId
@@ -480,13 +452,6 @@ export async function POST(
   /* ========================================================
      Resolve Member Role
   ======================================================== */
-
-  /*
-   * Role IDs must NEVER be hardcoded.
-   *
-   * The Member role belongs to the requested organization
-   * and is resolved dynamically.
-   */
 
   const {
     data: memberRole,
@@ -549,19 +514,10 @@ export async function POST(
      Create Supabase Auth User
   ======================================================== */
 
-  /*
-   * From this point forward we are inside the trusted
-   * server-side privileged operation boundary.
-   */
-
   let authUserId: string;
 
 
   if (mode === "create") {
-
-    /* ======================================================
-       Direct Account Creation
-    ====================================================== */
 
     const {
       data: authData,
@@ -626,10 +582,6 @@ export async function POST(
       authData.user.id;
 
   } else {
-
-    /* ======================================================
-       Invitation
-    ====================================================== */
 
     const {
       data: authData,
@@ -729,11 +681,6 @@ export async function POST(
       userError
     );
 
-
-    /* ======================================================
-       Compensating Auth Cleanup
-    ====================================================== */
-
     await supabaseAdmin.auth.admin.deleteUser(
       authUserId
     );
@@ -785,10 +732,6 @@ export async function POST(
       membershipError
     );
 
-
-    /* ======================================================
-       Compensating Cleanup
-    ====================================================== */
 
     await supabaseAdmin
       .from("users")
@@ -848,10 +791,6 @@ export async function POST(
     );
 
 
-    /* ======================================================
-       Compensating Cleanup
-    ====================================================== */
-
     await supabaseAdmin
       .from("organization_memberships")
       .delete()
@@ -905,6 +844,531 @@ export async function POST(
     },
     {
       status: 201,
+    }
+  );
+}
+
+
+/* ==========================================================
+   PATCH
+   ----------------------------------------------------------
+   Updates an existing Application User and its
+   Organization Membership.
+========================================================== */
+
+export async function PATCH(
+  request: Request
+) {
+
+  let input: UserUpdateRequest;
+
+
+  /* ========================================================
+     Parse Request
+  ======================================================== */
+
+  try {
+
+    input =
+      await request.json();
+
+  } catch {
+
+    return NextResponse.json(
+      {
+        error:
+          "Invalid request body.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+
+  /* ========================================================
+     Normalize Input
+  ======================================================== */
+
+  const organizationId =
+    input.organization_id?.trim();
+
+  const userId =
+    input.user_id?.trim();
+
+  const membershipId =
+    input.membership_id?.trim();
+
+  const firstName =
+    input.first_name?.trim();
+
+  const lastName =
+    input.last_name?.trim();
+
+  const displayName =
+    input.display_name?.trim() || null;
+
+  const email =
+    input.email?.trim().toLowerCase();
+
+  const departmentId =
+    input.department_id?.trim() || null;
+
+  const teamId =
+    input.team_id?.trim() || null;
+
+  const isActive =
+    input.is_active ?? true;
+
+
+  /* ========================================================
+     Validate Organization Context
+  ======================================================== */
+
+  if (!organizationId) {
+
+    return NextResponse.json(
+      {
+        error:
+          "Organization is required.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+
+  /* ========================================================
+     Validate User Context
+  ======================================================== */
+
+  if (!userId) {
+
+    return NextResponse.json(
+      {
+        error:
+          "User is required.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+
+  if (!membershipId) {
+
+    return NextResponse.json(
+      {
+        error:
+          "Organization membership is required.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+
+  /* ========================================================
+     Authorization Boundary
+  ======================================================== */
+
+  try {
+
+    await requirePermission(
+      organizationId,
+      "users.edit"
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Authorization failed:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "You do not have permission to edit this user.",
+      },
+      {
+        status: 403,
+      }
+    );
+  }
+
+
+  /* ========================================================
+     Validate User Fields
+  ======================================================== */
+
+  if (!firstName) {
+
+    return NextResponse.json(
+      {
+        error:
+          "First name is required.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+
+  if (!lastName) {
+
+    return NextResponse.json(
+      {
+        error:
+          "Last name is required.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+
+  if (!email) {
+
+    return NextResponse.json(
+      {
+        error:
+          "Email is required.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+
+  /* ========================================================
+     Validate Membership Ownership
+  ======================================================== */
+
+  const {
+    data: membership,
+    error: membershipError,
+  } =
+    await supabaseAdmin
+      .from("organization_memberships")
+      .select(
+        "id, user_id, organization_id"
+      )
+      .eq(
+        "id",
+        membershipId
+      )
+      .eq(
+        "user_id",
+        userId
+      )
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .maybeSingle();
+
+
+  if (membershipError) {
+
+    console.error(
+      "Failed to verify organization membership:",
+      membershipError
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Failed to verify organization membership.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+
+
+  if (!membership) {
+
+    return NextResponse.json(
+      {
+        error:
+          "The user membership does not belong to this organization.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+
+  /* ========================================================
+     Validate Department
+  ======================================================== */
+
+  if (departmentId) {
+
+    const {
+      data: department,
+      error: departmentError,
+    } =
+      await supabaseAdmin
+        .from("departments")
+        .select("id")
+        .eq(
+          "id",
+          departmentId
+        )
+        .eq(
+          "organization_id",
+          organizationId
+        )
+        .maybeSingle();
+
+
+    if (departmentError) {
+
+      console.error(
+        "Failed to verify department:",
+        departmentError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Failed to verify department.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+
+    if (!department) {
+
+      return NextResponse.json(
+        {
+          error:
+            "The selected department does not belong to this organization.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+  }
+
+
+  /* ========================================================
+     Validate Team
+  ======================================================== */
+
+  if (teamId) {
+
+    const {
+      data: team,
+      error: teamError,
+    } =
+      await supabaseAdmin
+        .from("teams")
+        .select(
+          "id, department_id"
+        )
+        .eq(
+          "id",
+          teamId
+        )
+        .eq(
+          "organization_id",
+          organizationId
+        )
+        .maybeSingle();
+
+
+    if (teamError) {
+
+      console.error(
+        "Failed to verify team:",
+        teamError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Failed to verify team.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+
+    if (!team) {
+
+      return NextResponse.json(
+        {
+          error:
+            "The selected team does not belong to this organization.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+
+    if (
+      departmentId &&
+      team.department_id !== departmentId
+    ) {
+
+      return NextResponse.json(
+        {
+          error:
+            "The selected team does not belong to the selected department.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+  }
+
+
+  /* ========================================================
+     Update Application User
+  ======================================================== */
+
+  const {
+    data: updatedUser,
+    error: updateUserError,
+  } =
+    await supabaseAdmin
+      .from("users")
+      .update({
+        first_name:
+          firstName,
+
+        last_name:
+          lastName,
+
+        display_name:
+          displayName,
+
+        email,
+
+        is_active:
+          isActive,
+
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq(
+        "id",
+        userId
+      )
+      .select("*")
+      .single();
+
+
+  if (updateUserError) {
+
+    console.error(
+      "Failed to update user:",
+      updateUserError
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          `Failed to update user: ${updateUserError.message}`,
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+
+
+  /* ========================================================
+     Update Organization Membership
+  ======================================================== */
+
+  const {
+    data: updatedMembership,
+    error: updateMembershipError,
+  } =
+    await supabaseAdmin
+      .from("organization_memberships")
+      .update({
+        department_id:
+          departmentId,
+
+        team_id:
+          teamId,
+
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq(
+        "id",
+        membershipId
+      )
+      .eq(
+        "user_id",
+        userId
+      )
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .select("*")
+      .single();
+
+
+  if (updateMembershipError) {
+
+    console.error(
+      "Failed to update organization membership:",
+      updateMembershipError
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          `Failed to update organization membership: ${updateMembershipError.message}`,
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+
+
+  /* ========================================================
+     Success
+  ======================================================== */
+
+  return NextResponse.json(
+    {
+      user:
+        updatedUser,
+
+      membership:
+        updatedMembership,
+    },
+    {
+      status: 200,
     }
   );
 }

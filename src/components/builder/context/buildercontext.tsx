@@ -34,7 +34,6 @@ import {
   loadLatestPublishedForOrganization,
   saveBuilderDocument,
   publishPerformanceSheet,
-  createDraftRevision,
 } from "@/lib/repositories/performancesheetrepository";
 
 import {
@@ -44,6 +43,18 @@ import {
 import {
   getOrganization,
 } from "@/services/organization.service";
+
+import {
+  getDepartments,
+} from "@/services/department.service";
+
+import {
+  getTeams,
+} from "@/services/team.service";
+
+import {
+  listUserManagementRecords,
+} from "@/services/user.service";
 
 import type {
   PerformanceSheetStatus,
@@ -62,6 +73,47 @@ import type {
   BuilderInitiative,
   BuilderComments,
 } from "@/lib/types/builderdocument";
+
+import type {
+  Organization,
+} from "@/lib/types/organization";
+
+import type {
+  Department,
+} from "@/lib/types/domain/department";
+
+import type {
+  Team,
+} from "@/lib/types/domain/team";
+
+import type {
+  UserManagementRecord,
+} from "@/lib/types/domain/usermanagement";
+
+/* ==========================================================
+   Builder Organization Context
+========================================================== */
+
+/*
+ * This is read-only organization data supplied to the Builder.
+ *
+ * It intentionally lives outside BuilderDocument.
+ *
+ * BuilderDocument represents the Performance Sheet definition.
+ *
+ * organizationContext represents the real organization that
+ * the administrator is currently building for.
+ */
+
+export type BuilderOrganizationContext = {
+  organization: Organization;
+
+  departments: Department[];
+
+  teams: Team[];
+
+  members: UserManagementRecord[];
+};
 
 /* ==========================================================
    Builder Context Type
@@ -86,6 +138,15 @@ type BuilderContextType = {
     React.SetStateAction<BuilderDocument>
   >;
 
+  /*
+   * Real organization data available to the Builder.
+   *
+   * This is intentionally separate from builderDocument.
+   */
+  organizationContext:
+    | BuilderOrganizationContext
+    | null;
+
   organizationId: string | null;
 
   performanceSheetId: string | null;
@@ -108,8 +169,6 @@ type BuilderContextType = {
 
   publishBuilder: () =>
     Promise<BuilderValidationResult>;
-
-  createRevision: () => Promise<void>;
 
   updateOrganization: (
     organization: BuilderOrganization
@@ -221,6 +280,18 @@ export function BuilderProvider({
     initialBuilderDocument
   );
 
+  /*
+   * Real organization context.
+   *
+   * This is intentionally separate from BuilderDocument.
+   */
+  const [
+    organizationContext,
+    setOrganizationContext,
+  ] = useState<
+    BuilderOrganizationContext | null
+  >(null);
+
   const [
     organizationId,
     setOrganizationId,
@@ -270,19 +341,39 @@ export function BuilderProvider({
   ] = useState<string | null>(null);
 
   /* ========================================================
-     Load Organization + Builder Sheet
+     Load Organization + Organization Context + Builder Sheet
   ======================================================== */
 
   useEffect(() => {
+    let cancelled = false;
+
     async function initializeBuilder() {
       setIsLoadingBuilder(true);
       setBuilderError(null);
 
+      /*
+       * Clear stale organization context while switching
+       * between organizations.
+       */
+      setOrganizationContext(null);
+      setOrganizationId(null);
+
       try {
+        /*
+         * --------------------------------------------------
+         * 1. Resolve the active organization.
+         * --------------------------------------------------
+         */
+
         const organization =
           await getOrganization(
-            selectedOrganizationId ?? undefined
+            selectedOrganizationId ??
+              undefined
           );
+
+        if (cancelled) {
+          return;
+        }
 
         if (!organization) {
           setBuilderError(
@@ -298,11 +389,55 @@ export function BuilderProvider({
 
         /*
          * --------------------------------------------------
-         * 1. Explicit New Performance Sheet Mode
+         * 2. Load the real organization context.
+         *
+         * These are read-only inputs to the Builder.
+         *
+         * Organization membership is the authoritative
+         * relationship between users and the organization.
+         *
+         * Department and Team associations come from the
+         * organization membership records rather than being
+         * duplicated inside BuilderDocument.
+         * --------------------------------------------------
+         */
+
+        const [
+          departments,
+          teams,
+          members,
+        ] = await Promise.all([
+          getDepartments(
+            organization.id
+          ),
+
+          getTeams(
+            organization.id
+          ),
+
+          listUserManagementRecords(
+            organization.id
+          ),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setOrganizationContext({
+          organization,
+          departments,
+          teams,
+          members,
+        });
+
+        /*
+         * --------------------------------------------------
+         * 3. Explicit New Performance Sheet Mode
          *
          * Administration uses:
          *
-         * /builder?new=true
+         * /builder?organizationId=123&new=true
          *
          * This intentionally bypasses existing drafts and
          * published sheets.
@@ -310,9 +445,7 @@ export function BuilderProvider({
          * The Builder starts with the default document.
          *
          * No database record is created until Save Builder
-         * is used. The existing saveBuilderDocument()
-         * function remains responsible for creating the
-         * first draft.
+         * is used.
          * --------------------------------------------------
          */
 
@@ -347,11 +480,8 @@ export function BuilderProvider({
 
         /*
          * --------------------------------------------------
-         * 2. If a sheetId was supplied in the URL,
+         * 4. If a sheetId was supplied in the URL,
          *    load that exact Performance Sheet.
-         *
-         *    This is used by Administration when opening
-         *    a selected Performance Sheet in the Builder.
          * --------------------------------------------------
          */
 
@@ -361,6 +491,22 @@ export function BuilderProvider({
               organization.id,
               selectedSheetId
             );
+
+          if (cancelled) {
+            return;
+          }
+
+          /*
+           * The repository may return null when the requested
+           * workspace does not exist.
+           */
+          if (!selectedSheet) {
+            setBuilderError(
+              "The requested Performance Workspace could not be found."
+            );
+
+            return;
+          }
 
           setPerformanceSheetId(
             selectedSheet.id
@@ -383,11 +529,7 @@ export function BuilderProvider({
           );
 
           /*
-           * Published sheets are immutable and therefore
-           * always open in preview mode.
-           *
-           * Drafts also start in preview mode so the user
-           * must explicitly choose Edit.
+           * The single workspace remains available for editing.
            */
           setEditMode(false);
 
@@ -396,10 +538,15 @@ export function BuilderProvider({
 
         /*
          * --------------------------------------------------
-         * 3. No selected sheet.
+         * 5. No selected sheet.
          *
-         * Preserve the existing Builder behavior:
-         * prefer the latest draft.
+         * Preserve existing compatibility behavior:
+         *
+         * latest draft
+         *       ↓
+         * latest published
+         *       ↓
+         * empty Builder
          * --------------------------------------------------
          */
 
@@ -407,6 +554,10 @@ export function BuilderProvider({
           await loadLatestDraft(
             organization.id
           );
+
+        if (cancelled) {
+          return;
+        }
 
         if (draft) {
           setPerformanceSheetId(
@@ -436,11 +587,9 @@ export function BuilderProvider({
 
         /*
          * --------------------------------------------------
-         * 4. No draft exists.
+         * 6. No draft exists.
          *
          * Look for the latest published definition.
-         *
-         * Published definitions load in locked/preview mode.
          * --------------------------------------------------
          */
 
@@ -448,6 +597,10 @@ export function BuilderProvider({
           await loadLatestPublishedForOrganization(
             organization.id
           );
+
+        if (cancelled) {
+          return;
+        }
 
         if (published) {
           setPerformanceSheetId(
@@ -477,10 +630,10 @@ export function BuilderProvider({
 
         /*
          * --------------------------------------------------
-         * 5. Nothing exists yet.
+         * 7. Nothing exists yet.
          *
-         * Continue using initialBuilderDocument until the
-         * administrator saves the first draft.
+         * Continue using the empty initial Builder document
+         * until the administrator saves the first draft.
          * --------------------------------------------------
          */
 
@@ -506,6 +659,10 @@ export function BuilderProvider({
 
         setEditMode(false);
       } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
         console.error(
           "Failed to initialize Builder:",
           error
@@ -517,11 +674,17 @@ export function BuilderProvider({
             : "Failed to initialize Builder."
         );
       } finally {
-        setIsLoadingBuilder(false);
+        if (!cancelled) {
+          setIsLoadingBuilder(false);
+        }
       }
     }
 
     initializeBuilder();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     selectedOrganizationId,
     selectedSheetId,
@@ -543,19 +706,11 @@ export function BuilderProvider({
     }
 
     /*
-     * Published definitions are immutable.
+     * The Performance Workspace is editable regardless of
+     * its current publication status.
+     *
+     * Publication no longer acts as an editing lock.
      */
-    if (
-      performanceSheetStatus !==
-      "draft"
-    ) {
-      const message =
-        "Published performance sheets cannot be edited. Create a new revision first.";
-
-      setBuilderError(message);
-
-      throw new Error(message);
-    }
 
     setIsSavingBuilder(true);
     setBuilderError(null);
@@ -622,8 +777,7 @@ export function BuilderProvider({
       );
 
     /*
-     * Drafts may be incomplete and saved,
-     * but invalid drafts cannot be published.
+     * Invalid Builder documents cannot be published.
      */
     if (!validation.valid) {
       return validation;
@@ -638,17 +792,13 @@ export function BuilderProvider({
       throw new Error(message);
     }
 
-    if (
-      performanceSheetStatus !==
-      "draft"
-    ) {
-      const message =
-        "Only draft performance sheets can be published.";
-
-      setBuilderError(message);
-
-      throw new Error(message);
-    }
+    /*
+     * Publication is no longer restricted to draft status.
+     *
+     * The organization has one Performance Workspace.
+     * Publishing records the current valid workspace state
+     * without turning the Builder into a versioned workflow.
+     */
 
     setIsPublishingBuilder(true);
     setBuilderError(null);
@@ -696,9 +846,9 @@ export function BuilderProvider({
       );
 
       /*
-       * Published definitions are locked.
+       * The workspace remains editable after publication.
        */
-      setEditMode(false);
+      setEditMode(true);
 
       return validation;
     } catch (error) {
@@ -716,88 +866,6 @@ export function BuilderProvider({
       throw error;
     } finally {
       setIsPublishingBuilder(false);
-    }
-  }
-
-  /* ========================================================
-     Create Revision
-  ======================================================== */
-
-  async function createRevision() {
-    if (
-      !organizationId ||
-      !performanceSheetId
-    ) {
-      const message =
-        "Cannot create a revision because no published performance sheet is available.";
-
-      setBuilderError(message);
-
-      throw new Error(message);
-    }
-
-    if (
-      performanceSheetStatus !==
-      "published"
-    ) {
-      const message =
-        "A new revision can only be created from a published performance sheet.";
-
-      setBuilderError(message);
-
-      throw new Error(message);
-    }
-
-    setIsLoadingBuilder(true);
-    setBuilderError(null);
-
-    try {
-      const revision =
-        await createDraftRevision(
-          organizationId,
-          performanceSheetId
-        );
-
-      setPerformanceSheetId(
-        revision.id
-      );
-
-      setPerformanceSheetKey(
-        revision.sheet_key
-      );
-
-      setPerformanceSheetStatus(
-        revision.status
-      );
-
-      setPerformanceSheetVersion(
-        revision.version
-      );
-
-      setBuilderDocument(
-        revision.document
-      );
-
-      /*
-       * New revision immediately becomes
-       * the editable working draft.
-       */
-      setEditMode(true);
-    } catch (error) {
-      console.error(
-        "Failed to create revision:",
-        error
-      );
-
-      setBuilderError(
-        error instanceof Error
-          ? error.message
-          : "Failed to create revision."
-      );
-
-      throw error;
-    } finally {
-      setIsLoadingBuilder(false);
     }
   }
 
@@ -1006,6 +1074,8 @@ export function BuilderProvider({
         builderDocument,
         setBuilderDocument,
 
+        organizationContext,
+
         organizationId,
 
         performanceSheetId,
@@ -1021,7 +1091,6 @@ export function BuilderProvider({
 
         saveBuilder,
         publishBuilder,
-        createRevision,
 
         updateOrganization,
         updatePerformanceHeader,

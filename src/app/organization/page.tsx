@@ -293,6 +293,14 @@ export default async function OrganizationWorkspacePage({
             )}
           />
 
+          <WorkspaceCard
+            title="🎯 OKR Templates"
+            description="Manage your organization's reusable Objective and Key Result Templates."
+            href={workspaceHref(
+              "/organization/okrtemplates"
+            )}
+          />
+
         </WorkspaceSection>
 
         {/* ==================================================
