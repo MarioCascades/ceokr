@@ -351,6 +351,13 @@ export default function OrganizationShell({
               label="Key Results"
             />
 
+            <OrganizationNavLink
+              href={organizationHref(
+                "/organization/okrtemplates"
+              )}
+              label="OKR Templates"
+            />
+
           </OrganizationNavSection>
 
 

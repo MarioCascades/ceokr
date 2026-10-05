@@ -104,6 +104,11 @@ function AdminShell({
             label="Key Results"
           />
 
+          <AdminNavLink
+            href={adminHref("/admin/okrtemplates")}
+            label="OKR Templates"
+          />
+
          
           <AdminNavSection title="Analytics" />
 

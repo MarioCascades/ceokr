@@ -14,6 +14,8 @@ import {
 import {
   loadAllObjectiveTemplates,
   loadAllKeyResultTemplates,
+  deleteOKRTemplateObjective,
+  deleteOKRTemplateKeyResult,
 } from "@/lib/repositories/okrtemplaterepository";
 
 import type {
@@ -71,6 +73,96 @@ export default function OKRTemplateLibrary({
     useState<string | null>(
       null
     );
+
+
+  const [
+    deletingTemplateId,
+    setDeletingTemplateId,
+  ] =
+    useState<string | null>(
+      null
+    );
+
+
+  /* ========================================================
+     Delete Global Template
+  ======================================================== */
+
+  async function handleDeleteTemplate(
+    templateType: "objective" | "keyResult",
+    templateId: string,
+    templateTitle: string,
+  ) {
+
+    const confirmed =
+      window.confirm(
+        `Delete the global ${
+          templateType === "objective"
+            ? "Objective"
+            : "Key Result"
+        } Template "${templateTitle}"?\n\nThis cannot be undone.`,
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+
+      setDeletingTemplateId(
+        templateId
+      );
+
+      setErrorMessage(
+        null
+      );
+
+      if (templateType === "objective") {
+        await deleteOKRTemplateObjective(
+          templateId
+        );
+
+        setObjectiveTemplates(
+          (current) =>
+            current.filter(
+              (template) =>
+                template.id !== templateId
+            )
+        );
+      } else {
+        await deleteOKRTemplateKeyResult(
+          templateId
+        );
+
+        setKeyResultTemplates(
+          (current) =>
+            current.filter(
+              (template) =>
+                template.id !== templateId
+            )
+        );
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Failed to delete global OKR template:",
+        error
+      );
+
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete the global template."
+      );
+
+    } finally {
+
+      setDeletingTemplateId(
+        null
+      );
+    }
+  }
 
 
   /* ========================================================
@@ -471,108 +563,243 @@ export default function OKRTemplateLibrary({
 
             <div
               className="
-                grid
-                gap-5
-                md:grid-cols-2
-                xl:grid-cols-3
+                overflow-hidden
+                rounded-xl
+                border
+                bg-background
               "
             >
 
-              {objectiveTemplates.map(
-                (
-                  objective
-                ) => (
+              <div
+                className="
+                  overflow-x-auto
+                "
+              >
 
-                  <article
-                    key={
-                      objective.id
-                    }
+                <table
+                  className="
+                    w-full
+                    min-w-[720px]
+                    text-sm
+                  "
+                >
+
+                  <thead
                     className="
-                      flex
-                      min-h-[220px]
-                      flex-col
-                      rounded-xl
-                      border
-                      bg-background
-                      p-6
-                      shadow-sm
+                      border-b
+                      bg-muted/40
                     "
                   >
 
-                    <div
-                      className="
-                        flex-1
-                      "
-                    >
+                    <tr>
 
-                      <h3
+                      <th
                         className="
-                          text-lg
-                          font-semibold
-                        "
-                      >
-                        {objective.title}
-                      </h3>
-
-
-                      <p
-                        className="
-                          mt-4
-                          text-sm
-                          leading-6
+                          px-5
+                          py-3
+                          text-left
+                          font-medium
                           text-muted-foreground
                         "
                       >
-                        {objective.description?.trim()
-                          ? objective.description
-                          : "No description has been added to this template."}
-                      </p>
-
-                    </div>
+                        Type
+                      </th>
 
 
-                    <div
-                      className="
-                        mt-6
-                        flex
-                        items-center
-                        justify-between
-                        gap-3
-                      "
-                    >
-
-                      <span
+                      <th
                         className="
-                          text-xs
+                          px-5
+                          py-3
+                          text-left
+                          font-medium
                           text-muted-foreground
                         "
                       >
-                        Objective Template
-                      </span>
+                        Template
+                      </th>
 
 
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="sm"
+                      <th
+                        className="
+                          px-5
+                          py-3
+                          text-left
+                          font-medium
+                          text-muted-foreground
+                        "
                       >
+                        Description
+                      </th>
 
-                        <Link
-                          href={
-                            `/admin/okrtemplates/objectives/${objective.id}`
+
+                      <th
+                        className="
+                          px-5
+                          py-3
+                          text-right
+                          font-medium
+                          text-muted-foreground
+                        "
+                      >
+                        Actions
+                      </th>
+
+                    </tr>
+
+                  </thead>
+
+
+                  <tbody
+                    className="
+                      divide-y
+                    "
+                  >
+
+                    {objectiveTemplates.map(
+                      (
+                        objective
+                      ) => (
+
+                        <tr
+                          key={
+                            objective.id
                           }
+                          className="
+                            transition-colors
+                            hover:bg-muted/20
+                          "
                         >
-                          View Template
-                        </Link>
 
-                      </Button>
+                          <td
+                            className="
+                              px-5
+                              py-4
+                              align-middle
+                            "
+                          >
 
-                    </div>
+                            <span
+                              className="
+                                inline-flex
+                                rounded-full
+                                border
+                                px-2.5
+                                py-1
+                                text-xs
+                                font-medium
+                              "
+                            >
+                              Objective
+                            </span>
 
-                  </article>
+                          </td>
 
-                )
-              )}
+
+                          <td
+                            className="
+                              px-5
+                              py-4
+                              align-middle
+                            "
+                          >
+
+                            <div
+                              className="
+                                font-medium
+                              "
+                            >
+                              {objective.title}
+                            </div>
+
+                          </td>
+
+
+                          <td
+                            className="
+                              max-w-[500px]
+                              px-5
+                              py-4
+                              align-middle
+                              text-muted-foreground
+                            "
+                          >
+
+                            <div
+                              className="
+                                line-clamp-2
+                              "
+                            >
+                              {objective.description?.trim()
+                                ? objective.description
+                                : "No description has been added to this template."}
+                            </div>
+
+                          </td>
+
+
+                          <td
+                            className="
+                              px-5
+                              py-4
+                              text-right
+                              align-middle
+                            "
+                          >
+
+                            <div
+                              className="flex items-center justify-end gap-2"
+                            >
+
+                              <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                              >
+
+                                <Link
+                                  href={`/admin/okrtemplates/new?type=objective&id=${objective.id}`}
+                                >
+                                  View Template
+                                </Link>
+
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                disabled={
+                                  deletingTemplateId === objective.id
+                                }
+                                onClick={() =>
+                                  handleDeleteTemplate(
+                                    "objective",
+                                    objective.id,
+                                    objective.title,
+                                  )
+                                }
+                              >
+                                {
+                                  deletingTemplateId === objective.id
+                                    ? "Deleting..."
+                                    : "Delete"
+                                }
+                              </Button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+
+                      )
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              </div>
 
             </div>
 
@@ -682,147 +909,294 @@ export default function OKRTemplateLibrary({
 
             <div
               className="
-                grid
-                gap-5
-                md:grid-cols-2
-                xl:grid-cols-3
+                overflow-hidden
+                rounded-xl
+                border
+                bg-background
               "
             >
 
-              {keyResultTemplates.map(
-                (
-                  keyResult
-                ) => (
+              <div
+                className="
+                  overflow-x-auto
+                "
+              >
 
-                  <article
-                    key={
-                      keyResult.id
-                    }
+                <table
+                  className="
+                    w-full
+                    min-w-[900px]
+                    text-sm
+                  "
+                >
+
+                  <thead
                     className="
-                      flex
-                      min-h-[220px]
-                      flex-col
-                      rounded-xl
-                      border
-                      bg-background
-                      p-6
-                      shadow-sm
+                      border-b
+                      bg-muted/40
                     "
                   >
 
-                    <div
-                      className="
-                        flex-1
-                      "
-                    >
+                    <tr>
 
-                      <h3
+                      <th
                         className="
-                          text-lg
-                          font-semibold
-                        "
-                      >
-                        {keyResult.title}
-                      </h3>
-
-
-                      <div
-                        className="
-                          mt-4
-                          flex
-                          flex-wrap
-                          gap-2
-                        "
-                      >
-
-                        <span
-                          className="
-                            rounded-full
-                            border
-                            px-2.5
-                            py-1
-                            text-xs
-                            font-medium
-                          "
-                        >
-                          {keyResult.measurementType}
-                        </span>
-
-
-                        <span
-                          className="
-                            rounded-full
-                            border
-                            px-2.5
-                            py-1
-                            text-xs
-                            font-medium
-                          "
-                        >
-                          {keyResult.scoringMethod}
-                        </span>
-
-                      </div>
-
-
-                      <p
-                        className="
-                          mt-4
-                          text-sm
-                          leading-6
+                          px-5
+                          py-3
+                          text-left
+                          font-medium
                           text-muted-foreground
                         "
                       >
-                        Reusable Key Result template
-                        with its own target and
-                        measurement configuration.
-                      </p>
-
-                    </div>
+                        Type
+                      </th>
 
 
-                    <div
-                      className="
-                        mt-6
-                        flex
-                        items-center
-                        justify-between
-                        gap-3
-                      "
-                    >
-
-                      <span
+                      <th
                         className="
-                          text-xs
+                          px-5
+                          py-3
+                          text-left
+                          font-medium
                           text-muted-foreground
                         "
                       >
-                        Key Result Template
-                      </span>
+                        Template
+                      </th>
 
 
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="sm"
+                      <th
+                        className="
+                          px-5
+                          py-3
+                          text-left
+                          font-medium
+                          text-muted-foreground
+                        "
                       >
+                        Measurement
+                      </th>
 
-                        <Link
-                          href={
-                            `/admin/okrtemplates/keyresults/${keyResult.id}`
+
+                      <th
+                        className="
+                          px-5
+                          py-3
+                          text-left
+                          font-medium
+                          text-muted-foreground
+                        "
+                      >
+                        Scoring
+                      </th>
+
+
+                      <th
+                        className="
+                          px-5
+                          py-3
+                          text-left
+                          font-medium
+                          text-muted-foreground
+                        "
+                      >
+                        Weight
+                      </th>
+
+
+                      <th
+                        className="
+                          px-5
+                          py-3
+                          text-right
+                          font-medium
+                          text-muted-foreground
+                        "
+                      >
+                        Actions
+                      </th>
+
+                    </tr>
+
+                  </thead>
+
+
+                  <tbody
+                    className="
+                      divide-y
+                    "
+                  >
+
+                    {keyResultTemplates.map(
+                      (
+                        keyResult
+                      ) => (
+
+                        <tr
+                          key={
+                            keyResult.id
                           }
+                          className="
+                            transition-colors
+                            hover:bg-muted/20
+                          "
                         >
-                          View Template
-                        </Link>
 
-                      </Button>
+                          <td
+                            className="
+                              px-5
+                              py-4
+                              align-middle
+                            "
+                          >
 
-                    </div>
+                            <span
+                              className="
+                                inline-flex
+                                rounded-full
+                                border
+                                px-2.5
+                                py-1
+                                text-xs
+                                font-medium
+                              "
+                            >
+                              Key Result
+                            </span>
 
-                  </article>
+                          </td>
 
-                )
-              )}
+
+                          <td
+                            className="
+                              px-5
+                              py-4
+                              align-middle
+                            "
+                          >
+
+                            <div
+                              className="
+                                font-medium
+                              "
+                            >
+                              {keyResult.title}
+                            </div>
+
+                          </td>
+
+
+                          <td
+                            className="
+                              px-5
+                              py-4
+                              align-middle
+                            "
+                          >
+
+                            <span
+                              className="
+                                inline-flex
+                                rounded-full
+                                border
+                                px-2.5
+                                py-1
+                                text-xs
+                                font-medium
+                              "
+                            >
+                              {keyResult.measurementType}
+                            </span>
+
+                          </td>
+
+
+                          <td
+                            className="
+                              px-5
+                              py-4
+                              align-middle
+                              text-muted-foreground
+                            "
+                          >
+                            {keyResult.scoringMethod}
+                          </td>
+
+
+                          <td
+                            className="
+                              px-5
+                              py-4
+                              align-middle
+                            "
+                          >
+                            {keyResult.weight}
+                          </td>
+
+
+                          <td
+                            className="
+                              px-5
+                              py-4
+                              text-right
+                              align-middle
+                            "
+                          >
+
+                            <div
+                              className="flex items-center justify-end gap-2"
+                            >
+
+                              <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                              >
+
+                                <Link
+                                  href={`/admin/okrtemplates/new?type=keyResult&id=${keyResult.id}`}
+                                >
+                                  View Template
+                                </Link>
+
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                disabled={
+                                  deletingTemplateId === keyResult.id
+                                }
+                                onClick={() =>
+                                  handleDeleteTemplate(
+                                    "keyResult",
+                                    keyResult.id,
+                                    keyResult.title,
+                                  )
+                                }
+                              >
+                                {
+                                  deletingTemplateId === keyResult.id
+                                    ? "Deleting..."
+                                    : "Delete"
+                                }
+                              </Button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+
+                      )
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              </div>
 
             </div>
 
