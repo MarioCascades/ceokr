@@ -13,6 +13,8 @@ import {
   createOrganizationOKRTemplateObjective,
   createOrganizationOKRTemplateKeyResult,
   createOrganizationOKRTemplateInitiative,
+  copyGlobalOKRTemplateObjectiveToOrganization,
+  copyGlobalOKRTemplateKeyResultToOrganization,
 } from "@/lib/repositories/okrtemplaterepository";
 
 import type {
@@ -116,6 +118,21 @@ export default function NewOrganizationOKRTemplatePage() {
     "keyResult"
       ? "keyResult"
       : "objective";
+
+
+  /* ========================================================
+     Global Template Source
+  ======================================================== */
+
+  const sourceGlobalTemplateId =
+    searchParams.get(
+      "sourceGlobalTemplateId"
+    );
+
+  const isGlobalTemplateCopy =
+    Boolean(
+      sourceGlobalTemplateId
+    );
 
 
   /* ========================================================
@@ -391,8 +408,16 @@ export default function NewOrganizationOKRTemplatePage() {
 
   async function handleSave() {
 
+    /*
+      A global-template copy does not use the manual form
+      fields. The sourceGlobalTemplateId identifies the
+      global record that must be copied.
+    */
+
     const validationError =
-      validate();
+      isGlobalTemplateCopy
+        ? null
+        : validate();
 
 
     if (
@@ -401,6 +426,19 @@ export default function NewOrganizationOKRTemplatePage() {
 
       setError(
         validationError
+      );
+
+      return;
+    }
+
+
+    if (
+      isGlobalTemplateCopy &&
+      !sourceGlobalTemplateId
+    ) {
+
+      setError(
+        "Global template source is required."
       );
 
       return;
@@ -423,28 +461,54 @@ export default function NewOrganizationOKRTemplatePage() {
         "objective"
       ) {
 
-        await createOrganizationOKRTemplateObjective({
+        if (
+          sourceGlobalTemplateId
+        ) {
 
-          organizationId:
+          /*
+            Copy the global Objective Template into the
+            organization-owned library.
 
-            organizationId!,
+            This creates an independent organization record.
+          */
 
-          title:
-            objectiveTitle.trim(),
+          await copyGlobalOKRTemplateObjectiveToOrganization({
 
-          description:
-            objectiveDescription.trim()
-              ? objectiveDescription.trim()
-              : undefined,
+            organizationId:
+              organizationId!,
 
-          weight:
-            Number(
-              objectiveWeight
-            ),
+            sourceGlobalTemplateId,
+          });
 
-          position:
-            undefined,
-        });
+        } else {
+
+          /*
+            Manual organization Objective Template creation.
+          */
+
+          await createOrganizationOKRTemplateObjective({
+
+            organizationId:
+
+              organizationId!,
+
+            title:
+              objectiveTitle.trim(),
+
+            description:
+              objectiveDescription.trim()
+                ? objectiveDescription.trim()
+                : undefined,
+
+            weight:
+              Number(
+                objectiveWeight
+              ),
+
+            position:
+              undefined,
+          });
+        }
       }
 
 
@@ -457,60 +521,88 @@ export default function NewOrganizationOKRTemplatePage() {
         "keyResult"
       ) {
 
-        const createdKeyResult =
-          await createOrganizationOKRTemplateKeyResult({
+        if (
+          sourceGlobalTemplateId
+        ) {
+
+          /*
+            Copy the global Key Result Template into the
+            organization-owned library.
+
+            The repository copy operation also copies all
+            reusable initiatives belonging to the global
+            Key Result Template.
+          */
+
+          await copyGlobalOKRTemplateKeyResultToOrganization({
 
             organizationId:
+              organizationId!,
+
+            sourceGlobalTemplateId,
+          });
+
+        } else {
+
+          /*
+            Manual organization Key Result Template creation.
+          */
+
+          const createdKeyResult =
+            await createOrganizationOKRTemplateKeyResult({
+
+              organizationId:
+
+                organizationId!,
+
+              title:
+                keyResultTitle.trim(),
+
+              target:
+                parseTarget(
+                  keyResultTarget
+                ),
+
+              weight:
+                Number(
+                  keyResultWeight
+                ),
+
+              measurementType,
+
+              scoringMethod,
+
+              status:
+                "active",
+            });
+
+
+          /* ================================================
+             Organization Key Result Initiatives
+          ================================================= */
+
+          for (
+            const initiative
+            of initiatives
+          ) {
+
+            await createOrganizationOKRTemplateInitiative(
 
               organizationId!,
 
-            title:
-              keyResultTitle.trim(),
+              {
 
-            target:
-              parseTarget(
-                keyResultTarget
-              ),
+                organizationKeyResultTemplateId:
+                  createdKeyResult.id,
 
-            weight:
-              Number(
-                keyResultWeight
-              ),
+                text:
+                  initiative.text.trim(),
 
-            measurementType,
-
-            scoringMethod,
-
-            status:
-              "active",
-          });
-
-
-        /* ==================================================
-           Organization Key Result Initiatives
-        ================================================== */
-
-        for (
-          const initiative
-          of initiatives
-        ) {
-
-          await createOrganizationOKRTemplateInitiative(
-
-            organizationId!,
-
-            {
-
-              organizationKeyResultTemplateId:
-                createdKeyResult.id,
-
-              text:
-                initiative.text.trim(),
-
-              position:
-                initiative.position,
-            }
-          );
+                position:
+                  initiative.position,
+              }
+            );
+          }
         }
       }
 
@@ -532,7 +624,9 @@ export default function NewOrganizationOKRTemplatePage() {
       setError(
         saveError instanceof Error
           ? saveError.message
-          : "Failed to create the template."
+          : isGlobalTemplateCopy
+            ? "Failed to add the global template to the organization."
+            : "Failed to create the template."
       );
 
     } finally {
@@ -618,18 +712,48 @@ export default function NewOrganizationOKRTemplatePage() {
           </p>
 
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-950">
-            {templateType === "objective"
-              ? "Create Objective Template"
-              : "Create Key Result Template"}
+            {isGlobalTemplateCopy
+              ? templateType === "objective"
+                ? "Add Global Objective Template"
+                : "Add Global Key Result Template"
+              : templateType === "objective"
+                ? "Create Objective Template"
+                : "Create Key Result Template"}
           </h1>
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            {templateType === "objective"
-              ? "Create a reusable Objective Template for this organization."
-              : "Create a reusable Key Result Template for this organization. Key Result Templates are independent reusable records and may contain up to 3 initiatives."}
+            {isGlobalTemplateCopy
+              ? `Copy this global ${templateType === "objective" ? "Objective" : "Key Result"} Template into this organization's independent template library. The organization copy will not remain linked to the global template.`
+              : templateType === "objective"
+                ? "Create a reusable Objective Template for this organization."
+                : "Create a reusable Key Result Template for this organization. Key Result Templates are independent reusable records and may contain up to 3 initiatives."}
           </p>
 
         </section>
+
+
+        {/* ==================================================
+            Global Template Copy Notice
+        ================================================== */}
+
+        {isGlobalTemplateCopy && (
+
+          <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+
+            <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">
+              Global Template Copy
+            </p>
+
+            <p className="mt-2 text-sm leading-6 text-blue-900">
+              The selected global template will be copied as-is into
+              this organization. The organization copy becomes an
+              independent template and can be modified or deleted
+              without changing the global template.
+            </p>
+
+          </section>
+
+        )}
 
 
         {/* ==================================================
@@ -665,7 +789,9 @@ export default function NewOrganizationOKRTemplatePage() {
               </h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Define the reusable Objective Template.
+                {isGlobalTemplateCopy
+                  ? "The global Objective Template will be copied using its existing details."
+                  : "Define the reusable Objective Template."}
               </p>
 
             </div>
@@ -690,7 +816,8 @@ export default function NewOrganizationOKRTemplatePage() {
                     )
                   }
                   placeholder="Enter Objective Template title"
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+                  disabled={isGlobalTemplateCopy}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
                 />
 
               </div>
@@ -713,7 +840,8 @@ export default function NewOrganizationOKRTemplatePage() {
                   }
                   placeholder="Describe the Objective Template"
                   rows={4}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+                  disabled={isGlobalTemplateCopy}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
                 />
 
               </div>
@@ -739,11 +867,14 @@ export default function NewOrganizationOKRTemplatePage() {
                       )
                     )
                   }
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+                  disabled={isGlobalTemplateCopy}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
                 />
 
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Enter a value from 0 to 100.
+                  {isGlobalTemplateCopy
+                    ? "The global template's existing weight will be copied."
+                    : "Enter a value from 0 to 100."}
                 </p>
 
               </div>
@@ -772,7 +903,9 @@ export default function NewOrganizationOKRTemplatePage() {
                 </h2>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Define the reusable Key Result and its measurement settings.
+                  {isGlobalTemplateCopy
+                    ? "The global Key Result Template will be copied using its existing details."
+                    : "Define the reusable Key Result and its measurement settings."}
                 </p>
 
               </div>
@@ -797,7 +930,8 @@ export default function NewOrganizationOKRTemplatePage() {
                       )
                     }
                     placeholder="Enter Key Result Template title"
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+                    disabled={isGlobalTemplateCopy}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
                   />
 
                 </div>
@@ -820,11 +954,14 @@ export default function NewOrganizationOKRTemplatePage() {
                       )
                     }
                     placeholder="Example: 100 or 95%"
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+                    disabled={isGlobalTemplateCopy}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
                   />
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    The value is stored as structured data when valid JSON is entered, otherwise as text.
+                    {isGlobalTemplateCopy
+                      ? "The global template's existing target will be copied."
+                      : "The value is stored as structured data when valid JSON is entered, otherwise as text."}
                   </p>
 
                 </div>
@@ -850,7 +987,8 @@ export default function NewOrganizationOKRTemplatePage() {
                         )
                       )
                     }
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+                    disabled={isGlobalTemplateCopy}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
                   />
 
                 </div>
@@ -871,7 +1009,8 @@ export default function NewOrganizationOKRTemplatePage() {
                         event.target.value as OKRTemplateMeasurementType
                       )
                     }
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+                    disabled={isGlobalTemplateCopy}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
                   >
 
                     <option value="numeric">
@@ -906,7 +1045,8 @@ export default function NewOrganizationOKRTemplatePage() {
                         event.target.value as OKRTemplateScoringMethod
                       )
                     }
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+                    disabled={isGlobalTemplateCopy}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
                   >
 
                     <option value="percent_into_period">
@@ -945,102 +1085,131 @@ export default function NewOrganizationOKRTemplatePage() {
                   </h2>
 
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Add up to 3 reusable initiatives for this Key Result Template.
+                    {isGlobalTemplateCopy
+                      ? "All initiatives belonging to the global Key Result Template will be copied automatically."
+                      : "Add up to 3 reusable initiatives for this Key Result Template."}
                   </p>
 
                 </div>
 
 
-                <button
-                  type="button"
-                  onClick={
-                    addInitiative
-                  }
-                  disabled={
-                    initiatives.length >= 3
-                  }
-                  className="shrink-0 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Add Initiative
-                </button>
+                {!isGlobalTemplateCopy && (
+
+                  <button
+                    type="button"
+                    onClick={
+                      addInitiative
+                    }
+                    disabled={
+                      initiatives.length >= 3
+                    }
+                    className="shrink-0 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Add Initiative
+                  </button>
+
+                )}
 
               </div>
 
 
-              {initiatives.length ===
-                0 && (
+              {isGlobalTemplateCopy ? (
 
                 <div className="rounded-xl border border-dashed border-gray-300 px-5 py-8 text-center">
 
                   <p className="text-sm text-muted-foreground">
-                    No initiatives added.
+                    Global initiatives will be copied automatically.
                   </p>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Initiatives are optional.
+                    The repository copy operation preserves the global
+                    Key Result Template and its reusable initiatives.
                   </p>
 
                 </div>
-              )}
 
+              ) : (
 
-              <div className="space-y-4">
+                <>
 
-                {initiatives.map(
-                  (
-                    initiative,
-                    index
-                  ) => (
+                  {initiatives.length ===
+                    0 && (
 
-                    <div
-                      key={
-                        initiative.id
-                      }
-                      className="rounded-xl border border-gray-200 bg-gray-50 p-4"
-                    >
+                    <div className="rounded-xl border border-dashed border-gray-300 px-5 py-8 text-center">
 
-                      <div className="mb-2 flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        No initiatives added.
+                      </p>
 
-                        <label className="text-sm font-medium text-gray-900">
-                          Initiative {index + 1}
-                        </label>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            removeInitiative(
-                              initiative.id
-                            )
-                          }
-                          className="text-sm font-medium text-red-600 hover:text-red-700"
-                        >
-                          Remove
-                        </button>
-
-                      </div>
-
-
-                      <textarea
-                        value={
-                          initiative.text
-                        }
-                        onChange={(event) =>
-                          updateInitiative(
-                            initiative.id,
-                            event.target.value
-                          )
-                        }
-                        placeholder="Enter initiative"
-                        rows={3}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
-                      />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Initiatives are optional.
+                      </p>
 
                     </div>
+                  )}
 
-                  )
-                )}
 
-              </div>
+                  <div className="space-y-4">
+
+                    {initiatives.map(
+                      (
+                        initiative,
+                        index
+                      ) => (
+
+                        <div
+                          key={
+                            initiative.id
+                          }
+                          className="rounded-xl border border-gray-200 bg-gray-50 p-4"
+                        >
+
+                          <div className="mb-2 flex items-center justify-between">
+
+                            <label className="text-sm font-medium text-gray-900">
+                              Initiative {index + 1}
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                removeInitiative(
+                                  initiative.id
+                                )
+                              }
+                              className="text-sm font-medium text-red-600 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+
+                          </div>
+
+
+                          <textarea
+                            value={
+                              initiative.text
+                            }
+                            onChange={(event) =>
+                              updateInitiative(
+                                initiative.id,
+                                event.target.value
+                              )
+                            }
+                            placeholder="Enter initiative"
+                            rows={3}
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
+                          />
+
+                        </div>
+
+                      )
+                    )}
+
+                  </div>
+
+                </>
+
+              )}
 
             </section>
 
@@ -1079,8 +1248,12 @@ export default function NewOrganizationOKRTemplatePage() {
             className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving
-              ? "Creating..."
-              : "Create Template"}
+              ? isGlobalTemplateCopy
+                ? "Adding..."
+                : "Creating..."
+              : isGlobalTemplateCopy
+                ? "Add to Organization"
+                : "Create Template"}
           </button>
 
         </section>
