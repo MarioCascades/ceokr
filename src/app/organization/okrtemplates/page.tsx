@@ -2,8 +2,10 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 
 import { Button } from "@/components/ui/button";
+import AssignOrganizationTemplateDialog from "@/components/admin/okrtemplatelibrary/assignorganizationtemplatedialog";
 
 import { getOrganization } from "@/services/organization.service";
+import { listUserManagementRecords } from "@/services/user.service";
 
 import {
   loadOrganizationObjectiveTemplates,
@@ -153,6 +155,7 @@ export default async function OrganizationOKRTemplatesPage({
     keyResultTemplates,
     globalObjectiveTemplates,
     globalKeyResultTemplates,
+    organizationMembers,
   ] = await Promise.all([
 
     loadOrganizationObjectiveTemplates(
@@ -167,7 +170,19 @@ export default async function OrganizationOKRTemplatesPage({
 
     loadAllKeyResultTemplates(),
 
+    listUserManagementRecords(
+      organizationId
+    ),
+
   ]);
+
+
+  const assignableMembers =
+    organizationMembers.filter(
+      (record) =>
+        Boolean(record.membership) &&
+        record.user.is_active
+    );
 
 
   const organizationName =
@@ -472,6 +487,14 @@ export default async function OrganizationOKRTemplatesPage({
                               </Link>
                             </Button>
 
+                            <AssignOrganizationTemplateDialog
+                              organizationId={organizationId}
+                              templateType="objective"
+                              templateId={template.id}
+                              templateTitle={template.title}
+                              members={assignableMembers}
+                            />
+
                             <form
                               action={
                                 deleteOrganizationTemplateAction
@@ -655,6 +678,14 @@ export default async function OrganizationOKRTemplatesPage({
                                 Edit
                               </Link>
                             </Button>
+
+                            <AssignOrganizationTemplateDialog
+                              organizationId={organizationId}
+                              templateType="keyResult"
+                              templateId={template.id}
+                              templateTitle={template.title}
+                              members={assignableMembers}
+                            />
 
                             <form
                               action={
