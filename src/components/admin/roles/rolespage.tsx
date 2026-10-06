@@ -10,6 +10,7 @@ import AdminPageHeader from "@/components/admin/shared/adminpageheader";
 import RoleDialog from "@/components/admin/roles/roledialog";
 import DeleteRoleDialog from "@/components/admin/roles/deleteroledialog";
 import RolesList from "@/components/admin/roles/roleslist";
+import UserRoles from "@/components/admin/users/userroles";
 
 import type { RoleFormValues } from "@/components/admin/roles/roleform";
 
@@ -22,12 +23,18 @@ import {
 
 import { getOrganization } from "@/services/organization.service";
 
+import {
+  listUserManagementRecords,
+} from "@/services/user.service";
+
 import type { Role } from "@/lib/types/domain/role";
 import type { Organization } from "@/lib/types/organization";
+import type { UserManagementRecord } from "@/lib/types/domain/usermanagement";
 
 export default function RolesPage() {
   const searchParams = useSearchParams();
-  const selectedOrganizationId = searchParams.get("organizationId");
+  const selectedOrganizationId =
+    searchParams.get("organizationId");
 
   const [organization, setOrganization] =
     useState<Organization | null>(null);
@@ -35,8 +42,14 @@ export default function RolesPage() {
   const [roles, setRoles] =
     useState<Role[]>([]);
 
+  const [members, setMembers] =
+    useState<UserManagementRecord[]>([]);
+
   const [isLoading, setIsLoading] =
     useState(true);
+
+  const [isLoadingMembers, setIsLoadingMembers] =
+    useState(false);
 
   const [isSaving, setIsSaving] =
     useState(false);
@@ -55,6 +68,9 @@ export default function RolesPage() {
 
   const [selectedRole, setSelectedRole] =
     useState<Role | null>(null);
+
+  const [selectedMemberId, setSelectedMemberId] =
+    useState<string | null>(null);
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
@@ -77,6 +93,29 @@ export default function RolesPage() {
   }
 
   /* ========================================================
+     Load Organization Members
+  ======================================================== */
+
+  async function loadMembers(
+    organizationId: string
+  ) {
+    setIsLoadingMembers(true);
+
+    try {
+      const existingMembers =
+        await listUserManagementRecords(
+          organizationId
+        );
+
+      setMembers(
+        existingMembers
+      );
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  }
+
+  /* ========================================================
      Initial Load
   ======================================================== */
 
@@ -85,14 +124,21 @@ export default function RolesPage() {
       try {
         setIsLoading(true);
         setErrorMessage(null);
+        setSelectedMemberId(null);
 
         const existingOrganization =
-          await getOrganization(selectedOrganizationId ?? undefined);
+          await getOrganization(
+            selectedOrganizationId ?? undefined
+          );
 
         if (!existingOrganization) {
           setErrorMessage(
             "No organization has been configured yet."
           );
+
+          setOrganization(null);
+          setRoles([]);
+          setMembers([]);
 
           return;
         }
@@ -101,12 +147,17 @@ export default function RolesPage() {
           existingOrganization
         );
 
-        await loadRoles(
-          existingOrganization.id
-        );
+        await Promise.all([
+          loadRoles(
+            existingOrganization.id
+          ),
+          loadMembers(
+            existingOrganization.id
+          ),
+        ]);
       } catch (error) {
         console.error(
-          "Failed to load roles:",
+          "Failed to load roles and organization members:",
           error
         );
 
@@ -334,6 +385,21 @@ export default function RolesPage() {
   }
 
   /* ========================================================
+     Toggle Member Role Management
+  ======================================================== */
+
+  function toggleMemberRoles(
+    userId: string
+  ) {
+    setSelectedMemberId(
+      (current) =>
+        current === userId
+          ? null
+          : userId
+    );
+  }
+
+  /* ========================================================
      Page
   ======================================================== */
 
@@ -435,6 +501,156 @@ export default function RolesPage() {
                 openDeleteDialog
               }
             />
+
+          </section>
+        )}
+
+        {/* Users & Role Assignments */}
+
+        {!isLoading && organization && (
+          <section className="rounded-xl border bg-white shadow-sm">
+
+            <div className="border-b p-6">
+              <div className="flex items-center justify-between gap-4">
+
+                <div>
+                  <h2 className="text-xl font-semibold">
+                    Users &amp; Role Assignments
+                  </h2>
+
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    View and manage roles assigned to members of this organization.
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-gray-100 px-3 py-2 text-sm">
+                  {members.length}{" "}
+                  {members.length === 1
+                    ? "member"
+                    : "members"}
+                </div>
+
+              </div>
+            </div>
+
+            {isLoadingMembers ? (
+              <div className="p-6">
+                <p className="text-sm text-muted-foreground">
+                  Loading organization members...
+                </p>
+              </div>
+            ) : members.length === 0 ? (
+              <div className="p-6">
+                <p className="text-sm text-muted-foreground">
+                  No members are currently assigned to this organization.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y">
+
+                {members.map(
+                  (record) => {
+                    const membership =
+                      record.membership;
+
+                    if (!membership) {
+                      return null;
+                    }
+
+                    const displayName =
+                      record.user.display_name?.trim() ||
+                      `${record.user.first_name} ${record.user.last_name}`.trim() ||
+                      record.user.email;
+
+                    const isSelected =
+                      selectedMemberId ===
+                      record.user.id;
+
+                    return (
+                      <div
+                        key={membership.id}
+                        className="p-5"
+                      >
+
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+                          <div className="min-w-0">
+
+                            <div className="flex flex-wrap items-center gap-2">
+
+                              <p className="font-medium">
+                                {displayName}
+                              </p>
+
+                              {!record.user.is_active && (
+                                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-muted-foreground">
+                                  Inactive
+                                </span>
+                              )}
+
+                            </div>
+
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {record.user.email}
+                            </p>
+
+                            {(record.department ||
+                              record.team) && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {[
+                                  record.department?.name,
+                                  record.team?.name,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </p>
+                            )}
+
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant={
+                              isSelected
+                                ? "outline"
+                                : "default"
+                            }
+                            size="sm"
+                            onClick={() =>
+                              toggleMemberRoles(
+                                record.user.id
+                              )
+                            }
+                          >
+                            {isSelected
+                              ? "Close"
+                              : "Manage Roles"}
+                          </Button>
+
+                        </div>
+
+                        {isSelected && (
+                          <div className="mt-5 rounded-lg border bg-gray-50 p-5">
+
+                            <UserRoles
+                              organizationMembershipId={
+                                membership.id
+                              }
+                              organizationId={
+                                organization.id
+                              }
+                            />
+
+                          </div>
+                        )}
+
+                      </div>
+                    );
+                  }
+                )}
+
+              </div>
+            )}
 
           </section>
         )}

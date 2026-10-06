@@ -39,6 +39,7 @@ function AdminShell({
   return (
     <>
       <aside className="w-60 shrink-0 border-r bg-white">
+
         <div className="border-b px-6 py-5">
           <h2 className="text-xl font-bold tracking-tight">
             Administration
@@ -49,11 +50,22 @@ function AdminShell({
           </p>
         </div>
 
+
         <nav className="px-3 py-5">
+
+          {/* ==================================================
+              Overview
+          ================================================== */}
+
           <AdminNavLink
             href={adminHref("/admin")}
             label="Overview"
           />
+
+
+          {/* ==================================================
+              Organization
+          ================================================== */}
 
           <AdminNavSection title="Organization" />
 
@@ -82,6 +94,14 @@ function AdminShell({
             label="Roles & Permissions"
           />
 
+
+          {/* ==================================================
+              Performance
+              --------------------------------------------------
+              Member Objectives, Key Results, and Initiatives
+              are now managed through the Member OKR domain.
+          ================================================== */}
+
           <AdminNavSection title="Performance" />
 
           <AdminNavLink
@@ -90,26 +110,15 @@ function AdminShell({
           />
 
           <AdminNavLink
-            href={adminHref("/admin/assignments")}
-            label="Assignments"
-          />
-
-          <AdminNavLink
-            href={adminHref("/admin/objectives")}
-            label="Objectives"
-          />
-
-          <AdminNavLink
-            href={adminHref("/admin/keyresults")}
-            label="Key Results"
-          />
-
-          <AdminNavLink
             href={adminHref("/admin/okrtemplates")}
             label="OKR Templates"
           />
 
-         
+
+          {/* ==================================================
+              Analytics
+          ================================================== */}
+
           <AdminNavSection title="Analytics" />
 
           <AdminNavLink
@@ -122,6 +131,11 @@ function AdminShell({
             label="Reports"
           />
 
+
+          {/* ==================================================
+              Platform
+          ================================================== */}
+
           <AdminNavSection title="Platform" />
 
           <AdminNavLink
@@ -133,8 +147,11 @@ function AdminShell({
             href={adminHref("/admin/ai")}
             label="AI Configuration"
           />
+
         </nav>
+
       </aside>
+
 
       <section className="min-w-0 flex-1 bg-gray-50 p-8 lg:p-10">
         {children}
@@ -143,10 +160,16 @@ function AdminShell({
   );
 }
 
+
+/* ==========================================================
+   Loading Shell
+========================================================== */
+
 function AdminShellFallback() {
   return (
     <>
       <aside className="w-60 shrink-0 border-r bg-white">
+
         <div className="border-b px-6 py-5">
           <h2 className="text-xl font-bold tracking-tight">
             Administration
@@ -156,12 +179,19 @@ function AdminShellFallback() {
             Platform management
           </p>
         </div>
+
       </aside>
+
 
       <section className="min-w-0 flex-1 bg-gray-50 p-8 lg:p-10" />
     </>
   );
 }
+
+
+/* ==========================================================
+   Navigation Section
+========================================================== */
 
 function AdminNavSection({
   title,
@@ -170,12 +200,19 @@ function AdminNavSection({
 }) {
   return (
     <div className="mb-2 mt-7 px-3">
+
       <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
         {title}
       </p>
+
     </div>
   );
 }
+
+
+/* ==========================================================
+   Navigation Link
+========================================================== */
 
 function AdminNavLink({
   href,

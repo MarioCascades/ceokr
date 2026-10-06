@@ -137,11 +137,11 @@ export default async function AdminPage({
 
         <AdminSection
           title="Performance"
-          description="Define, assign and manage organizational performance."
+          description="Configure performance sheets and reusable OKR templates."
         >
           <AdminCard
             title="🧩 Performance Sheets"
-            description="Manage Performance Sheet definitions, versions and Builder access."
+            description="Manage organization Performance Sheets and access the member Performance Workspace."
             href={adminHref("/admin/performancesheets")}
           />
 
@@ -149,24 +149,6 @@ export default async function AdminPage({
             title="🎯 OKR Templates"
             description="Create and manage reusable OKR templates for organizational performance."
             href={adminHref("/admin/okrtemplates")}
-          />
-
-          <AdminCard
-            title="📋 Assignments"
-            description="Assign published Performance Sheets to users, teams, departments or the organization."
-            href={adminHref("/admin/assignments")}
-          />
-
-          <AdminCard
-            title="🎯 Objectives"
-            description="View objectives defined within your Performance Sheets."
-            href={adminHref("/admin/objectives")}
-          />
-
-          <AdminCard
-            title="📈 Key Results"
-            description="View measurable outcomes defined within your Performance Sheets."
-            href={adminHref("/admin/keyresults")}
           />
         </AdminSection>
 
