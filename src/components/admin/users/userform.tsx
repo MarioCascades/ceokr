@@ -29,6 +29,10 @@ export interface UserFormValues {
 
   team_id: string;
 
+  role_title: string;
+
+  role_description: string;
+
   is_active: boolean;
 }
 
@@ -48,6 +52,8 @@ interface UserFormProps {
   savingLabel?: string;
 
   showPassword?: boolean;
+
+  showRoleProfile?: boolean;
 
   onSubmit: (
     values: UserFormValues
@@ -74,6 +80,8 @@ export default function UserForm({
   savingLabel = "Inviting...",
 
   showPassword = false,
+
+  showRoleProfile = false,
 
   onSubmit,
 
@@ -123,6 +131,16 @@ export default function UserForm({
       initialValues?.team_id ?? ""
     );
 
+  const [roleTitle, setRoleTitle] =
+    useState(
+      initialValues?.role_title ?? ""
+    );
+
+  const [roleDescription, setRoleDescription] =
+    useState(
+      initialValues?.role_description ?? ""
+    );
+
   const [isActive, setIsActive] =
     useState(
       initialValues?.is_active ?? true
@@ -162,6 +180,14 @@ export default function UserForm({
       initialValues?.team_id ?? ""
     );
 
+    setRoleTitle(
+      initialValues?.role_title ?? ""
+    );
+
+    setRoleDescription(
+      initialValues?.role_description ?? ""
+    );
+
     setIsActive(
       initialValues?.is_active ?? true
     );
@@ -171,7 +197,7 @@ export default function UserForm({
 
   /* ========================================================
      Clear Disabled Feature Values
-     
+
      If an organization turns a feature off, the form should
      never continue submitting stale department/team values.
   ======================================================== */
@@ -271,6 +297,12 @@ export default function UserForm({
     const trimmedPassword =
       password;
 
+    const trimmedRoleTitle =
+      roleTitle.trim();
+
+    const trimmedRoleDescription =
+      roleDescription.trim();
+
     /* ======================================================
        Validation
     ====================================================== */
@@ -324,9 +356,6 @@ export default function UserForm({
     /*
       Department is only required as a field when the
       Departments feature is enabled.
-
-      Even when enabled, this remains a required assignment
-      only for workflows where the form currently requires it.
     */
     if (
       departmentsEnabled &&
@@ -340,14 +369,7 @@ export default function UserForm({
     }
 
     /*
-      Team is only required as a field when the Teams feature
-      is enabled.
-
-      IMPORTANT:
-      Feature availability does not mean every member must
-      belong to a team.
-
-      Therefore Team is intentionally NOT required here.
+      Team is intentionally optional.
     */
 
     setErrorMessage(null);
@@ -386,6 +408,12 @@ export default function UserForm({
           teamsEnabled
             ? teamId
             : "",
+
+        role_title:
+          trimmedRoleTitle,
+
+        role_description:
+          trimmedRoleDescription,
 
         is_active:
           isActive,
@@ -603,6 +631,52 @@ export default function UserForm({
             Team assignment is optional.
           </p>
         </div>
+      )}
+
+      {/* Role Profile */}
+
+      {showRoleProfile && (
+        <>
+          {/* Role Title */}
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Role Title
+            </label>
+
+            <Input
+              value={roleTitle}
+              onChange={(event) =>
+                setRoleTitle(
+                  event.target.value
+                )
+              }
+              placeholder="e.g. Clinical Operations Manager"
+              disabled={isSaving}
+            />
+          </div>
+
+          {/* Role Description */}
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Role Description
+            </label>
+
+            <textarea
+              value={roleDescription}
+              onChange={(event) =>
+                setRoleDescription(
+                  event.target.value
+                )
+              }
+              placeholder="Describe the member's role and primary responsibilities within the organization."
+              disabled={isSaving}
+              rows={4}
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            />
+          </div>
+        </>
       )}
 
       {/* Active */}

@@ -75,6 +75,12 @@ export default function UserEditDialog({
     team_id:
       membership?.team_id ?? "",
 
+    role_title:
+      membership?.role_title ?? "",
+
+    role_description:
+      membership?.role_description ?? "",
+
     is_active:
       user.is_active,
   };
@@ -108,7 +114,7 @@ export default function UserEditDialog({
 
           <DialogDescription>
             Update user information, organizational
-            assignments, and roles.
+            assignments, role profile, and permissions.
           </DialogDescription>
         </DialogHeader>
 
@@ -118,6 +124,7 @@ export default function UserEditDialog({
           initialValues={initialValues}
           submitLabel="Save Changes"
           savingLabel="Saving..."
+          showRoleProfile={true}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           isSaving={isSaving}

@@ -1,5 +1,13 @@
 import { supabase } from "@/lib/supabase/client";
 
+import {
+  initialBuilderDocument,
+} from "@/lib/builder/builderdefaults";
+
+import {
+  saveBuilderDocument,
+} from "@/lib/repositories/performancesheetrepository";
+
 import type {
   Organization,
   CreateOrganizationInput,
@@ -75,6 +83,7 @@ export async function listOrganizations(): Promise<
 
   return (data ?? []) as Organization[];
 }
+
 
 /* ==========================================================
    Delete Organization
@@ -156,8 +165,12 @@ export async function deleteOrganization(
   }
 }
 
+
 /* ==========================================================
    Create Organization
+   ----------------------------------------------------------
+   Every organization receives one blank Performance Workspace
+   as part of tenant creation.
 ========================================================== */
 
 export async function createOrganization(
@@ -199,8 +212,36 @@ export async function createOrganization(
     );
   }
 
-  return data as Organization;
+  const organization = data as Organization;
+
+  try {
+    await saveBuilderDocument(
+      organization.id,
+      {
+        ...initialBuilderDocument,
+        organization: {
+          ...initialBuilderDocument.organization,
+          companyName: organization.company_name,
+          logoUrl: organization.logo_url ?? "",
+        },
+      }
+    );
+  } catch (workspaceError) {
+    console.error(
+      "Error creating organization Performance Workspace:",
+      workspaceError
+    );
+
+    throw new Error(
+      workspaceError instanceof Error
+        ? `Organization was created, but its Performance Workspace could not be initialized: ${workspaceError.message}`
+        : "Organization was created, but its Performance Workspace could not be initialized."
+    );
+  }
+
+  return organization;
 }
+
 
 /* ==========================================================
    Update Organization
@@ -230,6 +271,7 @@ export async function updateOrganization(
 
   return data as Organization;
 }
+
 
 /* ==========================================================
    Complete Organization Setup

@@ -4,19 +4,13 @@ import type {
   UserManagementRecord,
 } from "@/lib/types/domain/usermanagement";
 
-
 interface RuntimeNavigationProps {
   organizationId: string;
-
   members: UserManagementRecord[];
-
   selectedSubjectId?: string;
-
   performanceMonth: string;
-
   performanceMonths: string[];
 }
-
 
 /* ==========================================================
    Helpers
@@ -25,14 +19,12 @@ interface RuntimeNavigationProps {
 function getDisplayName(
   record: UserManagementRecord
 ): string {
-
   return (
     record.user.display_name?.trim() ||
     `${record.user.first_name} ${record.user.last_name}`.trim() ||
     record.user.email
   );
 }
-
 
 /* ==========================================================
    Performance Month Helpers
@@ -48,36 +40,29 @@ function getDisplayName(
 ========================================================== */
 
 function getCurrentPerformanceMonth(): string {
-
-  const now =
-    new Date();
+  const now = new Date();
 
   return [
     now
       .getUTCFullYear()
       .toString()
       .padStart(4, "0"),
-
     (
       now.getUTCMonth() + 1
     )
       .toString()
       .padStart(2, "0"),
-
     "01",
   ].join("-");
 }
-
 
 function addMonths(
   performanceMonth: string,
   amount: number
 ): string {
-
-  const date =
-    new Date(
-      `${performanceMonth}T00:00:00Z`
-    );
+  const date = new Date(
+    `${performanceMonth}T00:00:00Z`
+  );
 
   if (
     Number.isNaN(
@@ -97,20 +82,16 @@ function addMonths(
       .getUTCFullYear()
       .toString()
       .padStart(4, "0"),
-
     (
       date.getUTCMonth() + 1
     )
       .toString()
       .padStart(2, "0"),
-
     "01",
   ].join("-");
 }
 
-
 function getAvailablePerformanceMonths(): string[] {
-
   const currentMonth =
     getCurrentPerformanceMonth();
 
@@ -129,11 +110,9 @@ function getAvailablePerformanceMonths(): string[] {
   );
 }
 
-
 function formatMonthName(
   month: number
 ): string {
-
   const date =
     new Date(
       Date.UTC(
@@ -154,28 +133,23 @@ function formatMonthName(
   );
 }
 
-
 function getYear(
   performanceMonth: string
 ): string {
-
   return performanceMonth.slice(
     0,
     4
   );
 }
 
-
 function getMonthNumber(
   performanceMonth: string
 ): string {
-
   return performanceMonth.slice(
     5,
     7
   );
 }
-
 
 /* ==========================================================
    Runtime URL
@@ -183,12 +157,9 @@ function getMonthNumber(
 
 function buildRuntimeHref(
   organizationId: string,
-
   subjectId: string | undefined,
-
   performanceMonth: string
 ): string {
-
   const params =
     new URLSearchParams();
 
@@ -198,12 +169,10 @@ function buildRuntimeHref(
   );
 
   if (subjectId) {
-
     params.set(
       "subjectId",
       subjectId
     );
-
   }
 
   params.set(
@@ -214,25 +183,17 @@ function buildRuntimeHref(
   return `/runtime?${params.toString()}`;
 }
 
-
 /* ==========================================================
    Runtime Navigation
 ========================================================== */
 
 export default function RuntimeNavigation({
-
   organizationId,
-
   members,
-
   selectedSubjectId,
-
   performanceMonth,
-
   performanceMonths,
-
 }: RuntimeNavigationProps) {
-
   /*
    * The prop is retained for compatibility with existing
    * Runtime components.
@@ -254,7 +215,6 @@ export default function RuntimeNavigation({
       performanceMonth
     );
 
-
   /* ========================================================
      Available Years
   ======================================================== */
@@ -272,7 +232,6 @@ export default function RuntimeNavigation({
         Number(b) -
         Number(a)
     );
-
 
   /* ========================================================
      Available Months For Selected Year
@@ -295,7 +254,6 @@ export default function RuntimeNavigation({
           Number(b)
       );
 
-
   /* ========================================================
      Dashboard URL
   ======================================================== */
@@ -307,7 +265,6 @@ export default function RuntimeNavigation({
       performanceMonth
     );
 
-
   /* ========================================================
      Year Change
   ======================================================== */
@@ -316,7 +273,6 @@ export default function RuntimeNavigation({
     event:
       React.ChangeEvent<HTMLSelectElement>
   ) {
-
     const selectedYear =
       event.target.value;
 
@@ -345,7 +301,6 @@ export default function RuntimeNavigation({
     if (
       !currentMonthStillValid
     ) {
-
       const firstAvailable =
         availablePerformanceMonths.find(
           (month) =>
@@ -356,14 +311,11 @@ export default function RuntimeNavigation({
       if (
         firstAvailable
       ) {
-
         nextMonth =
           getMonthNumber(
             firstAvailable
           );
-
       }
-
     }
 
     const nextPerformanceMonth =
@@ -377,7 +329,6 @@ export default function RuntimeNavigation({
       );
   }
 
-
   /* ========================================================
      Month Change
   ======================================================== */
@@ -386,7 +337,6 @@ export default function RuntimeNavigation({
     event:
       React.ChangeEvent<HTMLSelectElement>
   ) {
-
     const selectedMonth =
       event.target.value;
 
@@ -422,9 +372,7 @@ export default function RuntimeNavigation({
       );
   }
 
-
   return (
-
     <nav
       aria-label="Performance navigation"
       className="
@@ -436,7 +384,6 @@ export default function RuntimeNavigation({
         shadow-sm
       "
     >
-
       <div
         className="
           flex
@@ -453,7 +400,6 @@ export default function RuntimeNavigation({
           md:px-3
         "
       >
-
         {/* ==================================================
             Platform Label
         ================================================== */}
@@ -469,7 +415,6 @@ export default function RuntimeNavigation({
             md:flex
           "
         >
-
           <span
             className="
               text-[10px]
@@ -481,9 +426,7 @@ export default function RuntimeNavigation({
           >
             Performance
           </span>
-
         </div>
-
 
         {/* ==================================================
             Dashboard
@@ -517,11 +460,9 @@ export default function RuntimeNavigation({
             }
           `}
         >
-
           Dashboard
 
           {!selectedSubjectId && (
-
             <span
               aria-hidden="true"
               className="
@@ -533,18 +474,14 @@ export default function RuntimeNavigation({
                 bg-primary
               "
             />
-
           )}
-
         </a>
-
 
         {/* ==================================================
             Performance Subjects
         ================================================== */}
 
         {members.length > 0 && (
-
           <div
             aria-hidden="true"
             className="
@@ -556,9 +493,7 @@ export default function RuntimeNavigation({
               md:block
             "
           />
-
         )}
-
 
         <div
           className="
@@ -570,18 +505,14 @@ export default function RuntimeNavigation({
             md:pb-0
           "
         >
-
           {members.map(
             (
               member
             ) => {
-
               const href =
                 buildRuntimeHref(
                   organizationId,
-
                   member.user.id,
-
                   performanceMonth
                 );
 
@@ -590,7 +521,6 @@ export default function RuntimeNavigation({
                 member.user.id;
 
               return (
-
                 <a
                   key={
                     member.user.id
@@ -610,35 +540,28 @@ export default function RuntimeNavigation({
                     ${
                       isSelected
                         ? `
-                            bg-accent
-                            text-accent-foreground
-                            ring-1
-                            ring-primary/15
+                              bg-primary
+                              text-primary-foreground
+                              shadow-sm
                           `
                         : `
-                            text-foreground
-                            hover:bg-accent
-                            hover:text-accent-foreground
+                              text-foreground
+                              hover:bg-accent
+                              hover:text-accent-foreground
                           `
                     }
                   `}
                 >
-
                   {
                     getDisplayName(
                       member
                     )
                   }
-
                 </a>
-
               );
-
             }
           )}
-
         </div>
-
 
         {/* ==================================================
             Performance Month
@@ -662,7 +585,6 @@ export default function RuntimeNavigation({
             md:pt-0
           "
         >
-
           <div
             className="
               hidden
@@ -670,7 +592,6 @@ export default function RuntimeNavigation({
               lg:block
             "
           >
-
             <p
               className="
                 text-[9px]
@@ -682,9 +603,7 @@ export default function RuntimeNavigation({
             >
               Performance Month
             </p>
-
           </div>
-
 
           {/* ==================================================
               Year Selector
@@ -723,12 +642,10 @@ export default function RuntimeNavigation({
               focus:ring-primary/10
             "
           >
-
             {availableYears.map(
               (
                 year
               ) => (
-
                 <option
                   key={
                     year
@@ -741,12 +658,9 @@ export default function RuntimeNavigation({
                     year
                   }
                 </option>
-
               )
             )}
-
           </select>
-
 
           {/* ==================================================
               Month Selector
@@ -787,12 +701,10 @@ export default function RuntimeNavigation({
               md:w-[130px]
             "
           >
-
             {availableMonthsForYear.map(
               (
                 month
               ) => (
-
                 <option
                   key={
                     month
@@ -807,17 +719,11 @@ export default function RuntimeNavigation({
                     )
                   }
                 </option>
-
               )
             )}
-
           </select>
-
         </div>
-
       </div>
-
     </nav>
-
   );
 }

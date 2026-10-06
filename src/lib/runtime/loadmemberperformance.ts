@@ -66,6 +66,10 @@ import {
 } from "@/lib/repositories/keyresultprogressrepository";
 
 import {
+  loadOrganizationMembershipForMember,
+} from "@/lib/repositories/memberokrrepository";
+
+import {
   buildRuntimePerformanceObjectives,
 } from "@/lib/runtime/runtimeperformance";
 
@@ -150,6 +154,10 @@ export type MemberPerformanceExecution = {
     displayName: string;
 
     email: string;
+
+    roleTitle: string | null;
+
+    roleDescription: string | null;
   };
 
 };
@@ -501,6 +509,12 @@ export async function loadMemberPerformance(
     ||
     user.email;
 
+  const membership =
+    await loadOrganizationMembershipForMember(
+      organizationId,
+      user.id
+    );
+
 
   /* ========================================================
      Return Member Execution
@@ -535,6 +549,14 @@ export async function loadMemberPerformance(
 
       email:
         user.email,
+
+      roleTitle:
+        membership?.role_title ??
+        null,
+
+      roleDescription:
+        membership?.role_description ??
+        null,
 
     },
 

@@ -65,8 +65,29 @@ export default async function EntryPage() {
 
 
   /* ========================================================
-     Display Name
+     Member
+     --------------------------------------------------------
+     Members go directly to their Organization Performance
+     experience. There is no Member launchpad.
   ======================================================== */
+
+  if (
+    entryContext.actor ===
+    "member"
+  ) {
+
+    redirect(
+      `/runtime?organizationId=${encodeURIComponent(
+        entryContext.organizationId
+      )}`
+    );
+
+  }
+
+
+  /* ========================================================
+     Display Name
+     ======================================================== */
 
   const displayName =
     entryContext.user.display_name?.trim() ||
@@ -75,18 +96,11 @@ export default async function EntryPage() {
 
 
   /* ========================================================
-     Organization Admin / Member Launchpad
+     Organization Admin Launchpad
   ======================================================== */
 
   return (
     <RoleEntryLaunchpad
-
-      actor={
-        entryContext.actor ===
-        "organization_admin"
-          ? "organization_admin"
-          : "member"
-      }
 
       displayName={
         displayName
@@ -98,10 +112,6 @@ export default async function EntryPage() {
 
       organizationName={
         entryContext.organizationName
-      }
-
-      userId={
-        entryContext.user.id
       }
 
     />

@@ -8,6 +8,10 @@ interface RuntimeSummaryProps {
 }
 
 
+/* ==========================================================
+   Formatting
+========================================================== */
+
 function formatScore(
   score: number
 ) {
@@ -32,6 +36,99 @@ function formatStatus(
 }
 
 
+function formatDateUpdated(
+  updatedAt: string
+) {
+  const date =
+    new Date(updatedAt);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "Not available";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }
+  ).format(date);
+}
+
+
+/* ==========================================================
+   Percentage Into Performance Period
+========================================================== */
+
+function getPercentIntoPeriod(
+  performanceMonth: string
+) {
+  const periodStart =
+    new Date(
+      `${performanceMonth}T00:00:00`
+    );
+
+  if (
+    Number.isNaN(
+      periodStart.getTime()
+    )
+  ) {
+    return 0;
+  }
+
+  const periodEnd =
+    new Date(
+      periodStart.getFullYear(),
+      periodStart.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    );
+
+  const now =
+    new Date();
+
+  if (
+    now <= periodStart
+  ) {
+    return 0;
+  }
+
+  if (
+    now >= periodEnd
+  ) {
+    return 100;
+  }
+
+  const totalPeriod =
+    periodEnd.getTime() -
+    periodStart.getTime();
+
+  const elapsed =
+    now.getTime() -
+    periodStart.getTime();
+
+  return Math.min(
+    Math.max(
+      (elapsed / totalPeriod) * 100,
+      0
+    ),
+    100
+  );
+}
+
+
+/* ==========================================================
+   Component
+========================================================== */
+
 export default function RuntimeSummary({
   performanceInstance,
 }: RuntimeSummaryProps) {
@@ -47,9 +144,12 @@ export default function RuntimeSummary({
   const status =
     performanceInstance.status;
 
+  const percentIntoPeriod =
+    getPercentIntoPeriod(
+      performanceInstance.performanceMonth
+    );
 
   return (
-
     <section
       className="
         rounded-lg
@@ -75,6 +175,7 @@ export default function RuntimeSummary({
 
         <span
           className="
+            shrink-0
             text-[9px]
             font-bold
             uppercase
@@ -85,6 +186,8 @@ export default function RuntimeSummary({
           Performance Summary
         </span>
 
+
+        {/* Overall Score */}
 
         <div
           className="
@@ -120,6 +223,8 @@ export default function RuntimeSummary({
         </div>
 
 
+        {/* Progress */}
+
         <div
           className="
             flex
@@ -140,6 +245,20 @@ export default function RuntimeSummary({
             Progress
           </span>
 
+          <span
+            className="
+              shrink-0
+              text-[10px]
+              font-bold
+              text-foreground
+            "
+          >
+            {
+              formatProgress(
+                progress
+              )
+            }
+          </span>
 
           <div
             className="
@@ -173,23 +292,10 @@ export default function RuntimeSummary({
 
           </div>
 
-
-          <span
-            className="
-              text-[10px]
-              font-bold
-              text-foreground
-            "
-          >
-            {
-              formatProgress(
-                progress
-              )
-            }
-          </span>
-
         </div>
 
+
+        {/* Status */}
 
         <div
           className="
@@ -225,9 +331,82 @@ export default function RuntimeSummary({
 
         </div>
 
+
+        {/* Date Updated */}
+
+        <div
+          className="
+            flex
+            items-center
+            gap-1.5
+          "
+        >
+
+          <span
+            className="
+              text-[10px]
+              text-muted-foreground
+            "
+          >
+            Date Updated
+          </span>
+
+          <span
+            className="
+              whitespace-nowrap
+              text-xs
+              font-bold
+              text-foreground
+            "
+          >
+            {
+              formatDateUpdated(
+                performanceInstance.updatedAt
+              )
+            }
+          </span>
+
+        </div>
+
+
+        {/* % Into Period */}
+
+        <div
+          className="
+            flex
+            items-center
+            gap-1.5
+          "
+        >
+
+          <span
+            className="
+              text-[10px]
+              text-muted-foreground
+            "
+          >
+            % Into Period
+          </span>
+
+          <span
+            className="
+              whitespace-nowrap
+              text-xs
+              font-bold
+              text-foreground
+            "
+          >
+            {
+              Math.round(
+                percentIntoPeriod
+              )
+            }%
+          </span>
+
+        </div>
+
       </div>
 
     </section>
-
   );
 }

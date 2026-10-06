@@ -4,6 +4,7 @@ import type {
   PerformanceInstance,
 } from "@/lib/domain/performanceinstance";
 
+
 /* ==========================================================
    Database Record
 ========================================================== */
@@ -43,6 +44,7 @@ interface PerformanceInstanceRecord {
 
   updated_at: string;
 }
+
 
 /* ==========================================================
    Mapper
@@ -92,6 +94,9 @@ function mapRecordToPerformanceInstance(
     createdAt:
       record.created_at,
 
+    updatedAt:
+      record.updated_at,
+
     startedAt:
       record.started_at ??
       undefined,
@@ -110,6 +115,7 @@ function mapRecordToPerformanceInstance(
   };
 }
 
+
 /* ==========================================================
    Create
 ========================================================== */
@@ -117,9 +123,10 @@ function mapRecordToPerformanceInstance(
 export async function createPerformanceInstance(
   performanceInstance: Omit<
     PerformanceInstance,
-    "id" | "createdAt"
+    "id" | "createdAt" | "updatedAt"
   >
 ): Promise<PerformanceInstance> {
+
   const { data, error } =
     await supabase
       .from("performance_instances")
@@ -171,16 +178,19 @@ export async function createPerformanceInstance(
       .select()
       .single();
 
+
   if (error) {
     throw new Error(
       `Failed to create performance instance: ${error.message}`
     );
   }
 
+
   return mapRecordToPerformanceInstance(
     data as PerformanceInstanceRecord
   );
 }
+
 
 /* ==========================================================
    Update
@@ -189,6 +199,7 @@ export async function createPerformanceInstance(
 export async function updatePerformanceInstance(
   performanceInstance: PerformanceInstance
 ): Promise<PerformanceInstance> {
+
   const { data, error } =
     await supabase
       .from("performance_instances")
@@ -234,16 +245,19 @@ export async function updatePerformanceInstance(
       .select()
       .single();
 
+
   if (error) {
     throw new Error(
       `Failed to update performance instance: ${error.message}`
     );
   }
 
+
   return mapRecordToPerformanceInstance(
     data as PerformanceInstanceRecord
   );
 }
+
 
 /* ==========================================================
    Delete
@@ -253,6 +267,7 @@ export async function deletePerformanceInstance(
   organizationId: string,
   performanceInstanceId: string
 ): Promise<void> {
+
   const { error } =
     await supabase
       .from("performance_instances")
@@ -266,12 +281,14 @@ export async function deletePerformanceInstance(
         organizationId
       );
 
+
   if (error) {
     throw new Error(
       `Failed to delete performance instance: ${error.message}`
     );
   }
 }
+
 
 /* ==========================================================
    Find By Id
@@ -281,6 +298,7 @@ export async function findPerformanceInstanceById(
   organizationId: string,
   performanceInstanceId: string
 ): Promise<PerformanceInstance | null> {
+
   const { data, error } =
     await supabase
       .from("performance_instances")
@@ -295,20 +313,24 @@ export async function findPerformanceInstanceById(
       )
       .maybeSingle();
 
+
   if (error) {
     throw new Error(
       `Failed to load performance instance: ${error.message}`
     );
   }
 
+
   if (!data) {
     return null;
   }
+
 
   return mapRecordToPerformanceInstance(
     data as PerformanceInstanceRecord
   );
 }
+
 
 /* ==========================================================
    Find By Assignment And Month
@@ -321,6 +343,7 @@ export async function findPerformanceInstanceByAssignmentAndMonth(
   assignmentId: string,
   performanceMonth: string
 ): Promise<PerformanceInstance | null> {
+
   const { data, error } =
     await supabase
       .from("performance_instances")
@@ -339,20 +362,24 @@ export async function findPerformanceInstanceByAssignmentAndMonth(
       )
       .maybeSingle();
 
+
   if (error) {
     throw new Error(
       `Failed to load monthly performance instance: ${error.message}`
     );
   }
 
+
   if (!data) {
     return null;
   }
+
 
   return mapRecordToPerformanceInstance(
     data as PerformanceInstanceRecord
   );
 }
+
 
 /* ==========================================================
    Find By Assignment
@@ -364,6 +391,7 @@ export async function findPerformanceInstancesByAssignment(
   organizationId: string,
   assignmentId: string
 ): Promise<PerformanceInstance[]> {
+
   const { data, error } =
     await supabase
       .from("performance_instances")
@@ -383,11 +411,13 @@ export async function findPerformanceInstancesByAssignment(
         }
       );
 
+
   if (error) {
     throw new Error(
       `Failed to load performance instance history: ${error.message}`
     );
   }
+
 
   return (
     data as PerformanceInstanceRecord[]
@@ -395,6 +425,7 @@ export async function findPerformanceInstancesByAssignment(
     mapRecordToPerformanceInstance
   );
 }
+
 
 /* ==========================================================
    Find By Member And Month
@@ -405,6 +436,7 @@ export async function findPerformanceInstanceByMemberAndMonth(
   memberId: string,
   performanceMonth: string
 ): Promise<PerformanceInstance | null> {
+
   const { data, error } =
     await supabase
       .from("performance_instances")
@@ -423,20 +455,24 @@ export async function findPerformanceInstanceByMemberAndMonth(
       )
       .maybeSingle();
 
+
   if (error) {
     throw new Error(
       `Failed to load member monthly performance instance: ${error.message}`
     );
   }
 
+
   if (!data) {
     return null;
   }
+
 
   return mapRecordToPerformanceInstance(
     data as PerformanceInstanceRecord
   );
 }
+
 
 /* ==========================================================
    Find By Member
@@ -446,6 +482,7 @@ export async function findPerformanceInstancesByMember(
   organizationId: string,
   memberId: string
 ): Promise<PerformanceInstance[]> {
+
   const { data, error } =
     await supabase
       .from("performance_instances")
@@ -465,11 +502,13 @@ export async function findPerformanceInstancesByMember(
         }
       );
 
+
   if (error) {
     throw new Error(
       `Failed to load member performance history: ${error.message}`
     );
   }
+
 
   return (
     data as PerformanceInstanceRecord[]
@@ -478,6 +517,7 @@ export async function findPerformanceInstancesByMember(
   );
 }
 
+
 /* ==========================================================
    Find By Organization
 ========================================================== */
@@ -485,6 +525,7 @@ export async function findPerformanceInstancesByMember(
 export async function findPerformanceInstancesByOrganization(
   organizationId: string
 ): Promise<PerformanceInstance[]> {
+
   const { data, error } =
     await supabase
       .from("performance_instances")
@@ -500,11 +541,13 @@ export async function findPerformanceInstancesByOrganization(
         }
       );
 
+
   if (error) {
     throw new Error(
       `Failed to load performance instances: ${error.message}`
     );
   }
+
 
   return (
     data as PerformanceInstanceRecord[]

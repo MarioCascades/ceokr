@@ -5,9 +5,11 @@
  * ----------------------------------------------------------
  * Represents a user's membership within an organization.
  *
- * Department and Team assignments are optional because a user
- * may belong to an organization before being assigned to a
- * specific organizational unit.
+ * Department, Team, Role Title, and Role Description are
+ * organization-specific membership attributes.
+ *
+ * Permission roles are managed separately through the
+ * membership_roles relationship.
  * ==========================================================
  */
 
@@ -20,6 +22,9 @@ export interface OrganizationMembership {
   department_id: string | null;
   team_id: string | null;
 
+  role_title: string | null;
+  role_description: string | null;
+
   created_at: string;
   updated_at: string;
 }
@@ -30,9 +35,15 @@ export interface OrganizationMembershipCreateInput {
 
   department_id?: string | null;
   team_id?: string | null;
+
+  role_title?: string | null;
+  role_description?: string | null;
 }
 
 export interface OrganizationMembershipUpdateInput {
   department_id?: string | null;
   team_id?: string | null;
+
+  role_title?: string | null;
+  role_description?: string | null;
 }

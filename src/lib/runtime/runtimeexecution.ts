@@ -1,6 +1,4 @@
-import {
-  loadLatestPublishedForOrganization,
-} from "@/lib/repositories/performancesheetrepository";
+import { loadPublishedById } from "@/lib/repositories/performancesheetrepository";
 
 import {
   findPerformanceInstancesByOrganization,
@@ -53,9 +51,16 @@ import {
 
 export interface RuntimeSubject {
   type: "individual";
+
   id: string;
+
   displayName: string;
+
   email: string;
+
+  roleTitle: string | null;
+
+  roleDescription: string | null;
 }
 
 
@@ -64,30 +69,58 @@ export interface RuntimeSubject {
 ========================================================== */
 
 function getCurrentPerformanceMonth(): string {
-  const now = new Date();
+
+  const now =
+    new Date();
 
   return [
-    now.getUTCFullYear().toString().padStart(4, "0"),
-    (now.getUTCMonth() + 1).toString().padStart(2, "0"),
+    now
+      .getUTCFullYear()
+      .toString()
+      .padStart(4, "0"),
+
+    (now.getUTCMonth() + 1)
+      .toString()
+      .padStart(2, "0"),
+
     "01",
   ].join("-");
 }
+
 
 function addMonths(
   performanceMonth: string,
   amount: number
 ): string {
-  const date = new Date(`${performanceMonth}T00:00:00Z`);
 
-  if (Number.isNaN(date.getTime())) {
+  const date =
+    new Date(
+      `${performanceMonth}T00:00:00Z`
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return performanceMonth;
   }
 
-  date.setUTCMonth(date.getUTCMonth() + amount);
+  date.setUTCMonth(
+    date.getUTCMonth() +
+      amount
+  );
 
   return [
-    date.getUTCFullYear().toString().padStart(4, "0"),
-    (date.getUTCMonth() + 1).toString().padStart(2, "0"),
+    date
+      .getUTCFullYear()
+      .toString()
+      .padStart(4, "0"),
+
+    (date.getUTCMonth() + 1)
+      .toString()
+      .padStart(2, "0"),
+
     "01",
   ].join("-");
 }
@@ -95,137 +128,250 @@ function addMonths(
 
 /* ==========================================================
    Previous Month Performance
-   ----------------------------------------------------------
+
    New Runtime records resolve history by memberId.
+
    Legacy Assignment-based records remain supported while
    historical data is being migrated.
 ========================================================== */
 
 async function loadPreviousKeyResultPerformance(
-  performanceInstances: Awaited<
-    ReturnType<typeof findPerformanceInstancesByOrganization>
-  >,
-  currentPerformanceInstance: Awaited<
-    ReturnType<typeof findPerformanceInstancesByOrganization>
-  >[number]
+  performanceInstances:
+    Awaited<
+      ReturnType<
+        typeof findPerformanceInstancesByOrganization
+      >
+    >,
+
+  currentPerformanceInstance:
+    Awaited<
+      ReturnType<
+        typeof findPerformanceInstancesByOrganization
+      >
+    >[number]
 ): Promise<{
   values: Record<string, string | number>;
   scores: Record<string, number>;
 }> {
-  const previousMonth = addMonths(
-    currentPerformanceInstance.performanceMonth,
-    -1
-  );
 
-  const previousPerformanceInstance = performanceInstances.find(
-    (instance) => {
-      if (
-        currentPerformanceInstance.memberId &&
-        instance.memberId
-      ) {
-        return (
-          instance.memberId === currentPerformanceInstance.memberId &&
-          instance.performanceMonth === previousMonth
-        );
+  const previousMonth =
+    addMonths(
+      currentPerformanceInstance.performanceMonth,
+      -1
+    );
+
+
+  const previousPerformanceInstance =
+    performanceInstances.find(
+      (instance) => {
+
+        /*
+         * New Runtime:
+         *
+         * organization_id
+         * + member_id
+         * + performance_month
+         */
+        if (
+          currentPerformanceInstance.memberId &&
+          instance.memberId
+        ) {
+
+          return (
+            instance.memberId ===
+              currentPerformanceInstance.memberId
+            &&
+            instance.performanceMonth ===
+              previousMonth
+          );
+        }
+
+
+        /*
+         * Legacy Runtime compatibility:
+         *
+         * assignment_id
+         * + performance_month
+         */
+        if (
+          currentPerformanceInstance.assignmentId &&
+          instance.assignmentId
+        ) {
+
+          return (
+            instance.assignmentId ===
+              currentPerformanceInstance.assignmentId
+            &&
+            instance.performanceMonth ===
+              previousMonth
+          );
+        }
+
+        return false;
       }
+    );
 
-      if (
-        currentPerformanceInstance.assignmentId &&
-        instance.assignmentId
-      ) {
-        return (
-          instance.assignmentId === currentPerformanceInstance.assignmentId &&
-          instance.performanceMonth === previousMonth
-        );
-      }
 
-      return false;
-    }
-  );
+  if (
+    !previousPerformanceInstance
+  ) {
 
-  if (!previousPerformanceInstance) {
-    return { values: {}, scores: {} };
+    return {
+      values: {},
+      scores: {},
+    };
   }
+
 
   const previousKeyResults =
     await findPerformanceInstanceKeyResults(
       previousPerformanceInstance.id
     );
 
+
   const previousProgress =
     await findKeyResultProgressByPerformanceInstance(
       previousPerformanceInstance.id
     );
 
-  const values: Record<string, string | number> = {};
-  const scores: Record<string, number> = {};
 
-  for (const keyResult of previousKeyResults) {
-    if (!keyResult.sourceKeyResultId) {
+  const values:
+    Record<
+      string,
+      string | number
+    > = {};
+
+
+  const scores:
+    Record<
+      string,
+      number
+    > = {};
+
+
+  for (
+    const keyResult of
+      previousKeyResults
+  ) {
+
+    if (
+      !keyResult.sourceKeyResultId
+    ) {
       continue;
     }
 
-    const progress = previousProgress.find(
-      (item) => item.keyResultId === keyResult.id
-    );
+
+    const progress =
+      previousProgress.find(
+        (item) =>
+          item.keyResultId ===
+          keyResult.id
+      );
+
 
     if (
       progress &&
-      progress.currentValue !== undefined &&
-      progress.currentValue !== null &&
-      progress.currentValue !== ""
+      progress.currentValue !==
+        undefined &&
+      progress.currentValue !==
+        null &&
+      progress.currentValue !==
+        ""
     ) {
-      values[keyResult.sourceKeyResultId] = progress.currentValue;
+
+      values[
+        keyResult.sourceKeyResultId
+      ] =
+        progress.currentValue;
     }
 
+
     if (
       progress &&
-      progress.score !== undefined &&
-      progress.score !== null
+      progress.score !==
+        undefined &&
+      progress.score !==
+        null
     ) {
-      scores[keyResult.sourceKeyResultId] = progress.score;
+
+      scores[
+        keyResult.sourceKeyResultId
+      ] =
+        progress.score;
     }
   }
 
-  return { values, scores };
+
+  return {
+    values,
+    scores,
+  };
 }
 
 
 /* ==========================================================
    Legacy Member Instance Compatibility
+
+   Existing Assignment-backed Runtime records remain
+   readable while the newer member-based Runtime records
+   become the current source.
 ========================================================== */
 
 async function loadLegacyMemberInstances(
   organizationId: string,
   memberId: string
 ) {
-  const assignments = await findAssignmentsByOrganization(
-    organizationId
-  );
 
-  const memberAssignmentIds = new Set(
-    assignments
-      .filter(
-        (assignment) =>
-          assignment.assignmentType === "individual" &&
-          assignment.subjectId === memberId &&
-          assignment.status !== "cancelled"
-      )
-      .map((assignment) => assignment.id)
-  );
+  const assignments =
+    await findAssignmentsByOrganization(
+      organizationId
+    );
 
-  if (memberAssignmentIds.size === 0) {
+
+  const memberAssignmentIds =
+    new Set(
+      assignments
+        .filter(
+          (assignment) =>
+            assignment.assignmentType ===
+              "individual"
+            &&
+            assignment.subjectId ===
+              memberId
+            &&
+            assignment.status !==
+              "cancelled"
+        )
+        .map(
+          (assignment) =>
+            assignment.id
+        )
+    );
+
+
+  if (
+    memberAssignmentIds.size ===
+    0
+  ) {
     return [];
   }
 
-  const allInstances = await findPerformanceInstancesByOrganization(
-    organizationId
-  );
+
+  const allInstances =
+    await findPerformanceInstancesByOrganization(
+      organizationId
+    );
+
 
   return allInstances.filter(
     (instance) =>
-      Boolean(instance.assignmentId) &&
-      memberAssignmentIds.has(instance.assignmentId as string)
+      Boolean(
+        instance.assignmentId
+      )
+      &&
+      memberAssignmentIds.has(
+        instance.assignmentId as string
+      )
   );
 }
 
@@ -236,11 +382,15 @@ async function loadLegacyMemberInstances(
 
 export async function loadRuntimeExecution(
   organizationId: string,
+
   subjectId?: string,
+
   performanceMonth?: string
 ) {
+
   const selectedMonth =
-    performanceMonth ?? getCurrentPerformanceMonth();
+    performanceMonth ??
+    getCurrentPerformanceMonth();
 
 
   /* ========================================================
@@ -255,94 +405,185 @@ export async function loadRuntimeExecution(
      Monthly Performance Instance
 
      Assignment is NOT required for a member to participate.
+
      Existing Assignment-based instances remain readable as
      historical compatibility records.
   ======================================================== */
 
-  if (subjectId) {
-    const user = await getUser(subjectId);
+  if (
+    subjectId
+  ) {
 
-    if (!user || !user.is_active) {
+    const user =
+      await getUser(
+        subjectId
+      );
+
+
+    if (
+      !user ||
+      !user.is_active
+    ) {
       return null;
     }
 
-    const membership = await loadOrganizationMembershipForMember(
-      organizationId,
-      subjectId
-    );
 
-    if (!membership) {
+    /*
+     * Organization Membership is the authoritative
+     * relationship for current member participation.
+     */
+    const membership =
+      await loadOrganizationMembershipForMember(
+        organizationId,
+        subjectId
+      );
+
+
+    if (
+      !membership
+    ) {
       return null;
     }
 
+
+    /*
+     * Current member-based Runtime instances.
+     */
     const directMemberInstances =
       await findPerformanceInstancesByMember(
         organizationId,
         subjectId
       );
 
+
+    /*
+     * Historical Assignment-based Runtime instances.
+     */
     const legacyMemberInstances =
       await loadLegacyMemberInstances(
         organizationId,
         subjectId
       );
 
+
+    /*
+     * Combine the two sources without duplicating
+     * an instance that exists in both.
+     */
     const combinedInstances = [
       ...directMemberInstances,
+
       ...legacyMemberInstances.filter(
         (legacy) =>
           !directMemberInstances.some(
-            (current) => current.id === legacy.id
+            (current) =>
+              current.id ===
+              legacy.id
           )
       ),
     ];
 
+
     /*
-     * Prefer an existing monthly record. This prevents a historical
-     * Assignment-backed month from being duplicated during the transition.
-     * After the migration is applied, individual historical records have
-     * member_id populated and are returned by the direct member query.
+     * Prefer an existing monthly record.
+     *
+     * This prevents a historical Assignment-backed
+     * month from being duplicated during the transition.
      */
     let selectedInstance =
       combinedInstances.find(
         (instance) =>
-          instance.performanceMonth === selectedMonth
+          instance.performanceMonth ===
+          selectedMonth
       );
 
-    if (!selectedInstance) {
+
+    /*
+     * No monthly instance exists yet.
+     *
+     * Create it through the new member-based Runtime
+     * execution service.
+     *
+     * Assignment is intentionally NOT required.
+     */
+    if (
+      !selectedInstance
+    ) {
+
       selectedInstance =
         await getOrCreateMemberPerformanceExecutionForMonth(
           organizationId,
+
           subjectId,
+
           selectedMonth
         );
 
-      combinedInstances.push(selectedInstance);
+
+      combinedInstances.push(
+        selectedInstance
+      );
     }
 
+
+    /*
+     * Load all organization Runtime instances for
+     * previous-month/history calculations.
+     */
     const performanceInstances =
       await findPerformanceInstancesByOrganization(
         organizationId
       );
 
+
     const displayName =
-      user.display_name?.trim() ||
-      `${user.first_name} ${user.last_name}`.trim() ||
+      user.display_name?.trim()
+      ||
+      `${user.first_name} ${user.last_name}`.trim()
+      ||
       user.email;
 
-    const subject: RuntimeSubject = {
-      type: "individual",
-      id: user.id,
+
+    /*
+     * Organization-specific Role Title and Role Description
+     * come from the authoritative organization membership.
+     */
+    const subject:
+      RuntimeSubject = {
+
+      type:
+        "individual",
+
+      id:
+        user.id,
+
       displayName,
-      email: user.email,
+
+      email:
+        user.email,
+
+      roleTitle:
+        membership.role_title ??
+        null,
+
+      roleDescription:
+        membership.role_description ??
+        null,
     };
 
+
     return buildRuntimeExecution(
+
       organizationId,
+
       selectedInstance,
+
       undefined,
+
       performanceInstances,
+
       combinedInstances,
+
       subject
     );
   }
@@ -356,77 +597,135 @@ export async function loadRuntimeExecution(
      on individual Member Runtime ownership.
   ======================================================== */
 
-  const assignments = await findAssignmentsByOrganization(
-    organizationId
-  );
+  const assignments =
+    await findAssignmentsByOrganization(
+      organizationId
+    );
 
-  const organizationAssignments = assignments.filter(
-    (assignment) =>
-      assignment.assignmentType === "organization" &&
-      assignment.status === "active"
-  );
 
-  if (organizationAssignments.length === 0) {
+  const organizationAssignments =
+    assignments.filter(
+      (assignment) =>
+        assignment.assignmentType ===
+          "organization"
+        &&
+        assignment.status ===
+          "active"
+    );
+
+
+  if (
+    organizationAssignments.length ===
+    0
+  ) {
     return null;
   }
+
 
   const performanceInstances =
     await findPerformanceInstancesByOrganization(
       organizationId
     );
 
-  const organizationAssignmentIds = new Set(
-    organizationAssignments.map(
-      (assignment) => assignment.id
-    )
-  );
 
-  const organizationInstances = performanceInstances.filter(
-    (instance) =>
-      Boolean(instance.assignmentId) &&
-      organizationAssignmentIds.has(instance.assignmentId as string)
-  );
+  const organizationAssignmentIds =
+    new Set(
+      organizationAssignments.map(
+        (assignment) =>
+          assignment.id
+      )
+    );
 
-  let performanceInstance = organizationInstances.find(
-    (instance) =>
-      instance.performanceMonth === selectedMonth
-  );
+
+  const organizationInstances =
+    performanceInstances.filter(
+      (instance) =>
+        Boolean(
+          instance.assignmentId
+        )
+        &&
+        organizationAssignmentIds.has(
+          instance.assignmentId as string
+        )
+    );
+
+
+  let performanceInstance =
+    organizationInstances.find(
+      (instance) =>
+        instance.performanceMonth ===
+        selectedMonth
+    );
+
 
   const organizationAssignment =
     organizationAssignments.find(
       (assignment) =>
-        assignment.id === performanceInstance?.assignmentId
-    ) ?? organizationAssignments[0];
+        assignment.id ===
+        performanceInstance?.assignmentId
+    )
+    ??
+    organizationAssignments[0];
 
-  if (!performanceInstance && organizationAssignment) {
+
+  if (
+    !performanceInstance &&
+    organizationAssignment
+  ) {
+
     performanceInstance =
       await getOrCreatePerformanceExecutionForMonth(
         organizationId,
+
         organizationAssignment.id,
+
         selectedMonth
       );
 
-    organizationInstances.push(performanceInstance);
-    performanceInstances.push(performanceInstance);
+
+    organizationInstances.push(
+      performanceInstance
+    );
+
+
+    performanceInstances.push(
+      performanceInstance
+    );
   }
 
-  if (!performanceInstance) {
+
+  if (
+    !performanceInstance
+  ) {
     return null;
   }
 
-  const assignment = organizationAssignments.find(
-    (item) => item.id === performanceInstance!.assignmentId
-  );
 
-  if (!assignment) {
+  const assignment =
+    organizationAssignments.find(
+      (item) =>
+        item.id ===
+        performanceInstance!.assignmentId
+    );
+
+
+  if (
+    !assignment
+  ) {
     return null;
   }
+
 
   return buildRuntimeExecution(
+
     organizationId,
+
     performanceInstance,
+
     assignment,
+
     performanceInstances,
+
     organizationInstances
   );
 }
@@ -437,106 +736,245 @@ export async function loadRuntimeExecution(
 ========================================================== */
 
 async function buildRuntimeExecution(
+
   organizationId: string,
-  performanceInstance: Awaited<
-    ReturnType<typeof findPerformanceInstancesByOrganization>
-  >[number],
-  assignment?: NonNullable<
-    Awaited<ReturnType<typeof loadAssignment>>
-  >,
-  performanceInstances: Awaited<
-    ReturnType<typeof findPerformanceInstancesByOrganization>
-  > = [],
-  memberInstances: Awaited<
-    ReturnType<typeof findPerformanceInstancesByOrganization>
-  > = [],
-  subjectOverride?: RuntimeSubject
+
+  performanceInstance:
+    Awaited<
+      ReturnType<
+        typeof findPerformanceInstancesByOrganization
+      >
+    >[number],
+
+  assignment?:
+    NonNullable<
+      Awaited<
+        ReturnType<
+          typeof loadAssignment
+        >
+      >
+    >,
+
+  performanceInstances:
+    Awaited<
+      ReturnType<
+        typeof findPerformanceInstancesByOrganization
+      >
+    > = [],
+
+  memberInstances:
+    Awaited<
+      ReturnType<
+        typeof findPerformanceInstancesByOrganization
+      >
+    > = [],
+
+  subjectOverride?:
+    RuntimeSubject
 ) {
-  let subject: RuntimeSubject | null = subjectOverride ?? null;
 
-  if (!subject && assignment?.assignmentType === "individual") {
-    const user = await getUser(assignment.subjectId);
+  let subject:
+    RuntimeSubject | null =
+      subjectOverride ??
+      null;
 
-    if (!user) {
+
+  /*
+   * Legacy individual Assignment fallback.
+   *
+   * This remains only for historical compatibility.
+   */
+  if (
+    !subject &&
+    assignment?.assignmentType ===
+      "individual"
+  ) {
+
+    const user =
+      await getUser(
+        assignment.subjectId
+      );
+
+
+    if (
+      !user
+    ) {
       return null;
     }
 
+
     const displayName =
-      user.display_name?.trim() ||
-      `${user.first_name} ${user.last_name}`.trim() ||
+      user.display_name?.trim()
+      ||
+      `${user.first_name} ${user.last_name}`.trim()
+      ||
       user.email;
 
+
+    const membership =
+      await loadOrganizationMembershipForMember(
+        organizationId,
+        user.id
+      );
+
+
     subject = {
-      type: "individual",
-      id: user.id,
+
+      type:
+        "individual",
+
+      id:
+        user.id,
+
       displayName,
-      email: user.email,
+
+      email:
+        user.email,
+
+      roleTitle:
+        membership?.role_title ??
+        null,
+
+      roleDescription:
+        membership?.role_description ??
+        null,
     };
   }
 
- const performanceSheet =
-  await loadLatestPublishedForOrganization(
-    organizationId
-  );
 
-if (!performanceSheet) {
-  return null;
-}
+  /* ========================================================
+     Published Performance Sheet
+  ======================================================== */
+
+  const performanceSheet =
+    await loadPublishedById(
+      organizationId,
+
+      performanceInstance.performanceSheetId
+    );
+
+
+  if (
+    !performanceSheet
+  ) {
+    return null;
+  }
+
+
+  /* ========================================================
+     Runtime Objectives
+  ======================================================== */
 
   const instanceObjectives =
     await findPerformanceInstanceObjectives(
       performanceInstance.id
     );
 
+
+  /* ========================================================
+     Runtime Key Results
+  ======================================================== */
+
   const instanceKeyResults =
     await findPerformanceInstanceKeyResults(
       performanceInstance.id
     );
 
-  const instanceInitiatives = await Promise.all(
-    instanceKeyResults.map(
-      (keyResult) =>
-        findPerformanceInstanceInitiativesByKeyResult(
-          keyResult.id
-        )
-    )
-  );
 
-  const objectives = buildRuntimePerformanceObjectives(
-    instanceObjectives,
-    instanceKeyResults,
-    instanceInitiatives.flat()
-  );
+  /* ========================================================
+     Runtime Initiatives
+  ======================================================== */
+
+  const instanceInitiatives =
+    await Promise.all(
+      instanceKeyResults.map(
+        (keyResult) =>
+          findPerformanceInstanceInitiativesByKeyResult(
+            keyResult.id
+          )
+      )
+    );
+
+
+  /* ========================================================
+     Build Runtime Objectives
+  ======================================================== */
+
+  const objectives =
+    buildRuntimePerformanceObjectives(
+
+      instanceObjectives,
+
+      instanceKeyResults,
+
+      instanceInitiatives.flat()
+    );
+
+
+  /* ========================================================
+     Runtime Key Result Progress
+  ======================================================== */
 
   const keyResultProgress =
     await findKeyResultProgressByPerformanceInstance(
       performanceInstance.id
     );
 
+
+  /* ========================================================
+     Previous Month Performance
+  ======================================================== */
+
   const previousKeyResultPerformance =
     await loadPreviousKeyResultPerformance(
+
       performanceInstances,
+
       performanceInstance
     );
 
-  const performanceMonths = Array.from(
-    new Set(
-      memberInstances.map(
-        (instance) => instance.performanceMonth
+
+  /* ========================================================
+     Available Performance Months
+  ======================================================== */
+
+  const performanceMonths =
+    Array.from(
+      new Set(
+        memberInstances.map(
+          (instance) =>
+            instance.performanceMonth
+        )
       )
-    )
-  ).sort((a, b) => b.localeCompare(a));
+    ).sort(
+      (a, b) =>
+        b.localeCompare(a)
+    );
+
+
+  /* ========================================================
+     Return Runtime Execution
+  ======================================================== */
 
   return {
+
     assignment,
+
     subject,
+
     performanceSheet,
+
     performanceInstance,
+
     performanceMonths,
+
     keyResultProgress,
+
     objectives,
+
     previousKeyResultValues:
       previousKeyResultPerformance.values,
+
     previousKeyResultScores:
       previousKeyResultPerformance.scores,
   };

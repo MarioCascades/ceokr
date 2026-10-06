@@ -13,7 +13,6 @@ import Image from "next/image";
 import {
   Building2,
   Settings,
-  UserRound,
   ArrowRight,
 } from "lucide-react";
 
@@ -26,6 +25,7 @@ import CECard from "@/components/ui/cecard";
 
 type Organization = {
   id: string;
+
   company_name: string;
 };
 
@@ -34,18 +34,12 @@ interface SuperAdminLaunchpadProps {
   displayName: string;
 
   organizations: Organization[];
-
-  memberOrganizationIds: string[];
-
-  userId: string;
 }
 
 
 export default function SuperAdminLaunchpad({
   displayName,
   organizations,
-  memberOrganizationIds,
-  userId,
 }: SuperAdminLaunchpadProps) {
 
   const router =
@@ -60,14 +54,6 @@ export default function SuperAdminLaunchpad({
   );
 
 
-  const isMemberOfSelectedOrganization =
-    selectedOrganizationId
-      ? memberOrganizationIds.includes(
-          selectedOrganizationId
-        )
-      : false;
-
-
   function openPerformance() {
 
     if (
@@ -80,27 +66,6 @@ export default function SuperAdminLaunchpad({
     router.push(
       `/runtime?organizationId=${encodeURIComponent(
         selectedOrganizationId
-      )}`
-    );
-
-  }
-
-
-  function openMyPerformance() {
-
-    if (
-      !selectedOrganizationId ||
-      !isMemberOfSelectedOrganization
-    ) {
-      return;
-    }
-
-
-    router.push(
-      `/member?organizationId=${encodeURIComponent(
-        selectedOrganizationId
-      )}&subjectId=${encodeURIComponent(
-        userId
       )}`
     );
 
@@ -220,7 +185,7 @@ export default function SuperAdminLaunchpad({
 
           {/* ==================================================
               Administration
-            ================================================== */}
+          ================================================== */}
 
           <CECard
             className="
@@ -268,11 +233,11 @@ export default function SuperAdminLaunchpad({
                 text-sm
                 leading-6
                 text-muted-foreground
-            "
+              "
             >
               Manage organizations, users,
-              teams, assignments, Performance
-              Sheets, dashboards, and platform
+              teams, Performance Sheets,
+              dashboards, and platform
               configuration.
             </p>
 
@@ -310,7 +275,7 @@ export default function SuperAdminLaunchpad({
 
           {/* ==================================================
               Organization Performance
-            ================================================== */}
+          ================================================== */}
 
           <CECard
             className="
@@ -358,7 +323,7 @@ export default function SuperAdminLaunchpad({
                 text-sm
                 leading-6
                 text-muted-foreground
-            "
+              "
             >
               Select an organization to open
               its live performance experience.
@@ -367,7 +332,7 @@ export default function SuperAdminLaunchpad({
 
             {/* ==================================================
                 Organization Selector
-              ================================================== */}
+            ================================================== */}
 
             <div
               className="
@@ -423,12 +388,16 @@ export default function SuperAdminLaunchpad({
 
                 {organizations.length ===
                 0 ? (
+
                   <option value="">
                     No organizations available
                   </option>
+
                 ) : (
+
                   organizations.map(
                     (organization) => (
+
                       <option
                         key={
                           organization.id
@@ -441,8 +410,10 @@ export default function SuperAdminLaunchpad({
                           organization.company_name
                         }
                       </option>
+
                     )
                   )
+
                 )}
 
               </select>
@@ -479,34 +450,6 @@ export default function SuperAdminLaunchpad({
                 <ArrowRight />
 
               </Button>
-
-
-              {/* ==================================================
-                  My Performance
-                  Only available when the Super Admin is also a
-                  member of the selected organization.
-                ================================================== */}
-
-              {isMemberOfSelectedOrganization && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="
-                    w-full
-                  "
-                  onClick={
-                    openMyPerformance
-                  }
-                >
-
-                  <UserRound />
-
-                  My Performance
-
-                  <ArrowRight />
-
-                </Button>
-              )}
 
             </div>
 

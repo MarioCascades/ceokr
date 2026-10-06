@@ -90,6 +90,11 @@ export interface PerformanceInstance {
   createdAt: string;
 
   /**
+   * Date/time the instance was last updated.
+   */
+  updatedAt: string;
+
+  /**
    * Date/time performance work began.
    */
   startedAt?: string;

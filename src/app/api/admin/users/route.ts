@@ -42,6 +42,8 @@
  * authenticated caller has passed the authorization boundary.
  *
  * Department and Team are OPTIONAL organizational assignments.
+ * Role Title and Role Description are organization-specific
+ * membership profile fields.
  * ==========================================================
  */
 
@@ -105,6 +107,10 @@ interface UserUpdateRequest {
   department_id?: string | null;
 
   team_id?: string | null;
+
+  role_title?: string | null;
+
+  role_description?: string | null;
 
   is_active?: boolean;
 }
@@ -917,6 +923,12 @@ export async function PATCH(
   const teamId =
     input.team_id?.trim() || null;
 
+  const roleTitle =
+    input.role_title?.trim() || null;
+
+  const roleDescription =
+    input.role_description?.trim() || null;
+
   const isActive =
     input.is_active ?? true;
 
@@ -1316,6 +1328,12 @@ export async function PATCH(
 
         team_id:
           teamId,
+
+        role_title:
+          roleTitle,
+
+        role_description:
+          roleDescription,
 
         updated_at:
           new Date().toISOString(),

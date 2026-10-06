@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Building2,
-  UserRound,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -15,34 +14,22 @@ import CECard from "@/components/ui/cecard";
 
 
 type RoleEntryLaunchpadProps = {
-  actor:
-    | "organization_admin"
-    | "member";
-
   displayName: string;
 
   organizationId: string;
 
   organizationName: string;
-
-  userId: string;
 };
 
 
 export default function RoleEntryLaunchpad({
-  actor,
   displayName,
   organizationId,
   organizationName,
-  userId,
 }: RoleEntryLaunchpadProps) {
 
   const router =
     useRouter();
-
-
-  const isOrganizationAdmin =
-    actor === "organization_admin";
 
 
   function openOrganizationWorkspace() {
@@ -61,19 +48,6 @@ export default function RoleEntryLaunchpad({
     router.push(
       `/runtime?organizationId=${encodeURIComponent(
         organizationId
-      )}`
-    );
-
-  }
-
-
-  function openMyPerformance() {
-
-    router.push(
-      `/member?organizationId=${encodeURIComponent(
-        organizationId
-      )}&subjectId=${encodeURIComponent(
-        userId
       )}`
     );
 
@@ -147,9 +121,7 @@ export default function RoleEntryLaunchpad({
               text-primary
             "
           >
-            {isOrganizationAdmin
-              ? "Organization Admin"
-              : "Member"}
+            Organization Admin
           </p>
 
 
@@ -175,9 +147,7 @@ export default function RoleEntryLaunchpad({
               text-muted-foreground
             "
           >
-            {isOrganizationAdmin
-              ? "What would you like to do?"
-              : "Choose where you would like to go."}
+            What would you like to do?
           </p>
 
 
@@ -208,8 +178,8 @@ export default function RoleEntryLaunchpad({
         >
 
           {/* ==================================================
-              Organization Workspace / My Performance
-              PRIMARY ACTION — DEEP NAVY
+              Organization Workspace
+              PRIMARY ACTION
           ================================================== */}
 
           <CECard
@@ -234,15 +204,9 @@ export default function RoleEntryLaunchpad({
               "
             >
 
-              {isOrganizationAdmin ? (
-                <Building2
-                  className="h-6 w-6"
-                />
-              ) : (
-                <UserRound
-                  className="h-6 w-6"
-                />
-              )}
+              <Building2
+                className="h-6 w-6"
+              />
 
             </div>
 
@@ -254,9 +218,7 @@ export default function RoleEntryLaunchpad({
                 font-black
               "
             >
-              {isOrganizationAdmin
-                ? "Organization Workspace"
-                : "My Performance"}
+              Organization Workspace
             </h2>
 
 
@@ -268,9 +230,9 @@ export default function RoleEntryLaunchpad({
                 text-muted-foreground
               "
             >
-              {isOrganizationAdmin
-                ? "Manage and work with your organization through the Organization Workspace."
-                : "Open your personal performance experience."}
+              Manage and work with your
+              organization through the
+              Organization Workspace.
             </p>
 
 
@@ -290,15 +252,11 @@ export default function RoleEntryLaunchpad({
                   hover:bg-[#0B2A5B]/90
                 "
                 onClick={
-                  isOrganizationAdmin
-                    ? openOrganizationWorkspace
-                    : openMyPerformance
+                  openOrganizationWorkspace
                 }
               >
 
-                {isOrganizationAdmin
-                  ? "Open Organization Workspace"
-                  : "Open My Performance"}
+                Open Organization Workspace
 
                 <ArrowRight />
 
@@ -311,7 +269,7 @@ export default function RoleEntryLaunchpad({
 
           {/* ==================================================
               Organization Performance
-              SECONDARY ACTION — CASCADE CORAL
+              SECONDARY ACTION
           ================================================== */}
 
           <CECard

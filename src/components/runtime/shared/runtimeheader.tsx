@@ -24,6 +24,7 @@ interface RuntimeHeaderProps {
   subject: RuntimeSubject | null;
 }
 
+
 function formatPerformanceMonth(
   performanceMonth: string
 ): string {
@@ -49,6 +50,7 @@ function formatPerformanceMonth(
   ).format(date);
 }
 
+
 function formatStatus(
   status: PerformanceInstance["status"]
 ): string {
@@ -57,6 +59,7 @@ function formatStatus(
     " "
   );
 }
+
 
 function getStatusClasses(
   status: PerformanceInstance["status"]
@@ -78,6 +81,7 @@ function getStatusClasses(
   }
 }
 
+
 export default function RuntimeHeader({
   document,
   organization,
@@ -94,7 +98,8 @@ export default function RuntimeHeader({
 
   const role =
     subject
-      ? document.performanceHeader.title ||
+      ? subject.roleTitle ||
+        document.performanceHeader.title ||
         document.performanceHeader.subtitle
       : "Organization Performance";
 
@@ -398,7 +403,10 @@ export default function RuntimeHeader({
 
 
           {!isOrganizationRuntime &&
-            document.performanceHeader.description && (
+            (
+              subject?.roleDescription ||
+              document.performanceHeader.description
+            ) && (
 
             <p
               className="
@@ -409,6 +417,7 @@ export default function RuntimeHeader({
               "
             >
               {
+                subject?.roleDescription ||
                 document.performanceHeader.description
               }
             </p>

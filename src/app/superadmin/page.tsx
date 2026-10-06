@@ -69,50 +69,6 @@ export default async function SuperAdminPage() {
 
 
   /* ========================================================
-     Current User Organization Memberships
-     ========================================================
-     
-     A Platform Super Admin may administer every organization
-     without being a member of those organizations.
-
-     This query identifies only the organizations where the
-     authenticated Super Admin also has an actual organization
-     membership.
-
-     No organization or user is hardcoded here.
-     ======================================================== */
-
-  const {
-    data: memberships,
-    error: membershipsError,
-  } =
-    await supabase
-      .from("organization_memberships")
-      .select(
-        "organization_id"
-      )
-      .eq(
-        "user_id",
-        user.id
-      );
-
-
-  if (membershipsError) {
-
-    throw new Error(
-      `Failed to load organization memberships: ${membershipsError.message}`
-    );
-  }
-
-
-  const memberOrganizationIds =
-    (memberships ?? []).map(
-      (membership) =>
-        membership.organization_id
-    );
-
-
-  /* ========================================================
      Display Name
      ======================================================== */
 
@@ -135,14 +91,6 @@ export default async function SuperAdminPage() {
 
       organizations={
         organizations ?? []
-      }
-
-      memberOrganizationIds={
-        memberOrganizationIds
-      }
-
-      userId={
-        user.id
       }
 
     />
