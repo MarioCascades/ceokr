@@ -30,6 +30,11 @@ import {
 } from "@/lib/repositories/performancesheetrepository";
 
 import {
+  loadOrganizationMembershipForMember,
+  loadMemberOKRs,
+} from "@/lib/repositories/memberokrrepository";
+
+import {
   supabase,
 } from "@/lib/supabase/client";
 
@@ -939,6 +944,121 @@ export async function getOrCreatePerformanceExecutionForMonth(
 
 
   /* ========================================================
+     Resolve Member OKRs
+     --------------------------------------------------------
+     Assignment remains a compatibility bridge for the current
+     Runtime database schema, but it is no longer the source of
+     employee Objectives, Key Results, or Initiatives.
+
+     The authoritative source is Organization Membership ->
+     Member OKRs. The monthly Runtime snapshot is initialized
+     from that source.
+  ======================================================== */
+
+  let memberObjectives:
+    Awaited<
+      ReturnType<typeof loadMemberOKRs>
+    > | null = null;
+
+  if (assignment.assignmentType === "individual") {
+    const membership =
+      await loadOrganizationMembershipForMember(
+        organizationId,
+        assignment.subjectId
+      );
+
+    if (!membership) {
+      throw new Error(
+        "The assigned member does not have an active organization membership."
+      );
+    }
+
+    memberObjectives =
+      await loadMemberOKRs(
+        organizationId,
+        membership.id
+      );
+  }
+
+  /* ========================================================
+     Build Runtime Source Document
+     --------------------------------------------------------
+     The Builder supplies presentation configuration. Member
+     OKRs supply employee-specific performance content.
+
+     This adapter lets the existing Runtime snapshot engine
+     consume the new Member OKR source without creating a second
+     Runtime persistence model during migration.
+  ======================================================== */
+
+  const runtimeSourceDocument =
+    memberObjectives === null
+      ? performanceSheet.document
+      : {
+          ...performanceSheet.document,
+
+          objectives: memberObjectives.map(
+            (objective) => ({
+              id: objective.id,
+
+              title: objective.title,
+
+              description:
+                objective.description ??
+                "",
+
+              weight:
+                objective.weight ??
+                0,
+
+              keyResults: objective.keyResults.map(
+                (keyResult) => ({
+                  id: keyResult.id,
+
+                  title: keyResult.title,
+
+                  target:
+                    keyResult.target === null ||
+                    keyResult.target === undefined
+                      ? ""
+                      : String(keyResult.target),
+
+                  current:
+                    keyResult.currentValue === null ||
+                    keyResult.currentValue === undefined
+                      ? ""
+                      : String(keyResult.currentValue),
+
+                  score: "",
+
+                  weight:
+                    keyResult.weight ??
+                    0,
+
+                  measurementType:
+                    keyResult.measurementType,
+
+                  scoringMethod:
+                    keyResult.scoringMethod ===
+                    "display_only"
+                      ? undefined
+                      : keyResult.scoringMethod,
+
+                  initiatives:
+                    keyResult.initiatives.map(
+                      (initiative) => ({
+                        id: initiative.id,
+                        text: initiative.text,
+                      })
+                    ),
+                })
+              ),
+            })
+          ),
+        };
+
+
+  /* ========================================================
      Find Existing Instance
   ======================================================== */
 
@@ -958,7 +1078,7 @@ export async function getOrCreatePerformanceExecutionForMonth(
      */
     await initializePerformanceInstance(
       existingInstance,
-      performanceSheet.document
+      runtimeSourceDocument
     );
 
     return existingInstance;
@@ -1011,7 +1131,7 @@ export async function getOrCreatePerformanceExecutionForMonth(
           undefined,
       },
 
-      performanceSheet.document
+      runtimeSourceDocument
     );
 
   return performanceInstance;

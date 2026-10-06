@@ -273,10 +273,10 @@ function BuilderContent() {
 
   if (isLoadingBuilder) {
     return (
-      <main className="min-h-screen bg-slate-100">
+      <main className="min-h-screen bg-[#E9F4F8]/45">
         <div className="mx-auto max-w-7xl px-8 py-12">
-          <div className="rounded-xl border bg-white p-6 shadow-sm">
-            <p className="text-sm text-slate-600">
+          <div className="rounded-xl border border-[#B4C2D1]/60 bg-white p-6 shadow-sm">
+            <p className="text-sm text-[#272D2C]/65">
               Loading Performance Sheet Builder...
             </p>
           </div>
@@ -290,7 +290,7 @@ function BuilderContent() {
   ======================================================== */
 
   return (
-    <main className="min-h-screen bg-slate-100">
+    <main className="min-h-screen bg-[#E9F4F8]/45">
 
       {/* ================= PAGE HEADER ================= */}
 
@@ -462,20 +462,20 @@ function BuilderContent() {
           Builder Content
       ====================================================== */}
 
-      <div className="mx-auto max-w-7xl space-y-8 px-8 py-12">
+      <div className="mx-auto max-w-[1500px] space-y-8 px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
 
         {/* ==================================================
             Performance Workspace Status
         ================================================== */}
 
-        <div className="flex flex-wrap items-center gap-6 rounded-xl border bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center gap-6 rounded-2xl border border-[#B4C2D1]/70 bg-white p-6 shadow-[0_8px_30px_rgba(8,37,80,0.06)]">
 
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#272D2C]/55">
               Performance Workspace
             </p>
 
-            <p className="mt-1 font-semibold">
+            <p className="mt-1 font-black uppercase tracking-tight text-[#082550]">
               Organization Performance Sheet
             </p>
           </div>
@@ -483,8 +483,8 @@ function BuilderContent() {
           <div
             className={
               editMode
-                ? "rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700"
-                : "rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700"
+                ? "rounded-full border border-[#E26D5C]/40 bg-[#E26D5C]/10 px-3 py-1 text-sm font-bold text-[#E26D5C]"
+                : "rounded-full border border-[#B4C2D1] bg-[#E9F4F8] px-3 py-1 text-sm font-bold text-[#082550]"
             }
           >
             {editMode
@@ -492,7 +492,7 @@ function BuilderContent() {
               : "Preview"}
           </div>
 
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-[#272D2C]/65">
             One editable Performance Workspace for the organization.
           </div>
 
@@ -503,7 +503,7 @@ function BuilderContent() {
         ================================================== */}
 
         {statusMessage && (
-          <div className="rounded-lg border bg-white px-4 py-3">
+          <div className="rounded-xl border border-[#B4C2D1]/60 bg-white px-4 py-3 shadow-sm">
             <p className="text-sm font-medium">
               {statusMessage}
             </p>
@@ -515,8 +515,8 @@ function BuilderContent() {
         ================================================== */}
 
         {builderError && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-            <p className="text-sm font-medium text-red-700">
+          <div className="rounded-xl border border-[#E26D5C]/30 bg-[#E26D5C]/10 px-4 py-3">
+            <p className="text-sm font-bold text-[#E26D5C]">
               {builderError}
             </p>
           </div>
@@ -577,10 +577,10 @@ function BuilderContent() {
 
 function BuilderLoadingFallback() {
   return (
-    <main className="min-h-screen bg-slate-100">
+    <main className="min-h-screen bg-[#E9F4F8]/45">
       <div className="mx-auto max-w-7xl px-8 py-12">
-        <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <p className="text-sm text-slate-600">
+        <div className="rounded-xl border border-[#B4C2D1]/60 bg-white p-6 shadow-sm">
+          <p className="text-sm text-[#272D2C]/65">
             Loading Performance Sheet Builder...
           </p>
         </div>

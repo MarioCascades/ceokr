@@ -12,13 +12,7 @@ import type {
 } from "@/lib/domain/keyresultprogress";
 
 import KeyResultRow from "../keyresults/keyresultrow";
-
 import ObjectiveEditor from "./objectiveeditor";
-
-
-/* ==========================================================
-   Props
-========================================================== */
 
 interface ObjectiveCardProps {
   objective: RuntimePerformanceObjective;
@@ -36,6 +30,13 @@ interface ObjectiveCardProps {
     string | number
   >;
 
+  previousKeyResultScores?: Record<
+    string,
+    number
+  >;
+
+  editing?: boolean;
+
   onUpdated: (
     updatedObjective: RuntimePerformanceObjective
   ) => void;
@@ -45,43 +46,30 @@ interface ObjectiveCardProps {
   ) => void;
 }
 
-
-/* ==========================================================
-   Objective Card
-========================================================== */
-
 export default function ObjectiveCard({
   objective,
-
   keyResultProgress,
-
   organizationId,
-
   performanceInstanceId,
-
   performanceMonth,
-
   previousKeyResultValues,
-
+  previousKeyResultScores = {},
+  editing: globalEditing = false,
   onUpdated,
-
   onDeleted,
 }: ObjectiveCardProps) {
 
   const [
-    editing,
-    setEditing,
+    editingObjective,
+    setEditingObjective,
   ] = useState(false);
+
 
   const [
     deleting,
     setDeleting,
   ] = useState(false);
 
-
-  /* ========================================================
-     Objective Progress
-  ======================================================== */
 
   const objectiveProgress =
     keyResultProgress.filter(
@@ -91,17 +79,26 @@ export default function ObjectiveCard({
     );
 
 
-  /* ========================================================
-     Delete Objective
-  ======================================================== */
-
   async function handleDelete() {
 
     if (deleting) {
       return;
     }
 
+
+    const confirmed =
+      window.confirm(
+        `Delete "${objective.title}"?\n\nThis will remove the Objective from this Performance Instance.`
+      );
+
+
+    if (!confirmed) {
+      return;
+    }
+
+
     setDeleting(true);
+
 
     try {
 
@@ -129,6 +126,7 @@ export default function ObjectiveCard({
 
 
       if (!response.ok) {
+
         throw new Error(
           "Failed to delete objective."
         );
@@ -146,18 +144,24 @@ export default function ObjectiveCard({
         error
       );
 
+
       setDeleting(false);
     }
   }
 
 
-  /* ========================================================
-     Objective Editor
-  ======================================================== */
+  /*
+   * Individual Objective editing.
+   *
+   * This remains separate from the
+   * global Performance Sheet editing
+   * mode.
+   */
 
-  if (editing) {
+  if (editingObjective) {
 
     return (
+
       <ObjectiveEditor
 
         organizationId={
@@ -176,35 +180,38 @@ export default function ObjectiveCard({
           updatedObjective
         ) => {
 
-          setEditing(false);
+          setEditingObjective(
+            false
+          );
+
 
           onUpdated(
             updatedObjective
           );
+
         }}
 
         onCancel={() =>
-          setEditing(false)
+          setEditingObjective(
+            false
+          )
         }
 
       />
+
     );
   }
 
 
-  /* ========================================================
-     Render
-  ======================================================== */
-
   return (
 
-    <section className="rounded-2xl border bg-card shadow-sm">
+    <section className="overflow-hidden rounded-2xl border-2 bg-card shadow-sm">
 
       {/* ====================================================
           Objective Header
       ==================================================== */}
 
-      <div className="flex flex-col gap-4 border-b px-6 py-5 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-4 border-b-2 bg-gray-50 px-5 py-4 md:flex-row md:items-center md:justify-between">
 
         <div className="min-w-0">
 
@@ -212,19 +219,18 @@ export default function ObjectiveCard({
             Objective
           </p>
 
+
           <h3 className="mt-1 text-xl font-semibold tracking-tight">
             {objective.title}
           </h3>
 
+
           {objective.description && (
 
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-
-              {
-                objective.description
-              }
-
+            <p className="mt-1 max-w-4xl text-sm leading-5 text-muted-foreground">
+              {objective.description}
             </p>
+
           )}
 
         </div>
@@ -234,44 +240,84 @@ export default function ObjectiveCard({
             Objective Actions
         ================================================== */}
 
-        <div className="flex shrink-0 items-center gap-2">
+        {!globalEditing && (
 
-          <button
-            type="button"
-            onClick={() =>
-              setEditing(true)
-            }
-            className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
-          >
+          <div className="flex shrink-0 items-center gap-2">
 
-            <Pencil className="h-4 w-4" />
+            <button
+              type="button"
+              onClick={() =>
+                setEditingObjective(true)
+              }
+              className="inline-flex items-center gap-2 rounded-md border-2 bg-white px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-100"
+            >
 
-            Edit
+              <Pencil className="h-4 w-4" />
 
-          </button>
+              Edit
+
+            </button>
 
 
-          <button
-            type="button"
-            onClick={
-              handleDelete
-            }
-            disabled={
-              deleting
-            }
-            className="inline-flex items-center gap-2 rounded-md border border-destructive/30 px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+            <button
+              type="button"
+              onClick={
+                handleDelete
+              }
+              disabled={
+                deleting
+              }
+              className="inline-flex items-center gap-2 rounded-md border-2 border-destructive/30 bg-white px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
 
-            <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
 
-            {
-              deleting
+              {deleting
                 ? "Deleting..."
-                : "Delete"
-            }
+                : "Delete"}
 
-          </button>
+            </button>
 
+          </div>
+
+        )}
+
+      </div>
+
+
+      {/* ====================================================
+          Key Result Column Headers
+      ==================================================== */}
+
+      <div className="hidden border-b-2 bg-gray-200 px-4 py-3 lg:grid lg:grid-cols-[minmax(220px,2fr)_120px_120px_120px_110px_minmax(260px,1.5fr)] lg:items-center lg:gap-3">
+
+        <div className="text-xs font-bold uppercase tracking-wide text-gray-700">
+          Key Result
+        </div>
+
+
+        <div className="text-center text-xs font-bold uppercase tracking-wide text-gray-700">
+          Last Month
+        </div>
+
+
+        <div className="text-center text-xs font-bold uppercase tracking-wide text-gray-700">
+          Target
+        </div>
+
+
+        <div className="text-center text-xs font-bold uppercase tracking-wide text-gray-700">
+          This Month
+        </div>
+
+
+        <div className="text-center text-xs font-bold uppercase tracking-wide text-gray-700">
+          Score
+        </div>
+
+
+        <div className="text-xs font-bold uppercase tracking-wide text-gray-700">
+          Initiatives
         </div>
 
       </div>
@@ -281,73 +327,100 @@ export default function ObjectiveCard({
           Key Results
       ==================================================== */}
 
-      <div className="divide-y">
+      <div className="bg-gray-100 p-3">
 
         {objective.keyResults.length === 0 ? (
 
-          <div className="px-6 py-8">
+          <div className="rounded-lg border-2 border-dashed bg-white px-6 py-8">
 
             <p className="text-sm text-muted-foreground">
               No Key Results have been
-              added to this objective yet.
+              added to this Objective yet.
             </p>
 
           </div>
 
         ) : (
 
-          objective.keyResults.map(
-            (keyResult) => {
+          <div className="space-y-2">
 
-              const progress =
-                objectiveProgress.find(
-                  (item) =>
-                    item.keyResultId ===
-                    keyResult.id
+            {objective.keyResults.map(
+              (keyResult) => {
+
+                const progress =
+                  objectiveProgress.find(
+                    (item) =>
+                      item.keyResultId ===
+                      keyResult.id
+                  );
+
+
+                return (
+
+                  <div
+                    key={
+                      keyResult.id
+                    }
+                    className="rounded-lg border-2 border-gray-300 bg-white"
+                  >
+
+                    <KeyResultRow
+
+                      keyResult={
+                        keyResult
+                      }
+
+
+                      progress={
+                        progress
+                      }
+
+
+                      organizationId={
+                        organizationId
+                      }
+
+
+                      performanceInstanceId={
+                        performanceInstanceId
+                      }
+
+
+                      performanceMonth={
+                        performanceMonth
+                      }
+
+
+                      previousKeyResultValues={
+                        previousKeyResultValues
+                      }
+
+
+                      previousKeyResultScores={
+                        previousKeyResultScores
+                      }
+
+
+                      /*
+                       * Pass the Performance Sheet's
+                       * global Edit mode into every
+                       * Key Result.
+                       */
+                      editing={
+                        globalEditing
+                      }
+
+                    />
+
+                  </div>
+
                 );
 
+              }
+            )}
 
-              return (
+          </div>
 
-                <div
-                  key={
-                    keyResult.id
-                  }
-                  className="px-6 py-5"
-                >
-
-                  <KeyResultRow
-
-                    keyResult={
-                      keyResult
-                    }
-
-                    progress={
-                      progress
-                    }
-
-                    organizationId={
-                      organizationId
-                    }
-
-                    performanceInstanceId={
-                      performanceInstanceId
-                    }
-
-                    performanceMonth={
-                      performanceMonth
-                    }
-
-                    previousKeyResultValues={
-                      previousKeyResultValues
-                    }
-
-                  />
-
-                </div>
-              );
-            }
-          )
         )}
 
       </div>

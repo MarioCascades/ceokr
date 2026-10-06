@@ -13,9 +13,11 @@ interface PerformanceInstanceRecord {
 
   organization_id: string;
 
-  assignment_id: string;
+  assignment_id: string | null;
 
   performance_sheet_id: string;
+
+  member_id: string | null;
 
   performance_month: string;
 
@@ -57,10 +59,15 @@ function mapRecordToPerformanceInstance(
       record.organization_id,
 
     assignmentId:
-      record.assignment_id,
+      record.assignment_id ??
+      undefined,
 
     performanceSheetId:
       record.performance_sheet_id,
+
+    memberId:
+      record.member_id ??
+      undefined,
 
     performanceMonth:
       record.performance_month,
@@ -121,10 +128,15 @@ export async function createPerformanceInstance(
           performanceInstance.organizationId,
 
         assignment_id:
-          performanceInstance.assignmentId,
+          performanceInstance.assignmentId ??
+          null,
 
         performance_sheet_id:
           performanceInstance.performanceSheetId,
+
+        member_id:
+          performanceInstance.memberId ??
+          null,
 
         performance_month:
           performanceInstance.performanceMonth,
@@ -301,8 +313,7 @@ export async function findPerformanceInstanceById(
 /* ==========================================================
    Find By Assignment And Month
    ----------------------------------------------------------
-   Monthly Runtime identity:
-   Assignment + Performance Month
+   Assignment remains supported for migration compatibility.
 ========================================================== */
 
 export async function findPerformanceInstanceByAssignmentAndMonth(
@@ -346,7 +357,7 @@ export async function findPerformanceInstanceByAssignmentAndMonth(
 /* ==========================================================
    Find By Assignment
    ----------------------------------------------------------
-   Used for monthly Runtime history.
+   Used for legacy Runtime history during migration.
 ========================================================== */
 
 export async function findPerformanceInstancesByAssignment(
@@ -375,6 +386,88 @@ export async function findPerformanceInstancesByAssignment(
   if (error) {
     throw new Error(
       `Failed to load performance instance history: ${error.message}`
+    );
+  }
+
+  return (
+    data as PerformanceInstanceRecord[]
+  ).map(
+    mapRecordToPerformanceInstance
+  );
+}
+
+/* ==========================================================
+   Find By Member And Month
+========================================================== */
+
+export async function findPerformanceInstanceByMemberAndMonth(
+  organizationId: string,
+  memberId: string,
+  performanceMonth: string
+): Promise<PerformanceInstance | null> {
+  const { data, error } =
+    await supabase
+      .from("performance_instances")
+      .select("*")
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .eq(
+        "member_id",
+        memberId
+      )
+      .eq(
+        "performance_month",
+        performanceMonth
+      )
+      .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Failed to load member monthly performance instance: ${error.message}`
+    );
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return mapRecordToPerformanceInstance(
+    data as PerformanceInstanceRecord
+  );
+}
+
+/* ==========================================================
+   Find By Member
+========================================================== */
+
+export async function findPerformanceInstancesByMember(
+  organizationId: string,
+  memberId: string
+): Promise<PerformanceInstance[]> {
+  const { data, error } =
+    await supabase
+      .from("performance_instances")
+      .select("*")
+      .eq(
+        "organization_id",
+        organizationId
+      )
+      .eq(
+        "member_id",
+        memberId
+      )
+      .order(
+        "performance_month",
+        {
+          ascending: false,
+        }
+      );
+
+  if (error) {
+    throw new Error(
+      `Failed to load member performance history: ${error.message}`
     );
   }
 

@@ -1,7 +1,10 @@
-import { loadPublishedById } from "@/lib/repositories/performancesheetrepository";
+import {
+  loadLatestPublishedForOrganization,
+} from "@/lib/repositories/performancesheetrepository";
 
 import {
   findPerformanceInstancesByOrganization,
+  findPerformanceInstancesByMember,
 } from "@/lib/repositories/performanceinstancerepository";
 
 import {
@@ -22,11 +25,22 @@ import {
 
 import {
   loadAssignment,
-  loadActiveAssignment,
   findAssignmentsByOrganization,
 } from "@/lib/repositories/assignmentrepository";
 
 import { getUser } from "@/services/user.service";
+
+import {
+  getOrCreatePerformanceExecutionForMonth,
+} from "@/services/assignment.service";
+
+import {
+  getOrCreateMemberPerformanceExecutionForMonth,
+} from "@/services/memberperformanceexecution";
+
+import {
+  loadOrganizationMembershipForMember,
+} from "@/lib/repositories/memberokrrepository";
 
 import {
   buildRuntimePerformanceObjectives,
@@ -39,11 +53,8 @@ import {
 
 export interface RuntimeSubject {
   type: "individual";
-
   id: string;
-
   displayName: string;
-
   email: string;
 }
 
@@ -53,102 +64,87 @@ export interface RuntimeSubject {
 ========================================================== */
 
 function getCurrentPerformanceMonth(): string {
-
-  const now =
-    new Date();
+  const now = new Date();
 
   return [
-    now
-      .getUTCFullYear()
-      .toString()
-      .padStart(4, "0"),
-
-    (now.getUTCMonth() + 1)
-      .toString()
-      .padStart(2, "0"),
-
+    now.getUTCFullYear().toString().padStart(4, "0"),
+    (now.getUTCMonth() + 1).toString().padStart(2, "0"),
     "01",
   ].join("-");
 }
-
 
 function addMonths(
   performanceMonth: string,
   amount: number
 ): string {
+  const date = new Date(`${performanceMonth}T00:00:00Z`);
 
-  const date =
-    new Date(
-      `${performanceMonth}T00:00:00Z`
-    );
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return performanceMonth;
   }
 
-  date.setUTCMonth(
-    date.getUTCMonth() +
-      amount
-  );
+  date.setUTCMonth(date.getUTCMonth() + amount);
 
   return [
-    date
-      .getUTCFullYear()
-      .toString()
-      .padStart(4, "0"),
-
-    (date.getUTCMonth() + 1)
-      .toString()
-      .padStart(2, "0"),
-
+    date.getUTCFullYear().toString().padStart(4, "0"),
+    (date.getUTCMonth() + 1).toString().padStart(2, "0"),
     "01",
   ].join("-");
 }
 
 
 /* ==========================================================
-   Previous Month Values
+   Previous Month Performance
+   ----------------------------------------------------------
+   New Runtime records resolve history by memberId.
+   Legacy Assignment-based records remain supported while
+   historical data is being migrated.
 ========================================================== */
 
-async function loadPreviousKeyResultValues(
+async function loadPreviousKeyResultPerformance(
   performanceInstances: Awaited<
-    ReturnType<
-      typeof findPerformanceInstancesByOrganization
-    >
+    ReturnType<typeof findPerformanceInstancesByOrganization>
   >,
-
   currentPerformanceInstance: Awaited<
-    ReturnType<
-      typeof findPerformanceInstancesByOrganization
-    >
+    ReturnType<typeof findPerformanceInstancesByOrganization>
   >[number]
-): Promise<
-  Record<string, string | number>
-> {
+): Promise<{
+  values: Record<string, string | number>;
+  scores: Record<string, number>;
+}> {
+  const previousMonth = addMonths(
+    currentPerformanceInstance.performanceMonth,
+    -1
+  );
 
-  const previousMonth =
-    addMonths(
-      currentPerformanceInstance.performanceMonth,
-      -1
-    );
+  const previousPerformanceInstance = performanceInstances.find(
+    (instance) => {
+      if (
+        currentPerformanceInstance.memberId &&
+        instance.memberId
+      ) {
+        return (
+          instance.memberId === currentPerformanceInstance.memberId &&
+          instance.performanceMonth === previousMonth
+        );
+      }
 
-  const previousPerformanceInstance =
-    performanceInstances.find(
-      (instance) =>
-        instance.assignmentId ===
-          currentPerformanceInstance.assignmentId &&
-        instance.performanceMonth ===
-          previousMonth
-    );
+      if (
+        currentPerformanceInstance.assignmentId &&
+        instance.assignmentId
+      ) {
+        return (
+          instance.assignmentId === currentPerformanceInstance.assignmentId &&
+          instance.performanceMonth === previousMonth
+        );
+      }
 
-  if (
-    !previousPerformanceInstance
-  ) {
-    return {};
+      return false;
+    }
+  );
+
+  if (!previousPerformanceInstance) {
+    return { values: {}, scores: {} };
   }
 
   const previousKeyResults =
@@ -161,46 +157,76 @@ async function loadPreviousKeyResultValues(
       previousPerformanceInstance.id
     );
 
-  const values:
-    Record<string, string | number> =
-    {};
+  const values: Record<string, string | number> = {};
+  const scores: Record<string, number> = {};
 
-  for (
-    const keyResult of
-      previousKeyResults
-  ) {
-
-    if (
-      !keyResult.sourceKeyResultId
-    ) {
+  for (const keyResult of previousKeyResults) {
+    if (!keyResult.sourceKeyResultId) {
       continue;
     }
 
-    const progress =
-      previousProgress.find(
-        (item) =>
-          item.keyResultId ===
-          keyResult.id
-      );
+    const progress = previousProgress.find(
+      (item) => item.keyResultId === keyResult.id
+    );
 
     if (
       progress &&
-      progress.currentValue !==
-        undefined &&
-      progress.currentValue !==
-        null &&
-      progress.currentValue !==
-        ""
+      progress.currentValue !== undefined &&
+      progress.currentValue !== null &&
+      progress.currentValue !== ""
     ) {
+      values[keyResult.sourceKeyResultId] = progress.currentValue;
+    }
 
-      values[
-        keyResult.sourceKeyResultId
-      ] =
-        progress.currentValue;
+    if (
+      progress &&
+      progress.score !== undefined &&
+      progress.score !== null
+    ) {
+      scores[keyResult.sourceKeyResultId] = progress.score;
     }
   }
 
-  return values;
+  return { values, scores };
+}
+
+
+/* ==========================================================
+   Legacy Member Instance Compatibility
+========================================================== */
+
+async function loadLegacyMemberInstances(
+  organizationId: string,
+  memberId: string
+) {
+  const assignments = await findAssignmentsByOrganization(
+    organizationId
+  );
+
+  const memberAssignmentIds = new Set(
+    assignments
+      .filter(
+        (assignment) =>
+          assignment.assignmentType === "individual" &&
+          assignment.subjectId === memberId &&
+          assignment.status !== "cancelled"
+      )
+      .map((assignment) => assignment.id)
+  );
+
+  if (memberAssignmentIds.size === 0) {
+    return [];
+  }
+
+  const allInstances = await findPerformanceInstancesByOrganization(
+    organizationId
+  );
+
+  return allInstances.filter(
+    (instance) =>
+      Boolean(instance.assignmentId) &&
+      memberAssignmentIds.has(instance.assignmentId as string)
+  );
 }
 
 
@@ -210,82 +236,114 @@ async function loadPreviousKeyResultValues(
 
 export async function loadRuntimeExecution(
   organizationId: string,
-
   subjectId?: string,
-
   performanceMonth?: string
 ) {
-
-  const performanceInstances =
-    await findPerformanceInstancesByOrganization(
-      organizationId
-    );
-
-  if (
-    performanceInstances.length === 0
-  ) {
-    return null;
-  }
+  const selectedMonth =
+    performanceMonth ?? getCurrentPerformanceMonth();
 
 
   /* ========================================================
      Individual / Subject Runtime
+
+     Current members enter Runtime through:
+
+     Organization Membership
+             ↓
+     Member OKRs
+             ↓
+     Monthly Performance Instance
+
+     Assignment is NOT required for a member to participate.
+     Existing Assignment-based instances remain readable as
+     historical compatibility records.
   ======================================================== */
 
   if (subjectId) {
+    const user = await getUser(subjectId);
 
-    const assignment =
-      await loadActiveAssignment(
+    if (!user || !user.is_active) {
+      return null;
+    }
+
+    const membership = await loadOrganizationMembershipForMember(
+      organizationId,
+      subjectId
+    );
+
+    if (!membership) {
+      return null;
+    }
+
+    const directMemberInstances =
+      await findPerformanceInstancesByMember(
         organizationId,
         subjectId
       );
 
-    if (!assignment) {
-      return null;
-    }
-
-    const assignmentInstances =
-      performanceInstances.filter(
-        (instance) =>
-          instance.assignmentId ===
-          assignment.id
+    const legacyMemberInstances =
+      await loadLegacyMemberInstances(
+        organizationId,
+        subjectId
       );
 
-    if (
-      assignmentInstances.length === 0
-    ) {
-      return null;
-    }
+    const combinedInstances = [
+      ...directMemberInstances,
+      ...legacyMemberInstances.filter(
+        (legacy) =>
+          !directMemberInstances.some(
+            (current) => current.id === legacy.id
+          )
+      ),
+    ];
 
     /*
-     * Runtime normally opens the current month.
-     *
-     * When performanceMonth is supplied, resolve the
-     * exact monthly Performance Instance requested by
-     * the user.
+     * Prefer an existing monthly record. This prevents a historical
+     * Assignment-backed month from being duplicated during the transition.
+     * After the migration is applied, individual historical records have
+     * member_id populated and are returned by the direct member query.
      */
-    const selectedMonth =
-      performanceMonth ??
-      getCurrentPerformanceMonth();
-
-    const performanceInstance =
-      assignmentInstances.find(
+    let selectedInstance =
+      combinedInstances.find(
         (instance) =>
-          instance.performanceMonth ===
+          instance.performanceMonth === selectedMonth
+      );
+
+    if (!selectedInstance) {
+      selectedInstance =
+        await getOrCreateMemberPerformanceExecutionForMonth(
+          organizationId,
+          subjectId,
           selectedMonth
-      ) ??
-      assignmentInstances[0];
+        );
+
+      combinedInstances.push(selectedInstance);
+    }
+
+    const performanceInstances =
+      await findPerformanceInstancesByOrganization(
+        organizationId
+      );
+
+    const displayName =
+      user.display_name?.trim() ||
+      `${user.first_name} ${user.last_name}`.trim() ||
+      user.email;
+
+    const subject: RuntimeSubject = {
+      type: "individual",
+      id: user.id,
+      displayName,
+      email: user.email,
+    };
 
     return buildRuntimeExecution(
       organizationId,
-
-      performanceInstance,
-
-      assignment,
-
+      selectedInstance,
+      undefined,
       performanceInstances,
-
-      assignmentInstances
+      combinedInstances,
+      subject
     );
   }
 
@@ -293,74 +351,72 @@ export async function loadRuntimeExecution(
   /* ========================================================
      Organization Runtime
 
-     No subjectId means the user is entering the
-     organization-level Performance experience.
-
-     Resolve an organization assignment rather than
-     arbitrarily selecting an individual member's
-     Performance Instance.
+     Organization-level execution remains Assignment-backed
+     for now because the current product migration is focused
+     on individual Member Runtime ownership.
   ======================================================== */
 
-  const assignments =
-    await findAssignmentsByOrganization(
+  const assignments = await findAssignmentsByOrganization(
+    organizationId
+  );
+
+  const organizationAssignments = assignments.filter(
+    (assignment) =>
+      assignment.assignmentType === "organization" &&
+      assignment.status === "active"
+  );
+
+  if (organizationAssignments.length === 0) {
+    return null;
+  }
+
+  const performanceInstances =
+    await findPerformanceInstancesByOrganization(
       organizationId
     );
 
-  const organizationAssignments =
-    assignments.filter(
-      (assignment) =>
-        assignment.assignmentType ===
-        "organization" &&
-        assignment.status ===
-        "active"
-    );
+  const organizationAssignmentIds = new Set(
+    organizationAssignments.map(
+      (assignment) => assignment.id
+    )
+  );
 
-  if (
-    organizationAssignments.length === 0
-  ) {
-    return null;
-  }
+  const organizationInstances = performanceInstances.filter(
+    (instance) =>
+      Boolean(instance.assignmentId) &&
+      organizationAssignmentIds.has(instance.assignmentId as string)
+  );
 
-  const organizationAssignmentIds =
-    new Set(
-      organizationAssignments.map(
-        (assignment) =>
-          assignment.id
-      )
-    );
+  let performanceInstance = organizationInstances.find(
+    (instance) =>
+      instance.performanceMonth === selectedMonth
+  );
 
-  const organizationInstances =
-    performanceInstances.filter(
-      (instance) =>
-        organizationAssignmentIds.has(
-          instance.assignmentId
-        )
-    );
-
-  if (
-    organizationInstances.length === 0
-  ) {
-    return null;
-  }
-
-  const selectedMonth =
-    performanceMonth ??
-    getCurrentPerformanceMonth();
-
-  const performanceInstance =
-    organizationInstances.find(
-      (instance) =>
-        instance.performanceMonth ===
-        selectedMonth
-    ) ??
-    organizationInstances[0];
-
-  const assignment =
+  const organizationAssignment =
     organizationAssignments.find(
-      (item) =>
-        item.id ===
-        performanceInstance.assignmentId
-    );
+      (assignment) =>
+        assignment.id === performanceInstance?.assignmentId
+    ) ?? organizationAssignments[0];
+
+  if (!performanceInstance && organizationAssignment) {
+    performanceInstance =
+      await getOrCreatePerformanceExecutionForMonth(
+        organizationId,
+        organizationAssignment.id,
+        selectedMonth
+      );
+
+    organizationInstances.push(performanceInstance);
+    performanceInstances.push(performanceInstance);
+  }
+
+  if (!performanceInstance) {
+    return null;
+  }
+
+  const assignment = organizationAssignments.find(
+    (item) => item.id === performanceInstance!.assignmentId
+  );
 
   if (!assignment) {
     return null;
@@ -368,13 +424,9 @@ export async function loadRuntimeExecution(
 
   return buildRuntimeExecution(
     organizationId,
-
     performanceInstance,
-
     assignment,
-
     performanceInstances,
-
     organizationInstances
   );
 }
@@ -386,53 +438,24 @@ export async function loadRuntimeExecution(
 
 async function buildRuntimeExecution(
   organizationId: string,
-
   performanceInstance: Awaited<
-    ReturnType<
-      typeof findPerformanceInstancesByOrganization
-    >
+    ReturnType<typeof findPerformanceInstancesByOrganization>
   >[number],
-
-  assignment: NonNullable<
-    Awaited<
-      ReturnType<
-        typeof loadAssignment
-      >
-    >
+  assignment?: NonNullable<
+    Awaited<ReturnType<typeof loadAssignment>>
   >,
-
   performanceInstances: Awaited<
-    ReturnType<
-      typeof findPerformanceInstancesByOrganization
-    >
-  >,
-
-  assignmentInstances: Awaited<
-    ReturnType<
-      typeof findPerformanceInstancesByOrganization
-    >
-  >
+    ReturnType<typeof findPerformanceInstancesByOrganization>
+  > = [],
+  memberInstances: Awaited<
+    ReturnType<typeof findPerformanceInstancesByOrganization>
+  > = [],
+  subjectOverride?: RuntimeSubject
 ) {
+  let subject: RuntimeSubject | null = subjectOverride ?? null;
 
-  let subject:
-    | RuntimeSubject
-    | null =
-    null;
-
-
-  /* ========================================================
-     Individual Subject
-  ======================================================== */
-
-  if (
-    assignment.assignmentType ===
-    "individual"
-  ) {
-
-    const user =
-      await getUser(
-        assignment.subjectId
-      );
+  if (!subject && assignment?.assignmentType === "individual") {
+    const user = await getUser(assignment.subjectId);
 
     if (!user) {
       return null;
@@ -445,140 +468,76 @@ async function buildRuntimeExecution(
 
     subject = {
       type: "individual",
-
-      id:
-        user.id,
-
+      id: user.id,
       displayName,
-
-      email:
-        user.email,
+      email: user.email,
     };
   }
 
+ const performanceSheet =
+  await loadLatestPublishedForOrganization(
+    organizationId
+  );
 
-  /* ========================================================
-     Published Performance Sheet
-  ======================================================== */
-
-  const performanceSheet =
-    await loadPublishedById(
-      organizationId,
-      assignment.performanceSheetId
-    );
-
-  if (!performanceSheet) {
-    return null;
-  }
-
-
-  /* ========================================================
-     Runtime Objectives
-  ======================================================== */
+if (!performanceSheet) {
+  return null;
+}
 
   const instanceObjectives =
     await findPerformanceInstanceObjectives(
       performanceInstance.id
     );
 
-
-  /* ========================================================
-     Runtime Key Results
-  ======================================================== */
-
   const instanceKeyResults =
     await findPerformanceInstanceKeyResults(
       performanceInstance.id
     );
 
+  const instanceInitiatives = await Promise.all(
+    instanceKeyResults.map(
+      (keyResult) =>
+        findPerformanceInstanceInitiativesByKeyResult(
+          keyResult.id
+        )
+    )
+  );
 
-  /* ========================================================
-     Runtime Initiatives
-  ======================================================== */
-
-  const instanceInitiatives =
-    await Promise.all(
-      instanceKeyResults.map(
-        (keyResult) =>
-          findPerformanceInstanceInitiativesByKeyResult(
-            keyResult.id
-          )
-      )
-    );
-
-
-  /* ========================================================
-     Build Runtime Objectives
-  ======================================================== */
-
-  const objectives =
-    buildRuntimePerformanceObjectives(
-      instanceObjectives,
-      instanceKeyResults,
-      instanceInitiatives.flat()
-    );
-
-
-  /* ========================================================
-     Runtime Key Result Progress
-  ======================================================== */
+  const objectives = buildRuntimePerformanceObjectives(
+    instanceObjectives,
+    instanceKeyResults,
+    instanceInitiatives.flat()
+  );
 
   const keyResultProgress =
     await findKeyResultProgressByPerformanceInstance(
       performanceInstance.id
     );
 
-
-  /* ========================================================
-     Previous Month Values
-  ======================================================== */
-
-  const previousKeyResultValues =
-    await loadPreviousKeyResultValues(
+  const previousKeyResultPerformance =
+    await loadPreviousKeyResultPerformance(
       performanceInstances,
       performanceInstance
     );
 
-
-  /* ========================================================
-     Available Performance Months
-  ======================================================== */
-
-  const performanceMonths =
-    Array.from(
-      new Set(
-        assignmentInstances.map(
-          (instance) =>
-            instance.performanceMonth
-        )
+  const performanceMonths = Array.from(
+    new Set(
+      memberInstances.map(
+        (instance) => instance.performanceMonth
       )
-    ).sort(
-      (a, b) =>
-        b.localeCompare(a)
-    );
-
-
-  /* ========================================================
-     Runtime Execution
-  ======================================================== */
+    )
+  ).sort((a, b) => b.localeCompare(a));
 
   return {
-
     assignment,
-
     subject,
-
     performanceSheet,
-
     performanceInstance,
-
     performanceMonths,
-
     keyResultProgress,
-
     objectives,
-
-    previousKeyResultValues,
-
+    previousKeyResultValues:
+      previousKeyResultPerformance.values,
+    previousKeyResultScores:
+      previousKeyResultPerformance.scores,
   };
 }

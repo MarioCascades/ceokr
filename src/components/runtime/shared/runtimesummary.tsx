@@ -2,9 +2,11 @@ import type {
   PerformanceInstance,
 } from "@/lib/domain/performanceinstance";
 
+
 interface RuntimeSummaryProps {
   performanceInstance: PerformanceInstance;
 }
+
 
 function formatScore(
   score: number
@@ -12,11 +14,13 @@ function formatScore(
   return `${Math.round(score)}%`;
 }
 
+
 function formatProgress(
   progress: number
 ) {
   return `${Math.round(progress)}%`;
 }
+
 
 function formatStatus(
   status: PerformanceInstance["status"]
@@ -27,127 +31,203 @@ function formatStatus(
   );
 }
 
-function getStatusDescription(
-  status: PerformanceInstance["status"]
-) {
-  switch (status) {
-    case "not_started":
-      return "Performance has not started yet.";
-
-    case "in_progress":
-      return "Performance is currently being updated.";
-
-    case "submitted":
-      return "Submitted and awaiting manager review.";
-
-    case "approved":
-      return "Approved and ready for completion.";
-
-    case "completed":
-      return "This performance period is complete.";
-
-    default:
-      return "Current performance status.";
-  }
-}
 
 export default function RuntimeSummary({
   performanceInstance,
 }: RuntimeSummaryProps) {
+
   const score =
-    performanceInstance.overallScore ?? 0;
+    performanceInstance.overallScore ??
+    0;
 
   const progress =
-    performanceInstance.progress ?? 0;
+    performanceInstance.progress ??
+    0;
 
   const status =
     performanceInstance.status;
 
+
   return (
-    <section className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-primary">
-          Performance Overview
-        </p>
 
-        <h2 className="text-2xl font-semibold tracking-tight">
+    <section
+      className="
+        rounded-lg
+        border
+        border-border/70
+        bg-card
+        px-3
+        py-2
+        shadow-sm
+        sm:px-4
+      "
+    >
+
+      <div
+        className="
+          flex
+          flex-wrap
+          items-center
+          gap-x-5
+          gap-y-1.5
+        "
+      >
+
+        <span
+          className="
+            text-[9px]
+            font-bold
+            uppercase
+            tracking-[0.14em]
+            text-muted-foreground
+          "
+        >
           Performance Summary
-        </h2>
+        </span>
 
-        <p className="text-sm text-muted-foreground">
-          A current snapshot of this monthly
-          performance instance.
-        </p>
-      </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div
+          className="
+            flex
+            items-center
+            gap-1.5
+          "
+        >
 
-        {/* Overall Score */}
-
-        <div className="rounded-xl border bg-background p-5">
-          <p className="text-sm font-medium text-muted-foreground">
+          <span
+            className="
+              text-[10px]
+              text-muted-foreground
+            "
+          >
             Overall Score
-          </p>
+          </span>
 
-          <p className="mt-2 text-3xl font-bold tracking-tight">
-            {formatScore(score)}
-          </p>
+          <span
+            className="
+              text-sm
+              font-black
+              text-primary
+            "
+          >
+            {
+              formatScore(
+                score
+              )
+            }
+          </span>
 
-          <p className="mt-1 text-xs text-muted-foreground">
-            Current performance score
-          </p>
         </div>
 
-        {/* Progress */}
 
-        <div className="rounded-xl border bg-background p-5">
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm font-medium text-muted-foreground">
-              Progress
-            </p>
+        <div
+          className="
+            flex
+            min-w-[170px]
+            flex-1
+            items-center
+            gap-2
+          "
+        >
 
-            <p className="text-sm font-semibold">
-              {formatProgress(progress)}
-            </p>
-          </div>
+          <span
+            className="
+              shrink-0
+              text-[10px]
+              text-muted-foreground
+            "
+          >
+            Progress
+          </span>
 
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
+
+          <div
+            className="
+              h-1.5
+              min-w-16
+              flex-1
+              overflow-hidden
+              rounded-full
+              bg-muted
+            "
+          >
+
             <div
-              className="h-full rounded-full bg-primary transition-all"
+              className="
+                h-full
+                rounded-full
+                bg-primary
+                transition-all
+              "
               style={{
-                width: `${Math.min(
-                  Math.max(
-                    progress,
-                    0
-                  ),
-                  100
-                )}%`,
+                width:
+                  `${Math.min(
+                    Math.max(
+                      progress,
+                      0
+                    ),
+                    100
+                  )}%`,
               }}
             />
+
           </div>
 
-          <p className="mt-2 text-xs text-muted-foreground">
-            Monthly performance completion
-          </p>
+
+          <span
+            className="
+              text-[10px]
+              font-bold
+              text-foreground
+            "
+          >
+            {
+              formatProgress(
+                progress
+              )
+            }
+          </span>
+
         </div>
 
-        {/* Status */}
 
-        <div className="rounded-xl border bg-background p-5">
-          <p className="text-sm font-medium text-muted-foreground">
-            Performance Status
-          </p>
+        <div
+          className="
+            flex
+            items-center
+            gap-1.5
+          "
+        >
 
-          <p className="mt-2 text-xl font-bold capitalize">
-            {formatStatus(status)}
-          </p>
+          <span
+            className="
+              text-[10px]
+              text-muted-foreground
+            "
+          >
+            Status
+          </span>
 
-          <p className="mt-1 text-xs text-muted-foreground">
-            {getStatusDescription(status)}
-          </p>
+          <span
+            className="
+              text-xs
+              font-bold
+              capitalize
+              text-foreground
+            "
+          >
+            {
+              formatStatus(
+                status
+              )
+            }
+          </span>
+
         </div>
 
       </div>
+
     </section>
+
   );
 }

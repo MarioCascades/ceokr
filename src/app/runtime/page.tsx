@@ -1,7 +1,5 @@
 import PerformanceSheet from "@/components/runtime/performancesheet/performancesheet";
 
-import MemberOKRPerformance from "@/components/member/memberokrperformance";
-
 import RuntimeNavigation from "@/components/runtime/shared/runtimenavigation";
 
 import RuntimeOverview from "@/components/runtime/shared/runtimeoverview";
@@ -21,10 +19,6 @@ import {
 import {
   loadDashboard,
 } from "@/services/dashboard.service";
-
-import {
-  loadMemberOKRPerformance,
-} from "@/lib/member/loadmemberokrperformance";
 
 
 interface RuntimePageProps {
@@ -222,8 +216,16 @@ export default async function RuntimePage({
   /* ========================================================
      Selected Member Runtime
      --------------------------------------------------------
-     Once a member is selected, attempt the existing Runtime
-     execution path.
+     Runtime Performance Sheet is now the single member
+     Performance experience.
+
+     We intentionally DO NOT fall back to the legacy
+     MemberOKRPerformance component here.
+
+     If Runtime cannot build an execution, that is a Runtime
+     data/configuration issue that must be resolved by the
+     Runtime execution layer rather than hidden by rendering
+     the legacy Performance page.
   ======================================================== */
 
   const runtimeExecution =
@@ -237,81 +239,80 @@ export default async function RuntimePage({
 
 
   /* ========================================================
-     New Member OKR Performance
-     --------------------------------------------------------
-     If the selected member does not have the old Runtime
-     Performance Instance, use the new Member OKR domain.
-
-     This removes Assignment / Performance Instance as a
-     requirement for the new Member Performance experience.
-  ======================================================== */
+     Runtime Execution Required
+     -------------------------------------------------------- */
 
   if (!runtimeExecution) {
 
-    const memberOKRPerformance =
-      await loadMemberOKRPerformance(
-        organization.id,
-
-        params.subjectId,
-
-        performanceMonth
-      );
-
-
-    if (
-      memberOKRPerformance
-    ) {
-
-      return (
-        <main className="min-h-screen bg-background">
-
-          <RuntimeNavigation
-
-            organizationId={
-              organization.id
-            }
-
-            members={
-              activeMembers
-            }
-
-            selectedSubjectId={
-              params.subjectId
-            }
-
-            performanceMonth={
-              performanceMonth
-            }
-
-            performanceMonths={
-              [performanceMonth]
-            }
-
-          />
-
-
-          <MemberOKRPerformance
-            performance={
-              memberOKRPerformance
-            }
-          />
-
-        </main>
-      );
-    }
-
-
     return (
-      <main className="mx-auto max-w-5xl p-8">
+      <main className="min-h-screen bg-background">
 
-        <h1 className="text-2xl font-semibold">
-          Performance Sheet not configured
-        </h1>
+        <RuntimeNavigation
 
-        <p className="mt-2 text-sm text-muted-foreground">
-          This member does not currently have a
-          configured Member OKR Sheet.
-        </p>
+          organizationId={
+            organization.id
+          }
+
+          members={
+            activeMembers
+          }
+
+          selectedSubjectId={
+            params.subjectId
+          }
+
+          performanceMonth={
+            performanceMonth
+          }
+
+          performanceMonths={
+            [performanceMonth]
+          }
+
+        />
+
+
+        <div className="mx-auto max-w-5xl p-8">
+
+          <h1 className="text-2xl font-semibold">
+            Performance Sheet not available
+          </h1>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            Runtime could not create or load the Performance
+            Sheet for this member and performance month.
+          </p>
+
+          <div className="mt-6 rounded-lg border bg-muted/30 p-4">
+
+            <div className="grid gap-3 text-sm">
+
+              <div>
+                <span className="font-medium">
+                  Member:
+                </span>{" "}
+                {params.subjectId}
+              </div>
+
+              <div>
+                <span className="font-medium">
+                  Performance Month:
+                </span>{" "}
+                {performanceMonth}
+              </div>
+
+              <div>
+                <span className="font-medium">
+                  Organization:
+                </span>{" "}
+                {organization.id}
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
 
       </main>
     );
@@ -319,9 +320,10 @@ export default async function RuntimePage({
 
 
   /* ========================================================
-     Existing Runtime Member Performance
+     Runtime Member Performance Sheet
      --------------------------------------------------------
-     Historical Runtime execution remains untouched.
+     This is now the ONLY Performance Sheet rendered by the
+     Runtime page.
   ======================================================== */
 
   return (

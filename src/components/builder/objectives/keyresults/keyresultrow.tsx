@@ -17,13 +17,9 @@ import InitiativeDialog from "./initiatives/initiativedialog";
 
 interface KeyResultRowProps {
   objectiveId: string;
-
   keyResult: BuilderKeyResult;
-
   editMode: boolean;
-
   onEdit?: (keyResult: BuilderKeyResult) => void;
-
   onDelete?: (id: string) => void;
 }
 
@@ -40,61 +36,34 @@ export default function KeyResultRow({
     deleteInitiative,
   } = useBuilder();
 
-  const [
-    initiativeDialogOpen,
-    setInitiativeDialogOpen,
-  ] = useState(false);
-
-  const [
-    selectedInitiative,
-    setSelectedInitiative,
-  ] = useState<BuilderInitiative | null>(null);
+  const [initiativeDialogOpen, setInitiativeDialogOpen] = useState(false);
+  const [selectedInitiative, setSelectedInitiative] =
+    useState<BuilderInitiative | null>(null);
 
   function handleAddInitiative() {
-    if (keyResult.initiatives.length >= 3) {
-      return;
-    }
-
+    if (keyResult.initiatives.length >= 3) return;
     setSelectedInitiative(null);
     setInitiativeDialogOpen(true);
   }
 
-  function handleEditInitiative(
-    initiative: BuilderInitiative
-  ) {
+  function handleEditInitiative(initiative: BuilderInitiative) {
     setSelectedInitiative(initiative);
     setInitiativeDialogOpen(true);
   }
 
-  function handleDeleteInitiative(
-    initiativeId: string
-  ) {
-    deleteInitiative(
-      objectiveId,
-      keyResult.id,
-      initiativeId
-    );
+  function handleDeleteInitiative(initiativeId: string) {
+    deleteInitiative(objectiveId, keyResult.id, initiativeId);
   }
 
-  function handleSaveInitiative(
-    initiative: BuilderInitiative
-  ) {
+  function handleSaveInitiative(initiative: BuilderInitiative) {
     const exists = keyResult.initiatives.some(
       (item) => item.id === initiative.id
     );
 
     if (exists) {
-      updateInitiative(
-        objectiveId,
-        keyResult.id,
-        initiative
-      );
+      updateInitiative(objectiveId, keyResult.id, initiative);
     } else {
-      addInitiative(
-        objectiveId,
-        keyResult.id,
-        initiative
-      );
+      addInitiative(objectiveId, keyResult.id, initiative);
     }
 
     setInitiativeDialogOpen(false);
@@ -102,126 +71,95 @@ export default function KeyResultRow({
   }
 
   const measurementLabel =
-    keyResult.measurementType ===
-    "percentage"
+    keyResult.measurementType === "percentage"
       ? "Percentage"
-      : keyResult.measurementType ===
-        "financial"
+      : keyResult.measurementType === "financial"
         ? "Financial ($)"
         : "Numeric";
 
   const scoringLabel =
-    keyResult.scoringMethod ===
-    "percent_into_period"
+    keyResult.scoringMethod === "percent_into_period"
       ? "% Into Period"
       : "Percentage of Target";
 
   return (
     <>
-      <div className="space-y-6 rounded-lg border bg-card p-5 shadow-sm">
-
-        {/* ================= Header ================= */}
-
-        <div className="flex items-start justify-between">
-
-          <div className="flex-1 space-y-3">
-
-            <h4 className="text-base font-semibold">
-              {keyResult.title ||
-                "Untitled Key Result"}
+      <div className="rounded-xl border border-[#B4C2D1]/60 bg-white p-4 transition hover:border-[#082550]/30 hover:shadow-sm md:p-5">
+        <div className="grid gap-4 md:grid-cols-[minmax(260px,1fr)_120px_150px_90px_100px] md:items-start">
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#272D2C]/50">
+              Key Result
+            </p>
+            <h4 className="mt-1 text-base font-bold text-[#272D2C]">
+              {keyResult.title || "Untitled Key Result"}
             </h4>
-
-            <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
-
-              <div>
-                <p className="text-muted-foreground">
-                  Target
-                </p>
-
-                <p>
-                  {keyResult.target}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-muted-foreground">
-                  Measurement
-                </p>
-
-                <p>
-                  {measurementLabel}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-muted-foreground">
-                  Scoring
-                </p>
-
-                <p>
-                  {scoringLabel}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-muted-foreground">
-                  Weight
-                </p>
-
-                <p>
-                  {keyResult.weight}%
-                </p>
-              </div>
-
+            <div className="mt-3 flex flex-wrap gap-2 md:hidden">
+              <span className="rounded-full bg-[#E9F4F8] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#082550]">
+                {measurementLabel}
+              </span>
+              <span className="rounded-full bg-[#E9F4F8] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#082550]">
+                {scoringLabel}
+              </span>
             </div>
-
           </div>
 
-          {editMode && (
-            <div className="flex gap-2">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#272D2C]/50 md:hidden">
+              Target
+            </p>
+            <p className="mt-1 text-lg font-black text-[#082550] md:mt-0">
+              {keyResult.target || "—"}
+            </p>
+          </div>
 
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={() =>
-                  onEdit?.(keyResult)
-                }
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
+          <div className="hidden md:block">
+            <p className="text-sm font-bold text-[#272D2C]">{measurementLabel}</p>
+            <p className="mt-1 text-xs text-[#272D2C]/55">{scoringLabel}</p>
+          </div>
 
-              <Button
-                size="icon"
-                variant="destructive"
-                onClick={() =>
-                  onDelete?.(keyResult.id)
-                }
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#272D2C]/50 md:hidden">
+              Weight
+            </p>
+            <p className="mt-1 text-sm font-bold text-[#082550] md:mt-0">
+              {keyResult.weight}%
+            </p>
+          </div>
 
-            </div>
-          )}
-
+          <div className="flex items-center justify-start gap-2 md:justify-end">
+            {editMode && (
+              <>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => onEdit?.(keyResult)}
+                  className="border-[#B4C2D1] text-[#082550] hover:bg-[#E9F4F8]"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => onDelete?.(keyResult.id)}
+                  className="border-[#E26D5C]/50 text-[#E26D5C] hover:bg-[#E26D5C]/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* ================= Initiatives ================= */}
-
-        <Initiatives
-          initiatives={
-            keyResult.initiatives
-          }
-          editMode={editMode}
-          onAdd={handleAddInitiative}
-          onEdit={handleEditInitiative}
-          onDelete={
-            handleDeleteInitiative
-          }
-        />
-
+        <div className="mt-4 border-t border-[#B4C2D1]/40 pt-4">
+          <Initiatives
+            initiatives={keyResult.initiatives}
+            editMode={editMode}
+            onAdd={handleAddInitiative}
+            onEdit={handleEditInitiative}
+            onDelete={handleDeleteInitiative}
+          />
+        </div>
       </div>
-
-      {/* ================= Initiative Dialog ================= */}
 
       <InitiativeDialog
         open={initiativeDialogOpen}

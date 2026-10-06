@@ -78,21 +78,27 @@ export default function Objectives() {
   return (
     <>
       <BuilderSection
-        title="Objectives"
+        title="Performance Objectives"
         toolbar={
-          <div className="flex gap-2">
-            <Button variant="outline">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              className="border-[#B4C2D1] font-bold text-[#082550] hover:bg-[#E9F4F8]"
+            >
               Configure
             </Button>
 
-            <Button onClick={handleAddObjective}>
+            <Button
+              onClick={handleAddObjective}
+              className="bg-[#E26D5C] font-bold text-white hover:bg-[#E26D5C]/90"
+            >
               + Add Objective
             </Button>
           </div>
         }
       >
-        <CECard>
-          <div className="space-y-8">
+        <CECard className="border-[#B4C2D1]/60 bg-[#F8FBFC] shadow-none">
+          <div className="space-y-5">
             {builderDocument.objectives.map(
               (objective) => (
                 <ObjectiveCard

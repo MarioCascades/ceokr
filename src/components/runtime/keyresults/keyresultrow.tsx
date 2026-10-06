@@ -48,6 +48,17 @@ interface KeyResultRowProps {
     string | number
   >;
 
+  previousKeyResultScores?: Record<
+    string,
+    number
+  >;
+
+  /**
+   * Global edit mode controlled by
+   * the parent Performance Sheet.
+   */
+  editing?: boolean;
+
   onUpdated?: (
     keyResult: RuntimePerformanceKeyResult
   ) => void;
@@ -75,9 +86,14 @@ export default function KeyResultRow({
 
   previousKeyResultValues,
 
+  previousKeyResultScores = {},
+
+  editing: globalEditing = false,
+
   onUpdated,
 
   onDeleted,
+
 }: KeyResultRowProps) {
 
   const [
@@ -87,6 +103,7 @@ export default function KeyResultRow({
     keyResult
   );
 
+
   const [
     currentValue,
     setCurrentValue,
@@ -94,25 +111,41 @@ export default function KeyResultRow({
     progress?.currentValue ?? ""
   );
 
+
+  const [
+    targetValue,
+    setTargetValue,
+  ] = useState(
+    typeof keyResult.target === "number" ||
+    typeof keyResult.target === "string"
+      ? keyResult.target
+      : ""
+  );
+
+
   const [
     saving,
     setSaving,
   ] = useState(false);
+
 
   const [
     saved,
     setSaved,
   ] = useState(false);
 
+
   const [
     editing,
     setEditing,
   ] = useState(false);
 
+
   const [
     deleting,
     setDeleting,
   ] = useState(false);
+
 
   const [
     error,
@@ -127,12 +160,7 @@ export default function KeyResultRow({
   ======================================================== */
 
   const target =
-    typeof currentKeyResult.target ===
-        "number" ||
-    typeof currentKeyResult.target ===
-        "string"
-      ? currentKeyResult.target
-      : "";
+    targetValue;
 
 
   /* ========================================================
@@ -147,31 +175,23 @@ export default function KeyResultRow({
       : undefined;
 
 
+  const previousScore =
+    currentKeyResult.sourceKeyResultId
+      ? previousKeyResultScores[
+          currentKeyResult.sourceKeyResultId
+        ]
+      : undefined;
+
+
   /* ========================================================
      Current Score
   ======================================================== */
-
-  /*
-   * Runtime scoring is centralized in the Runtime scoring
-   * utility.
-   *
-   * Percentage of Target:
-   *
-   *     current / target * 100
-   *
-   * % Into Period:
-   *
-   *     actual progress / expected progress * 100
-   *
-   * The Performance Instance month is passed into the
-   * calculation so the selected month controls the
-   * calendar context for % Into Period scoring.
-   */
 
   const hasCurrentValue =
     String(
       currentValue
     ).trim() !== "";
+
 
   const calculatedScore =
     hasCurrentValue
@@ -186,10 +206,31 @@ export default function KeyResultRow({
         )
       : 0;
 
+
   const scoreDisplay =
     hasCurrentValue
-      ? calculatedScore
+      ? Math.round(
+          calculatedScore
+        )
       : null;
+
+
+  /* ========================================================
+     Runtime Status
+  ======================================================== */
+
+  const runtimeStatus =
+    progress?.status ??
+    "Not Started";
+
+
+  /*
+   * Keep runtimeStatus available for
+   * the Runtime row state even though
+   * the visual presentation does not
+   * currently display it directly.
+   */
+  void runtimeStatus;
 
 
   /* ========================================================
@@ -209,17 +250,7 @@ export default function KeyResultRow({
 
 
   /* ========================================================
-     Runtime Status
-  ======================================================== */
-
-  const runtimeStatus =
-    !hasCurrentValue
-      ? "not_started"
-      : "in_progress";
-
-
-  /* ========================================================
-     Save Current Value
+     Save Target + Current
   ======================================================== */
 
   async function handleSave() {
@@ -227,94 +258,175 @@ export default function KeyResultRow({
     if (!progress) {
 
       setError(
-        "Runtime Key Result Progress record not found."
+        "No performance progress record exists for this Key Result."
       );
 
       return;
     }
 
 
-    setSaving(
-      true
-    );
+    setSaving(true);
 
-    setSaved(
-      false
-    );
+    setSaved(false);
 
-    setError(
-      null
-    );
+    setError(null);
 
 
     try {
 
-      await updateRuntimeKeyResultProgressAction({
+      /*
+       * First save the Target and
+       * Key Result configuration.
+       */
 
-        organizationId,
+      const updated =
+        await updateRuntimePerformanceInstanceKeyResultAction({
 
-        performanceInstanceId,
+          organizationId,
 
-        keyResultProgressId:
-          progress.id,
+          performanceInstanceId,
 
-        currentValue,
+          keyResultId:
+            currentKeyResult.id,
 
-        /*
-         * Score is calculated automatically.
-         * The user never enters the score manually.
-         */
-        score:
-          calculatedScore,
+          title:
+            currentKeyResult.title,
 
-        employeeComment:
-          progress.employeeComment,
+          target:
+            targetValue,
 
-        managerComment:
-          progress.managerComment,
+          measurementType:
+            currentKeyResult.measurementType,
 
-        status:
-          hasCurrentValue
-            ? "in_progress"
-            : "not_started",
-      });
+          scoringMethod:
+            currentKeyResult.scoringMethod,
+
+          weight:
+            currentKeyResult.weight,
+        });
 
 
-      setSaved(
-        true
+      const runtimeUpdated:
+        RuntimePerformanceKeyResult =
+        {
+
+          ...currentKeyResult,
+
+          title:
+            updated.title,
+
+          target:
+            updated.target,
+
+          weight:
+            updated.weight,
+
+          measurementType:
+            updated.measurementType,
+
+          scoringMethod:
+            updated.scoringMethod,
+        };
+
+
+      setCurrentKeyResult(
+        runtimeUpdated
       );
 
-    } catch (error) {
+
+      setTargetValue(
+        typeof updated.target ===
+          "string" ||
+        typeof updated.target ===
+          "number"
+          ? updated.target
+          : ""
+      );
+
+
+      /*
+       * Then save the Current
+       * value and calculated Score.
+       *
+       * Runtime progress is identified
+       * by the Key Result Progress ID.
+       */
+
+      const savedProgress =
+        await updateRuntimeKeyResultProgressAction({
+
+          organizationId,
+
+          performanceInstanceId,
+
+          keyResultProgressId:
+            progress.id,
+
+          currentValue,
+
+          score:
+            calculatedScore,
+
+          employeeComment:
+            progress.employeeComment,
+
+          managerComment:
+            progress.managerComment,
+
+          status:
+            hasCurrentValue
+              ? "in_progress"
+              : "not_started",
+        });
+
+
+      setCurrentValue(
+        savedProgress.keyResultProgress.currentValue ??
+        currentValue
+      );
+
+
+      setSaved(true);
+
+
+      onUpdated?.(
+        runtimeUpdated
+      );
+
+    } catch (caughtError) {
 
       console.error(
-        "Failed to save Runtime Key Result progress:",
-        error
+        "Failed to save Runtime Key Result:",
+        caughtError
       );
 
 
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to save Runtime Key Result progress."
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Failed to save Key Result."
       );
 
     } finally {
 
-      setSaving(
-        false
-      );
+      setSaving(false);
     }
   }
 
 
   /* ========================================================
-     Update Key Result
+     Key Result Editor
   ======================================================== */
 
   async function handleUpdate(
     values: {
       title: string;
 
+      /*
+       * KeyResultEditor defines this as
+       * unknown, so handleUpdate must
+       * accept unknown as well.
+       */
       target: unknown;
 
       measurementType:
@@ -330,12 +442,23 @@ export default function KeyResultRow({
     }
   ) {
 
-    setError(
-      null
-    );
+    setError(null);
 
 
     try {
+
+      /*
+       * Normalize the editor's unknown
+       * target into the values supported
+       * by the Runtime action.
+       */
+
+      const normalizedTarget =
+        typeof values.target === "string" ||
+        typeof values.target === "number"
+          ? values.target
+          : null;
+
 
       const updated =
         await updateRuntimePerformanceInstanceKeyResultAction({
@@ -351,7 +474,7 @@ export default function KeyResultRow({
             values.title,
 
           target:
-            values.target,
+            normalizedTarget,
 
           measurementType:
             values.measurementType,
@@ -391,30 +514,37 @@ export default function KeyResultRow({
         runtimeUpdated
       );
 
-      setEditing(
-        false
+
+      setTargetValue(
+        typeof updated.target ===
+          "string" ||
+        typeof updated.target ===
+          "number"
+          ? updated.target
+          : ""
       );
 
-      setSaved(
-        false
-      );
+
+      setEditing(false);
+
+      setSaved(false);
 
 
       onUpdated?.(
         runtimeUpdated
       );
 
-    } catch (error) {
+    } catch (caughtError) {
 
       console.error(
         "Failed to update Runtime Key Result:",
-        error
+        caughtError
       );
 
 
       setError(
-        error instanceof Error
-          ? error.message
+        caughtError instanceof Error
+          ? caughtError.message
           : "Failed to update Key Result."
       );
     }
@@ -427,6 +557,11 @@ export default function KeyResultRow({
 
   async function handleDelete() {
 
+    if (deleting) {
+      return;
+    }
+
+
     const confirmed =
       window.confirm(
         `Delete "${currentKeyResult.title}"?\n\nThis will remove the Key Result from this Performance Instance.`
@@ -438,13 +573,9 @@ export default function KeyResultRow({
     }
 
 
-    setDeleting(
-      true
-    );
+    setDeleting(true);
 
-    setError(
-      null
-    );
+    setError(null);
 
 
     try {
@@ -464,24 +595,22 @@ export default function KeyResultRow({
         currentKeyResult.id
       );
 
-    } catch (error) {
+    } catch (caughtError) {
 
       console.error(
         "Failed to delete Runtime Key Result:",
-        error
+        caughtError
       );
 
 
       setError(
-        error instanceof Error
-          ? error.message
+        caughtError instanceof Error
+          ? caughtError.message
           : "Failed to delete Key Result."
       );
 
 
-      setDeleting(
-        false
-      );
+      setDeleting(false);
     }
   }
 
@@ -517,12 +646,13 @@ export default function KeyResultRow({
 
 
   /* ========================================================
-     Editor
+     Individual Key Result Editor
   ======================================================== */
 
   if (editing) {
 
     return (
+
       <KeyResultEditor
 
         keyResult={
@@ -530,9 +660,7 @@ export default function KeyResultRow({
         }
 
         onCancel={() =>
-          setEditing(
-            false
-          )
+          setEditing(false)
         }
 
         onSave={
@@ -550,62 +678,431 @@ export default function KeyResultRow({
 
   return (
 
-    <div className="rounded-lg border bg-gray-50 p-5">
+    <div className="w-full">
 
-      {/* ====================================================
-          Header
-      ==================================================== */}
+      {/* ==================================================
+          Mobile / Small Screen
+      ================================================== */}
 
-      <div className="flex items-start justify-between gap-4">
+      <div className="block lg:hidden p-4">
 
-        <div>
+        <div className="flex items-start justify-between gap-3">
 
-          <h3 className="text-lg font-semibold">
-            {
-              currentKeyResult.title
+          <div className="min-w-0">
+
+            <h3 className="text-base font-semibold">
+              {currentKeyResult.title}
+            </h3>
+
+
+            <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
+
+              {currentKeyResult.measurementType && (
+
+                <span className="rounded border bg-white px-2 py-1">
+
+                  {
+                    currentKeyResult.measurementType ===
+                    "financial"
+
+                      ? "Financial ($)"
+
+                      : currentKeyResult.measurementType ===
+                        "percentage"
+
+                        ? "Percentage"
+
+                        : "Numeric"
+                  }
+
+                </span>
+
+              )}
+
+
+              {currentKeyResult.scoringMethod && (
+
+                <span className="rounded border bg-white px-2 py-1">
+
+                  {
+                    currentKeyResult.scoringMethod ===
+                    "percent_into_period"
+
+                      ? "% Into Period"
+
+                      : "Percentage of Target"
+                  }
+
+                </span>
+
+              )}
+
+            </div>
+
+          </div>
+
+
+          {!globalEditing && (
+
+            <div className="flex shrink-0 gap-2">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setEditing(true)
+                }
+                className="rounded-md border-2 bg-white px-3 py-1 text-xs font-medium"
+              >
+                Edit
+              </button>
+
+
+              <button
+                type="button"
+                onClick={
+                  handleDelete
+                }
+                disabled={
+                  deleting
+                }
+                className="rounded-md border-2 border-red-200 bg-white px-3 py-1 text-xs font-medium text-red-600 disabled:opacity-50"
+              >
+
+                {deleting
+                  ? "Deleting..."
+                  : "Delete"}
+
+              </button>
+
+            </div>
+
+          )}
+
+        </div>
+
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
+
+          <div>
+
+            <p className="text-xs uppercase tracking-wide text-gray-500">
+              Last Month
+            </p>
+
+
+            <p className="mt-1 text-lg font-semibold">
+
+              {
+                previousValue !==
+                undefined
+                  ? previousValue
+                  : "—"
+              }
+
+            </p>
+
+          </div>
+
+
+          <div>
+
+            <p className="text-xs uppercase tracking-wide text-gray-500">
+              Previous Score
+            </p>
+
+
+            <p className="mt-1 text-lg font-semibold">
+
+              {
+                previousScore !==
+                undefined
+                  ? `${Math.round(previousScore)}%`
+                  : "—"
+              }
+
+            </p>
+
+          </div>
+
+
+          <div>
+
+            <p className="text-xs uppercase tracking-wide text-gray-500">
+              Target
+            </p>
+
+
+            <input
+              type="text"
+              value={
+                targetValue
+              }
+              disabled={
+                !globalEditing
+              }
+              onChange={(event) => {
+
+                setTargetValue(
+                  event.target.value
+                );
+
+                setSaved(false);
+
+                setError(null);
+
+              }}
+              className={`mt-1 w-full rounded-md border-2 px-3 py-2 text-lg font-semibold ${
+                globalEditing
+                  ? "bg-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            />
+
+          </div>
+
+
+          <div>
+
+            <label
+              htmlFor={`current-${currentKeyResult.id}`}
+              className="text-xs uppercase tracking-wide text-gray-500"
+            >
+              This Month
+            </label>
+
+
+            <input
+              id={`current-${currentKeyResult.id}`}
+              type="text"
+              value={
+                currentValue
+              }
+              disabled={
+                !globalEditing
+              }
+              onChange={(event) => {
+
+                setCurrentValue(
+                  event.target.value
+                );
+
+                setSaved(false);
+
+                setError(null);
+
+              }}
+              className={`mt-1 w-full rounded-md border-2 px-3 py-2 text-lg font-semibold ${
+                globalEditing
+                  ? "bg-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            />
+
+          </div>
+
+
+          <div>
+
+            <p className="text-xs uppercase tracking-wide text-gray-500">
+              Score
+            </p>
+
+
+            <p className="mt-1 text-xl font-bold">
+
+              {
+                scoreDisplay ===
+                null
+
+                  ? "—"
+
+                  : `${scoreDisplay}%`
+              }
+
+            </p>
+
+          </div>
+
+        </div>
+
+
+        {globalEditing && (
+
+          <div className="mt-4 flex items-center gap-3">
+
+            <button
+              type="button"
+              onClick={
+                handleSave
+              }
+              disabled={
+                saving ||
+                !progress
+              }
+              className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+
+              {saving
+                ? "Saving..."
+                : "Save"}
+
+            </button>
+
+
+            {saved && (
+
+              <span className="text-sm text-green-600">
+                Saved
+              </span>
+
+            )}
+
+          </div>
+
+        )}
+
+
+        {error && (
+
+          <p className="mt-3 text-sm text-red-600">
+            {error}
+          </p>
+
+        )}
+
+
+        <div className="mt-5">
+
+          <div className="h-2 w-full rounded-full bg-gray-200">
+
+            <div
+              className="h-2 rounded-full bg-blue-600"
+              style={{
+                width:
+                  `${progressWidth}%`,
+              }}
+            />
+
+          </div>
+
+        </div>
+
+
+        <div className="mt-5">
+
+          <Initiatives
+            keyResult={
+              currentKeyResult
             }
-          </h3>
+
+            organizationId={
+              organizationId
+            }
+
+            performanceInstanceId={
+              performanceInstanceId
+            }
+
+            onUpdated={
+              handleInitiativesUpdated
+            }
+          />
+
+        </div>
+
+      </div>
 
 
-          <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
+      {/* ==================================================
+          Desktop Landscape Row
+      ================================================== */}
 
-            {currentKeyResult.measurementType && (
+      <div className="hidden lg:grid lg:grid-cols-[minmax(220px,2fr)_120px_120px_120px_110px_minmax(260px,1.5fr)] lg:items-stretch lg:gap-3 lg:p-3">
 
-              <span className="rounded border bg-white px-2 py-1">
+        {/* ==================================================
+            Key Result
+        ================================================== */}
 
-                {
-                  currentKeyResult.measurementType ===
-                  "financial"
+        <div className="flex min-w-0 flex-col justify-center px-2">
 
-                    ? "Financial ($)"
+          <div className="flex items-start justify-between gap-2">
 
-                    : currentKeyResult.measurementType ===
-                      "percentage"
+            <div className="min-w-0">
 
-                      ? "Percentage"
-
-                      : "Numeric"
-                }
-
-              </span>
-            )}
+              <h3 className="text-sm font-semibold leading-5">
+                {currentKeyResult.title}
+              </h3>
 
 
-            {currentKeyResult.scoringMethod && (
+              <div className="mt-1 flex flex-wrap gap-1">
 
-              <span className="rounded border bg-white px-2 py-1">
+                {currentKeyResult.measurementType && (
 
-                {
-                  currentKeyResult.scoringMethod ===
-                  "percent_into_period"
+                  <span className="rounded border bg-gray-50 px-1.5 py-0.5 text-[10px] text-gray-600">
 
-                    ? "% Into Period"
+                    {
+                      currentKeyResult.measurementType ===
+                      "financial"
 
-                    : "Percentage of Target"
-                }
+                        ? "Financial ($)"
 
-              </span>
-            )}
+                        : currentKeyResult.measurementType ===
+                          "percentage"
+
+                          ? "Percentage"
+
+                          : "Numeric"
+                    }
+
+                  </span>
+
+                )}
+
+
+                {currentKeyResult.scoringMethod && (
+
+                  <span className="rounded border bg-gray-50 px-1.5 py-0.5 text-[10px] text-gray-600">
+
+                    {
+                      currentKeyResult.scoringMethod ===
+                      "percent_into_period"
+
+                        ? "% Into Period"
+
+                        : "% of Target"
+                    }
+
+                  </span>
+
+                )}
+
+              </div>
+
+            </div>
+
+
+            <span className="shrink-0 rounded bg-blue-100 px-2 py-1 text-[10px] font-semibold text-blue-700">
+
+              {currentKeyResult.weight ?? 0}%
+
+            </span>
+
+          </div>
+
+
+          <div className="mt-3">
+
+            <div className="h-1.5 w-full rounded-full bg-gray-200">
+
+              <div
+                className="h-1.5 rounded-full bg-blue-600"
+                style={{
+                  width:
+                    `${progressWidth}%`,
+                }}
+              />
+
+            </div>
 
           </div>
 
@@ -613,76 +1110,17 @@ export default function KeyResultRow({
 
 
         {/* ==================================================
-            Actions
+            Last Month
         ================================================== */}
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col justify-center border-l-2 pl-3">
 
-          <span className="rounded bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
-
-            {
-              currentKeyResult.weight ??
-              0
-            }% Weight
-
-          </span>
-
-
-          <button
-            type="button"
-            onClick={() =>
-              setEditing(
-                true
-              )
-            }
-            className="rounded-md border bg-white px-3 py-1 text-xs font-medium"
-          >
-            Edit
-          </button>
-
-
-          <button
-            type="button"
-            onClick={
-              handleDelete
-            }
-            disabled={
-              deleting
-            }
-            className="rounded-md border border-red-200 bg-white px-3 py-1 text-xs font-medium text-red-600 disabled:opacity-50"
-          >
-
-            {
-              deleting
-                ? "Deleting..."
-                : "Delete"
-            }
-
-          </button>
-
-        </div>
-
-      </div>
-
-
-      {/* ====================================================
-          Performance Values
-      ==================================================== */}
-
-      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4">
-
-        {/* ==================================================
-            Previous
-        ================================================== */}
-
-        <div>
-
-          <p className="text-xs uppercase tracking-wide text-gray-500">
-            Previous
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+            Last Month
           </p>
 
 
-          <p className="mt-2 text-xl font-semibold">
+          <p className="mt-1 text-lg font-semibold">
 
             {
               previousValue !==
@@ -694,9 +1132,22 @@ export default function KeyResultRow({
           </p>
 
 
-          <p className="mt-1 text-xs text-gray-500">
-            Previous month
-          </p>
+          {previousScore !==
+            undefined && (
+
+            <p className="mt-1 text-xs text-gray-500">
+
+              Score:{" "}
+
+              {Math.round(
+                previousScore
+              )}
+
+              %
+
+            </p>
+
+          )}
 
         </div>
 
@@ -705,35 +1156,53 @@ export default function KeyResultRow({
             Target
         ================================================== */}
 
-        <div>
+        <div className="flex flex-col justify-center border-l-2 pl-3">
 
-          <p className="text-xs uppercase tracking-wide text-gray-500">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
             Target
           </p>
 
 
-          <p className="mt-2 text-xl font-semibold">
-            {
-              target ||
-              "—"
+          <input
+            id={`target-${currentKeyResult.id}`}
+            type="text"
+            value={
+              targetValue
             }
-          </p>
+            disabled={
+              !globalEditing
+            }
+            onChange={(event) => {
+
+              setTargetValue(
+                event.target.value
+              );
+
+              setSaved(false);
+
+              setError(null);
+
+            }}
+            className={`mt-1 w-full rounded-md border-2 px-2 py-2 text-base font-semibold ${
+              globalEditing
+                ? "bg-white"
+                : "bg-gray-100 text-gray-700"
+            }`}
+            placeholder="Target"
+          />
 
         </div>
 
 
         {/* ==================================================
-            Current
+            This Month
         ================================================== */}
 
-        <div>
+        <div className="flex flex-col justify-center border-l-2 pl-3">
 
-          <label
-            htmlFor={`current-${currentKeyResult.id}`}
-            className="text-xs uppercase tracking-wide text-gray-500"
-          >
-            Current
-          </label>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+            This Month
+          </p>
 
 
           <input
@@ -742,24 +1211,26 @@ export default function KeyResultRow({
             value={
               currentValue
             }
-            onChange={(
-              event
-            ) => {
+            disabled={
+              !globalEditing
+            }
+            onChange={(event) => {
 
               setCurrentValue(
                 event.target.value
               );
 
-              setSaved(
-                false
-              );
+              setSaved(false);
 
-              setError(
-                null
-              );
+              setError(null);
+
             }}
-            className="mt-2 w-full rounded-md border bg-white px-3 py-2 text-xl font-semibold"
-            placeholder="Enter current value"
+            className={`mt-1 w-full rounded-md border-2 px-2 py-2 text-base font-semibold ${
+              globalEditing
+                ? "bg-white"
+                : "bg-gray-100 text-gray-700"
+            }`}
+            placeholder="Current"
           />
 
         </div>
@@ -769,157 +1240,137 @@ export default function KeyResultRow({
             Score
         ================================================== */}
 
-        <div>
+        <div className="flex flex-col justify-center border-l-2 pl-3">
 
-          <p className="text-xs uppercase tracking-wide text-gray-500">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
             Score
           </p>
 
 
-          <p className="mt-2 text-xl font-semibold">
+          <p className="mt-1 text-xl font-bold">
 
             {
-              scoreDisplay === null
+              scoreDisplay ===
+              null
+
                 ? "—"
+
                 : `${scoreDisplay}%`
             }
 
           </p>
 
 
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-[10px] text-gray-500">
 
             {
               currentKeyResult.scoringMethod ===
               "percent_into_period"
+
                 ? "% Into Period"
-                : "Percentage of Target"
+
+                : "% of Target"
             }
 
           </p>
 
         </div>
 
-      </div>
+
+        {/* ==================================================
+            Initiatives
+        ================================================== */}
+
+        <div className="flex min-w-0 flex-col border-l-2 pl-3">
+
+          <div className="mb-2 flex items-center justify-between">
+
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+              Initiatives
+            </p>
+
+          </div>
 
 
-      {/* ====================================================
-          Status
-      ==================================================== */}
+          <div className="min-w-0 flex-1 rounded-md border-2 border-gray-200 bg-gray-50 p-2">
 
-      <div className="mt-4">
+            <Initiatives
+              keyResult={
+                currentKeyResult
+              }
 
-        <p className="text-xs uppercase tracking-wide text-gray-500">
-          Status
-        </p>
+              organizationId={
+                organizationId
+              }
 
+              performanceInstanceId={
+                performanceInstanceId
+              }
 
-        <p className="mt-1 text-sm font-medium">
-          {
-            runtimeStatus
-          }
-        </p>
+              onUpdated={
+                handleInitiativesUpdated
+              }
 
-      </div>
+            />
 
-
-      {/* ====================================================
-          Save
-      ==================================================== */}
-
-      <div className="mt-5 flex items-center gap-3">
-
-        <button
-          type="button"
-          onClick={
-            handleSave
-          }
-          disabled={
-            saving ||
-            !progress
-          }
-          className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-
-          {
-            saving
-              ? "Saving..."
-              : "Save Current"
-          }
-
-        </button>
-
-
-        {saved && (
-
-          <span className="text-sm text-green-600">
-            Saved
-          </span>
-
-        )}
-
-      </div>
-
-
-      {/* ====================================================
-          Error
-      ==================================================== */}
-
-      {error && (
-
-        <p className="mt-3 text-sm text-red-600">
-          {
-            error
-          }
-        </p>
-
-      )}
-
-
-      {/* ====================================================
-          Progress
-      ==================================================== */}
-
-      <div className="mt-6">
-
-        <div className="h-3 w-full rounded-full bg-gray-200">
-
-          <div
-            className="h-3 rounded-full bg-blue-600"
-            style={{
-              width:
-                `${progressWidth}%`,
-            }}
-          />
+          </div>
 
         </div>
 
       </div>
 
 
-      {/* ====================================================
-          Initiatives
-      ==================================================== */}
+      {/* ==================================================
+          Save / Error / Mobile-independent State
+      ================================================== */}
 
-      <Initiatives
+      {globalEditing && (
 
-        keyResult={
-          currentKeyResult
-        }
+        <div className="border-t-2 bg-gray-50 px-3 py-2">
 
-        organizationId={
-          organizationId
-        }
+          <div className="flex items-center gap-3">
 
-        performanceInstanceId={
-          performanceInstanceId
-        }
+            <button
+              type="button"
+              onClick={
+                handleSave
+              }
+              disabled={
+                saving ||
+                !progress
+              }
+              className="rounded-md bg-black px-3 py-1.5 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
 
-        onUpdated={
-          handleInitiativesUpdated
-        }
+              {saving
+                ? "Saving..."
+                : "Save"}
 
-      />
+            </button>
+
+
+            {saved && (
+
+              <span className="text-xs text-green-600">
+                Saved
+              </span>
+
+            )}
+
+          </div>
+
+        </div>
+
+      )}
+
+
+      {error && (
+
+        <p className="border-t-2 bg-red-50 px-3 py-2 text-xs text-red-600">
+          {error}
+        </p>
+
+      )}
 
     </div>
   );

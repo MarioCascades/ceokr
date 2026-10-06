@@ -156,6 +156,17 @@ export default function PerformanceSheet({
   );
 
 
+  /*
+   * Performance Sheet Edit Mode
+   *
+   * One Edit / Save state controls the entire sheet.
+   */
+  const [
+    editing,
+    setEditing,
+  ] = useState(false);
+
+
   const [
     objectives,
     setObjectives,
@@ -219,6 +230,7 @@ export default function PerformanceSheet({
 
       const updated =
         await transitionPerformanceInstanceAction({
+
           organizationId,
 
           performanceInstanceId,
@@ -243,6 +255,7 @@ export default function PerformanceSheet({
         "Failed to transition Performance Instance:",
         error
       );
+
 
       setTransitionError(
         error instanceof Error
@@ -343,17 +356,17 @@ export default function PerformanceSheet({
   ======================================================== */
 
   return (
+
     <main
       className="
         mx-auto
         w-full
-        max-w-[1500px]
-        space-y-8
-        px-4
-        py-6
-        sm:px-6
-        lg:px-8
-        xl:px-10
+        max-w-none
+        space-y-4
+        px-2
+        py-2
+        sm:px-3
+        lg:px-4
       "
     >
 
@@ -461,11 +474,11 @@ export default function PerformanceSheet({
       <section
         className="
           overflow-hidden
-          rounded-2xl
+          rounded-xl
           border
           border-border/80
           bg-card
-          shadow-[0_8px_30px_rgba(8,37,80,0.05)]
+          shadow-sm
         "
       >
 
@@ -473,11 +486,11 @@ export default function PerformanceSheet({
           className="
             flex
             flex-col
-            gap-6
-            px-6
-            py-6
-            md:px-8
-            md:py-7
+            gap-3
+            px-4
+            py-3
+            md:px-5
+            md:py-3
             lg:flex-row
             lg:items-center
             lg:justify-between
@@ -488,7 +501,7 @@ export default function PerformanceSheet({
 
             <p
               className="
-                text-xs
+                text-[10px]
                 font-bold
                 uppercase
                 tracking-[0.16em]
@@ -500,8 +513,8 @@ export default function PerformanceSheet({
 
             <h2
               className="
-                mt-2
-                text-2xl
+                mt-1
+                text-lg
                 font-black
                 tracking-tight
                 text-primary
@@ -512,10 +525,10 @@ export default function PerformanceSheet({
 
             <p
               className="
-                mt-2
+                mt-1
                 max-w-2xl
-                text-sm
-                leading-6
+                text-xs
+                leading-5
                 text-muted-foreground
               "
             >
@@ -531,7 +544,7 @@ export default function PerformanceSheet({
               flex
               shrink-0
               flex-wrap
-              gap-3
+              gap-2
             "
           >
 
@@ -549,17 +562,18 @@ export default function PerformanceSheet({
                   transitioning
                 }
                 className="
-                  rounded-xl
-                  bg-primary
-                  px-5
-                  py-2.5
-                  text-sm
+                  rounded-lg
+                  bg-[#E26D5C]
+                  px-4
+                  py-2
+                  text-xs
                   font-bold
                   text-primary-foreground
                   shadow-sm
                   transition-all
                   duration-200
                   hover:-translate-y-px
+                  hover:bg-[#E26D5C]/90
                   hover:shadow-md
                   disabled:cursor-not-allowed
                   disabled:opacity-50
@@ -590,11 +604,11 @@ export default function PerformanceSheet({
                   transitioning
                 }
                 className="
-                  rounded-xl
+                  rounded-lg
                   bg-[#e26d5c]
-                  px-5
-                  py-2.5
-                  text-sm
+                  px-4
+                  py-2
+                  text-xs
                   font-bold
                   text-white
                   shadow-sm
@@ -632,17 +646,18 @@ export default function PerformanceSheet({
                   transitioning
                 }
                 className="
-                  rounded-xl
-                  bg-primary
-                  px-5
-                  py-2.5
-                  text-sm
+                  rounded-lg
+                  bg-[#E26D5C]
+                  px-4
+                  py-2
+                  text-xs
                   font-bold
-                  text-primary-foreground
+                  text-white
                   shadow-sm
                   transition-all
                   duration-200
                   hover:-translate-y-px
+                  hover:bg-[#E26D5C]/90
                   hover:shadow-md
                   disabled:cursor-not-allowed
                   disabled:opacity-50
@@ -674,11 +689,11 @@ export default function PerformanceSheet({
                   transitioning
                 }
                 className="
-                  rounded-xl
+                  rounded-lg
                   bg-primary
-                  px-5
-                  py-2.5
-                  text-sm
+                  px-4
+                  py-2
+                  text-xs
                   font-bold
                   text-primary-foreground
                   shadow-sm
@@ -687,6 +702,7 @@ export default function PerformanceSheet({
                   hover:-translate-y-px
                   hover:shadow-md
                   disabled:cursor-not-allowed
+                  disabled:opacity-50
                   disabled:hover:translate-y-0
                 "
               >
@@ -712,9 +728,9 @@ export default function PerformanceSheet({
               border-t
               border-border/70
               bg-background/70
-              px-6
-              py-4
-              md:px-8
+              px-4
+              py-3
+              md:px-5
             "
           >
 
@@ -722,7 +738,7 @@ export default function PerformanceSheet({
 
               <p
                 className="
-                  text-sm
+                  text-xs
                   font-semibold
                   text-primary
                 "
@@ -737,18 +753,18 @@ export default function PerformanceSheet({
 
               <div
                 className="
-                  rounded-xl
+                  rounded-lg
                   border
                   border-destructive/30
                   bg-destructive/5
-                  px-4
-                  py-3
+                  px-3
+                  py-2
                 "
               >
 
                 <p
                   className="
-                    text-sm
+                    text-xs
                     font-bold
                     text-destructive
                   "
@@ -759,8 +775,8 @@ export default function PerformanceSheet({
                 <p
                   className="
                     mt-1
-                    text-sm
-                    leading-6
+                    text-xs
+                    leading-5
                     text-muted-foreground
                   "
                 >
@@ -786,21 +802,21 @@ export default function PerformanceSheet({
 
       <section
         className="
-          space-y-6
+          space-y-3
         "
       >
 
         <div
           className="
-            rounded-2xl
+            rounded-xl
             border
             border-border/80
             bg-card
-            px-6
-            py-6
-            shadow-[0_8px_30px_rgba(8,37,80,0.04)]
-            md:px-8
-            md:py-7
+            px-4
+            py-3
+            shadow-sm
+            md:px-5
+            md:py-3
           "
         >
 
@@ -808,9 +824,9 @@ export default function PerformanceSheet({
             className="
               flex
               flex-col
-              gap-3
+              gap-2
               lg:flex-row
-              lg:items-end
+              lg:items-center
               lg:justify-between
             "
           >
@@ -819,7 +835,7 @@ export default function PerformanceSheet({
 
               <p
                 className="
-                  text-xs
+                  text-[10px]
                   font-bold
                   uppercase
                   tracking-[0.16em]
@@ -831,8 +847,8 @@ export default function PerformanceSheet({
 
               <h2
                 className="
-                  mt-2
-                  text-3xl
+                  mt-1
+                  text-xl
                   font-black
                   tracking-tight
                   text-primary
@@ -843,10 +859,10 @@ export default function PerformanceSheet({
 
               <p
                 className="
-                  mt-2
+                  mt-1
                   max-w-3xl
-                  text-sm
-                  leading-6
+                  text-xs
+                  leading-5
                   text-muted-foreground
                 "
               >
@@ -860,21 +876,61 @@ export default function PerformanceSheet({
 
             <div
               className="
-                hidden
+                flex
                 shrink-0
-                rounded-xl
-                bg-[#e9f4f8]
-                px-4
-                py-2
-                text-xs
-                font-bold
-                uppercase
-                tracking-[0.12em]
-                text-primary
-                sm:block
+                items-center
+                gap-2
               "
             >
-              Monthly Performance
+
+              <div
+                className="
+                  hidden
+                  rounded-lg
+                  bg-[#e9f4f8]
+                  px-3
+                  py-1.5
+                  text-[10px]
+                  font-bold
+                  uppercase
+                  tracking-[0.12em]
+                  text-primary
+                  sm:block
+                "
+              >
+                Monthly Performance
+              </div>
+
+
+              <button
+                type="button"
+                onClick={() =>
+                  setEditing(
+                    (current) => !current
+                  )
+                }
+                className="
+                  rounded-lg
+                  bg-primary
+                  px-4
+                  py-2
+                  text-xs
+                  font-bold
+                  text-primary-foreground
+                  shadow-sm
+                  transition-all
+                  duration-200
+                  hover:-translate-y-px
+                  hover:shadow-md
+                "
+              >
+                {
+                  editing
+                    ? "Save"
+                    : "Edit"
+                }
+              </button>
+
             </div>
 
           </div>
@@ -884,7 +940,7 @@ export default function PerformanceSheet({
 
         <div
           className="
-            space-y-6
+            space-y-3
           "
         >
 
@@ -920,6 +976,10 @@ export default function PerformanceSheet({
 
                 previousKeyResultValues={
                   previousKeyResultValues
+                }
+
+                editing={
+                  editing
                 }
 
                 onUpdated={
@@ -963,7 +1023,8 @@ export default function PerformanceSheet({
           )}
 
 
-          {!addingObjective && (
+          {!addingObjective &&
+            editing && (
 
             <button
               type="button"
@@ -979,13 +1040,13 @@ export default function PerformanceSheet({
                 items-center
                 justify-center
                 gap-3
-                rounded-2xl
+                rounded-xl
                 border-2
                 border-dashed
                 border-[#b4c2d1]
                 bg-[#e9f4f8]/40
-                px-6
-                py-6
+                px-4
+                py-3
                 text-sm
                 font-bold
                 text-primary
@@ -1036,11 +1097,11 @@ export default function PerformanceSheet({
       <section
         className="
           overflow-hidden
-          rounded-2xl
+          rounded-xl
           border
           border-border/80
           bg-card
-          shadow-[0_8px_30px_rgba(8,37,80,0.05)]
+          shadow-sm
         "
       >
 
@@ -1048,15 +1109,15 @@ export default function PerformanceSheet({
           className="
             border-b
             border-border/70
-            px-6
-            py-5
-            md:px-8
+            px-4
+            py-3
+            md:px-5
           "
         >
 
           <p
             className="
-              text-xs
+              text-[10px]
               font-bold
               uppercase
               tracking-[0.16em]
@@ -1068,8 +1129,8 @@ export default function PerformanceSheet({
 
           <h2
             className="
-              mt-2
-              text-2xl
+              mt-1
+              text-lg
               font-black
               tracking-tight
               text-primary
@@ -1082,10 +1143,10 @@ export default function PerformanceSheet({
 
         <div
           className="
-            px-6
-            py-6
-            md:px-8
-            md:py-7
+            px-4
+            py-4
+            md:px-5
+            md:py-4
           "
         >
 

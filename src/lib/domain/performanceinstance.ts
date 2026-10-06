@@ -30,13 +30,16 @@ export interface PerformanceInstance {
   /**
    * Assignment being executed.
    */
-  assignmentId: Assignment["id"];
+  assignmentId?: Assignment["id"];
 
   /**
    * Exact published Performance Sheet version
    * being executed.
    */
   performanceSheetId: PerformanceSheet["id"];
+
+  /** Direct member identity for the migrated Runtime model. */
+  memberId?: string;
 
   /**
    * Calendar month represented by this

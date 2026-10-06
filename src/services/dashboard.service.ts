@@ -262,9 +262,11 @@ export async function loadDashboard(
     performanceInstances.map(
       (instance) => {
         const assignment =
-          assignmentMap.get(
-            instance.assignmentId
-          );
+          instance.assignmentId
+            ? assignmentMap.get(
+                instance.assignmentId
+              )
+            : undefined;
 
         const performanceSheet =
           performanceSheetMap.get(

@@ -41,7 +41,7 @@ export default function PerformanceHeader() {
           ) : undefined
         }
       >
-        <CECard>
+        <CECard className="border-[#B4C2D1]/70 bg-white shadow-[0_8px_30px_rgba(8,37,80,0.06)]">
           <div className="space-y-6">
 
             {/* ==================================================
@@ -52,19 +52,23 @@ export default function PerformanceHeader() {
 
               <div className="max-w-3xl space-y-2">
 
-                <h2 className="text-3xl font-bold text-slate-900">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#E26D5C]">
+                  Performance Header
+                </p>
+
+                <h2 className="mt-1 text-3xl font-black uppercase tracking-tight text-[#082550]">
                   {header.title ||
                     "Performance Header"}
                 </h2>
 
                 {header.subtitle && (
-                  <p className="text-lg font-medium text-slate-600">
+                  <p className="text-lg font-medium text-[#272D2C]/70">
                     {header.subtitle}
                   </p>
                 )}
 
                 {header.description && (
-                  <p className="text-sm leading-7 text-slate-500">
+                  <p className="text-sm leading-7 text-[#272D2C]/65">
                     {header.description}
                   </p>
                 )}
@@ -101,13 +105,13 @@ export default function PerformanceHeader() {
               !header.subtitle &&
               !header.description &&
               header.metrics.length === 0 && (
-                <div className="rounded-lg border border-dashed bg-slate-50 p-8 text-center">
+                <div className="rounded-xl border border-dashed border-[#B4C2D1] bg-[#E9F4F8]/60 p-8 text-center">
 
-                  <p className="text-sm font-medium text-slate-700">
+                  <p className="text-sm font-bold text-[#082550]">
                     Performance Header
                   </p>
 
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-[#272D2C]/65">
                     Configure the reusable header
                     for this Performance Sheet.
                   </p>
@@ -154,13 +158,13 @@ function MetricCard({
   value,
 }: MetricCardProps) {
   return (
-    <div className="rounded-lg border bg-slate-50 p-5">
+    <div className="rounded-xl border border-[#B4C2D1]/60 bg-[#F8FBFC] p-5">
 
-      <p className="text-xs uppercase tracking-wide text-slate-500">
+      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#272D2C]/55">
         {title}
       </p>
 
-      <p className="mt-3 text-xl font-semibold text-slate-900">
+      <p className="mt-3 text-xl font-black text-[#082550]">
         {value}
       </p>
 

@@ -13,33 +13,23 @@ import type {
 
 interface RuntimeOrganization {
   id: string;
-
   company_name: string;
-
   logo_url: string | null;
 }
 
-
 interface RuntimeHeaderProps {
   document: BuilderDocument;
-
   organization: RuntimeOrganization;
-
   performanceInstance: PerformanceInstance;
-
   subject: RuntimeSubject | null;
 }
-
 
 function formatPerformanceMonth(
   performanceMonth: string
 ): string {
-
-  const date =
-    new Date(
-      `${performanceMonth}T00:00:00Z`
-    );
-
+  const date = new Date(
+    `${performanceMonth}T00:00:00Z`
+  );
 
   if (
     Number.isNaN(
@@ -49,7 +39,6 @@ function formatPerformanceMonth(
     return performanceMonth;
   }
 
-
   return new Intl.DateTimeFormat(
     "en-US",
     {
@@ -57,91 +46,51 @@ function formatPerformanceMonth(
       year: "numeric",
       timeZone: "UTC",
     }
-  ).format(
-    date
-  );
+  ).format(date);
 }
-
 
 function formatStatus(
   status: PerformanceInstance["status"]
 ): string {
-
   return status.replaceAll(
     "_",
     " "
   );
 }
 
-
 function getStatusClasses(
   status: PerformanceInstance["status"]
 ): string {
-
   switch (status) {
-
     case "completed":
-      return `
-        bg-accent
-        text-primary
-        ring-border
-      `;
-
-
     case "approved":
-      return `
-        bg-accent
-        text-primary
-        ring-border
-      `;
-
+      return "bg-accent text-primary ring-border";
 
     case "submitted":
-      return `
-        bg-destructive/10
-        text-destructive
-        ring-destructive/20
-      `;
-
+      return "bg-destructive/10 text-destructive ring-destructive/20";
 
     case "in_progress":
-      return `
-        bg-secondary
-        text-primary
-        ring-border
-      `;
-
+      return "bg-secondary text-primary ring-border";
 
     case "not_started":
     default:
-      return `
-        bg-muted
-        text-muted-foreground
-        ring-border
-      `;
+      return "bg-muted text-muted-foreground ring-border";
   }
 }
 
-
 export default function RuntimeHeader({
   document,
-
   organization,
-
   performanceInstance,
-
   subject,
-
 }: RuntimeHeaderProps) {
 
   const isOrganizationRuntime =
     subject === null;
 
-
   const displayName =
     subject?.displayName ??
     organization.company_name;
-
 
   const role =
     subject
@@ -150,67 +99,42 @@ export default function RuntimeHeader({
       : "Organization Performance";
 
 
-  const organizationName =
-    organization.company_name;
-
-
   return (
+
     <section
       className="
         overflow-hidden
-        rounded-2xl
+        rounded-xl
         border
         border-border/80
         bg-card
-        shadow-[0_12px_40px_rgba(8,37,80,0.07)]
+        shadow-sm
       "
     >
-
-      {/* ==================================================
-          Primary Header
-      ================================================== */}
 
       <div
         className="
           relative
           overflow-hidden
           bg-primary
-          px-6
-          py-7
+          px-3
+          py-2.5
           text-primary-foreground
-          md:px-8
-          md:py-8
+          sm:px-4
         "
       >
 
-        {/* Decorative brand field */}
-
         <div
           aria-hidden="true"
           className="
             pointer-events-none
             absolute
-            -right-20
-            -top-24
-            h-56
-            w-56
+            -right-12
+            -top-16
+            h-32
+            w-32
             rounded-full
             bg-secondary/10
-            blur-2xl
-          "
-        />
-
-        <div
-          aria-hidden="true"
-          className="
-            pointer-events-none
-            absolute
-            -bottom-24
-            right-24
-            h-40
-            w-40
-            rounded-full
-            bg-accent/10
             blur-2xl
           "
         />
@@ -221,137 +145,144 @@ export default function RuntimeHeader({
             relative
             flex
             flex-col
-            gap-7
+            gap-2
             lg:flex-row
-            lg:items-end
+            lg:items-center
             lg:justify-between
           "
         >
 
-          {/* ==================================================
-              Identity
-          ================================================== */}
-
           <div className="min-w-0">
 
-            {organization.logo_url && (
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+              "
+            >
 
-              <div className="mb-4">
+              {organization.logo_url && (
 
                 <img
                   src={
                     organization.logo_url
                   }
-                  alt={
-                    `${organizationName} logo`
-                  }
+                  alt={`${organization.company_name} logo`}
                   className="
-                    max-h-12
+                    max-h-6
                     w-auto
-                    max-w-[180px]
+                    max-w-[100px]
                     object-contain
                     object-left
                   "
                 />
 
-              </div>
+              )}
 
-            )}
-
-
-            <p
-              className="
-                text-xs
-                font-bold
-                uppercase
-                tracking-[0.18em]
-                text-secondary
-              "
-            >
-              {organizationName}
-            </p>
-
-
-            <h1
-              className="
-                mt-3
-                max-w-4xl
-                text-3xl
-                font-black
-                leading-tight
-                tracking-tight
-                md:text-4xl
-                lg:text-5xl
-              "
-            >
-              {displayName}
-            </h1>
-
-
-            {role && (
               <p
                 className="
-                  mt-2
-                  text-sm
-                  font-semibold
-                  text-accent
-                  md:text-base
+                  truncate
+                  text-[9px]
+                  font-bold
+                  uppercase
+                  tracking-[0.16em]
+                  text-secondary
                 "
               >
-                {role}
+                {
+                  organization.company_name
+                }
               </p>
-            )}
+
+            </div>
+
+
+            <div
+              className="
+                mt-0.5
+                flex
+                flex-wrap
+                items-baseline
+                gap-x-2
+                gap-y-0.5
+              "
+            >
+
+              <h1
+                className="
+                  text-xl
+                  font-black
+                  leading-none
+                  tracking-tight
+                  sm:text-2xl
+                "
+              >
+                {
+                  displayName
+                }
+              </h1>
+
+
+              {role && (
+
+                <p
+                  className="
+                    text-xs
+                    font-semibold
+                    text-accent
+                    sm:text-sm
+                  "
+                >
+                  {role}
+                </p>
+
+              )}
+
+            </div>
 
           </div>
 
 
-          {/* ==================================================
-              Context
-          ================================================== */}
-
           <div
             className="
-              grid
+              flex
               shrink-0
-              grid-cols-2
-              gap-2
-              sm:gap-3
+              items-center
+              gap-1.5
             "
           >
 
             <div
               className="
-                min-w-36
-                rounded-xl
+                rounded-md
                 border
                 border-white/15
                 bg-white/10
-                px-4
-                py-3
-                backdrop-blur-sm
+                px-2.5
+                py-1
               "
             >
 
               <p
                 className="
-                  text-[10px]
+                  text-[9px]
                   font-bold
                   uppercase
-                  tracking-[0.14em]
+                  tracking-[0.12em]
                   text-secondary
                 "
               >
                 Performance Month
               </p>
 
-
               <p
                 className="
-                  mt-1
-                  text-sm
+                  mt-0.5
+                  text-xs
                   font-bold
                   text-white
-                  sm:text-base
+                  sm:text-sm
                 "
               >
                 {
@@ -366,40 +297,41 @@ export default function RuntimeHeader({
 
             <div
               className="
-                min-w-36
-                rounded-xl
+                rounded-md
                 border
                 border-white/15
                 bg-white/10
-                px-4
-                py-3
-                backdrop-blur-sm
+                px-2.5
+                py-1
               "
             >
 
               <p
                 className="
-                  text-[10px]
+                  text-[9px]
                   font-bold
                   uppercase
-                  tracking-[0.14em]
+                  tracking-[0.12em]
                   text-secondary
                 "
               >
                 Status
               </p>
 
-
-              <div className="mt-1">
+              <div
+                className="
+                  mt-0.5
+                "
+              >
 
                 <span
                   className={`
                     inline-flex
                     items-center
                     rounded-full
-                    px-2.5
-                    py-1
-                    text-xs
+                    px-2
+                    py-0.5
+                    text-[10px]
                     font-bold
                     capitalize
                     ring-1
@@ -427,159 +359,121 @@ export default function RuntimeHeader({
       </div>
 
 
-      {/* ==================================================
-          Description / Metrics
-      ================================================== */}
-
       <div
         className="
           border-t
-          border-border/80
+          border-border/70
           bg-card
-          px-6
-          py-6
-          md:px-8
+          px-3
+          py-1.5
+          sm:px-4
         "
       >
 
         <div
           className="
             flex
-            flex-col
-            gap-6
-            lg:flex-row
-            lg:items-start
-            lg:justify-between
+            min-w-0
+            items-center
+            gap-4
           "
         >
 
-          {/* Description */}
+          <p
+            className="
+              shrink-0
+              text-[9px]
+              font-bold
+              uppercase
+              tracking-[0.14em]
+              text-primary
+            "
+          >
+            {
+              isOrganizationRuntime
+                ? "Organization Performance"
+                : "Performance Context"
+            }
+          </p>
 
-          <div className="max-w-3xl">
+
+          {!isOrganizationRuntime &&
+            document.performanceHeader.description && (
 
             <p
               className="
+                min-w-0
+                truncate
                 text-xs
-                font-bold
-                uppercase
-                tracking-[0.16em]
-                text-primary
+                text-muted-foreground
               "
             >
-              {isOrganizationRuntime
-                ? "Organization Performance"
-                : "Performance Context"}
+              {
+                document.performanceHeader.description
+              }
             </p>
 
+          )}
 
-            {isOrganizationRuntime ? (
-
-              <p
-                className="
-                  mt-2
-                  text-sm
-                  leading-6
-                  text-muted-foreground
-                "
-              >
-                Organization-wide performance view generated from
-                the published Performance Sheet and current monthly
-                performance data.
-              </p>
-
-            ) : (
-
-              document.performanceHeader.description && (
-
-                <p
-                  className="
-                    mt-2
-                    text-sm
-                    leading-6
-                    text-muted-foreground
-                  "
-                >
-                  {
-                    document
-                      .performanceHeader
-                      .description
-                  }
-                </p>
-
-              )
-
-            )}
-
-          </div>
-
-
-          {/* Employee Metrics */}
 
           {!isOrganizationRuntime &&
             document.performanceHeader.metrics.length > 0 && (
 
             <div
               className="
-                grid
+                ml-auto
+                hidden
                 shrink-0
-                grid-cols-2
-                gap-x-8
-                gap-y-4
-                border-t
-                border-border/70
-                pt-5
-                sm:grid-cols-4
-                lg:border-l
-                lg:border-t-0
-                lg:pl-8
-                lg:pt-0
+                items-center
+                gap-5
+                lg:flex
               "
             >
 
-              {
-                document.performanceHeader.metrics.map(
-                  (metric) => (
+              {document.performanceHeader.metrics.map(
+                (metric) => (
 
-                    <div
-                      key={
-                        metric.id
-                      }
-                      className="min-w-24"
+                  <div
+                    key={
+                      metric.id
+                    }
+                    className="
+                      flex
+                      items-center
+                      gap-1.5
+                    "
+                  >
+
+                    <span
+                      className="
+                        text-[9px]
+                        font-bold
+                        uppercase
+                        tracking-[0.1em]
+                        text-muted-foreground
+                      "
                     >
+                      {
+                        metric.title
+                      }
+                    </span>
 
-                      <p
-                        className="
-                          text-[10px]
-                          font-bold
-                          uppercase
-                          tracking-[0.12em]
-                          text-muted-foreground
-                        "
-                      >
-                        {
-                          metric.title
-                        }
-                      </p>
+                    <span
+                      className="
+                        text-xs
+                        font-bold
+                        text-primary
+                      "
+                    >
+                      {
+                        metric.value
+                      }
+                    </span>
 
+                  </div>
 
-                      <p
-                        className="
-                          mt-1
-                          text-sm
-                          font-bold
-                          text-primary
-                        "
-                      >
-                        {
-                          metric.value
-                        }
-                      </p>
-
-                    </div>
-
-                  )
                 )
-              }
+              )}
 
             </div>
 
@@ -590,5 +484,6 @@ export default function RuntimeHeader({
       </div>
 
     </section>
+
   );
 }
