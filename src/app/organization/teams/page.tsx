@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -22,126 +23,262 @@ import {
 import { getDepartments } from "@/services/department.service";
 import { getOrganization } from "@/services/organization.service";
 
+import {
+  useOrganizationFeatures,
+} from "@/lib/organization/useorganizationfeatures";
+
 import type { Team } from "@/lib/types/domain/team";
 import type { Organization } from "@/lib/types/organization";
 import type { Department } from "@/lib/types/domain/department";
 
 export default function OrganizationTeamsPage() {
-  const searchParams = useSearchParams();
+
+  const searchParams =
+    useSearchParams();
+
 
   const selectedOrganizationId =
-    searchParams.get("organizationId");
+    searchParams.get(
+      "organizationId"
+    );
+
 
   const selectedDepartmentId =
-    searchParams.get("departmentId");
+    searchParams.get(
+      "departmentId"
+    );
+
+
+  const {
+    isEnabled,
+  } =
+    useOrganizationFeatures();
+
+
+  const teamsEnabled =
+    isEnabled(
+      "teams"
+    );
+
 
   const [organization, setOrganization] =
-    useState<Organization | null>(null);
+    useState<Organization | null>(
+      null
+    );
+
 
   const [departments, setDepartments] =
-    useState<Department[]>([]);
+    useState<Department[]>(
+      []
+    );
+
 
   const [teams, setTeams] =
-    useState<Team[]>([]);
+    useState<Team[]>(
+      []
+    );
+
 
   const [isLoading, setIsLoading] =
     useState(true);
 
+
   const [isSaving, setIsSaving] =
     useState(false);
+
 
   const [isDeleting, setIsDeleting] =
     useState(false);
 
-  const [isCreateDialogOpen, setIsCreateDialogOpen] =
-    useState(false);
 
-  const [isEditDialogOpen, setIsEditDialogOpen] =
-    useState(false);
+  const [
+    isCreateDialogOpen,
+    setIsCreateDialogOpen,
+  ] = useState(false);
 
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] =
-    useState(false);
+
+  const [
+    isEditDialogOpen,
+    setIsEditDialogOpen,
+  ] = useState(false);
+
+
+  const [
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+  ] = useState(false);
+
 
   const [selectedTeam, setSelectedTeam] =
-    useState<Team | null>(null);
+    useState<Team | null>(
+      null
+    );
+
 
   const [errorMessage, setErrorMessage] =
-    useState<string | null>(null);
+    useState<string | null>(
+      null
+    );
+
+
+  /* ========================================================
+     Load Teams
+  ======================================================== */
 
   async function loadTeams(
     organizationId: string
   ) {
-    const existingTeams =
-      await getTeams(organizationId);
 
-    setTeams(existingTeams);
+    const existingTeams =
+      await getTeams(
+        organizationId
+      );
+
+
+    setTeams(
+      existingTeams
+    );
   }
+
+
+  /* ========================================================
+     Load Departments
+  ======================================================== */
 
   async function loadDepartments(
     organizationId: string
   ) {
-    const existingDepartments =
-      await getDepartments(organizationId);
 
-    setDepartments(existingDepartments);
+    const existingDepartments =
+      await getDepartments(
+        organizationId
+      );
+
+
+    setDepartments(
+      existingDepartments
+    );
   }
 
+
+  /* ========================================================
+     Initial Load
+  ======================================================== */
+
   useEffect(() => {
+
     async function initialize() {
+
       try {
+
         setIsLoading(true);
+
         setErrorMessage(null);
+
 
         const existingOrganization =
           await getOrganization(
-            selectedOrganizationId ?? undefined
+            selectedOrganizationId ??
+              undefined
           );
 
+
         if (!existingOrganization) {
+
           setErrorMessage(
             "No organization has been configured yet."
           );
+
           return;
         }
 
-        setOrganization(existingOrganization);
+
+        setOrganization(
+          existingOrganization
+        );
+
+
+        /*
+         * Team management is unavailable
+         * when the organization has disabled
+         * the Teams capability.
+         *
+         * Do not load or expose Team CRUD
+         * in that state.
+         */
+
+        if (!teamsEnabled) {
+
+          return;
+
+        }
+
 
         await Promise.all([
-          loadDepartments(existingOrganization.id),
-          loadTeams(existingOrganization.id),
+          loadDepartments(
+            existingOrganization.id
+          ),
+
+          loadTeams(
+            existingOrganization.id
+          ),
         ]);
+
       } catch (error) {
+
         console.error(
           "Failed to load teams:",
           error
         );
+
 
         setErrorMessage(
           error instanceof Error
             ? error.message
             : "Failed to load teams."
         );
+
       } finally {
+
         setIsLoading(false);
+
       }
+
     }
 
+
     initialize();
-  }, [selectedOrganizationId]);
+
+  }, [
+    selectedOrganizationId,
+    teamsEnabled,
+  ]);
+
+
+  /* ========================================================
+     Create Team
+  ======================================================== */
 
   async function handleCreateTeam(
     values: TeamFormValues
   ) {
+
     if (!organization) {
+
       throw new Error(
         "No organization has been configured."
       );
+
     }
 
+
     setIsSaving(true);
+
     setErrorMessage(null);
 
+
     try {
+
       await createTeam({
         organization_id:
           organization.id,
@@ -159,32 +296,51 @@ export default function OrganizationTeamsPage() {
           values.is_active,
       });
 
+
       await loadTeams(
         organization.id
       );
 
-      setIsCreateDialogOpen(false);
+
+      setIsCreateDialogOpen(
+        false
+      );
+
     } finally {
+
       setIsSaving(false);
+
     }
   }
+
+
+  /* ========================================================
+     Edit Team
+  ======================================================== */
 
   async function handleEditTeam(
     values: TeamFormValues
   ) {
+
     if (
       !organization ||
       !selectedTeam
     ) {
+
       throw new Error(
         "No team is selected."
       );
+
     }
 
+
     setIsSaving(true);
+
     setErrorMessage(null);
 
+
     try {
+
       await updateTeam(
         selectedTeam.id,
         organization.id,
@@ -203,89 +359,177 @@ export default function OrganizationTeamsPage() {
         }
       );
 
+
       await loadTeams(
         organization.id
       );
 
-      setIsEditDialogOpen(false);
-      setSelectedTeam(null);
+
+      setIsEditDialogOpen(
+        false
+      );
+
+
+      setSelectedTeam(
+        null
+      );
+
     } finally {
+
       setIsSaving(false);
+
     }
   }
+
+
+  /* ========================================================
+     Open Edit Dialog
+  ======================================================== */
 
   function openEditDialog(
     team: Team
   ) {
-    setSelectedTeam(team);
-    setIsEditDialogOpen(true);
+
+    setSelectedTeam(
+      team
+    );
+
+
+    setIsEditDialogOpen(
+      true
+    );
   }
+
+
+  /* ========================================================
+     Close Edit Dialog
+  ======================================================== */
 
   function closeEditDialog(
     open: boolean
   ) {
-    setIsEditDialogOpen(open);
+
+    setIsEditDialogOpen(
+      open
+    );
+
 
     if (!open) {
-      setSelectedTeam(null);
+
+      setSelectedTeam(
+        null
+      );
+
     }
   }
+
+
+  /* ========================================================
+     Open Delete Dialog
+  ======================================================== */
 
   function openDeleteDialog(
     team: Team
   ) {
-    setSelectedTeam(team);
-    setIsDeleteDialogOpen(true);
+
+    setSelectedTeam(
+      team
+    );
+
+
+    setIsDeleteDialogOpen(
+      true
+    );
   }
+
+
+  /* ========================================================
+     Close Delete Dialog
+  ======================================================== */
 
   function closeDeleteDialog(
     open: boolean
   ) {
-    setIsDeleteDialogOpen(open);
+
+    setIsDeleteDialogOpen(
+      open
+    );
+
 
     if (!open) {
-      setSelectedTeam(null);
+
+      setSelectedTeam(
+        null
+      );
+
     }
   }
 
+
+  /* ========================================================
+     Delete Team
+  ======================================================== */
+
   async function handleDeleteTeam() {
+
     if (
       !organization ||
       !selectedTeam
     ) {
+
       return;
+
     }
 
+
     setIsDeleting(true);
+
     setErrorMessage(null);
 
+
     try {
+
       await deleteTeam(
         selectedTeam.id,
         organization.id
       );
 
+
       await loadTeams(
         organization.id
       );
 
-      setIsDeleteDialogOpen(false);
-      setSelectedTeam(null);
+
+      setIsDeleteDialogOpen(
+        false
+      );
+
+
+      setSelectedTeam(
+        null
+      );
+
     } catch (error) {
+
       console.error(
         "Failed to delete team:",
         error
       );
+
 
       setErrorMessage(
         error instanceof Error
           ? error.message
           : "Failed to delete team."
       );
+
     } finally {
+
       setIsDeleting(false);
+
     }
   }
+
 
   const visibleTeams =
     selectedDepartmentId
@@ -296,8 +540,108 @@ export default function OrganizationTeamsPage() {
         )
       : teams;
 
+
+  /* ========================================================
+     Feature Disabled State
+  ======================================================== */
+
+  if (
+    !isLoading &&
+    organization &&
+    !teamsEnabled
+  ) {
+
+    const settingsHref =
+      selectedOrganizationId
+        ? `/organization/settings?organizationId=${encodeURIComponent(
+            selectedOrganizationId
+          )}`
+        : "/organization/settings";
+
+
+    return (
+      <main className="min-h-screen bg-gray-50 px-8 py-10">
+
+        <div className="mx-auto max-w-5xl space-y-8">
+
+          <AdminPageHeader
+            title="Teams"
+            description="Team management is currently disabled for this organization."
+            showOrganizationSelector={false}
+          />
+
+
+          <section className="rounded-xl border bg-white p-8 shadow-sm">
+
+            <div className="max-w-2xl">
+
+              <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Feature unavailable
+              </p>
+
+
+              <h2 className="mt-2 text-2xl font-semibold">
+                Teams are turned off
+              </h2>
+
+
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                The Teams capability is currently disabled for this organization. No team management actions are available while this capability is turned off.
+              </p>
+
+
+              <div className="mt-6 space-y-3">
+
+                <p className="text-sm font-medium text-gray-900">
+                  Want to turn Teams on?
+                </p>
+
+
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Go to Settings to enable the Teams capability for this organization.
+                </p>
+
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+
+                  <Button asChild>
+                    <Link href={settingsHref}>
+                      Turn Teams On →
+                    </Link>
+                  </Button>
+
+
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      window.history.back()
+                    }
+                  >
+                    Go Back
+                  </Button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </section>
+
+        </div>
+
+      </main>
+    );
+  }
+
+
+  /* ========================================================
+     Page
+  ======================================================== */
+
   return (
     <main className="min-h-screen bg-gray-50 px-8 py-10">
+
       <div className="mx-auto max-w-5xl space-y-8">
 
         <AdminPageHeader
@@ -306,9 +650,12 @@ export default function OrganizationTeamsPage() {
           showOrganizationSelector={false}
         />
 
+
         {organization &&
           departments.length > 0 && (
+
             <section className="rounded-xl border bg-white p-5 shadow-sm">
+
               <label
                 htmlFor="team-department-context"
                 className="mb-2 block text-sm font-medium"
@@ -316,80 +663,119 @@ export default function OrganizationTeamsPage() {
                 Department Context
               </label>
 
+
               <select
                 id="team-department-context"
                 value={
                   selectedDepartmentId ?? ""
                 }
                 onChange={(event) => {
+
                   const params =
                     new URLSearchParams(
                       window.location.search
                     );
 
+
                   if (event.target.value) {
+
                     params.set(
                       "departmentId",
                       event.target.value
                     );
+
                   } else {
+
                     params.delete(
                       "departmentId"
                     );
+
                   }
 
-                  params.delete("teamId");
+
+                  params.delete(
+                    "teamId"
+                  );
+
 
                   const query =
                     params.toString();
+
 
                   window.location.assign(
                     query
                       ? `${window.location.pathname}?${query}`
                       : window.location.pathname
                   );
+
                 }}
                 className="h-10 w-full rounded-md border bg-white px-3 text-sm"
               >
+
                 <option value="">
                   All departments
                 </option>
 
+
                 {departments.map(
                   (department) => (
+
                     <option
-                      key={department.id}
-                      value={department.id}
+                      key={
+                        department.id
+                      }
+                      value={
+                        department.id
+                      }
                     >
                       {department.name}
                     </option>
+
                   )
                 )}
+
               </select>
+
             </section>
+
           )}
 
+
         {errorMessage && (
+
           <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+
             <p className="text-sm text-red-700">
               {errorMessage}
             </p>
+
           </div>
+
         )}
 
+
         {isLoading && (
+
           <section className="rounded-xl border bg-white p-6 shadow-sm">
+
             <p className="text-sm text-muted-foreground">
               Loading teams...
             </p>
+
           </section>
+
         )}
+
 
         {!isLoading &&
           organization && (
+
             <section className="rounded-xl border bg-white p-6 shadow-sm">
+
               <div className="flex items-center justify-between gap-4">
+
                 <div>
+
                   <h2 className="text-xl font-semibold">
                     {organization.company_name}
                   </h2>
@@ -397,15 +783,22 @@ export default function OrganizationTeamsPage() {
                   <p className="mt-1 text-sm text-muted-foreground">
                     Organization Teams
                   </p>
+
                 </div>
 
+
                 <div className="flex items-center gap-3">
+
                   <div className="rounded-lg bg-gray-100 px-3 py-2 text-sm">
+
                     {visibleTeams.length}{" "}
+
                     {visibleTeams.length === 1
                       ? "team"
                       : "teams"}
+
                   </div>
+
 
                   <Button
                     onClick={() =>
@@ -416,66 +809,100 @@ export default function OrganizationTeamsPage() {
                   >
                     Create Team
                   </Button>
+
                 </div>
+
               </div>
+
             </section>
+
           )}
 
+
         {!isLoading && (
+
           <section className="rounded-xl border bg-white shadow-sm">
+
             <div className="border-b p-6">
+
               <h2 className="text-xl font-semibold">
                 Teams
               </h2>
 
+
               <p className="mt-1 text-sm text-muted-foreground">
                 Organizational teams will appear here.
               </p>
+
             </div>
 
+
             {visibleTeams.length === 0 ? (
+
               <div className="p-6">
+
                 <p className="text-sm text-muted-foreground">
                   No teams have been created yet.
                 </p>
+
               </div>
+
             ) : (
+
               <div className="divide-y">
+
                 {visibleTeams.map(
                   (team) => (
+
                     <div
                       key={team.id}
                       className="p-6"
                     >
+
                       <div className="flex items-center justify-between gap-4">
+
                         <div>
+
                           <h3 className="font-semibold">
                             {team.name}
                           </h3>
 
+
                           <p className="mt-1 text-sm text-muted-foreground">
+
                             Department:{" "}
+
                             {departments.find(
                               (department) =>
                                 department.id ===
                                 team.department_id
                             )?.name ??
                               "Unknown Department"}
+
                           </p>
 
+
                           {team.description && (
+
                             <p className="mt-1 text-sm text-muted-foreground">
                               {team.description}
                             </p>
+
                           )}
+
                         </div>
 
+
                         <div className="flex items-center gap-4">
+
                           <span className="text-sm text-muted-foreground">
+
                             {team.is_active
                               ? "Active"
                               : "Inactive"}
+
                           </span>
+
 
                           <Button
                             variant="outline"
@@ -489,6 +916,7 @@ export default function OrganizationTeamsPage() {
                             Edit
                           </Button>
 
+
                           <Button
                             variant="destructive"
                             size="sm"
@@ -500,44 +928,63 @@ export default function OrganizationTeamsPage() {
                           >
                             Delete
                           </Button>
+
                         </div>
+
                       </div>
+
                     </div>
+
                   )
                 )}
+
               </div>
+
             )}
+
           </section>
+
         )}
+
 
         <TeamDialog
           open={
             isCreateDialogOpen
           }
+
           mode="create"
+
           departments={
             departments
           }
+
           onOpenChange={
             setIsCreateDialogOpen
           }
+
           onSubmit={
             handleCreateTeam
           }
+
           isSaving={
             isSaving
           }
         />
 
+
         {selectedTeam && (
+
           <TeamDialog
             open={
               isEditDialogOpen
             }
+
             mode="edit"
+
             departments={
               departments
             }
+
             initialValues={{
               department_id:
                 selectedTeam.department_id,
@@ -552,39 +999,51 @@ export default function OrganizationTeamsPage() {
               is_active:
                 selectedTeam.is_active,
             }}
+
             onOpenChange={
               closeEditDialog
             }
+
             onSubmit={
               handleEditTeam
             }
+
             isSaving={
               isSaving
             }
           />
+
         )}
 
+
         {selectedTeam && (
+
           <DeleteTeamDialog
             open={
               isDeleteDialogOpen
             }
+
             teamName={
               selectedTeam.name
             }
+
             onOpenChange={
               closeDeleteDialog
             }
+
             onConfirm={
               handleDeleteTeam
             }
+
             isDeleting={
               isDeleting
             }
           />
+
         )}
 
       </div>
+
     </main>
   );
 }

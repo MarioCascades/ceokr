@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -535,6 +536,14 @@ export default function OrganizationDepartmentsPage() {
     !departmentsEnabled
   ) {
 
+    const settingsHref =
+      selectedOrganizationId
+        ? `/organization/settings?organizationId=${encodeURIComponent(
+            selectedOrganizationId
+          )}`
+        : "/organization/settings";
+
+
     return (
       <main className="min-h-screen bg-gray-50 px-8 py-10">
 
@@ -565,15 +574,36 @@ export default function OrganizationDepartmentsPage() {
                 capability is turned off.
               </p>
 
-              <Button
-                className="mt-6"
-                variant="outline"
-                onClick={() =>
-                  window.history.back()
-                }
-              >
-                Go Back
-              </Button>
+              <div className="mt-6 space-y-3">
+
+                <p className="text-sm font-medium text-gray-900">
+                  Want to turn Departments on?
+                </p>
+
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Go to Settings to enable the Departments capability for this organization.
+                </p>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+
+                  <Button asChild>
+                    <Link href={settingsHref}>
+                      Turn Departments On →
+                    </Link>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      window.history.back()
+                    }
+                  >
+                    Go Back
+                  </Button>
+
+                </div>
+
+              </div>
 
             </div>
 
@@ -692,7 +722,7 @@ export default function OrganizationDepartmentsPage() {
           )}
 
 
-        {/* Departments */}
+        {/* Department List */}
 
         {!isLoading &&
           organization && (
@@ -706,8 +736,7 @@ export default function OrganizationDepartmentsPage() {
                 </h2>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Organizational departments will
-                  appear here.
+                  Organizational departments will appear here.
                 </p>
 
               </div>

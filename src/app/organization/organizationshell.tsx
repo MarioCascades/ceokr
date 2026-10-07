@@ -13,30 +13,24 @@ import {
   useOrganizationFeatures,
 } from "@/lib/organization/useorganizationfeatures";
 
-
 type OrganizationShellProps = {
   children: ReactNode;
 };
-
 
 type OrganizationNavLinkProps = {
   href: string;
   label: string;
 };
 
-
 function OrganizationNavLink({
   href,
   label,
 }: OrganizationNavLinkProps) {
-
   const pathname =
     usePathname();
 
-
   const isActive =
     pathname === href.split("?")[0];
-
 
   return (
     <Link
@@ -53,7 +47,6 @@ function OrganizationNavLink({
   );
 }
 
-
 function OrganizationNavSection({
   title,
   children,
@@ -61,7 +54,6 @@ function OrganizationNavSection({
   title: string;
   children: ReactNode;
 }) {
-
   return (
     <div className="space-y-1">
 
@@ -80,7 +72,6 @@ function OrganizationNavSection({
         {title}
       </div>
 
-
       <div className="space-y-1">
         {children}
       </div>
@@ -89,30 +80,29 @@ function OrganizationNavSection({
   );
 }
 
-
 export default function OrganizationShell({
   children,
 }: OrganizationShellProps) {
-
   const searchParams =
     useSearchParams();
 
-
   const organizationId =
     searchParams.get("organizationId");
-
 
   const {
     isEnabled,
   } =
     useOrganizationFeatures();
 
-
   const departmentsEnabled =
     isEnabled(
       "departments"
     );
 
+  const teamsEnabled =
+    isEnabled(
+      "teams"
+    );
 
   /*
    * Organization Admin navigation always
@@ -125,23 +115,19 @@ export default function OrganizationShell({
   function organizationHref(
     path: string
   ) {
-
     if (!organizationId) {
       return path;
     }
-
 
     const separator =
       path.includes("?")
         ? "&"
         : "?";
 
-
     return `${path}${separator}organizationId=${encodeURIComponent(
       organizationId
     )}`;
   }
-
 
   /*
    * ==========================================================
@@ -156,7 +142,6 @@ export default function OrganizationShell({
 
   const performanceWorkspaceHref =
     organizationHref("/runtime");
-
 
   return (
     <div
@@ -200,7 +185,9 @@ export default function OrganizationShell({
         >
 
           <Link
-            href={organizationHref("/organization")}
+            href={organizationHref(
+              "/organization"
+            )}
             className="block"
           >
 
@@ -213,7 +200,6 @@ export default function OrganizationShell({
             >
               CascadEffects
             </div>
-
 
             <div
               className="
@@ -231,7 +217,6 @@ export default function OrganizationShell({
           </Link>
 
         </div>
-
 
         {/* ==================================================
             Navigation
@@ -261,7 +246,6 @@ export default function OrganizationShell({
 
           </div>
 
-
           {/* ==================================================
               Organization
           ================================================== */}
@@ -286,12 +270,14 @@ export default function OrganizationShell({
               />
             )}
 
-            <OrganizationNavLink
-              href={organizationHref(
-                "/organization/teams"
-              )}
-              label="Teams"
-            />
+            {teamsEnabled && (
+              <OrganizationNavLink
+                href={organizationHref(
+                  "/organization/teams"
+                )}
+                label="Teams"
+              />
+            )}
 
             <OrganizationNavLink
               href={organizationHref(
@@ -309,7 +295,6 @@ export default function OrganizationShell({
 
           </OrganizationNavSection>
 
-
           {/* ==================================================
               Performance
           ================================================== */}
@@ -325,41 +310,12 @@ export default function OrganizationShell({
 
             <OrganizationNavLink
               href={organizationHref(
-                "/organization/performancesheets"
-              )}
-              label="Performance Sheets"
-            />
-
-            <OrganizationNavLink
-              href={organizationHref(
-                "/organization/assignments"
-              )}
-              label="Assignments"
-            />
-
-            <OrganizationNavLink
-              href={organizationHref(
-                "/organization/objectives"
-              )}
-              label="Objectives"
-            />
-
-            <OrganizationNavLink
-              href={organizationHref(
-                "/organization/keyresults"
-              )}
-              label="Key Results"
-            />
-
-            <OrganizationNavLink
-              href={organizationHref(
                 "/organization/okrtemplates"
               )}
               label="OKR Templates"
             />
 
           </OrganizationNavSection>
-
 
           {/* ==================================================
               Analytics
@@ -384,7 +340,6 @@ export default function OrganizationShell({
             />
 
           </OrganizationNavSection>
-
 
           {/* ==================================================
               Configuration
@@ -412,7 +367,6 @@ export default function OrganizationShell({
 
         </nav>
 
-
         {/* ==================================================
             Footer
         ================================================== */}
@@ -438,7 +392,6 @@ export default function OrganizationShell({
         </div>
 
       </aside>
-
 
       {/* ==================================================
           Main Content
@@ -478,9 +431,9 @@ export default function OrganizationShell({
               CascadEffects
             </div>
 
-
             <div
               className="
+                mt-0.5
                 text-xs
                 font-medium
                 uppercase
@@ -494,7 +447,6 @@ export default function OrganizationShell({
           </Link>
 
         </header>
-
 
         {/* ==================================================
             Page

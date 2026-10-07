@@ -1,32 +1,57 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { getOrganization } from "@/services/organization.service";
+import { useOrganizationFeatures } from "@/lib/organization/useorganizationfeatures";
 
-type OrganizationPageProps = {
-  searchParams: Promise<{
-    organizationId?: string;
-    from?: string;
-  }>;
-};
-
-export default async function OrganizationWorkspacePage({
-  searchParams,
-}: OrganizationPageProps) {
-  const params = await searchParams;
+export default function OrganizationWorkspacePage() {
+  const searchParams = useSearchParams();
 
   const organizationId =
-    params.organizationId;
+    searchParams.get("organizationId") ??
+    undefined;
 
   const fromAdmin =
-    params.from === "admin";
+    searchParams.get("from") === "admin";
 
-  const organization =
-    organizationId
-      ? await getOrganization(
+  const [organization, setOrganization] =
+    useState<Awaited<ReturnType<typeof getOrganization>>>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadOrganization() {
+      try {
+        const existingOrganization =
           organizationId
-        )
-      : null;
+            ? await getOrganization(organizationId)
+            : null;
+
+        if (!cancelled) {
+          setOrganization(existingOrganization);
+        }
+      } catch (error) {
+        console.error(
+          "Failed to load organization:",
+          error
+        );
+
+        if (!cancelled) {
+          setOrganization(null);
+        }
+      }
+    }
+
+    loadOrganization();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [organizationId]);
 
   function workspaceHref(
     path: string
@@ -216,6 +241,7 @@ export default async function OrganizationWorkspacePage({
             href={workspaceHref(
               "/organization/departments"
             )}
+            featureKey="departments"
           />
 
           <WorkspaceCard
@@ -224,6 +250,7 @@ export default async function OrganizationWorkspacePage({
             href={workspaceHref(
               "/organization/teams"
             )}
+            featureKey="teams"
           />
 
           <WorkspaceCard
@@ -250,7 +277,7 @@ export default async function OrganizationWorkspacePage({
 
         <WorkspaceSection
           title="Performance"
-          description="Build, manage, assign, and administer your organization&apos;s performance system."
+          description="Build, manage, and administer your organization&apos;s performance system."
         >
 
           <WorkspaceCard
@@ -259,38 +286,6 @@ export default async function OrganizationWorkspacePage({
             href={
               performanceWorkspaceHref
             }
-          />
-
-          <WorkspaceCard
-            title="🧩 Performance Sheets"
-            description="Create and manage Performance Sheets, open Builder, publish versions, and manage existing sheets."
-            href={workspaceHref(
-              "/organization/performancesheets"
-            )}
-          />
-
-          <WorkspaceCard
-            title="📋 Assignments"
-            description="Assign published Performance Sheets to users, teams, departments, or the organization."
-            href={workspaceHref(
-              "/organization/assignments"
-            )}
-          />
-
-          <WorkspaceCard
-            title="🎯 Objectives"
-            description="Manage objectives defined within your organization&apos;s Performance Sheets."
-            href={workspaceHref(
-              "/organization/objectives"
-            )}
-          />
-
-          <WorkspaceCard
-            title="📈 Key Results"
-            description="Manage measurable outcomes defined within your organization&apos;s Performance Sheets."
-            href={workspaceHref(
-              "/organization/keyresults"
-            )}
           />
 
           <WorkspaceCard
@@ -411,14 +406,30 @@ function WorkspaceCard({
   description,
   href,
   comingSoon = false,
+  featureKey,
 }: {
   title: string;
   description: string;
   href: string;
   comingSoon?: boolean;
+  featureKey?: "departments" | "teams";
 }) {
+  const { isEnabled } =
+    useOrganizationFeatures();
+
+  const featureEnabled =
+    featureKey
+      ? isEnabled(featureKey)
+      : true;
+
   return (
-    <div className="flex min-h-[190px] flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+    <div
+      className={`flex min-h-[190px] flex-col rounded-xl border p-5 shadow-sm transition-all ${
+        featureKey && !featureEnabled
+          ? "border-amber-200 bg-amber-50/40"
+          : "border-gray-200 bg-white hover:-translate-y-0.5 hover:shadow-md"
+      }`}
+    >
 
       <div className="flex items-start justify-between gap-3">
 
@@ -432,20 +443,41 @@ function WorkspaceCard({
           </span>
         )}
 
+        {featureKey && !featureEnabled && (
+          <span className="shrink-0 rounded bg-amber-100 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-amber-700">
+            Off
+          </span>
+        )}
+
       </div>
 
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-        {description}
+        {featureKey && !featureEnabled
+          ? `The ${featureKey === "departments" ? "Departments" : "Teams"} capability is currently turned off for this organization.`
+          : description}
       </p>
+
+      {featureKey && !featureEnabled && (
+        <p className="mt-3 text-xs font-medium uppercase tracking-wide text-amber-700">
+          Feature turned off
+        </p>
+      )}
 
       <div className="mt-auto pt-6">
 
         <Button
           asChild
           className="w-full sm:w-auto"
+          variant={
+            featureKey && !featureEnabled
+              ? "outline"
+              : "default"
+          }
         >
           <Link href={href}>
-            Open
+            {featureKey && !featureEnabled
+              ? "View Status"
+              : "Open"}
           </Link>
         </Button>
 
