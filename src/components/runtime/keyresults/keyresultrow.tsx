@@ -168,6 +168,58 @@ export default function KeyResultRow({
 
 
   /* ========================================================
+     Percentage Display
+  ======================================================== */
+
+  const isPercentage =
+    currentKeyResult.measurementType ===
+    "percentage";
+
+
+  function formatPercentageValue(
+    value: string | number
+  ): string {
+
+    const text =
+      String(value).trim();
+
+    if (!text) {
+      return "";
+    }
+
+    return text.endsWith("%")
+      ? text
+      : `${text}%`;
+  }
+
+
+  function normalizePercentageInput(
+    value: string
+  ): string {
+
+    return value
+      .replace(/%/g, "")
+      .trim();
+  }
+
+
+  const displayTargetValue =
+    isPercentage
+      ? formatPercentageValue(
+          targetValue
+        )
+      : targetValue;
+
+
+  const displayCurrentValue =
+    isPercentage
+      ? formatPercentageValue(
+          currentValue
+        )
+      : currentValue;
+
+
+  /* ========================================================
      Hydrate From Persisted Monthly Progress
   ======================================================== */
 
@@ -236,6 +288,15 @@ export default function KeyResultRow({
           currentKeyResult.sourceKeyResultId
         ]
       : undefined;
+
+
+  const displayPreviousValue =
+    isPercentage &&
+    previousValue !== undefined
+      ? formatPercentageValue(
+          previousValue
+        )
+      : previousValue;
 
 
   /* ========================================================
@@ -444,8 +505,16 @@ export default function KeyResultRow({
     value: string
   ) {
 
+    const normalizedValue =
+      isPercentage
+        ? normalizePercentageInput(
+            value
+          )
+        : value;
+
+
     setTargetValue(
-      value
+      normalizedValue
     );
 
     setError(
@@ -453,7 +522,7 @@ export default function KeyResultRow({
     );
 
     notifyDraftChange(
-      value,
+      normalizedValue,
       currentValue
     );
 
@@ -468,8 +537,16 @@ export default function KeyResultRow({
     value: string
   ) {
 
+    const normalizedValue =
+      isPercentage
+        ? normalizePercentageInput(
+            value
+          )
+        : value;
+
+
     setCurrentValue(
-      value
+      normalizedValue
     );
 
     setError(
@@ -478,7 +555,7 @@ export default function KeyResultRow({
 
     notifyDraftChange(
       targetValue,
-      value
+      normalizedValue
     );
 
   }
@@ -902,9 +979,9 @@ export default function KeyResultRow({
             <p className="mt-1 text-lg font-semibold">
 
               {
-                previousValue !==
+                displayPreviousValue !==
                 undefined
-                  ? previousValue
+                  ? displayPreviousValue
                   : "—"
               }
 
@@ -944,7 +1021,7 @@ export default function KeyResultRow({
             <input
               type="text"
               value={
-                targetValue
+                displayTargetValue
               }
               disabled={
                 !globalEditing
@@ -978,7 +1055,7 @@ export default function KeyResultRow({
               id={`current-${currentKeyResult.id}`}
               type="text"
               value={
-                currentValue
+                displayCurrentValue
               }
               disabled={
                 !globalEditing
@@ -1174,9 +1251,9 @@ export default function KeyResultRow({
           <p className="mt-1 text-lg font-semibold">
 
             {
-              previousValue !==
+              displayPreviousValue !==
               undefined
-                ? previousValue
+                ? displayPreviousValue
                 : "—"
             }
 
@@ -1218,7 +1295,7 @@ export default function KeyResultRow({
             id={`target-${currentKeyResult.id}`}
             type="text"
             value={
-              targetValue
+              displayTargetValue
             }
             disabled={
               !globalEditing
@@ -1233,7 +1310,11 @@ export default function KeyResultRow({
                 ? "bg-white"
                 : "bg-gray-100 text-gray-700"
             }`}
-            placeholder="Target"
+            placeholder={
+              isPercentage
+                ? "Target %"
+                : "Target"
+            }
           />
 
         </div>
@@ -1254,7 +1335,7 @@ export default function KeyResultRow({
             id={`current-${currentKeyResult.id}`}
             type="text"
             value={
-              currentValue
+              displayCurrentValue
             }
             disabled={
               !globalEditing
@@ -1269,7 +1350,11 @@ export default function KeyResultRow({
                 ? "bg-white"
                 : "bg-gray-100 text-gray-700"
             }`}
-            placeholder="Current"
+            placeholder={
+              isPercentage
+                ? "Current %"
+                : "Current"
+            }
           />
 
         </div>
