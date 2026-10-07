@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useState,
 } from "react";
 
@@ -33,7 +34,7 @@ import type {
 } from "@/services/dashboard.service";
 
 import {
-  transitionPerformanceInstanceAction,
+  saveRuntimePerformanceSheetAction,
 } from "@/app/runtime/actions";
 
 import ObjectiveCard from "./objectivecard";
@@ -61,6 +62,38 @@ export interface RuntimeOrganization {
   company_name: string;
 
   logo_url: string | null;
+}
+
+
+/* ==========================================================
+   Runtime Performance Draft
+========================================================== */
+
+/**
+ * The Performance Sheet is now the owner of the Runtime
+ * performance draft.
+ *
+ * Child components must report edits to this parent rather
+ * than writing Runtime performance data directly.
+ *
+ * This allows the global Save button to persist the entire
+ * monthly Performance Instance in one operation.
+ */
+
+export interface RuntimePerformanceKeyResultDraft {
+  keyResultId: string;
+
+  progressId: string;
+
+  target: unknown;
+
+  currentValue: number | string;
+
+  score: number;
+
+  employeeComment?: string;
+
+  managerComment?: string;
 }
 
 
@@ -148,6 +181,11 @@ export default function PerformanceSheet({
 
 }: PerformanceSheetProps) {
 
+
+  /* ========================================================
+     Runtime Status
+  ======================================================== */
+
   const [
     currentStatus,
     setCurrentStatus,
@@ -156,16 +194,19 @@ export default function PerformanceSheet({
   );
 
 
-  /*
-   * Performance Sheet Edit Mode
-   *
-   * One Edit / Save state controls the entire sheet.
-   */
+  /* ========================================================
+     Performance Sheet Edit Mode
+  ======================================================== */
+
   const [
     editing,
     setEditing,
   ] = useState(false);
 
+
+  /* ========================================================
+     Runtime Objectives
+  ======================================================== */
 
   const [
     objectives,
@@ -181,95 +222,309 @@ export default function PerformanceSheet({
   ] = useState(false);
 
 
+  /* ========================================================
+     Global Save State
+  ======================================================== */
+
   const [
-    transitioning,
-    setTransitioning,
+    saving,
+    setSaving,
   ] = useState(false);
 
 
   const [
-    transitionError,
-    setTransitionError,
+    saveError,
+    setSaveError,
   ] = useState<string | null>(
     null
   );
 
 
   const [
-    transitionSaved,
-    setTransitionSaved,
+    saveSuccessful,
+    setSaveSuccessful,
   ] = useState(false);
 
 
   /* ========================================================
-     Runtime Lifecycle
+     Runtime Performance Draft
   ======================================================== */
 
-  async function handleTransition(
-    transition:
-      | "start"
-      | "submit"
-      | "approve"
-      | "complete"
-  ) {
+  const [
+    keyResultDrafts,
+    setKeyResultDrafts,
+  ] = useState<
+    Record<
+      string,
+      RuntimePerformanceKeyResultDraft
+    >
+  >(() => {
 
-    setTransitioning(
-      true
+    const initialDrafts:
+      Record<
+        string,
+        RuntimePerformanceKeyResultDraft
+      > = {};
+
+
+    for (
+      const progress
+      of keyResultProgress
+    ) {
+
+      /*
+       * Key Result configuration is supplied by the
+       * Runtime Objective / Key Result components.
+       *
+       * The Runtime Performance Key Result ID is the
+       * authoritative relationship between the progress
+       * record and the Runtime Key Result snapshot.
+       *
+       * This is important because progress.keyResultId
+       * can refer to the source Key Result while the target
+       * belongs to the Runtime Performance Key Result.
+       */
+
+      const runtimeKeyResult =
+        initialObjectives
+          .flatMap(
+            (objective) =>
+              objective.keyResults
+          )
+          .find(
+            (keyResult) =>
+              keyResult.id ===
+              progress.performanceInstanceKeyResultId
+          );
+
+
+      initialDrafts[
+        progress.id
+      ] = {
+
+        keyResultId:
+          progress.keyResultId,
+
+        progressId:
+          progress.id,
+
+        target:
+          runtimeKeyResult?.target ??
+          "",
+
+        currentValue:
+          progress.currentValue,
+
+        score:
+          progress.score,
+
+        employeeComment:
+          progress.employeeComment,
+
+        managerComment:
+          progress.managerComment,
+
+      };
+
+    }
+
+
+    return initialDrafts;
+
+  });
+
+
+  /* ========================================================
+     Employee Comments Draft
+  ======================================================== */
+
+  const [
+    employeeComments,
+    setEmployeeComments,
+  ] = useState(
+    performanceInstance.employeeComments ??
+    ""
+  );
+
+
+  /* ========================================================
+     Runtime Draft Registration
+  ======================================================== */
+
+  /*
+   * Keep this callback stable.
+   *
+   * KeyResultRow reports its draft through this callback
+   * from a useEffect. If this function is recreated on
+   * every PerformanceSheet render, the callback becomes a
+   * changing dependency of that effect.
+   *
+   * The resulting cycle is:
+   *
+   * KeyResultRow effect
+   *   -> onDraftChange
+   *   -> setKeyResultDrafts
+   *   -> PerformanceSheet render
+   *   -> new callback
+   *   -> KeyResultRow effect again
+   *
+   * useCallback prevents that render loop.
+   */
+
+  const handleKeyResultDraftChange =
+    useCallback(
+      (
+        draft:
+          RuntimePerformanceKeyResultDraft
+      ) => {
+
+        setKeyResultDrafts(
+          (current) => ({
+
+            ...current,
+
+            [draft.progressId]:
+              draft,
+
+          })
+        );
+
+
+        setSaveSuccessful(
+          false
+        );
+
+
+        setSaveError(
+          null
+        );
+
+      },
+      []
     );
 
-    setTransitionError(
+
+  /* ========================================================
+     Employee Comments Draft Change
+  ======================================================== */
+
+  function handleEmployeeCommentsChange(
+    comments: string
+  ) {
+
+    setEmployeeComments(
+      comments
+    );
+
+
+    setSaveSuccessful(
+      false
+    );
+
+
+    setSaveError(
       null
     );
 
-    setTransitionSaved(
+  }
+
+
+  /* ========================================================
+     Global Performance Save
+  ======================================================== */
+
+  async function handleSavePerformance() {
+
+    if (saving) {
+      return;
+    }
+
+
+    setSaving(
+      true
+    );
+
+
+    setSaveError(
+      null
+    );
+
+
+    setSaveSuccessful(
       false
     );
 
 
     try {
 
+      const drafts =
+        Object.values(
+          keyResultDrafts
+        );
+
+
       const updated =
-        await transitionPerformanceInstanceAction({
+        await saveRuntimePerformanceSheetAction({
 
           organizationId,
 
           performanceInstanceId,
 
-          transition,
+          employeeComments,
+
+          keyResults:
+            drafts,
+
         });
 
 
+      /*
+       * Saving the Performance Sheet is the Runtime
+       * completion event.
+       *
+       * Completed does not lock the Performance Instance.
+       */
+
       setCurrentStatus(
-        updated.status
+        updated.performanceInstance.status
       );
 
-      setTransitionSaved(
+
+      setEditing(
+        false
+      );
+
+
+      setSaveSuccessful(
         true
       );
+
 
     } catch (
       error
     ) {
 
       console.error(
-        "Failed to transition Performance Instance:",
+        "Failed to save Runtime Performance Sheet:",
         error
       );
 
 
-      setTransitionError(
+      setSaveError(
         error instanceof Error
           ? error.message
-          : "Failed to update Performance Instance status."
+          : "Failed to save the Performance Sheet."
       );
+
 
     } finally {
 
-      setTransitioning(
+      setSaving(
         false
       );
 
     }
+
   }
 
 
@@ -319,6 +574,7 @@ export default function PerformanceSheet({
 
     setObjectives(
       (current) => [
+
         ...current,
 
         {
@@ -326,9 +582,12 @@ export default function PerformanceSheet({
 
           position:
             current.length + 1,
+
         },
+
       ]
     );
+
 
     setAddingObjective(
       false
@@ -344,10 +603,15 @@ export default function PerformanceSheet({
   const runtimePerformanceInstance:
     PerformanceInstance =
     {
+
       ...performanceInstance,
 
       status:
         currentStatus,
+
+      employeeComments:
+        employeeComments,
+
     };
 
 
@@ -362,7 +626,6 @@ export default function PerformanceSheet({
         mx-auto
         w-full
         max-w-none
-        space-y-4
         px-2
         py-2
         sm:px-3
@@ -371,429 +634,126 @@ export default function PerformanceSheet({
     >
 
       {/* ======================================================
-          Runtime Navigation
+          Sticky Performance Context
+          ------------------------------------------------------
+          Everything above the Performance section remains
+          visible while the Performance content scrolls.
       ====================================================== */}
 
-      {!memberMode &&
-        members.length > 0 && (
-
-        <RuntimeNavigation
-
-          organizationId={
-            organizationId
-          }
-
-          members={
-            members
-          }
-
-          selectedSubjectId={
-            subject?.id
-          }
-
-          performanceMonth={
-            performanceInstance.performanceMonth
-          }
-
-          performanceMonths={
-            performanceMonths
-          }
-
-        />
-
-      )}
-
-
-      {/* ======================================================
-          Organization Dashboard
-      ====================================================== */}
-
-      {!memberMode &&
-        !subject &&
-        dashboard && (
-
-        <RuntimeOverview
-          dashboard={
-            dashboard
-          }
-        />
-
-      )}
-
-
-      {/* ======================================================
-          Runtime Header
-
-          Organization Runtime supplies the real organization.
-          Member Workspace does not currently supply one, so
-          the header is rendered only when organization exists.
-      ====================================================== */}
-
-      {organization && (
-
-        <RuntimeHeader
-
-          document={
-            document
-          }
-
-          organization={
-            organization
-          }
-
-          performanceInstance={
-            runtimePerformanceInstance
-          }
-
-          subject={
-            subject
-          }
-
-        />
-
-      )}
-
-
-      {/* ======================================================
-          Runtime Summary
-      ====================================================== */}
-
-      <RuntimeSummary
-
-        performanceInstance={
-          runtimePerformanceInstance
-        }
-
-      />
-
-
-      {/* ======================================================
-          Performance Workflow
-      ====================================================== */}
-
-      <section
+      <div
         className="
-          overflow-hidden
-          rounded-xl
-          border
-          border-border/80
-          bg-card
-          shadow-sm
+          sticky
+          top-0
+          z-40
+          -mx-2
+          bg-background
+          px-2
+          pb-2
+          sm:-mx-3
+          sm:px-3
+          lg:-mx-4
+          lg:px-4
         "
       >
 
         <div
           className="
-            flex
-            flex-col
-            gap-3
-            px-4
-            py-3
-            md:px-5
-            md:py-3
-            lg:flex-row
-            lg:items-center
-            lg:justify-between
+            space-y-4
           "
         >
 
-          <div className="min-w-0">
+          {/* ======================================================
+              Runtime Navigation
+          ====================================================== */}
 
-            <p
-              className="
-                text-[10px]
-                font-bold
-                uppercase
-                tracking-[0.16em]
-                text-primary
-              "
-            >
-              Workflow
-            </p>
+          {!memberMode &&
+            members.length > 0 && (
 
-            <h2
-              className="
-                mt-1
-                text-lg
-                font-black
-                tracking-tight
-                text-primary
-              "
-            >
-              Performance Status
-            </h2>
+            <RuntimeNavigation
+              organizationId={
+                organizationId
+              }
 
-            <p
-              className="
-                mt-1
-                max-w-2xl
-                text-xs
-                leading-5
-                text-muted-foreground
-              "
-            >
-              Move this monthly performance instance
-              through its current workflow stage.
-            </p>
+              members={
+                members
+              }
 
-          </div>
+              selectedSubjectId={
+                subject?.id
+              }
+
+              performanceMonth={
+                performanceInstance.performanceMonth
+              }
+
+              performanceMonths={
+                performanceMonths
+              }
+
+            />
+
+          )}
 
 
-          <div
-            className="
-              flex
-              shrink-0
-              flex-wrap
-              gap-2
-            "
-          >
+          {/* ======================================================
+              Organization Dashboard
+          ====================================================== */}
 
-            {currentStatus ===
-              "not_started" && (
+          {!memberMode &&
+            !subject &&
+            dashboard && (
 
-              <button
-                type="button"
-                onClick={() =>
-                  handleTransition(
-                    "start"
-                  )
-                }
-                disabled={
-                  transitioning
-                }
-                className="
-                  rounded-lg
-                  bg-[#E26D5C]
-                  px-4
-                  py-2
-                  text-xs
-                  font-bold
-                  text-primary-foreground
-                  shadow-sm
-                  transition-all
-                  duration-200
-                  hover:-translate-y-px
-                  hover:bg-[#E26D5C]/90
-                  hover:shadow-md
-                  disabled:cursor-not-allowed
-                  disabled:opacity-50
-                  disabled:hover:translate-y-0
-                "
-              >
-                {
-                  transitioning
-                    ? "Starting..."
-                    : "Start Performance"
-                }
-              </button>
+            <RuntimeOverview
+              dashboard={
+                dashboard
+              }
 
-            )}
+            />
+
+          )}
 
 
-            {currentStatus ===
-              "in_progress" && (
+          {/* ======================================================
+              Runtime Header
+          ====================================================== */}
 
-              <button
-                type="button"
-                onClick={() =>
-                  handleTransition(
-                    "submit"
-                  )
-                }
-                disabled={
-                  transitioning
-                }
-                className="
-                  rounded-lg
-                  bg-[#e26d5c]
-                  px-4
-                  py-2
-                  text-xs
-                  font-bold
-                  text-white
-                  shadow-sm
-                  transition-all
-                  duration-200
-                  hover:-translate-y-px
-                  hover:shadow-md
-                  disabled:cursor-not-allowed
-                  disabled:opacity-50
-                  disabled:hover:translate-y-0
-                "
-              >
-                {
-                  transitioning
-                    ? "Submitting..."
-                    : "Submit Performance"
-                }
-              </button>
+          {organization && (
 
-            )}
+            <RuntimeHeader
+              document={
+                document
+              }
+
+              organization={
+                organization
+              }
+
+              performanceInstance={
+                runtimePerformanceInstance
+              }
+
+              subject={
+                subject
+              }
+
+            />
+
+          )}
 
 
-            {!memberMode &&
-              currentStatus ===
-                "submitted" && (
+          {/* ======================================================
+              Runtime Summary
+          ====================================================== */}
 
-              <button
-                type="button"
-                onClick={() =>
-                  handleTransition(
-                    "approve"
-                  )
-                }
-                disabled={
-                  transitioning
-                }
-                className="
-                  rounded-lg
-                  bg-[#E26D5C]
-                  px-4
-                  py-2
-                  text-xs
-                  font-bold
-                  text-white
-                  shadow-sm
-                  transition-all
-                  duration-200
-                  hover:-translate-y-px
-                  hover:bg-[#E26D5C]/90
-                  hover:shadow-md
-                  disabled:cursor-not-allowed
-                  disabled:opacity-50
-                  disabled:hover:translate-y-0
-                "
-              >
-                {
-                  transitioning
-                    ? "Approving..."
-                    : "Approve Performance"
-                }
-              </button>
-
-            )}
-
-
-            {!memberMode &&
-              currentStatus ===
-                "approved" && (
-
-              <button
-                type="button"
-                onClick={() =>
-                  handleTransition(
-                    "complete"
-                  )
-                }
-                disabled={
-                  transitioning
-                }
-                className="
-                  rounded-lg
-                  bg-primary
-                  px-4
-                  py-2
-                  text-xs
-                  font-bold
-                  text-primary-foreground
-                  shadow-sm
-                  transition-all
-                  duration-200
-                  hover:-translate-y-px
-                  hover:shadow-md
-                  disabled:cursor-not-allowed
-                  disabled:opacity-50
-                  disabled:hover:translate-y-0
-                "
-              >
-                {
-                  transitioning
-                    ? "Completing..."
-                    : "Complete Performance"
-                }
-              </button>
-
-            )}
-
-          </div>
+          <RuntimeSummary
+            performanceInstance={
+              runtimePerformanceInstance
+            }
+          />
 
         </div>
 
-
-        {(transitionSaved ||
-          transitionError) && (
-
-          <div
-            className="
-              border-t
-              border-border/70
-              bg-background/70
-              px-4
-              py-3
-              md:px-5
-            "
-          >
-
-            {transitionSaved && (
-
-              <p
-                className="
-                  text-xs
-                  font-semibold
-                  text-primary
-                "
-              >
-                Performance status updated.
-              </p>
-
-            )}
-
-
-            {transitionError && (
-
-              <div
-                className="
-                  rounded-lg
-                  border
-                  border-destructive/30
-                  bg-destructive/5
-                  px-3
-                  py-2
-                "
-              >
-
-                <p
-                  className="
-                    text-xs
-                    font-bold
-                    text-destructive
-                  "
-                >
-                  Unable to update performance status
-                </p>
-
-                <p
-                  className="
-                    mt-1
-                    text-xs
-                    leading-5
-                    text-muted-foreground
-                  "
-                >
-                  {
-                    transitionError
-                  }
-                </p>
-
-              </div>
-
-            )}
-
-          </div>
-
-        )}
-
-      </section>
+      </div>
 
 
       {/* ======================================================
@@ -845,6 +805,7 @@ export default function PerformanceSheet({
                 Performance
               </p>
 
+
               <h2
                 className="
                   mt-1
@@ -856,6 +817,7 @@ export default function PerformanceSheet({
               >
                 Objectives
               </h2>
+
 
               <p
                 className="
@@ -902,38 +864,165 @@ export default function PerformanceSheet({
               </div>
 
 
-              <button
-                type="button"
-                onClick={() =>
-                  setEditing(
-                    (current) => !current
-                  )
-                }
-                className="
-                  rounded-lg
-                  bg-primary
-                  px-4
-                  py-2
-                  text-xs
-                  font-bold
-                  text-primary-foreground
-                  shadow-sm
-                  transition-all
-                  duration-200
-                  hover:-translate-y-px
-                  hover:shadow-md
-                "
-              >
-                {
-                  editing
-                    ? "Save"
-                    : "Edit"
-                }
-              </button>
+              {!editing && (
+
+                <button
+                  type="button"
+
+                  onClick={() => {
+
+                    setEditing(
+                      true
+                    );
+
+                    setSaveSuccessful(
+                      false
+                    );
+
+                    setSaveError(
+                      null
+                    );
+
+                  }}
+
+                  className="
+                    rounded-lg
+                    bg-primary
+                    px-4
+                    py-2
+                    text-xs
+                    font-bold
+                    text-primary-foreground
+                    shadow-sm
+                    transition-all
+                    duration-200
+                    hover:-translate-y-px
+                    hover:shadow-md
+                  "
+                >
+                  Edit
+                </button>
+
+              )}
+
+
+              {editing && (
+
+                <button
+                  type="button"
+
+                  onClick={
+                    handleSavePerformance
+                  }
+
+                  disabled={
+                    saving
+                  }
+
+                  className="
+                    rounded-lg
+                    bg-primary
+                    px-4
+                    py-2
+                    text-xs
+                    font-bold
+                    text-primary-foreground
+                    shadow-sm
+                    transition-all
+                    duration-200
+                    hover:-translate-y-px
+                    hover:shadow-md
+                    disabled:cursor-not-allowed
+                    disabled:opacity-50
+                  "
+                >
+
+                  {
+                    saving
+                      ? "Saving..."
+                      : "Save"
+                  }
+
+                </button>
+
+              )}
 
             </div>
 
           </div>
+
+
+          {(saveSuccessful ||
+            saveError) && (
+
+            <div
+              className="
+                mt-3
+                border-t
+                border-border/70
+                pt-3
+              "
+            >
+
+              {saveSuccessful && (
+
+                <p
+                  className="
+                    text-xs
+                    font-semibold
+                    text-primary
+                  "
+                >
+                  Performance saved successfully.
+                </p>
+
+              )}
+
+
+              {saveError && (
+
+                <div
+                  className="
+                    rounded-lg
+                    border
+                    border-destructive/30
+                    bg-destructive/5
+                    px-3
+                    py-2
+                  "
+                >
+
+                  <p
+                    className="
+                      text-xs
+                      font-bold
+                      text-destructive
+                    "
+                  >
+                    Unable to save performance
+                  </p>
+
+
+                  <p
+                    className="
+                      mt-1
+                      text-xs
+                      leading-5
+                      text-muted-foreground
+                    "
+                  >
+                    {
+                      saveError
+                    }
+                  </p>
+
+                </div>
+
+              )}
+
+            </div>
+
+          )}
 
         </div>
 
@@ -990,9 +1079,14 @@ export default function PerformanceSheet({
                   handleObjectiveDeleted
                 }
 
+                onKeyResultDraftChange={
+                  handleKeyResultDraftChange
+                }
+
               />
 
             )
+
           )}
 
 
@@ -1028,11 +1122,13 @@ export default function PerformanceSheet({
 
             <button
               type="button"
+
               onClick={() =>
                 setAddingObjective(
                   true
                 )
               }
+
               className="
                 group
                 flex
@@ -1074,10 +1170,12 @@ export default function PerformanceSheet({
                   duration-200
                   group-hover:scale-105
                 "
+
                 aria-hidden="true"
               >
                 +
               </span>
+
 
               Add Objective
 
@@ -1127,6 +1225,7 @@ export default function PerformanceSheet({
             Reflection
           </p>
 
+
           <h2
             className="
               mt-1
@@ -1141,6 +1240,7 @@ export default function PerformanceSheet({
 
         </div>
 
+
         <div
           className="
             px-4
@@ -1152,17 +1252,8 @@ export default function PerformanceSheet({
 
           <EmployeeComments
 
-            organizationId={
-              organizationId
-            }
-
-            performanceInstanceId={
-              performanceInstanceId
-            }
-
             initialComments={
-              performanceInstance
-                .employeeComments
+              employeeComments
             }
 
             label="Employee Comments"
@@ -1179,6 +1270,14 @@ export default function PerformanceSheet({
                 .helpText
             }
 
+            editing={
+              editing
+            }
+
+            onChange={
+              handleEmployeeCommentsChange
+            }
+
           />
 
         </div>
@@ -1186,5 +1285,7 @@ export default function PerformanceSheet({
       </section>
 
     </main>
+
   );
+
 }

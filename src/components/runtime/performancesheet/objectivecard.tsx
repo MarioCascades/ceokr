@@ -11,8 +11,16 @@ import type {
   KeyResultProgress,
 } from "@/lib/domain/keyresultprogress";
 
+import type {
+  RuntimePerformanceKeyResultDraft,
+} from "./performancesheet";
+
 import KeyResultRow from "../keyresults/keyresultrow";
 import ObjectiveEditor from "./objectiveeditor";
+
+/* ==========================================================
+   Props
+========================================================== */
 
 interface ObjectiveCardProps {
   objective: RuntimePerformanceObjective;
@@ -44,19 +52,47 @@ interface ObjectiveCardProps {
   onDeleted: (
     objectiveId: string
   ) => void;
+
+  /*
+   * Runtime Performance Sheet owns the
+   * Performance draft.
+   *
+   * Key Result changes flow upward through
+   * this callback instead of saving directly
+   * from the Key Result component.
+   */
+  onKeyResultDraftChange: (
+    draft: RuntimePerformanceKeyResultDraft
+  ) => void;
 }
+
+/* ==========================================================
+   Objective Card
+========================================================== */
 
 export default function ObjectiveCard({
   objective,
+
   keyResultProgress,
+
   organizationId,
+
   performanceInstanceId,
+
   performanceMonth,
+
   previousKeyResultValues,
+
   previousKeyResultScores = {},
+
   editing: globalEditing = false,
+
   onUpdated,
+
   onDeleted,
+
+  onKeyResultDraftChange,
+
 }: ObjectiveCardProps) {
 
   const [
@@ -64,20 +100,41 @@ export default function ObjectiveCard({
     setEditingObjective,
   ] = useState(false);
 
-
   const [
     deleting,
     setDeleting,
   ] = useState(false);
 
+  /* ========================================================
+     Objective Progress
+  ======================================================== */
+
+  /*
+   * Runtime progress is owned by the
+   * Performance Instance Key Result snapshot.
+   *
+   * Do NOT filter by progress.objectiveId here.
+   *
+   * The Runtime Objective ID and the legacy
+   * source Objective ID are not guaranteed to
+   * be the same identifier.
+   *
+   * Each Key Result below resolves its own
+   * progress record through:
+   *
+   * progress.performanceInstanceKeyResultId
+   *
+   * matching:
+   *
+   * keyResult.id
+   */
 
   const objectiveProgress =
-    keyResultProgress.filter(
-      (progress) =>
-        progress.objectiveId ===
-        objective.id
-    );
+    keyResultProgress;
 
+  /* ========================================================
+     Delete Objective
+  ======================================================== */
 
   async function handleDelete() {
 
@@ -85,20 +142,16 @@ export default function ObjectiveCard({
       return;
     }
 
-
     const confirmed =
       window.confirm(
         `Delete "${objective.title}"?\n\nThis will remove the Objective from this Performance Instance.`
       );
 
-
     if (!confirmed) {
       return;
     }
 
-
     setDeleting(true);
-
 
     try {
 
@@ -124,14 +177,12 @@ export default function ObjectiveCard({
           }
         );
 
-
       if (!response.ok) {
 
         throw new Error(
           "Failed to delete objective."
         );
       }
-
 
       onDeleted(
         objective.id
@@ -144,18 +195,20 @@ export default function ObjectiveCard({
         error
       );
 
-
       setDeleting(false);
     }
   }
 
+  /* ========================================================
+     Individual Objective Editing
+  ======================================================== */
 
   /*
-   * Individual Objective editing.
+   * Objective configuration editing remains separate
+   * from Runtime performance-value saving.
    *
-   * This remains separate from the
-   * global Performance Sheet editing
-   * mode.
+   * The global Save controls performance values,
+   * targets, scores, and employee comments.
    */
 
   if (editingObjective) {
@@ -184,7 +237,6 @@ export default function ObjectiveCard({
             false
           );
 
-
           onUpdated(
             updatedObjective
           );
@@ -202,6 +254,9 @@ export default function ObjectiveCard({
     );
   }
 
+  /* ========================================================
+     Render
+  ======================================================== */
 
   return (
 
@@ -219,11 +274,9 @@ export default function ObjectiveCard({
             Objective
           </p>
 
-
           <h3 className="mt-1 text-xl font-semibold tracking-tight">
             {objective.title}
           </h3>
-
 
           {objective.description && (
 
@@ -234,7 +287,6 @@ export default function ObjectiveCard({
           )}
 
         </div>
-
 
         {/* ==================================================
             Objective Actions
@@ -257,7 +309,6 @@ export default function ObjectiveCard({
               Edit
 
             </button>
-
 
             <button
               type="button"
@@ -284,7 +335,6 @@ export default function ObjectiveCard({
 
       </div>
 
-
       {/* ====================================================
           Key Result Column Headers
       ==================================================== */}
@@ -295,33 +345,27 @@ export default function ObjectiveCard({
           Key Result
         </div>
 
-
         <div className="text-center text-xs font-bold uppercase tracking-wide text-gray-700">
           Last Month
         </div>
-
 
         <div className="text-center text-xs font-bold uppercase tracking-wide text-gray-700">
           Target
         </div>
 
-
         <div className="text-center text-xs font-bold uppercase tracking-wide text-gray-700">
           This Month
         </div>
 
-
         <div className="text-center text-xs font-bold uppercase tracking-wide text-gray-700">
           Score
         </div>
-
 
         <div className="text-xs font-bold uppercase tracking-wide text-gray-700">
           Initiatives
         </div>
 
       </div>
-
 
       {/* ====================================================
           Key Results
@@ -347,13 +391,26 @@ export default function ObjectiveCard({
             {objective.keyResults.map(
               (keyResult) => {
 
+                /*
+                 * IMPORTANT:
+                 *
+                 * Runtime progress belongs to the
+                 * Performance Instance Key Result
+                 * snapshot, not the legacy source
+                 * Key Result relationship.
+                 *
+                 * This relationship is what allows
+                 * saved Current Value, Score, Target,
+                 * and comments to hydrate correctly
+                 * after a page refresh.
+                 */
+
                 const progress =
                   objectiveProgress.find(
                     (item) =>
-                      item.keyResultId ===
+                      item.performanceInstanceKeyResultId ===
                       keyResult.id
                   );
-
 
                 return (
 
@@ -370,44 +427,49 @@ export default function ObjectiveCard({
                         keyResult
                       }
 
-
                       progress={
                         progress
                       }
-
 
                       organizationId={
                         organizationId
                       }
 
-
                       performanceInstanceId={
                         performanceInstanceId
                       }
-
 
                       performanceMonth={
                         performanceMonth
                       }
 
-
                       previousKeyResultValues={
                         previousKeyResultValues
                       }
 
-
                       previousKeyResultScores={
                         previousKeyResultScores
                       }
-
 
                       /*
                        * Pass the Performance Sheet's
                        * global Edit mode into every
                        * Key Result.
                        */
+
                       editing={
                         globalEditing
+                      }
+
+                      /*
+                       * Key Result no longer saves itself.
+                       *
+                       * It reports its current draft to
+                       * the Performance Sheet parent.
+                       */
+
+                      onDraftChange={
+                        onKeyResultDraftChange
                       }
 
                     />

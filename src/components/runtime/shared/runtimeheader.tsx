@@ -425,18 +425,13 @@ export default function RuntimeHeader({
                 ml-1
                 flex
                 h-[52px]
-                min-w-[170px]
+                min-w-[80px]
                 shrink-0
                 items-center
-                justify-center
+                justify-end
                 overflow-hidden
-                rounded-md
-                border
-                border-white/15
-                bg-white
-                px-4
-                py-2
-                shadow-sm
+                px-0
+                py-0
               "
             >
 
@@ -445,10 +440,9 @@ export default function RuntimeHeader({
                 alt="CascadEffects"
                 className="
                   block
-                  h-auto
-                  max-h-10
+                  h-[50px]
                   w-auto
-                  max-w-[150px]
+                  max-w-[100px]
                   object-contain
                 "
               />
@@ -593,4 +587,5 @@ export default function RuntimeHeader({
     </section>
 
   );
+
 }

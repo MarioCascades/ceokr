@@ -264,7 +264,7 @@ async function loadPreviousKeyResultPerformance(
     const progress =
       previousProgress.find(
         (item) =>
-          item.keyResultId ===
+          item.performanceInstanceKeyResultId ===
           keyResult.id
       );
 

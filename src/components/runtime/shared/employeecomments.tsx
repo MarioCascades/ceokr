@@ -1,16 +1,11 @@
 "use client";
 
-import { useState } from "react";
-
 import {
-  updateRuntimeEmployeeCommentsAction,
-} from "@/app/runtime/actions";
+  useEffect,
+  useState,
+} from "react";
 
 interface EmployeeCommentsProps {
-  organizationId: string;
-
-  performanceInstanceId: string;
-
   initialComments?: string;
 
   label: string;
@@ -18,114 +13,128 @@ interface EmployeeCommentsProps {
   placeholder: string;
 
   helpText: string;
+
+  editing?: boolean;
+
+  onChange?: (
+    comments: string
+  ) => void;
 }
 
 export default function EmployeeComments({
-  organizationId,
-  performanceInstanceId,
   initialComments,
   label,
   placeholder,
   helpText,
+  editing = false,
+  onChange,
 }: EmployeeCommentsProps) {
-  const [comments, setComments] =
-    useState(
+
+  const [
+    comments,
+    setComments,
+  ] = useState(
+    initialComments ?? ""
+  );
+
+
+  useEffect(() => {
+
+    setComments(
       initialComments ?? ""
     );
 
-  const [saving, setSaving] =
-    useState(false);
+  }, [
+    initialComments,
+  ]);
 
-  const [saved, setSaved] =
-    useState(false);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  function handleChange(
+    value: string
+  ) {
 
-  async function handleSave() {
-    setSaving(true);
-    setSaved(false);
-    setError(null);
+    setComments(
+      value
+    );
 
-    try {
-      await updateRuntimeEmployeeCommentsAction({
-        organizationId,
+    onChange?.(
+      value
+    );
 
-        performanceInstanceId,
-
-        employeeComments:
-          comments,
-      });
-
-      setSaved(true);
-    } catch (error) {
-      console.error(
-        "Failed to save employee comments:",
-        error
-      );
-
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to save employee comments."
-      );
-    } finally {
-      setSaving(false);
-    }
   }
 
-  return (
-    <section className="rounded-lg border bg-white p-6 shadow-sm">
 
-      <h2 className="text-xl font-semibold">
+  return (
+
+    <section
+      className="
+        rounded-lg
+        border
+        bg-white
+        p-6
+        shadow-sm
+      "
+    >
+
+      <h2
+        className="
+          text-xl
+          font-semibold
+        "
+      >
         {label}
       </h2>
 
-      <textarea
-        value={comments}
-        onChange={(event) => {
-          setComments(
-            event.target.value
-          );
 
-          setSaved(false);
-          setError(null);
-        }}
-        placeholder={placeholder}
-        className="mt-4 min-h-[140px] w-full rounded-md border p-4"
+      <textarea
+        value={
+          comments
+        }
+
+        onChange={(
+          event
+        ) =>
+          handleChange(
+            event.target.value
+          )
+        }
+
+        disabled={
+          !editing
+        }
+
+        placeholder={
+          placeholder
+        }
+
+        className={`
+          mt-4
+          min-h-[140px]
+          w-full
+          rounded-md
+          border
+          p-4
+          ${
+            editing
+              ? "bg-white"
+              : "bg-gray-100 text-gray-700"
+          }
+        `}
       />
 
-      <p className="mt-2 text-sm text-muted-foreground">
+
+      <p
+        className="
+          mt-2
+          text-sm
+          text-muted-foreground
+        "
+      >
         {helpText}
       </p>
 
-      <div className="mt-4 flex items-center gap-3">
-
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {saving
-            ? "Saving..."
-            : "Save Comments"}
-        </button>
-
-        {saved && (
-          <span className="text-sm text-green-600">
-            Saved
-          </span>
-        )}
-
-      </div>
-
-      {error && (
-        <p className="mt-3 text-sm text-red-600">
-          {error}
-        </p>
-      )}
-
     </section>
+
   );
+
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useState,
 } from "react";
 
@@ -14,7 +15,6 @@ import type {
 } from "@/lib/domain/keyresultprogress";
 
 import {
-  updateRuntimeKeyResultProgressAction,
   updateRuntimePerformanceInstanceKeyResultAction,
   deleteRuntimePerformanceInstanceKeyResultAction,
 } from "@/app/runtime/actions";
@@ -22,6 +22,10 @@ import {
 import {
   calculateRuntimeKeyResultScore,
 } from "@/lib/runtime/keyresultscoring";
+
+import type {
+  RuntimePerformanceKeyResultDraft,
+} from "../performancesheet/performancesheet";
 
 import KeyResultEditor from "./keyresulteditor";
 
@@ -59,6 +63,16 @@ interface KeyResultRowProps {
    */
   editing?: boolean;
 
+  /**
+   * Reports the current Key Result draft
+   * to the parent Performance Sheet.
+   *
+   * The parent owns persistence.
+   */
+  onDraftChange?: (
+    draft: RuntimePerformanceKeyResultDraft
+  ) => void;
+
   onUpdated?: (
     keyResult: RuntimePerformanceKeyResult
   ) => void;
@@ -89,6 +103,8 @@ export default function KeyResultRow({
   previousKeyResultScores = {},
 
   editing: globalEditing = false,
+
+  onDraftChange,
 
   onUpdated,
 
@@ -124,15 +140,11 @@ export default function KeyResultRow({
 
 
   const [
-    saving,
-    setSaving,
-  ] = useState(false);
-
-
-  const [
-    saved,
-    setSaved,
-  ] = useState(false);
+    persistedScore,
+    setPersistedScore,
+  ] = useState<number>(
+    progress?.score ?? 0
+  );
 
 
   const [
@@ -153,6 +165,49 @@ export default function KeyResultRow({
   ] = useState<string | null>(
     null
   );
+
+
+  /* ========================================================
+     Hydrate From Persisted Monthly Progress
+  ======================================================== */
+
+  useEffect(() => {
+
+    setCurrentValue(
+      progress?.currentValue ?? ""
+    );
+
+    setPersistedScore(
+      progress?.score ?? 0
+    );
+
+  }, [
+    progress?.id,
+    progress?.currentValue,
+    progress?.score,
+  ]);
+
+
+  /* ========================================================
+     Keep Key Result Configuration In Sync
+  ======================================================== */
+
+  useEffect(() => {
+
+    setCurrentKeyResult(
+      keyResult
+    );
+
+    setTargetValue(
+      typeof keyResult.target === "number" ||
+      typeof keyResult.target === "string"
+        ? keyResult.target
+        : ""
+    );
+
+  }, [
+    keyResult,
+  ]);
 
 
   /* ========================================================
@@ -193,6 +248,13 @@ export default function KeyResultRow({
     ).trim() !== "";
 
 
+  /*
+   * The persisted monthly score is the source of truth
+   * when the row is loaded from Supabase.
+   *
+   * When the user changes Target or Current Value,
+   * the score is recalculated for the current month.
+   */
   const calculatedScore =
     hasCurrentValue
       ? calculateRuntimeKeyResultScore(
@@ -207,10 +269,16 @@ export default function KeyResultRow({
       : 0;
 
 
+  const score =
+    hasCurrentValue
+      ? calculatedScore
+      : persistedScore;
+
+
   const scoreDisplay =
     hasCurrentValue
       ? Math.round(
-          calculatedScore
+          score
         )
       : null;
 
@@ -250,167 +318,169 @@ export default function KeyResultRow({
 
 
   /* ========================================================
-     Save Target + Current
+     Draft Registration
   ======================================================== */
 
-  async function handleSave() {
+  useEffect(() => {
 
     if (!progress) {
-
-      setError(
-        "No performance progress record exists for this Key Result."
-      );
-
       return;
     }
 
 
-    setSaving(true);
+    onDraftChange?.({
 
-    setSaved(false);
+      keyResultId:
+        currentKeyResult.id,
 
-    setError(null);
+      progressId:
+        progress.id,
 
+      target:
+        targetValue,
 
-    try {
+      currentValue:
+        currentValue,
 
       /*
-       * First save the Target and
-       * Key Result configuration.
+       * Use the persisted score when
+       * the row has no current value.
+       *
+       * Otherwise use the recalculated
+       * score for the current month.
        */
+      score:
+        hasCurrentValue
+          ? calculatedScore
+          : persistedScore,
 
-      const updated =
-        await updateRuntimePerformanceInstanceKeyResultAction({
+      employeeComment:
+        progress.employeeComment,
 
-          organizationId,
+      managerComment:
+        progress.managerComment,
 
-          performanceInstanceId,
+    });
 
-          keyResultId:
-            currentKeyResult.id,
+  }, [
+    currentKeyResult.id,
+    progress,
+    targetValue,
+    currentValue,
+    calculatedScore,
+    persistedScore,
+    hasCurrentValue,
+    onDraftChange,
+  ]);
 
-          title:
-            currentKeyResult.title,
 
-          target:
-            targetValue,
+  /* ========================================================
+     Draft Change Helper
+  ======================================================== */
 
-          measurementType:
-            currentKeyResult.measurementType,
+  function notifyDraftChange(
+    nextTarget: string | number = targetValue,
+    nextCurrentValue: string | number = currentValue
+  ) {
 
-          scoringMethod:
+    if (!progress) {
+      return;
+    }
+
+
+    const nextHasCurrentValue =
+      String(
+        nextCurrentValue
+      ).trim() !== "";
+
+
+    const nextScore =
+      nextHasCurrentValue
+        ? calculateRuntimeKeyResultScore(
+            nextCurrentValue,
+
+            nextTarget,
+
             currentKeyResult.scoringMethod,
 
-          weight:
-            currentKeyResult.weight,
-        });
+            performanceMonth
+          )
+        : persistedScore;
 
 
-      const runtimeUpdated:
-        RuntimePerformanceKeyResult =
-        {
+    onDraftChange?.({
 
-          ...currentKeyResult,
+      keyResultId:
+        currentKeyResult.id,
 
-          title:
-            updated.title,
+      progressId:
+        progress.id,
 
-          target:
-            updated.target,
+      target:
+        nextTarget,
 
-          weight:
-            updated.weight,
+      currentValue:
+        nextCurrentValue,
 
-          measurementType:
-            updated.measurementType,
+      score:
+        nextScore,
 
-          scoringMethod:
-            updated.scoringMethod,
-        };
+      employeeComment:
+        progress.employeeComment,
 
+      managerComment:
+        progress.managerComment,
 
-      setCurrentKeyResult(
-        runtimeUpdated
-      );
+    });
 
-
-      setTargetValue(
-        typeof updated.target ===
-          "string" ||
-        typeof updated.target ===
-          "number"
-          ? updated.target
-          : ""
-      );
+  }
 
 
-      /*
-       * Then save the Current
-       * value and calculated Score.
-       *
-       * Runtime progress is identified
-       * by the Key Result Progress ID.
-       */
+  /* ========================================================
+     Target Change
+  ======================================================== */
 
-      const savedProgress =
-        await updateRuntimeKeyResultProgressAction({
+  function handleTargetValueChange(
+    value: string
+  ) {
 
-          organizationId,
+    setTargetValue(
+      value
+    );
 
-          performanceInstanceId,
+    setError(
+      null
+    );
 
-          keyResultProgressId:
-            progress.id,
+    notifyDraftChange(
+      value,
+      currentValue
+    );
 
-          currentValue,
-
-          score:
-            calculatedScore,
-
-          employeeComment:
-            progress.employeeComment,
-
-          managerComment:
-            progress.managerComment,
-
-          status:
-            hasCurrentValue
-              ? "in_progress"
-              : "not_started",
-        });
+  }
 
 
-      setCurrentValue(
-        savedProgress.keyResultProgress.currentValue ??
-        currentValue
-      );
+  /* ========================================================
+     Current Value Change
+  ======================================================== */
 
+  function handleCurrentValueChange(
+    value: string
+  ) {
 
-      setSaved(true);
+    setCurrentValue(
+      value
+    );
 
+    setError(
+      null
+    );
 
-      onUpdated?.(
-        runtimeUpdated
-      );
+    notifyDraftChange(
+      targetValue,
+      value
+    );
 
-    } catch (caughtError) {
-
-      console.error(
-        "Failed to save Runtime Key Result:",
-        caughtError
-      );
-
-
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Failed to save Key Result."
-      );
-
-    } finally {
-
-      setSaving(false);
-    }
   }
 
 
@@ -442,7 +512,9 @@ export default function KeyResultRow({
     }
   ) {
 
-    setError(null);
+    setError(
+      null
+    );
 
 
     try {
@@ -484,30 +556,32 @@ export default function KeyResultRow({
 
           weight:
             values.weight,
+
         });
 
 
       const runtimeUpdated:
         RuntimePerformanceKeyResult =
-        {
+      {
 
-          ...currentKeyResult,
+        ...currentKeyResult,
 
-          title:
-            updated.title,
+        title:
+          updated.title,
 
-          target:
-            updated.target,
+        target:
+          updated.target,
 
-          weight:
-            updated.weight,
+        weight:
+          updated.weight,
 
-          measurementType:
-            updated.measurementType,
+        measurementType:
+          updated.measurementType,
 
-          scoringMethod:
-            updated.scoringMethod,
-        };
+        scoringMethod:
+          updated.scoringMethod,
+
+      };
 
 
       setCurrentKeyResult(
@@ -515,24 +589,40 @@ export default function KeyResultRow({
       );
 
 
-      setTargetValue(
+      const nextTarget =
         typeof updated.target ===
           "string" ||
         typeof updated.target ===
           "number"
           ? updated.target
-          : ""
+          : "";
+
+
+      setTargetValue(
+        nextTarget
       );
 
 
-      setEditing(false);
-
-      setSaved(false);
+      setEditing(
+        false
+      );
 
 
       onUpdated?.(
         runtimeUpdated
       );
+
+
+      /*
+       * Keep the parent draft synchronized
+       * after the Key Result configuration
+       * editor changes the target.
+       */
+      notifyDraftChange(
+        nextTarget,
+        currentValue
+      );
+
 
     } catch (caughtError) {
 
@@ -547,7 +637,9 @@ export default function KeyResultRow({
           ? caughtError.message
           : "Failed to update Key Result."
       );
+
     }
+
   }
 
 
@@ -573,9 +665,13 @@ export default function KeyResultRow({
     }
 
 
-    setDeleting(true);
+    setDeleting(
+      true
+    );
 
-    setError(null);
+    setError(
+      null
+    );
 
 
     try {
@@ -595,6 +691,7 @@ export default function KeyResultRow({
         currentKeyResult.id
       );
 
+
     } catch (caughtError) {
 
       console.error(
@@ -610,8 +707,12 @@ export default function KeyResultRow({
       );
 
 
-      setDeleting(false);
+      setDeleting(
+        false
+      );
+
     }
+
   }
 
 
@@ -626,12 +727,13 @@ export default function KeyResultRow({
 
     const updated:
       RuntimePerformanceKeyResult =
-      {
+    {
 
-        ...currentKeyResult,
+      ...currentKeyResult,
 
-        initiatives,
-      };
+      initiatives,
+
+    };
 
 
     setCurrentKeyResult(
@@ -642,6 +744,7 @@ export default function KeyResultRow({
     onUpdated?.(
       updated
     );
+
   }
 
 
@@ -660,7 +763,9 @@ export default function KeyResultRow({
         }
 
         onCancel={() =>
-          setEditing(false)
+          setEditing(
+            false
+          )
         }
 
         onSave={
@@ -668,7 +773,9 @@ export default function KeyResultRow({
         }
 
       />
+
     );
+
   }
 
 
@@ -684,7 +791,7 @@ export default function KeyResultRow({
           Mobile / Small Screen
       ================================================== */}
 
-      <div className="block lg:hidden p-4">
+      <div className="block p-4 lg:hidden">
 
         <div className="flex items-start justify-between gap-3">
 
@@ -749,7 +856,9 @@ export default function KeyResultRow({
               <button
                 type="button"
                 onClick={() =>
-                  setEditing(true)
+                  setEditing(
+                    true
+                  )
                 }
                 className="rounded-md border-2 bg-white px-3 py-1 text-xs font-medium"
               >
@@ -840,17 +949,11 @@ export default function KeyResultRow({
               disabled={
                 !globalEditing
               }
-              onChange={(event) => {
-
-                setTargetValue(
+              onChange={(event) =>
+                handleTargetValueChange(
                   event.target.value
-                );
-
-                setSaved(false);
-
-                setError(null);
-
-              }}
+                )
+              }
               className={`mt-1 w-full rounded-md border-2 px-3 py-2 text-lg font-semibold ${
                 globalEditing
                   ? "bg-white"
@@ -880,17 +983,11 @@ export default function KeyResultRow({
               disabled={
                 !globalEditing
               }
-              onChange={(event) => {
-
-                setCurrentValue(
+              onChange={(event) =>
+                handleCurrentValueChange(
                   event.target.value
-                );
-
-                setSaved(false);
-
-                setError(null);
-
-              }}
+                )
+              }
               className={`mt-1 w-full rounded-md border-2 px-3 py-2 text-lg font-semibold ${
                 globalEditing
                   ? "bg-white"
@@ -924,42 +1021,6 @@ export default function KeyResultRow({
           </div>
 
         </div>
-
-
-        {globalEditing && (
-
-          <div className="mt-4 flex items-center gap-3">
-
-            <button
-              type="button"
-              onClick={
-                handleSave
-              }
-              disabled={
-                saving ||
-                !progress
-              }
-              className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-
-              {saving
-                ? "Saving..."
-                : "Save"}
-
-            </button>
-
-
-            {saved && (
-
-              <span className="text-sm text-green-600">
-                Saved
-              </span>
-
-            )}
-
-          </div>
-
-        )}
 
 
         {error && (
@@ -1006,6 +1067,7 @@ export default function KeyResultRow({
             onUpdated={
               handleInitiativesUpdated
             }
+
           />
 
         </div>
@@ -1172,17 +1234,11 @@ export default function KeyResultRow({
             disabled={
               !globalEditing
             }
-            onChange={(event) => {
-
-              setTargetValue(
+            onChange={(event) =>
+              handleTargetValueChange(
                 event.target.value
-              );
-
-              setSaved(false);
-
-              setError(null);
-
-            }}
+              )
+            }
             className={`mt-1 w-full rounded-md border-2 px-2 py-2 text-base font-semibold ${
               globalEditing
                 ? "bg-white"
@@ -1214,17 +1270,11 @@ export default function KeyResultRow({
             disabled={
               !globalEditing
             }
-            onChange={(event) => {
-
-              setCurrentValue(
+            onChange={(event) =>
+              handleCurrentValueChange(
                 event.target.value
-              );
-
-              setSaved(false);
-
-              setError(null);
-
-            }}
+              )
+            }
             className={`mt-1 w-full rounded-md border-2 px-2 py-2 text-base font-semibold ${
               globalEditing
                 ? "bg-white"
@@ -1321,48 +1371,8 @@ export default function KeyResultRow({
 
 
       {/* ==================================================
-          Save / Error / Mobile-independent State
+          Error State
       ================================================== */}
-
-      {globalEditing && (
-
-        <div className="border-t-2 bg-gray-50 px-3 py-2">
-
-          <div className="flex items-center gap-3">
-
-            <button
-              type="button"
-              onClick={
-                handleSave
-              }
-              disabled={
-                saving ||
-                !progress
-              }
-              className="rounded-md bg-black px-3 py-1.5 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-
-              {saving
-                ? "Saving..."
-                : "Save"}
-
-            </button>
-
-
-            {saved && (
-
-              <span className="text-xs text-green-600">
-                Saved
-              </span>
-
-            )}
-
-          </div>
-
-        </div>
-
-      )}
-
 
       {error && (
 
@@ -1373,5 +1383,6 @@ export default function KeyResultRow({
       )}
 
     </div>
+
   );
 }

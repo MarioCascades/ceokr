@@ -3,11 +3,20 @@
 import Link from "next/link";
 
 import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
   usePathname,
   useSearchParams,
 } from "next/navigation";
 
 import type { ReactNode } from "react";
+
+import {
+  getOrganization,
+} from "@/services/organization.service";
 
 import {
   useOrganizationFeatures,
@@ -88,6 +97,62 @@ export default function OrganizationShell({
 
   const organizationId =
     searchParams.get("organizationId");
+
+  const [
+    organizationName,
+    setOrganizationName,
+  ] = useState("Organization");
+
+  useEffect(() => {
+
+    let cancelled = false;
+
+    async function loadOrganizationName() {
+
+      if (!organizationId) {
+        setOrganizationName("Organization");
+        return;
+      }
+
+      try {
+
+        const organization =
+          await getOrganization(
+            organizationId
+          );
+
+        if (cancelled) {
+          return;
+        }
+
+        setOrganizationName(
+          organization?.company_name?.trim() ||
+          "Organization"
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Failed to load organization name:",
+          error
+        );
+
+        if (!cancelled) {
+          setOrganizationName("Organization");
+        }
+
+      }
+    }
+
+    void loadOrganizationName();
+
+    return () => {
+      cancelled = true;
+    };
+
+  }, [
+    organizationId,
+  ]);
 
   const {
     isEnabled,
@@ -198,7 +263,7 @@ export default function OrganizationShell({
                 text-foreground
               "
             >
-              CascadEffects
+              {organizationName}
             </div>
 
             <div
@@ -428,7 +493,7 @@ export default function OrganizationShell({
                 text-foreground
               "
             >
-              CascadEffects
+              {organizationName}
             </div>
 
             <div
