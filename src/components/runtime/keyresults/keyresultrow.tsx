@@ -1055,19 +1055,15 @@ export default function KeyResultRow({
             keyResult={
               currentKeyResult
             }
-
             organizationId={
               organizationId
             }
-
             performanceInstanceId={
               performanceInstanceId
             }
-
             onUpdated={
               handleInitiativesUpdated
             }
-
           />
 
         </div>
@@ -1141,13 +1137,6 @@ export default function KeyResultRow({
               </div>
 
             </div>
-
-
-            <span className="shrink-0 rounded bg-blue-100 px-2 py-1 text-[10px] font-semibold text-blue-700">
-
-              {currentKeyResult.weight ?? 0}%
-
-            </span>
 
           </div>
 
@@ -1348,19 +1337,15 @@ export default function KeyResultRow({
               keyResult={
                 currentKeyResult
               }
-
               organizationId={
                 organizationId
               }
-
               performanceInstanceId={
                 performanceInstanceId
               }
-
               onUpdated={
                 handleInitiativesUpdated
               }
-
             />
 
           </div>
