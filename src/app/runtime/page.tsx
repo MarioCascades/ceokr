@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import PerformanceSheet from "@/components/runtime/performancesheet/performancesheet";
 
 import RuntimeNavigation from "@/components/runtime/shared/runtimenavigation";
@@ -97,6 +99,56 @@ export default async function RuntimePage({
 
 
   /* ========================================================
+     Organization Runtime Branding
+     --------------------------------------------------------
+     Organization Settings stores:
+
+       primary_color
+       secondary_color
+       logo_url
+
+     Runtime uses secondary_color as the organization's
+     Accent Color because that is how the Settings UI
+     presents the field.
+
+     We explicitly expose both the source variables and
+     Tailwind color tokens so organization branding can
+     override the platform defaults at the Runtime boundary.
+  ======================================================== */
+
+  const runtimePrimaryColor =
+    organization.primary_color ||
+    "#082550";
+
+  const runtimeAccentColor =
+    organization.secondary_color ||
+    "#E26D5C";
+
+  const runtimeBrandStyle = {
+    "--primary":
+      runtimePrimaryColor,
+
+    "--accent":
+      runtimeAccentColor,
+
+    "--color-primary":
+      runtimePrimaryColor,
+
+    "--color-accent":
+      runtimeAccentColor,
+
+    "--primary-foreground":
+      "#FFFFFF",
+
+    "--accent-foreground":
+      "#FFFFFF",
+
+    "--ring":
+      runtimePrimaryColor,
+  } as CSSProperties;
+
+
+  /* ========================================================
      Performance Month
      --------------------------------------------------------
      The Workspace itself must be able to render before a
@@ -166,7 +218,9 @@ export default async function RuntimePage({
 
     return (
       <main
+        style={runtimeBrandStyle}
         className="
+          ce-runtime-theme
           mx-auto
           w-full
           max-w-[1500px]
@@ -245,7 +299,14 @@ export default async function RuntimePage({
   if (!runtimeExecution) {
 
     return (
-      <main className="min-h-screen bg-background">
+      <main
+        style={runtimeBrandStyle}
+        className="
+          ce-runtime-theme
+          min-h-screen
+          bg-background
+        "
+      >
 
         <RuntimeNavigation
 
@@ -327,77 +388,87 @@ export default async function RuntimePage({
   ======================================================== */
 
   return (
-    <PerformanceSheet
+    <div
+      style={runtimeBrandStyle}
+      className="
+        ce-runtime-theme
+        min-h-screen
+      "
+    >
 
-      document={
-        runtimeExecution
-          .performanceSheet
-          .document
-      }
+      <PerformanceSheet
 
-
-      objectives={
-        runtimeExecution
-          .objectives
-      }
-
-
-      keyResultProgress={
-        runtimeExecution
-          .keyResultProgress
-      }
+        document={
+          runtimeExecution
+            .performanceSheet
+            .document
+        }
 
 
-      organizationId={
-        organization.id
-      }
+        objectives={
+          runtimeExecution
+            .objectives
+        }
 
 
-      organization={
-        organization
-      }
+        keyResultProgress={
+          runtimeExecution
+            .keyResultProgress
+        }
 
 
-      performanceInstanceId={
-        runtimeExecution
-          .performanceInstance
-          .id
-      }
+        organizationId={
+          organization.id
+        }
 
 
-      performanceInstance={
-        runtimeExecution
-          .performanceInstance
-      }
+        organization={
+          organization
+        }
 
 
-      subject={
-        runtimeExecution
-          .subject
-      }
+        performanceInstanceId={
+          runtimeExecution
+            .performanceInstance
+            .id
+        }
 
 
-      members={
-        activeMembers
-      }
+        performanceInstance={
+          runtimeExecution
+            .performanceInstance
+        }
 
 
-      dashboard={
-        dashboard
-      }
+        subject={
+          runtimeExecution
+            .subject
+        }
 
 
-      previousKeyResultValues={
-        runtimeExecution
-          .previousKeyResultValues
-      }
+        members={
+          activeMembers
+        }
 
 
-      performanceMonths={
-        runtimeExecution
-          .performanceMonths
-      }
+        dashboard={
+          dashboard
+        }
 
-    />
+
+        previousKeyResultValues={
+          runtimeExecution
+            .previousKeyResultValues
+        }
+
+
+        performanceMonths={
+          runtimeExecution
+            .performanceMonths
+        }
+
+      />
+
+    </div>
   );
 }

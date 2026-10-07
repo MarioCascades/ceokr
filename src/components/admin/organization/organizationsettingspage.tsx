@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
+import {
+  getOrganization,
+  updateOrganization,
+} from "@/services/organization.service";
 
 import {
   ORGANIZATION_SETTINGS_STORAGE_KEY,
@@ -141,32 +147,81 @@ export default function OrganizationSettingsPage() {
   const [saved, setSaved] =
     useState(false);
 
+  const searchParams =
+    useSearchParams();
+
+  const organizationId =
+    searchParams.get("organizationId");
+
   useEffect(() => {
-    const stored =
-      window.localStorage.getItem(
-        ORGANIZATION_SETTINGS_STORAGE_KEY,
-      );
+    async function loadSettings() {
+      let localSettings =
+        defaultSettings;
 
-    if (!stored) {
-      return;
+      const stored =
+        window.localStorage.getItem(
+          ORGANIZATION_SETTINGS_STORAGE_KEY,
+        );
+
+      if (stored) {
+        try {
+          const parsed =
+            JSON.parse(
+              stored,
+            ) as Partial<OrganizationSettingsState>;
+
+          localSettings = {
+            ...defaultSettings,
+            ...parsed,
+          };
+
+          setSettings(localSettings);
+        } catch {
+          window.localStorage.removeItem(
+            ORGANIZATION_SETTINGS_STORAGE_KEY,
+          );
+        }
+      }
+
+      if (!organizationId) {
+        return;
+      }
+
+      try {
+        const organization =
+          await getOrganization(
+            organizationId,
+          );
+
+        if (!organization) {
+          return;
+        }
+
+        setSettings((current) => ({
+          ...current,
+          organizationName:
+            organization.company_name ||
+            current.organizationName,
+          organizationLogo:
+            organization.logo_url ??
+            current.organizationLogo,
+          primaryColor:
+            organization.primary_color ??
+            current.primaryColor,
+          accentColor:
+            organization.secondary_color ??
+            current.accentColor,
+        }));
+      } catch (error) {
+        console.error(
+          "Error loading organization branding:",
+          error,
+        );
+      }
     }
 
-    try {
-      const parsed =
-        JSON.parse(
-          stored,
-        ) as Partial<OrganizationSettingsState>;
-
-      setSettings({
-        ...defaultSettings,
-        ...parsed,
-      });
-    } catch {
-      window.localStorage.removeItem(
-        ORGANIZATION_SETTINGS_STORAGE_KEY,
-      );
-    }
-  }, []);
+    void loadSettings();
+  }, [organizationId]);
 
   const updateSetting = <
     K extends keyof OrganizationSettingsState
@@ -182,11 +237,40 @@ export default function OrganizationSettingsPage() {
     setSaved(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     window.localStorage.setItem(
       ORGANIZATION_SETTINGS_STORAGE_KEY,
       JSON.stringify(settings),
     );
+
+    if (organizationId) {
+      try {
+        await updateOrganization(
+          organizationId,
+          {
+            company_name:
+              settings.organizationName,
+            logo_url:
+              settings.organizationLogo ||
+              null,
+            primary_color:
+              settings.primaryColor ||
+              null,
+            secondary_color:
+              settings.accentColor ||
+              null,
+          },
+        );
+      } catch (error) {
+        console.error(
+          "Error saving organization branding:",
+          error,
+        );
+
+        setSaved(false);
+        return;
+      }
+    }
 
     setSaved(true);
   };

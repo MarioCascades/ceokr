@@ -248,3 +248,49 @@
     font-family: inherit;
   }
 }
+
+
+/* ============================================================
+   Organization Runtime Branding Bridge
+   ------------------------------------------------------------
+   Runtime brand values are supplied at the Runtime page boundary.
+
+   These scoped overrides convert legacy hard-coded Runtime brand
+   colors to the organization theme without changing other areas
+   of the platform.
+
+   This is intentionally scoped to .ce-runtime-theme so the
+   existing CascadEffects platform branding remains untouched
+   everywhere outside Runtime.
+   ============================================================ */
+
+.ce-runtime-theme [class*="bg-[#e26d5c]"],
+.ce-runtime-theme [class*="bg-[#E26D5C]"] {
+  background-color: var(--accent) !important;
+}
+
+.ce-runtime-theme [class*="hover:bg-[#E26D5C]/90"]:hover {
+  background-color:
+    color-mix(
+      in srgb,
+      var(--accent) 90%,
+      transparent
+    ) !important;
+}
+
+.ce-runtime-theme [class*="bg-[#e9f4f8]"] {
+  background-color:
+    color-mix(
+      in srgb,
+      var(--accent) 18%,
+      transparent
+    ) !important;
+}
+
+.ce-runtime-theme [class*="bg-[#b4c2d1]"] {
+  background-color: var(--secondary) !important;
+}
+
+.ce-runtime-theme [class*="border-[#b4c2d1]"] {
+  border-color: var(--secondary) !important;
+}

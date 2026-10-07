@@ -157,36 +157,91 @@ export default function RuntimeHeader({
           "
         >
 
-          <div className="min-w-0">
+          <div
+            className="
+              min-w-0
+              flex-1
+            "
+          >
 
             <div
               className="
                 flex
+                min-w-0
                 items-center
                 gap-2
               "
             >
 
-              {organization.logo_url && (
+              {organization.logo_url ? (
 
-                <img
-                  src={
-                    organization.logo_url
-                  }
-                  alt={`${organization.company_name} logo`}
+                <div
                   className="
-                    max-h-6
-                    w-auto
-                    max-w-[100px]
-                    object-contain
-                    object-left
+                    flex
+                    h-8
+                    max-w-[140px]
+                    shrink-0
+                    items-center
+                    overflow-hidden
+                    rounded-md
+                    border
+                    border-white/15
+                    bg-white/10
+                    px-2
                   "
-                />
+                >
+
+                  <img
+                    src={organization.logo_url}
+                    alt={`${organization.company_name} logo`}
+                    className="
+                      block
+                      max-h-6
+                      max-w-[120px]
+                      w-auto
+                      object-contain
+                      object-left
+                    "
+                  />
+
+                </div>
+
+              ) : (
+
+                <div
+                  className="
+                    flex
+                    h-8
+                    shrink-0
+                    items-center
+                    rounded-md
+                    border
+                    border-white/10
+                    bg-white/5
+                    px-2
+                  "
+                >
+
+                  <span
+                    className="
+                      text-[8px]
+                      font-bold
+                      uppercase
+                      tracking-[0.12em]
+                      text-white/60
+                    "
+                  >
+                    Organization
+                  </span>
+
+                </div>
 
               )}
 
+
               <p
                 className="
+                  min-w-0
                   truncate
                   text-[9px]
                   font-bold
@@ -354,6 +409,49 @@ export default function RuntimeHeader({
                 </span>
 
               </div>
+
+            </div>
+
+
+            {/* =====================================================
+                CascadEffects Platform Branding
+                -----------------------------------------------------
+                This logo is always shown regardless of tenant.
+                It uses the existing CECleanlogo.png asset.
+               ===================================================== */}
+
+            <div
+              className="
+                ml-1
+                flex
+                h-[52px]
+                min-w-[170px]
+                shrink-0
+                items-center
+                justify-center
+                overflow-hidden
+                rounded-md
+                border
+                border-white/15
+                bg-white
+                px-4
+                py-2
+                shadow-sm
+              "
+            >
+
+              <img
+                src="/logos/CECleanlogo.png"
+                alt="CascadEffects"
+                className="
+                  block
+                  h-auto
+                  max-h-10
+                  w-auto
+                  max-w-[150px]
+                  object-contain
+                "
+              />
 
             </div>
 
