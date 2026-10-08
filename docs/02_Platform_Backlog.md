@@ -18,17 +18,42 @@ project state.
 
 # Current Development Phase
 
-## OKR Template Library
+## Runtime Operational Tabs and Custom Tables
 
 **Status**
 
-NEXT PRODUCT MILESTONE
+NEXT IMPLEMENTATION MILESTONE
 
-The Member OKR foundation is established and verified. The next product
-milestone is the reusable OKR Template Library, built as a separate domain
-that creates independent Member OKRs when a template is applied.
+The Member OKR foundation and Runtime performance foundation are established
+and verified.
 
-The platform continues to preserve the Member-owned OKR source-of-truth model.
+The next implementation milestone is to extend Runtime with configurable
+organization-specific operational tabs powered by a reusable Custom Tables
+capability.
+
+Initial operational tabs:
+
+- Agenda
+- VA List
+- Recruitment
+- Client Performance
+
+Custom Tables will be managed from the Performance area and will provide the
+configuration mechanism for these Runtime operational experiences.
+
+This milestone does not create a second performance engine.
+
+The platform continues to preserve:
+
+- Member OKRs as the employee performance source of truth
+- Runtime as the time-bound execution and history layer
+- Builder as the reusable presentation/composition layer
+- monthly performance as the product cadence
+- organization-scoped data ownership
+
+The OKR Template Library remains a planned product capability and is not
+removed from the roadmap. It is simply not the immediate implementation
+milestone.
 
 ---
 
@@ -1064,7 +1089,7 @@ Medium
 
 # Documentation
 
-## Member OKR Architecture Documentation
+## Runtime Operational Tabs and Custom Tables Documentation
 
 **Status**
 
@@ -1074,10 +1099,13 @@ Update:
 
 - Platform Decisions
 - Platform Backlog
-- Product North Star
 - Waypoint
 
-when the Member OKR architecture milestone is completed.
+when the Runtime Operational Tabs and Custom Tables milestone is completed.
+
+Product North Star does not require an architectural update for this milestone
+because the feature remains within the existing Administration, Member OKR,
+Runtime, Performance Data / Reporting, and Builder composition model.
 
 Do not rewrite historical Waypoints.
 
@@ -1095,7 +1123,11 @@ ESTABLISHED
 
 Runtime Execution Foundation
 
-ESTABLISHED
+ESTABLISHED / VERIFIED
+
+Runtime Operational Tabs and Custom Tables
+
+NEXT IMPLEMENTATION MILESTONE
 
 Administration Foundation
 
@@ -1178,23 +1210,27 @@ Review:
 - Platform Backlog
 - Product North Star
 
-Confirm the OKR Template Library milestone.
+Confirm the Runtime Operational Tabs and Custom Tables milestone.
 
 Then:
 
-1. Audit the current Supabase schema and Member OKR relationships.
-2. Create the OKR Template database migration.
-3. Build the OKR Template repository.
-4. Build the Global Template Library for Platform Super Admin.
-5. Build the Organization Template Library for Organization Admin.
-6. Build the Apply Template → Member OKR workflow.
-7. Verify Global versus Organization template authorization.
-8. Verify copy-on-apply independence from the source template.
-9. Compile.
-10. Browser / functional test.
-11. Commit.
-12. Update documentation.
-13. Create the next Waypoint.
+1. Review the approved Runtime operational tab architecture.
+2. Review the Custom Tables data model and organization ownership.
+3. Identify the minimum reusable database structure.
+4. Implement Custom Tables configuration in the Performance area.
+5. Implement Runtime operational tab navigation.
+6. Implement Agenda monthly persistence.
+7. Implement VA List monthly editing and persistence.
+8. Implement Recruitment monthly editing and persistence.
+9. Implement Client Performance with independently named tables.
+10. Verify monthly historical retrieval.
+11. Confirm existing member Runtime tabs remain unchanged.
+12. Compile.
+13. Browser / functional test.
+14. Commit.
+15. Update documentation.
+16. Create the next Waypoint.
 
 Do not begin the next feature until the current milestone is documented and
 verified.
+

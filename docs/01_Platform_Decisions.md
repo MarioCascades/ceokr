@@ -964,3 +964,113 @@ The repository documentation remains the authoritative engineering record.
 Status
 
 Accepted
+
+---
+
+# 30. Runtime Operational Tabs and Custom Tables
+
+The Runtime experience may contain organization-specific operational tabs in
+addition to the core member performance tabs.
+
+The initial operational tabs are:
+
+- Agenda
+- VA List
+- Recruitment
+- Client Performance
+
+These tabs are operational data experiences and are not additional performance
+engines.
+
+## Custom Tables
+
+Custom Tables are managed from the Performance area and provide the
+configuration mechanism for organization-specific Runtime operational data.
+
+The architectural relationship is:
+
+```text
+Performance
+↓
+Custom Tables
+↓
+Runtime Operational Tabs
+```
+
+Anything configured through Custom Tables becomes available to the appropriate
+Runtime operational experience.
+
+Custom Tables must remain data-driven and organization-scoped.
+
+They must not create a second source of truth for:
+
+- Member Objectives
+- Member Key Results
+- Member Initiatives
+- Runtime performance scores
+- Runtime performance calculations
+
+## Operational Tab Rules
+
+### Agenda
+
+Agenda is a monthly Runtime operational notepad.
+
+Agenda content is associated with the applicable performance month and must
+remain available when viewing that month's Runtime history.
+
+### VA List
+
+VA List is a monthly editable operational list with an Excel-like editing
+experience.
+
+### Recruitment
+
+Recruitment is a monthly editable operational list with an Excel-like editing
+experience.
+
+### Client Performance
+
+Client Performance is one Runtime tab that may contain several independently
+named tables.
+
+Each table remains part of the same organization-scoped Custom Tables
+configuration model.
+
+## Monthly History
+
+Operational tab data must respect the existing monthly Runtime cadence.
+
+Viewing a prior month must show the operational data associated with that
+month rather than replacing historical data with the current month's values.
+
+## Builder and Runtime Boundary
+
+Custom Tables extend the platform's configurable performance experience but do
+not replace the existing Builder or Runtime engines.
+
+The existing architectural boundaries remain:
+
+```text
+Builder
+= reusable presentation and composition
+
+Member OKRs
+= employee performance source of truth
+
+Runtime
+= time-bound execution and historical state
+
+Custom Tables
+= configurable operational data structures used by Runtime
+```
+
+Custom Tables should be implemented as a reusable platform capability rather
+than as separate feature-specific database structures for Agenda, VA List,
+Recruitment, or Client Performance where a common data model is practical.
+
+Status
+
+Accepted / Next Implementation Milestone
+
+---
