@@ -314,14 +314,25 @@ export default function KeyResultRow({
 
 
   /*
+   * Display Only Key Results are identified by
+   * a weight of 0. They are reference values only
+   * and must never participate in score calculation.
+   */
+  const isDisplayOnly =
+    currentKeyResult.weight === 0;
+
+
+  /*
    * The persisted monthly score is the source of truth
    * when the row is loaded from Supabase.
    *
    * When the user changes Target or Current Value,
-   * the score is recalculated for the current month.
+   * normal Key Results are recalculated for the
+   * current month. Display Only Key Results always
+   * remain unscored.
    */
   const calculatedScore =
-    hasCurrentValue
+    !isDisplayOnly && hasCurrentValue
       ? calculateRuntimeKeyResultScore(
           currentValue,
 
@@ -335,17 +346,21 @@ export default function KeyResultRow({
 
 
   const score =
-    hasCurrentValue
-      ? calculatedScore
-      : persistedScore;
+    isDisplayOnly
+      ? 0
+      : hasCurrentValue
+        ? calculatedScore
+        : persistedScore;
 
 
   const scoreDisplay =
-    hasCurrentValue
-      ? Math.round(
-          score
-        )
-      : null;
+    isDisplayOnly
+      ? null
+      : hasCurrentValue
+        ? Math.round(
+            score
+          )
+        : null;
 
 
   /* ========================================================
@@ -422,16 +437,18 @@ export default function KeyResultRow({
         currentValue,
 
       /*
-       * Use the persisted score when
-       * the row has no current value.
-       *
-       * Otherwise use the recalculated
-       * score for the current month.
+       * Display Only Key Results save a score
+       * of 0 and never participate in scoring.
+       * Normal Key Results use the recalculated
+       * score when a current value exists, or
+       * the persisted score when it does not.
        */
       score:
-        hasCurrentValue
-          ? calculatedScore
-          : persistedScore,
+        isDisplayOnly
+          ? 0
+          : hasCurrentValue
+            ? calculatedScore
+            : persistedScore,
 
       employeeComment:
         progress.employeeComment,
@@ -475,17 +492,19 @@ export default function KeyResultRow({
 
 
     const nextScore =
-      nextHasCurrentValue
-        ? calculateRuntimeKeyResultScore(
-            nextCurrentValue,
+      isDisplayOnly
+        ? 0
+        : nextHasCurrentValue
+          ? calculateRuntimeKeyResultScore(
+              nextCurrentValue,
 
-            nextTarget,
+              nextTarget,
 
-            currentKeyResult.scoringMethod,
+              currentKeyResult.scoringMethod,
 
-            performanceMonth
-          )
-        : persistedScore;
+              performanceMonth
+            )
+          : persistedScore;
 
 
     onDraftChange?.({
@@ -932,12 +951,14 @@ export default function KeyResultRow({
                 <span className="rounded border bg-white px-2 py-1">
 
                   {
-                    currentKeyResult.scoringMethod ===
-                    "percent_into_period"
+                    isDisplayOnly
+                      ? "Display Only"
+                      : currentKeyResult.scoringMethod ===
+                        "percent_into_period"
 
-                      ? "% Into Period"
+                        ? "% Into Period"
 
-                      : "Percentage of Target"
+                        : "Percentage of Target"
                   }
 
                 </span>
@@ -1122,13 +1143,15 @@ export default function KeyResultRow({
             <p className="mt-1 text-xs font-medium opacity-80">
 
               {
-                scoreDisplay === null
-                  ? "Not Started"
-                  : scoreDisplay >= 90
-                    ? "Passed"
-                    : scoreDisplay >= 50
-                      ? "Reaching"
-                      : "Needs Attention"
+                isDisplayOnly
+                  ? "Display Only"
+                  : scoreDisplay === null
+                    ? "Not Started"
+                    : scoreDisplay >= 90
+                      ? "Passed"
+                      : scoreDisplay >= 50
+                        ? "Reaching"
+                        : "Needs Attention"
               }
 
             </p>
@@ -1237,12 +1260,14 @@ export default function KeyResultRow({
                   <span className="rounded border bg-gray-50 px-1.5 py-0.5 text-[10px] text-gray-600">
 
                     {
-                      currentKeyResult.scoringMethod ===
-                      "percent_into_period"
+                      isDisplayOnly
+                        ? "Display Only"
+                        : currentKeyResult.scoringMethod ===
+                          "percent_into_period"
 
-                        ? "% Into Period"
+                          ? "% Into Period"
 
-                        : "% of Target"
+                          : "% of Target"
                     }
 
                   </span>
@@ -1428,13 +1453,15 @@ export default function KeyResultRow({
           <p className="mt-1 text-[10px] font-medium opacity-80">
 
             {
-              scoreDisplay === null
-                ? "Not Started"
-                : scoreDisplay >= 90
-                  ? "Passed"
-                  : scoreDisplay >= 50
-                    ? "Reaching"
-                    : "Needs Attention"
+              isDisplayOnly
+                ? "Display Only"
+                : scoreDisplay === null
+                  ? "Not Started"
+                  : scoreDisplay >= 90
+                    ? "Passed"
+                    : scoreDisplay >= 50
+                      ? "Reaching"
+                      : "Needs Attention"
             }
 
           </p>
@@ -1443,12 +1470,14 @@ export default function KeyResultRow({
           <p className="mt-1 text-[10px] opacity-70">
 
             {
-              currentKeyResult.scoringMethod ===
-              "percent_into_period"
+              isDisplayOnly
+                ? "No Calculation"
+                : currentKeyResult.scoringMethod ===
+                  "percent_into_period"
 
-                ? "% Into Period"
+                  ? "% Into Period"
 
-                : "% of Target"
+                  : "% of Target"
             }
 
           </p>
