@@ -499,6 +499,35 @@ export async function loadRuntimeExecution(
 
 
     /*
+     * Synchronize the current member-based Runtime
+     * instance against the latest Member OKRs.
+     *
+     * The member execution service reconciles the existing
+     * monthly Runtime snapshot when the instance already
+     * exists. This ensures newly-created Member Key Results
+     * are copied into Runtime without replacing existing
+     * Runtime progress.
+     *
+     * Legacy Assignment-backed instances are intentionally
+     * left untouched for historical compatibility.
+     */
+    if (
+      selectedInstance?.memberId ===
+      subjectId
+    ) {
+
+      selectedInstance =
+        await getOrCreateMemberPerformanceExecutionForMonth(
+          organizationId,
+
+          subjectId,
+
+          selectedMonth
+        );
+    }
+
+
+    /*
      * No monthly instance exists yet.
      *
      * Create it through the new member-based Runtime
