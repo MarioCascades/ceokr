@@ -183,9 +183,11 @@ export default function KeyResultRow({
     const text =
       String(value).trim();
 
+
     if (!text) {
       return "";
     }
+
 
     return text.endsWith("%")
       ? text
@@ -229,6 +231,7 @@ export default function KeyResultRow({
       progress?.currentValue ?? ""
     );
 
+
     setPersistedScore(
       progress?.score ?? 0
     );
@@ -249,6 +252,7 @@ export default function KeyResultRow({
     setCurrentKeyResult(
       keyResult
     );
+
 
     setTargetValue(
       typeof keyResult.target === "number" ||
@@ -345,6 +349,20 @@ export default function KeyResultRow({
 
 
   /* ========================================================
+     Score Box Styling
+  ======================================================== */
+
+  const scoreBoxClassName =
+    scoreDisplay === null
+      ? "border-gray-200 bg-gray-100 text-gray-500"
+      : scoreDisplay >= 90
+        ? "border-green-200 bg-green-100 text-green-700"
+        : scoreDisplay >= 50
+          ? "border-yellow-200 bg-yellow-100 text-yellow-800"
+          : "border-orange-200 bg-orange-100 text-orange-700";
+
+
+  /* ========================================================
      Runtime Status
   ======================================================== */
 
@@ -422,6 +440,7 @@ export default function KeyResultRow({
         progress.managerComment,
 
     });
+
 
   }, [
     currentKeyResult.id,
@@ -517,9 +536,11 @@ export default function KeyResultRow({
       normalizedValue
     );
 
+
     setError(
       null
     );
+
 
     notifyDraftChange(
       normalizedValue,
@@ -549,9 +570,11 @@ export default function KeyResultRow({
       normalizedValue
     );
 
+
     setError(
       null
     );
+
 
     notifyDraftChange(
       targetValue,
@@ -586,6 +609,7 @@ export default function KeyResultRow({
         | "percentage_of_target";
 
       weight?: number;
+
     }
   ) {
 
@@ -601,7 +625,6 @@ export default function KeyResultRow({
        * target into the values supported
        * by the Runtime action.
        */
-
       const normalizedTarget =
         typeof values.target === "string" ||
         typeof values.target === "number"
@@ -969,7 +992,9 @@ export default function KeyResultRow({
 
         <div className="mt-5 grid grid-cols-2 gap-3">
 
-          <div>
+          {/* Last Month */}
+
+          <div className="rounded-md border border-[#D3E6ED] bg-[#E9F4F8] p-3">
 
             <p className="text-xs uppercase tracking-wide text-gray-500">
               Last Month
@@ -987,17 +1012,10 @@ export default function KeyResultRow({
 
             </p>
 
-          </div>
 
+            <p className="mt-1 text-xs text-gray-500">
 
-          <div>
-
-            <p className="text-xs uppercase tracking-wide text-gray-500">
-              Previous Score
-            </p>
-
-
-            <p className="mt-1 text-lg font-semibold">
+              Previous Score:{" "}
 
               {
                 previousScore !==
@@ -1011,9 +1029,11 @@ export default function KeyResultRow({
           </div>
 
 
-          <div>
+          {/* Target */}
 
-            <p className="text-xs uppercase tracking-wide text-gray-500">
+          <div className="rounded-md border border-[#9EADBD] bg-[#B4C2D1] p-3">
+
+            <p className="text-xs uppercase tracking-wide text-gray-600">
               Target
             </p>
 
@@ -1031,24 +1051,23 @@ export default function KeyResultRow({
                   event.target.value
                 )
               }
-              className={`mt-1 w-full rounded-md border-2 px-3 py-2 text-lg font-semibold ${
+              className={`mt-1 w-full rounded-md border-2 border-[#9EADBD] px-3 py-2 text-lg font-semibold ${
                 globalEditing
-                  ? "bg-white"
-                  : "bg-gray-100 text-gray-700"
+                  ? "bg-white/80"
+                  : "bg-transparent text-gray-700"
               }`}
             />
 
           </div>
 
 
-          <div>
+          {/* This Month */}
 
-            <label
-              htmlFor={`current-${currentKeyResult.id}`}
-              className="text-xs uppercase tracking-wide text-gray-500"
-            >
+          <div className="rounded-md border-2 border-gray-200 bg-white p-3">
+
+            <p className="text-xs uppercase tracking-wide text-gray-500">
               This Month
-            </label>
+            </p>
 
 
             <input
@@ -1075,9 +1094,13 @@ export default function KeyResultRow({
           </div>
 
 
-          <div>
+          {/* Score */}
 
-            <p className="text-xs uppercase tracking-wide text-gray-500">
+          <div
+            className={`rounded-md border-2 p-3 ${scoreBoxClassName}`}
+          >
+
+            <p className="text-xs uppercase tracking-wide opacity-80">
               Score
             </p>
 
@@ -1091,6 +1114,21 @@ export default function KeyResultRow({
                   ? "—"
 
                   : `${scoreDisplay}%`
+              }
+
+            </p>
+
+
+            <p className="mt-1 text-xs font-medium opacity-80">
+
+              {
+                scoreDisplay === null
+                  ? "Not Started"
+                  : scoreDisplay >= 90
+                    ? "Passed"
+                    : scoreDisplay >= 50
+                      ? "Reaching"
+                      : "Needs Attention"
               }
 
             </p>
@@ -1241,7 +1279,7 @@ export default function KeyResultRow({
             Last Month
         ================================================== */}
 
-        <div className="flex flex-col justify-center border-l-2 pl-3">
+        <div className="flex flex-col justify-center rounded-md border-l-2 border-[#D3E6ED] bg-[#E9F4F8] px-3 py-2">
 
           <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
             Last Month
@@ -1284,9 +1322,9 @@ export default function KeyResultRow({
             Target
         ================================================== */}
 
-        <div className="flex flex-col justify-center border-l-2 pl-3">
+        <div className="flex flex-col justify-center rounded-md border-l-2 border-[#9EADBD] bg-[#B4C2D1] px-3 py-2">
 
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-600">
             Target
           </p>
 
@@ -1305,10 +1343,10 @@ export default function KeyResultRow({
                 event.target.value
               )
             }
-            className={`mt-1 w-full rounded-md border-2 px-2 py-2 text-base font-semibold ${
+            className={`mt-1 w-full rounded-md border-2 border-[#9EADBD] px-2 py-2 text-base font-semibold ${
               globalEditing
-                ? "bg-white"
-                : "bg-gray-100 text-gray-700"
+                ? "bg-white/80"
+                : "bg-transparent text-gray-700"
             }`}
             placeholder={
               isPercentage
@@ -1324,7 +1362,7 @@ export default function KeyResultRow({
             This Month
         ================================================== */}
 
-        <div className="flex flex-col justify-center border-l-2 pl-3">
+        <div className="flex flex-col justify-center rounded-md border-2 border-gray-200 bg-white px-3 py-2">
 
           <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
             This Month
@@ -1364,9 +1402,11 @@ export default function KeyResultRow({
             Score
         ================================================== */}
 
-        <div className="flex flex-col justify-center border-l-2 pl-3">
+        <div
+          className={`flex flex-col justify-center rounded-md border-2 px-3 py-2 ${scoreBoxClassName}`}
+        >
 
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-[10px] font-semibold uppercase tracking-wide opacity-80">
             Score
           </p>
 
@@ -1385,7 +1425,22 @@ export default function KeyResultRow({
           </p>
 
 
-          <p className="mt-1 text-[10px] text-gray-500">
+          <p className="mt-1 text-[10px] font-medium opacity-80">
+
+            {
+              scoreDisplay === null
+                ? "Not Started"
+                : scoreDisplay >= 90
+                  ? "Passed"
+                  : scoreDisplay >= 50
+                    ? "Reaching"
+                    : "Needs Attention"
+            }
+
+          </p>
+
+
+          <p className="mt-1 text-[10px] opacity-70">
 
             {
               currentKeyResult.scoringMethod ===
@@ -1455,4 +1510,5 @@ export default function KeyResultRow({
     </div>
 
   );
+
 }
