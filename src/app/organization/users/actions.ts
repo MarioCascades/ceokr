@@ -13,6 +13,8 @@ import {
   createMemberKeyResult,
   updateMemberKeyResult,
   deleteMemberKeyResult,
+  hideMemberKeyResult,
+  activateMemberKeyResult,
   createMemberInitiative,
   updateMemberInitiative,
   deleteMemberInitiative,
@@ -40,15 +42,15 @@ import type {
 
    Persistent ownership:
 
-   User
-      ↓
-   Organization Membership
-      ↓
-   Member Objective
-      ↓
-   Member Key Result
-      ↓
-   Member Initiative
+      User
+        ↓
+      Organization Membership
+        ↓
+      Member Objective
+        ↓
+      Member Key Result
+        ↓
+      Member Initiative
 
    IMPORTANT:
 
@@ -289,6 +291,51 @@ export async function updateMemberKeyResultAction(
     organizationId,
     membershipId,
     input
+  );
+}
+
+
+/* ==========================================================
+   Hide Member Key Result
+   ----------------------------------------------------------
+   Hiding a Key Result is a visibility change only.
+
+   The persistent Key Result remains stored so historical
+   Runtime snapshots and monthly performance records remain
+   intact.
+========================================================== */
+
+export async function hideMemberKeyResultAction(
+  organizationId: string,
+  membershipId: string,
+  keyResultId: string
+): Promise<MemberKeyResult> {
+  return hideMemberKeyResult(
+    organizationId,
+    membershipId,
+    keyResultId
+  );
+}
+
+
+/* ==========================================================
+   Activate Member Key Result
+   ----------------------------------------------------------
+   Restores a previously hidden persistent Key Result to the
+   active Member OKR list.
+
+   Existing historical Runtime snapshots are not modified.
+========================================================== */
+
+export async function activateMemberKeyResultAction(
+  organizationId: string,
+  membershipId: string,
+  keyResultId: string
+): Promise<MemberKeyResult> {
+  return activateMemberKeyResult(
+    organizationId,
+    membershipId,
+    keyResultId
   );
 }
 

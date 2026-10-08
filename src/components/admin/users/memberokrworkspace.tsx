@@ -12,6 +12,8 @@ import {
   deleteMemberObjectiveAction,
   createMemberKeyResultAction,
   updateMemberKeyResultAction,
+  hideMemberKeyResultAction,
+  activateMemberKeyResultAction,
   deleteMemberKeyResultAction,
   createMemberInitiativeAction,
   updateMemberInitiativeAction,
@@ -26,6 +28,7 @@ import type {
   MemberKeyResult,
   MemberInitiative,
 } from "@/lib/domain/memberokr";
+
 
 interface MemberOKRWorkspaceProps {
   organizationId: string;
@@ -57,6 +60,7 @@ interface ObjectiveFormProps {
   onCancel: () => void;
 }
 
+
 function ObjectiveForm({
   objective,
   onSave,
@@ -87,6 +91,7 @@ function ObjectiveForm({
   ] = useState<string | null>(
     null
   );
+
 
   async function handleSave() {
     const trimmedTitle =
@@ -121,6 +126,7 @@ function ObjectiveForm({
       setSaving(false);
     }
   }
+
 
   return (
     <section className="rounded-lg border bg-muted/20 p-5">
@@ -294,6 +300,11 @@ export default function MemberOKRWorkspace({
   ] = useState<string | null>(
     null
   );
+
+  const [
+    showHiddenKeyResults,
+    setShowHiddenKeyResults,
+  ] = useState(false);
 
 
   /* ========================================================
@@ -621,6 +632,120 @@ export default function MemberOKRWorkspace({
 
 
   /* ========================================================
+     Key Result Hide
+     --------------------------------------------------------
+     Hiding a Key Result changes visibility only.
+
+     The persistent Key Result remains stored.
+     Historical Runtime records are not modified.
+  ======================================================== */
+
+  async function hideKeyResult(
+    keyResultId: string
+  ) {
+    if (!membershipId) {
+      return;
+    }
+
+    try {
+      setError(null);
+
+      const hidden =
+        await hideMemberKeyResultAction(
+          organizationId,
+          membershipId,
+          keyResultId
+        );
+
+      setObjectives(
+        (items) =>
+          items.map(
+            (objective) => ({
+              ...objective,
+
+              keyResults:
+                objective.keyResults.map(
+                  (keyResult) =>
+                    keyResult.id ===
+                    hidden.id
+                      ? {
+                          ...keyResult,
+                          ...hidden,
+                          initiatives:
+                            keyResult.initiatives,
+                        }
+                      : keyResult
+                ),
+            })
+          )
+      );
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Failed to hide Key Result."
+      );
+    }
+  }
+
+
+  /* ========================================================
+     Key Result Activate
+     --------------------------------------------------------
+     Restores a previously hidden Key Result to the active
+     Member OKR list.
+  ======================================================== */
+
+  async function activateKeyResult(
+    keyResultId: string
+  ) {
+    if (!membershipId) {
+      return;
+    }
+
+    try {
+      setError(null);
+
+      const activated =
+        await activateMemberKeyResultAction(
+          organizationId,
+          membershipId,
+          keyResultId
+        );
+
+      setObjectives(
+        (items) =>
+          items.map(
+            (objective) => ({
+              ...objective,
+
+              keyResults:
+                objective.keyResults.map(
+                  (keyResult) =>
+                    keyResult.id ===
+                    activated.id
+                      ? {
+                          ...keyResult,
+                          ...activated,
+                          initiatives:
+                            keyResult.initiatives,
+                        }
+                      : keyResult
+                ),
+            })
+          )
+      );
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Failed to activate Key Result."
+      );
+    }
+  }
+
+
+  /* ========================================================
      Key Result Delete
   ======================================================== */
 
@@ -906,6 +1031,33 @@ export default function MemberOKRWorkspace({
 
 
   /* ========================================================
+     Derived Key Result Visibility
+  ======================================================== */
+
+  const hiddenKeyResultCount =
+    objectives.reduce(
+      (count, objective) =>
+        count +
+        objective.keyResults.filter(
+          (keyResult) =>
+            keyResult.isHidden
+        ).length,
+      0
+    );
+
+  const activeKeyResultCount =
+    objectives.reduce(
+      (count, objective) =>
+        count +
+        objective.keyResults.filter(
+          (keyResult) =>
+            !keyResult.isHidden
+        ).length,
+      0
+    );
+
+
+  /* ========================================================
      Workspace
   ======================================================== */
 
@@ -1008,6 +1160,42 @@ export default function MemberOKRWorkspace({
             + Add Objective
           </button>
         </section>
+
+
+        {/* ==================================================
+            Hidden Key Results Toolbar
+        ================================================== */}
+
+        {hiddenKeyResultCount > 0 && (
+          <section className="flex items-center justify-between rounded-xl border bg-white px-4 py-3 shadow-sm">
+            <div>
+              <p className="text-sm font-medium">
+                Hidden Key Results
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                {hiddenKeyResultCount} hidden Key Result
+                {hiddenKeyResultCount === 1
+                  ? ""
+                  : "s"} are preserved for historical records.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="rounded-md border px-3 py-1.5 text-sm"
+              onClick={() =>
+                setShowHiddenKeyResults(
+                  (visible) => !visible
+                )
+              }
+            >
+              {showHiddenKeyResults
+                ? "Hide Hidden Key Results"
+                : "Show Hidden Key Results"}
+            </button>
+          </section>
+        )}
 
 
         {/* ==================================================
@@ -1142,15 +1330,8 @@ export default function MemberOKRWorkspace({
                         </h3>
 
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {
-                            objective
-                              .keyResults
-                              .length
-                          }{" "}
-                          Key Result
-                          {objective
-                            .keyResults
-                            .length === 1
+                          {activeKeyResultCount} active Key Result
+                          {activeKeyResultCount === 1
                             ? ""
                             : "s"}
                         </p>
@@ -1205,250 +1386,293 @@ export default function MemberOKRWorkspace({
                     ====================================== */}
 
                     <div className="mt-4 space-y-4">
-                      {objective.keyResults.map(
-                        (keyResult) => (
-                          <div
-                            key={
-                              keyResult.id
-                            }
-                            className="rounded-lg border bg-gray-50 p-4"
-                          >
+                      {objective.keyResults
+                        .filter(
+                          (keyResult) =>
+                            showHiddenKeyResults
+                              ? true
+                              : !keyResult.isHidden
+                        )
+                        .map(
+                          (keyResult) => (
+                            <div
+                              key={
+                                keyResult.id
+                              }
+                              className={
+                                keyResult.isHidden
+                                  ? "rounded-lg border border-dashed bg-gray-100 p-4 opacity-80"
+                                  : "rounded-lg border bg-gray-50 p-4"
+                              }
+                            >
 
-                            {editingKeyResultId ===
-                            keyResult.id ? (
-                              <KeyResultEditor
-                                keyResult={
-                                  keyResult
-                                }
-                                onCancel={() =>
-                                  setEditingKeyResultId(
-                                    null
-                                  )
-                                }
-                                onSave={(
-                                  values
-                                ) =>
-                                  saveKeyResult(
-                                    objective.id,
+                              {editingKeyResultId ===
+                              keyResult.id ? (
+                                <KeyResultEditor
+                                  keyResult={
+                                    keyResult
+                                  }
+                                  onCancel={() =>
+                                    setEditingKeyResultId(
+                                      null
+                                    )
+                                  }
+                                  onSave={(
                                     values
-                                  )
-                                }
-                              />
-                            ) : (
-                              <>
-                                <div className="flex items-start justify-between gap-4">
-                                  <div>
-                                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                      Key Result{" "}
-                                      {keyResult.position +
-                                        1}
-                                    </p>
-
-                                    <h4 className="mt-1 font-medium">
-                                      {
-                                        keyResult.title
-                                      }
-                                    </h4>
-
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                      Target:{" "}
-                                      {String(
-                                        keyResult.target
-                                      )}
-                                    </p>
-
-                                    {keyResult.weight !==
-                                      undefined && (
-                                      <p className="mt-1 text-xs text-muted-foreground">
-                                        Weight:{" "}
-                                        {
-                                          keyResult.weight
-                                        }
-                                        %
-                                      </p>
-                                    )}
-                                  </div>
-
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      className="rounded-md border px-3 py-1.5 text-xs"
-                                      onClick={() =>
-                                        setEditingKeyResultId(
-                                          keyResult.id
-                                        )
-                                      }
-                                    >
-                                      Edit
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      className="rounded-md border px-3 py-1.5 text-xs text-red-600"
-                                      onClick={() =>
-                                        void deleteKeyResult(
-                                          keyResult.id
-                                        )
-                                      }
-                                    >
-                                      Delete
-                                    </button>
-                                  </div>
-                                </div>
-
-
-                                {/* ==========================
-                                    Initiatives
-                                ========================== */}
-
-                                <div className="mt-4">
-                                  <div className="flex items-center justify-between">
+                                  ) =>
+                                    saveKeyResult(
+                                      objective.id,
+                                      values
+                                    )
+                                  }
+                                />
+                              ) : (
+                                <>
+                                  <div className="flex items-start justify-between gap-4">
                                     <div>
-                                      <h5 className="text-sm font-medium">
-                                        Initiatives
-                                      </h5>
+                                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                        Key Result{" "}
+                                        {keyResult.position +
+                                          1}
 
-                                      <p className="mt-1 text-xs text-muted-foreground">
-                                        {
-                                          keyResult
-                                            .initiatives
-                                            .length
-                                        }{" "}
-                                        Initiative
-                                        {keyResult
-                                          .initiatives
-                                          .length ===
-                                        1
-                                          ? ""
-                                          : "s"}
+                                        {keyResult.isHidden && (
+                                          <span className="ml-2 rounded-full border border-gray-300 bg-white px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500">
+                                            Hidden
+                                          </span>
+                                        )}
                                       </p>
+
+                                      <h4 className="mt-1 font-medium">
+                                        {
+                                          keyResult.title
+                                        }
+                                      </h4>
+
+                                      <p className="mt-1 text-sm text-muted-foreground">
+                                        Target:{" "}
+                                        {String(
+                                          keyResult.target
+                                        )}
+                                      </p>
+
+                                      {keyResult.weight !==
+                                        undefined && (
+                                        <p className="mt-1 text-xs text-muted-foreground">
+                                          Weight:{" "}
+                                          {
+                                            keyResult.weight
+                                          }
+                                          %
+                                        </p>
+                                      )}
                                     </div>
 
-                                    <button
-                                      type="button"
-                                      className="rounded-md border px-3 py-1.5 text-xs"
-                                      onClick={() => {
-                                        setAddingInitiativeKeyResultId(
-                                          keyResult.id
-                                        );
+                                    <div className="flex gap-2">
+                                      <button
+                                        type="button"
+                                        className="rounded-md border px-3 py-1.5 text-xs"
+                                        onClick={() =>
+                                          setEditingKeyResultId(
+                                            keyResult.id
+                                          )
+                                        }
+                                      >
+                                        Edit
+                                      </button>
 
-                                        setEditingInitiativeId(
-                                          null
-                                        );
-                                      }}
-                                    >
-                                      + Add Initiative
-                                    </button>
+                                      {keyResult.isHidden ? (
+                                        <button
+                                          type="button"
+                                          className="rounded-md border border-green-200 bg-white px-3 py-1.5 text-xs text-green-700"
+                                          onClick={() =>
+                                            void activateKeyResult(
+                                              keyResult.id
+                                            )
+                                          }
+                                        >
+                                          Activate
+                                        </button>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          className="rounded-md border border-amber-200 bg-white px-3 py-1.5 text-xs text-amber-700"
+                                          onClick={() =>
+                                            void hideKeyResult(
+                                              keyResult.id
+                                            )
+                                          }
+                                        >
+                                          Hide
+                                        </button>
+                                      )}
+
+                                      <button
+                                        type="button"
+                                        className="rounded-md border px-3 py-1.5 text-xs text-red-600"
+                                        onClick={() =>
+                                          void deleteKeyResult(
+                                            keyResult.id
+                                          )
+                                        }
+                                      >
+                                        Delete
+                                      </button>
+                                    </div>
                                   </div>
 
 
-                                  {/* ========================
-                                      Add Initiative
-                                  ======================== */}
+                                  {/* ==========================
+                                      Initiatives
+                                  ========================== */}
 
-                                  {addingInitiativeKeyResultId ===
-                                    keyResult.id && (
-                                    <div className="mt-3">
-                                      <InitiativeEditor
-                                        onCancel={() =>
+                                  <div className="mt-4">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h5 className="text-sm font-medium">
+                                          Initiatives
+                                        </h5>
+
+                                        <p className="mt-1 text-xs text-muted-foreground">
+                                          {
+                                            keyResult
+                                              .initiatives
+                                              .length
+                                          }{" "}
+                                          Initiative
+                                          {keyResult
+                                            .initiatives
+                                            .length ===
+                                          1
+                                            ? ""
+                                            : "s"}
+                                        </p>
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        className="rounded-md border px-3 py-1.5 text-xs"
+                                        onClick={() => {
                                           setAddingInitiativeKeyResultId(
+                                            keyResult.id
+                                          );
+
+                                          setEditingInitiativeId(
                                             null
-                                          )
-                                        }
-                                        onSave={(
-                                          text
-                                        ) =>
-                                          saveInitiative(
-                                            keyResult.id,
-                                            text
-                                          )
-                                        }
-                                      />
+                                          );
+                                        }}
+                                      >
+                                        + Add Initiative
+                                      </button>
                                     </div>
-                                  )}
 
 
-                                  {/* ========================
-                                      Initiative List
-                                  ======================== */}
+                                    {/* ========================
+                                        Add Initiative
+                                    ======================== */}
 
-                                  <div className="mt-3 space-y-2">
-                                    {keyResult.initiatives.map(
-                                      (
-                                        initiative
-                                      ) => (
-                                        <div
-                                          key={
-                                            initiative.id
+                                    {addingInitiativeKeyResultId ===
+                                      keyResult.id && (
+                                      <div className="mt-3">
+                                        <InitiativeEditor
+                                          onCancel={() =>
+                                            setAddingInitiativeKeyResultId(
+                                              null
+                                            )
                                           }
-                                          className="rounded-md border bg-white p-3"
-                                        >
-                                          {editingInitiativeId ===
-                                          initiative.id ? (
-                                            <InitiativeEditor
-                                              initialText={
-                                                initiative.text
-                                              }
-                                              onCancel={() =>
-                                                setEditingInitiativeId(
-                                                  null
-                                                )
-                                              }
-                                              onSave={(
-                                                text
-                                              ) =>
-                                                saveInitiative(
-                                                  keyResult.id,
-                                                  text
-                                                )
-                                              }
-                                            />
-                                          ) : (
-                                            <div className="flex items-start justify-between gap-4">
-                                              <p className="text-sm">
-                                                {
+                                          onSave={(
+                                            text
+                                          ) =>
+                                            saveInitiative(
+                                              keyResult.id,
+                                              text
+                                            )
+                                          }
+                                        />
+                                      </div>
+                                    )}
+
+
+                                    {/* ========================
+                                        Initiative List
+                                    ======================== */}
+
+                                    <div className="mt-3 space-y-2">
+                                      {keyResult.initiatives.map(
+                                        (
+                                          initiative
+                                        ) => (
+                                          <div
+                                            key={
+                                              initiative.id
+                                            }
+                                            className="rounded-md border bg-white p-3"
+                                          >
+                                            {editingInitiativeId ===
+                                            initiative.id ? (
+                                              <InitiativeEditor
+                                                initialText={
                                                   initiative.text
                                                 }
-                                              </p>
-
-                                              <div className="flex shrink-0 gap-2">
-                                                <button
-                                                  type="button"
-                                                  className="rounded-md border px-2.5 py-1 text-xs"
-                                                  onClick={() =>
-                                                    setEditingInitiativeId(
-                                                      initiative.id
-                                                    )
+                                                onCancel={() =>
+                                                  setEditingInitiativeId(
+                                                    null
+                                                  )
+                                                }
+                                                onSave={(
+                                                  text
+                                                ) =>
+                                                  saveInitiative(
+                                                    keyResult.id,
+                                                    text
+                                                  )
+                                                }
+                                              />
+                                            ) : (
+                                              <div className="flex items-start justify-between gap-4">
+                                                <p className="text-sm">
+                                                  {
+                                                    initiative.text
                                                   }
-                                                >
-                                                  Edit
-                                                </button>
+                                                </p>
 
-                                                <button
-                                                  type="button"
-                                                  className="rounded-md border px-2.5 py-1 text-xs text-red-600"
-                                                  onClick={() =>
-                                                    void deleteInitiative(
-                                                      keyResult.id,
-                                                      initiative.id
-                                                    )
-                                                  }
-                                                >
-                                                  Delete
-                                                </button>
+                                                <div className="flex shrink-0 gap-2">
+                                                  <button
+                                                    type="button"
+                                                    className="rounded-md border px-2.5 py-1 text-xs"
+                                                    onClick={() =>
+                                                      setEditingInitiativeId(
+                                                        initiative.id
+                                                      )
+                                                    }
+                                                  >
+                                                    Edit
+                                                  </button>
+
+                                                  <button
+                                                    type="button"
+                                                    className="rounded-md border px-2.5 py-1 text-xs text-red-600"
+                                                    onClick={() =>
+                                                      void deleteInitiative(
+                                                        keyResult.id,
+                                                        initiative.id
+                                                      )
+                                                    }
+                                                  >
+                                                    Delete
+                                                  </button>
+                                                </div>
                                               </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )
-                                    )}
+                                            )}
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        )
-                      )}
+                                </>
+                              )}
+                            </div>
+                          )
+                        )}
                     </div>
                   </>
                 )}

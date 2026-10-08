@@ -39,6 +39,12 @@ import {
    - comments
    - execution state
 
+   Hidden Member Key Results:
+   - remain in the persistent Member OKR domain
+   - remain available to historical Runtime snapshots
+   - are not added to newly initialized months
+   - can return to future months when activated
+
    The Performance Builder is intentionally not involved in
    creating employee-specific Runtime content.
 ========================================================== */
@@ -92,8 +98,40 @@ export async function initializeMemberPerformanceInstance(
   ) {
     const objective = objectives[objectivePosition];
 
+    /*
+    ----------------------------------------------------------
+    Only active Member Key Results participate in a new
+    Runtime snapshot.
+
+    Hidden Key Results remain in the persistent Member OKR
+    domain but are intentionally excluded from new months.
+    ----------------------------------------------------------
+    */
+
+    const activeKeyResults =
+      objective.keyResults.filter(
+        (keyResult) =>
+          !keyResult.isHidden
+      );
+
+    /*
+    ----------------------------------------------------------
+    If this Objective contains no active Key Results, there is
+    nothing to initialize for this monthly Runtime snapshot.
+
+    This prevents an Objective containing only hidden Key
+    Results from being created as an empty Runtime Objective.
+    ----------------------------------------------------------
+    */
+
+    if (activeKeyResults.length === 0) {
+      continue;
+    }
+
     let instanceObjective =
-      objectiveBySourceId.get(objective.id);
+      objectiveBySourceId.get(
+        objective.id
+      );
 
     if (!instanceObjective) {
       instanceObjective =
@@ -125,14 +163,18 @@ export async function initializeMemberPerformanceInstance(
 
     for (
       let keyResultPosition = 0;
-      keyResultPosition < objective.keyResults.length;
+      keyResultPosition < activeKeyResults.length;
       keyResultPosition++
     ) {
       const keyResult =
-        objective.keyResults[keyResultPosition];
+        activeKeyResults[
+          keyResultPosition
+        ];
 
       let instanceKeyResult =
-        keyResultBySourceId.get(keyResult.id);
+        keyResultBySourceId.get(
+          keyResult.id
+        );
 
       if (!instanceKeyResult) {
         instanceKeyResult =
@@ -196,7 +238,9 @@ export async function initializeMemberPerformanceInstance(
         initiativePosition++
       ) {
         const initiative =
-          initiatives[initiativePosition];
+          initiatives[
+            initiativePosition
+          ];
 
         if (
           existingInitiativeIds.has(
@@ -263,7 +307,9 @@ export async function initializeMemberPerformanceInstance(
             "not_started",
         });
 
-      createdProgress.push(progress);
+      createdProgress.push(
+        progress
+      );
     }
   }
 

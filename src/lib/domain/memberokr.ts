@@ -91,6 +91,18 @@ export interface MemberKeyResult {
 
   status: MemberKeyResultStatus;
 
+  /*
+   * Visibility is separate from status.
+   *
+   * Hidden means the Key Result is no longer shown
+   * in the member's current active Key Result list.
+   *
+   * The Key Result itself remains stored so that its
+   * historical relationships and Runtime records remain
+   * intact and the Key Result can be activated again.
+   */
+  isHidden: boolean;
+
   position: number;
 
   createdAt: string;
@@ -194,8 +206,7 @@ export interface UpdateMemberKeyResultInput {
   measurementType?:
     | MemberKeyResultMeasurementType;
 
-  scoringMethod?:
-    | MemberKeyResultScoringMethod;
+  scoringMethod?: MemberKeyResultScoringMethod;
 
   status?: MemberKeyResultStatus;
 
