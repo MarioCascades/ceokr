@@ -168,12 +168,17 @@ export default function KeyResultRow({
 
 
   /* ========================================================
-     Percentage Display
+     Value Display
   ======================================================== */
 
   const isPercentage =
     currentKeyResult.measurementType ===
     "percentage";
+
+
+  const isFinancial =
+    currentKeyResult.measurementType ===
+    "financial";
 
 
   function formatPercentageValue(
@@ -205,12 +210,45 @@ export default function KeyResultRow({
   }
 
 
+  function formatFinancialValue(
+    value: string | number
+  ): string {
+
+    const text =
+      String(value).trim();
+
+
+    if (!text) {
+      return "";
+    }
+
+
+    return text.startsWith("$")
+      ? text
+      : `$${text}`;
+  }
+
+
+  function normalizeFinancialInput(
+    value: string
+  ): string {
+
+    return value
+      .replace(/\$/g, "")
+      .trim();
+  }
+
+
   const displayTargetValue =
     isPercentage
       ? formatPercentageValue(
           targetValue
         )
-      : targetValue;
+      : isFinancial
+        ? formatFinancialValue(
+            targetValue
+          )
+        : targetValue;
 
 
   const displayCurrentValue =
@@ -218,7 +256,11 @@ export default function KeyResultRow({
       ? formatPercentageValue(
           currentValue
         )
-      : currentValue;
+      : isFinancial
+        ? formatFinancialValue(
+            currentValue
+          )
+        : currentValue;
 
 
   /* ========================================================
@@ -300,7 +342,12 @@ export default function KeyResultRow({
       ? formatPercentageValue(
           previousValue
         )
-      : previousValue;
+      : isFinancial &&
+        previousValue !== undefined
+        ? formatFinancialValue(
+            previousValue
+          )
+        : previousValue;
 
 
   /* ========================================================
@@ -548,7 +595,11 @@ export default function KeyResultRow({
         ? normalizePercentageInput(
             value
           )
-        : value;
+        : isFinancial
+          ? normalizeFinancialInput(
+              value
+            )
+          : value;
 
 
     setTargetValue(
@@ -582,7 +633,11 @@ export default function KeyResultRow({
         ? normalizePercentageInput(
             value
           )
-        : value;
+        : isFinancial
+          ? normalizeFinancialInput(
+              value
+            )
+          : value;
 
 
     setCurrentValue(
@@ -1376,7 +1431,9 @@ export default function KeyResultRow({
             placeholder={
               isPercentage
                 ? "Target %"
-                : "Target"
+                : isFinancial
+                  ? "Target $"
+                  : "Target"
             }
           />
 
@@ -1416,7 +1473,9 @@ export default function KeyResultRow({
             placeholder={
               isPercentage
                 ? "Current %"
-                : "Current"
+                : isFinancial
+                  ? "Current $"
+                  : "Current"
             }
           />
 
