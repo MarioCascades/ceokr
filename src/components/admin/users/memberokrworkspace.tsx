@@ -27,14 +27,11 @@ import InitiativeEditor from "@/components/runtime/initiatives/initiativeeditor"
 
 import type {
   MemberObjective,
-  MemberKeyResult,
-  MemberInitiative,
 } from "@/lib/domain/memberokr";
 
 
 interface MemberOKRWorkspaceProps {
   organizationId: string;
-
   subjectId: string;
 }
 
@@ -326,6 +323,18 @@ export default function MemberOKRWorkspace({
   ] = useState<string | null>(
     null
   );
+
+  const [
+    draggedObjectiveId,
+    setDraggedObjectiveId,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    reorderingObjectives,
+    setReorderingObjectives,
+  ] = useState(false);
 
   const [
     reorderingObjectiveId,
@@ -752,6 +761,98 @@ export default function MemberOKRWorkspace({
     setEditingKeyResultId(
       null
     );
+  }
+
+
+  /* ========================================================
+     Objective Reorder
+     ----------------------------------------------------------
+     Reorders the complete persistent Objective list so hidden
+     Objectives retain their saved positions relative to one
+     another. Visibility only filters presentation.
+  ======================================================== */
+
+  async function reorderObjectives(
+    draggedId: string,
+    targetId: string
+  ) {
+    if (
+      !membershipId ||
+      draggedId === targetId ||
+      reorderingObjectives
+    ) {
+      return;
+    }
+
+    const ordered = [...objectives].sort(
+      (a, b) => a.position - b.position
+    );
+
+    const draggedIndex = ordered.findIndex(
+      (objective) => objective.id === draggedId
+    );
+
+    const targetIndex = ordered.findIndex(
+      (objective) => objective.id === targetId
+    );
+
+    if (draggedIndex < 0 || targetIndex < 0) {
+      return;
+    }
+
+    const [dragged] = ordered.splice(draggedIndex, 1);
+    ordered.splice(targetIndex, 0, dragged);
+
+    try {
+      setError(null);
+      setReorderingObjectives(true);
+
+      const updated = await Promise.all(
+        ordered.map((objective, index) =>
+          updateMemberObjectiveAction(
+            organizationId,
+            membershipId,
+            {
+              objectiveId: objective.id,
+              title: objective.title,
+              description: objective.description ?? "",
+              weight: objective.weight,
+              position: index,
+            }
+          )
+        )
+      );
+
+      const updatedById = new Map(
+        updated.map((objective) => [objective.id, objective])
+      );
+
+      setObjectives((items) =>
+        items
+          .map((objective) => {
+            const replacement = updatedById.get(objective.id);
+
+            return replacement
+              ? {
+                  ...objective,
+                  ...replacement,
+                  keyResults: objective.keyResults,
+                }
+              : objective;
+          })
+          .sort((a, b) => a.position - b.position)
+      );
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Failed to reorder Objectives."
+      );
+      await loadWorkspace();
+    } finally {
+      setReorderingObjectives(false);
+      setDraggedObjectiveId(null);
+    }
   }
 
 
@@ -1362,12 +1463,17 @@ export default function MemberOKRWorkspace({
     ).length;
 
   const visibleObjectives =
-    objectives.filter(
-      (objective) =>
-        showHiddenObjectives
-          ? true
-          : !objective.isHidden
-    );
+    objectives
+      .filter(
+        (objective) =>
+          showHiddenObjectives
+            ? true
+            : !objective.isHidden
+      )
+      .sort(
+        (a, b) =>
+          a.position - b.position
+      );
 
 
   /* ========================================================
@@ -1616,7 +1722,44 @@ export default function MemberOKRWorkspace({
                 key={
                   objective.id
                 }
-                className="rounded-xl border bg-white p-6 shadow-sm"
+                draggable={
+                  !reorderingObjectives &&
+                  reorderingObjectiveId !== objective.id
+                }
+                onDragStart={(event) => {
+                  if (reorderingObjectiveId) {
+                    event.preventDefault();
+                    return;
+                  }
+
+                  event.dataTransfer.effectAllowed = "move";
+                  setDraggedObjectiveId(objective.id);
+                }}
+                onDragOver={(event) => {
+                  if (draggedObjectiveId) {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+
+                  if (draggedObjectiveId) {
+                    void reorderObjectives(
+                      draggedObjectiveId,
+                      objective.id
+                    );
+                  }
+                }}
+                onDragEnd={() => {
+                  setDraggedObjectiveId(null);
+                }}
+                className={`rounded-xl border bg-white p-6 shadow-sm ${
+                  draggedObjectiveId === objective.id
+                    ? "opacity-60"
+                    : ""
+                }`}
               >
 
                 {/* ==========================================
@@ -1812,16 +1955,19 @@ export default function MemberOKRWorkspace({
                                 reorderingObjectiveId !==
                                   objective.id
                               }
-                              onDragStart={() =>
+                              onDragStart={(event) => {
+                                event.stopPropagation();
+                                event.dataTransfer.effectAllowed = "move";
                                 setDraggedKeyResultId(
                                   keyResult.id
-                                )
-                              }
+                                );
+                              }}
                               onDragOver={(event) =>
                                 event.preventDefault()
                               }
                               onDrop={(event) => {
                                 event.preventDefault();
+                                event.stopPropagation();
 
                                 if (
                                   draggedKeyResultId
@@ -1833,11 +1979,10 @@ export default function MemberOKRWorkspace({
                                   );
                                 }
                               }}
-                              onDragEnd={() =>
-                                setDraggedKeyResultId(
-                                  null
-                                )
-                              }
+                              onDragEnd={(event) => {
+                                event.stopPropagation();
+                                setDraggedKeyResultId(null);
+                              }}
                               className={
                                 keyResult.isHidden
                                   ? "rounded-lg border border-dashed bg-gray-100 p-4 opacity-80"
