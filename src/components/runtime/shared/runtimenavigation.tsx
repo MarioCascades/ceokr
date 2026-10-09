@@ -1,8 +1,17 @@
 "use client";
 
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import type {
   UserManagementRecord,
 } from "@/lib/types/domain/usermanagement";
+
+import {
+  loadRuntimeNavigationTabs,
+} from "@/services/runtimenavigation.service";
 
 interface RuntimeNavigationProps {
   organizationId: string;
@@ -10,6 +19,7 @@ interface RuntimeNavigationProps {
   selectedSubjectId?: string;
   performanceMonth: string;
   performanceMonths: string[];
+  tabOrder?: string[];
 }
 
 /* ==========================================================
@@ -158,7 +168,8 @@ function getMonthNumber(
 function buildRuntimeHref(
   organizationId: string,
   subjectId: string | undefined,
-  performanceMonth: string
+  performanceMonth: string,
+  runtimeTab?: string
 ): string {
   const params =
     new URLSearchParams();
@@ -180,6 +191,13 @@ function buildRuntimeHref(
     performanceMonth
   );
 
+  if (runtimeTab) {
+    params.set(
+      "runtimeTab",
+      runtimeTab
+    );
+  }
+
   return `/runtime?${params.toString()}`;
 }
 
@@ -193,11 +211,98 @@ export default function RuntimeNavigation({
   selectedSubjectId,
   performanceMonth,
   performanceMonths,
+  tabOrder,
 }: RuntimeNavigationProps) {
   /*
-   * The prop is retained for compatibility with existing
-   * Runtime components.
+   * The existing prop is retained for compatibility with
+   * existing Runtime components.
    *
+   * Organization-level Runtime navigation configuration is
+   * loaded when available.
+   */
+  const [
+    configuredTabOrder,
+    setConfiguredTabOrder,
+  ] = useState<string[]>(
+    tabOrder ?? []
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadNavigationConfiguration() {
+      try {
+        const configuredTabs =
+          await loadRuntimeNavigationTabs(
+            organizationId
+          );
+
+        if (cancelled) {
+          return;
+        }
+
+        if (
+          configuredTabs.length > 0
+        ) {
+          /*
+           * Hidden tabs remain persisted in the database but
+           * must not appear in Runtime.
+           */
+          setConfiguredTabOrder(
+            configuredTabs
+              .filter(
+                (tab) =>
+                  !tab.isHidden
+              )
+              .sort(
+                (first, second) =>
+                  first.position -
+                  second.position
+              )
+              .map(
+                (tab) =>
+                  tab.tabKey
+              )
+          );
+
+          return;
+        }
+
+        setConfiguredTabOrder(
+          tabOrder ?? []
+        );
+      } catch (error) {
+        /*
+         * Navigation configuration should never prevent
+         * Runtime itself from loading.
+         *
+         * Fall back to the existing navigation order when
+         * configuration cannot be loaded.
+         */
+        console.error(
+          "Error loading Runtime navigation configuration:",
+          error
+        );
+
+        if (!cancelled) {
+          setConfiguredTabOrder(
+            tabOrder ?? []
+          );
+        }
+      }
+    }
+
+    void loadNavigationConfiguration();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    organizationId,
+    tabOrder,
+  ]);
+
+  /*
    * The navigation itself intentionally provides the full
    * current + previous 12 month window regardless of whether
    * a Performance Instance already exists.
@@ -264,6 +369,54 @@ export default function RuntimeNavigation({
       undefined,
       performanceMonth
     );
+
+  /* ========================================================
+     Unified Runtime Tab Order
+     --------------------------------------------------------
+     Runtime navigation is organization-configurable.
+
+     Each current tab has a stable navigation key:
+
+       dashboard
+       member:<user-id>
+
+     Hidden tabs are excluded from the Runtime navigation.
+     Any active current tabs that are not yet present in the
+     saved order are appended.
+
+     Operational Runtime tabs are intentionally not included
+     until their actual Runtime features are implemented.
+  ======================================================== */
+
+  const currentTabKeys = [
+    "dashboard",
+
+    ...members.map(
+      (member) =>
+        `member:${member.user.id}`
+    ),
+  ];
+
+  const orderedTabKeys = [
+    ...configuredTabOrder,
+
+    ...currentTabKeys.filter(
+      (tabKey) =>
+        !configuredTabOrder.includes(
+          tabKey
+        )
+    ),
+  ].filter(
+    (tabKey, index, all) =>
+      currentTabKeys.includes(
+        tabKey
+      ) &&
+      all.indexOf(tabKey) ===
+        index
+  );
+
+  const orderedMembers =
+    members;
 
   /* ========================================================
      Year Change
@@ -429,86 +582,84 @@ export default function RuntimeNavigation({
         </div>
 
         {/* ==================================================
-            Dashboard
+            Unified Runtime Tabs
+            --------------------------------------------------
+            Dashboard and member tabs share one
+            organization-configurable ordering.
         ================================================== */}
 
-        <a
-          href={
-            dashboardHref
-          }
-          className={`
-            relative
-            rounded-lg
-            px-3
-            py-1.5
-            text-xs
-            font-semibold
-            transition-all
-            duration-200
-            ${
-              !selectedSubjectId
-                ? `
-                    bg-primary
-                    text-primary-foreground
-                    shadow-sm
-                  `
-                : `
-                    text-foreground
-                    hover:bg-accent
-                    hover:text-accent-foreground
-                  `
+        {orderedTabKeys.map(
+          (tabKey) => {
+            if (
+              tabKey ===
+              "dashboard"
+            ) {
+              return (
+                <a
+                  key="dashboard"
+                  href={
+                    dashboardHref
+                  }
+                  className={`
+                    relative
+                    shrink-0
+                    rounded-lg
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
+                    transition-all
+                    duration-200
+                    ${
+                      !selectedSubjectId
+                        ? `
+                            bg-primary
+                            text-primary-foreground
+                            shadow-sm
+                          `
+                        : `
+                            text-foreground
+                            hover:bg-accent
+                            hover:text-accent-foreground
+                          `
+                    }
+                  `}
+                >
+                  Dashboard
+
+                  {!selectedSubjectId && (
+                    <span
+                      aria-hidden="true"
+                      className="
+                        absolute
+                        inset-x-3
+                        -bottom-1.5
+                        h-0.5
+                        rounded-full
+                        bg-primary
+                      "
+                    />
+                  )}
+                </a>
+              );
             }
-          `}
-        >
-          Dashboard
 
-          {!selectedSubjectId && (
-            <span
-              aria-hidden="true"
-              className="
-                absolute
-                inset-x-3
-                -bottom-1.5
-                h-0.5
-                rounded-full
-                bg-primary
-              "
-            />
-          )}
-        </a>
+            if (
+              tabKey.startsWith(
+                "member:"
+              )
+            ) {
+              const member =
+                orderedMembers.find(
+                  (item) =>
+                    `member:${item.user.id}` ===
+                    tabKey
+                );
 
-        {/* ==================================================
-            Performance Subjects
-        ================================================== */}
+              if (!member) {
+                return null;
+              }
 
-        {members.length > 0 && (
-          <div
-            aria-hidden="true"
-            className="
-              mx-1
-              hidden
-              h-5
-              w-px
-              bg-border
-              md:block
-            "
-          />
-        )}
-
-        <div
-          className="
-            flex
-            min-w-0
-            gap-0.5
-            overflow-x-auto
-            pb-1
-            md:pb-0
-          "
-        >
-          {members.map(
-            (
-              member
-            ) => {
               const href =
                 buildRuntimeHref(
                   organizationId,
@@ -523,7 +674,7 @@ export default function RuntimeNavigation({
               return (
                 <a
                   key={
-                    member.user.id
+                    tabKey
                   }
                   href={
                     href
@@ -540,14 +691,14 @@ export default function RuntimeNavigation({
                     ${
                       isSelected
                         ? `
-                              bg-primary
-                              text-primary-foreground
-                              shadow-sm
+                            bg-primary
+                            text-primary-foreground
+                            shadow-sm
                           `
                         : `
-                              text-foreground
-                              hover:bg-accent
-                              hover:text-accent-foreground
+                            text-foreground
+                            hover:bg-accent
+                            hover:text-accent-foreground
                           `
                     }
                   `}
@@ -560,8 +711,10 @@ export default function RuntimeNavigation({
                 </a>
               );
             }
-          )}
-        </div>
+
+            return null;
+          }
+        )}
 
         {/* ==================================================
             Performance Month

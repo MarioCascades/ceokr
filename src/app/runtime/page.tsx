@@ -36,7 +36,7 @@ interface RuntimePageProps {
 
 /* ==========================================================
    Helpers
-========================================================== */
+   ========================================================== */
 
 function getCurrentPerformanceMonth(): string {
 
@@ -60,7 +60,7 @@ function getCurrentPerformanceMonth(): string {
 
 /* ==========================================================
    Runtime Page
-========================================================== */
+   ========================================================== */
 
 export default async function RuntimePage({
   searchParams,
@@ -72,7 +72,7 @@ export default async function RuntimePage({
 
   /* ========================================================
      Organization
-  ======================================================== */
+     ======================================================== */
 
   const organization =
     await getOrganization(
@@ -383,8 +383,15 @@ export default async function RuntimePage({
   /* ========================================================
      Runtime Member Performance Sheet
      --------------------------------------------------------
-     This is now the ONLY Performance Sheet rendered by the
-     Runtime page.
+     PerformanceSheet already renders RuntimeNavigation for
+     the selected member Runtime experience.
+
+     Keeping another RuntimeNavigation here would render the
+     navigation twice.
+
+     The selected member Performance Sheet therefore remains
+     the single owner of the navigation presentation in this
+     branch.
   ======================================================== */
 
   return (

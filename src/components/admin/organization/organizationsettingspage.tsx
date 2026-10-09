@@ -13,6 +13,8 @@ import {
   defaultOrganizationFeatures,
 } from "@/lib/organization/features";
 
+import RuntimeNavigationSettings from "@/components/admin/organization/runtimenavigationsettings";
+
 const CASCADEFFECTS_DEFAULT_LOGO = "/logos/CECleanlogo.png";
 
 type OrganizationSettingsState = {
@@ -914,6 +916,13 @@ export default function OrganizationSettingsPage() {
               </div>
             </div>
           </section>
+
+          {/* RUNTIME NAVIGATION */}
+          {organizationId && (
+            <RuntimeNavigationSettings
+              organizationId={organizationId}
+            />
+          )}
 
           {/* NOTIFICATIONS */}
           <section className="rounded-xl border border-[#B4C2D1]/70 bg-white p-6 shadow-sm">
