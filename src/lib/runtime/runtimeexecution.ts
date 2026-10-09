@@ -1,3 +1,4 @@
+
 import { loadPublishedById } from "@/lib/repositories/performancesheetrepository";
 
 import {
@@ -38,6 +39,7 @@ import {
 
 import {
   loadOrganizationMembershipForMember,
+  loadMemberOKRs,
 } from "@/lib/repositories/memberokrrepository";
 
 import {
@@ -929,7 +931,7 @@ async function buildRuntimeExecution(
      Build Runtime Objectives
   ======================================================== */
 
-  const objectives =
+  let objectives =
     buildRuntimePerformanceObjectives(
 
       instanceObjectives,
@@ -941,13 +943,163 @@ async function buildRuntimeExecution(
 
 
   /* ========================================================
+     Current Member Runtime Visibility
+  ======================================================== */
+
+  /*
+   * Member OKRs remain the source of truth for current
+   * visibility. Runtime records are preserved as monthly
+   * snapshots, so hiding a source item must not delete its
+   * Runtime record or its historical progress.
+   *
+   * Apply this presentation filter only to the current month
+   * of a direct member-based Runtime instance. Historical months
+   * and legacy Assignment-backed instances remain unchanged.
+   */
+
+  const isCurrentMemberRuntime =
+    Boolean(
+      subject &&
+      performanceInstance.memberId ===
+        subject.id &&
+      !performanceInstance.assignmentId &&
+      performanceInstance.performanceMonth ===
+        getCurrentPerformanceMonth()
+    );
+
+  const hiddenObjectiveIds =
+    new Set<string>();
+
+  const hiddenKeyResultIds =
+    new Set<string>();
+
+  let memberVisibilityLoaded =
+    false;
+
+  if (
+    isCurrentMemberRuntime &&
+    subject
+  ) {
+
+    const membership =
+      await loadOrganizationMembershipForMember(
+        organizationId,
+        subject.id
+      );
+
+    if (membership) {
+
+      const memberObjectives =
+        await loadMemberOKRs(
+          organizationId,
+          membership.id
+        );
+
+      memberVisibilityLoaded =
+        true;
+
+      for (
+        const memberObjective of
+          memberObjectives
+      ) {
+
+        if (memberObjective.isHidden) {
+          hiddenObjectiveIds.add(
+            memberObjective.id
+          );
+        }
+
+        for (
+          const memberKeyResult of
+            memberObjective.keyResults
+        ) {
+
+          if (memberKeyResult.isHidden) {
+            hiddenKeyResultIds.add(
+              memberKeyResult.id
+            );
+          }
+
+        }
+
+      }
+
+      objectives =
+        objectives
+          .filter(
+            (objective) =>
+              !objective.sourceObjectiveId ||
+              !hiddenObjectiveIds.has(
+                objective.sourceObjectiveId
+              )
+          )
+          .map(
+            (objective) => ({
+              ...objective,
+
+              keyResults:
+                objective.keyResults.filter(
+                  (keyResult) =>
+                    !keyResult.sourceKeyResultId ||
+                    !hiddenKeyResultIds.has(
+                      keyResult.sourceKeyResultId
+                    )
+                ),
+            })
+          )
+          .filter(
+            (objective) =>
+              !objective.sourceObjectiveId ||
+              objective.keyResults.length > 0
+          );
+
+    }
+
+  }
+
+
+  /* ========================================================
      Runtime Key Result Progress
   ======================================================== */
 
-  const keyResultProgress =
+  let keyResultProgress =
     await findKeyResultProgressByPerformanceInstance(
       performanceInstance.id
     );
+
+
+  /*
+   * Keep progress records for hidden Runtime Key Results out of
+   * the current active view as well. This only filters the data
+   * returned to the UI; it does not delete or update any stored
+   * progress records. Save logic can therefore preserve existing
+   * progress for items that are hidden and later reactivated.
+   */
+
+  if (
+    memberVisibilityLoaded
+  ) {
+
+    const visibleRuntimeKeyResultIds =
+      new Set(
+        objectives.flatMap(
+          (objective) =>
+            objective.keyResults.map(
+              (keyResult) =>
+                keyResult.id
+            )
+        )
+      );
+
+    keyResultProgress =
+      keyResultProgress.filter(
+        (progress) =>
+          visibleRuntimeKeyResultIds.has(
+            progress.performanceInstanceKeyResultId
+          )
+      );
+
+  }
 
 
   /* ========================================================
