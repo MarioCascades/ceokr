@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-09-30
+**Last Updated:** 2026-10-10
 
 This document tracks intentionally deferred architecture, product
 capabilities, migration work, and future platform work.
@@ -18,42 +18,70 @@ project state.
 
 # Current Development Phase
 
-## Runtime Operational Tabs and Custom Tables
+## Runtime Operational Tabs and Tenant-Specific Custom Tables
 
 **Status**
 
-NEXT IMPLEMENTATION MILESTONE
+IMPLEMENTATION IN PROGRESS / FUNCTIONAL VERIFICATION REQUIRED
 
-The Member OKR foundation and Runtime performance foundation are established
-and verified.
+The reusable Custom Tables foundation and its permission migration have been
+applied in Supabase. This confirms that the foundation SQL ran successfully;
+it does not mean the full user experience, production authorization/RLS, or
+all operational workflows are complete.
 
-The next implementation milestone is to extend Runtime with configurable
-organization-specific operational tabs powered by a reusable Custom Tables
-capability.
-
-Initial operational tabs:
+The planned Runtime operational experiences remain:
 
 - Agenda
 - VA List
 - Recruitment
 - Client Performance
 
-Custom Tables will be managed from the Performance area and will provide the
-configuration mechanism for these Runtime operational experiences.
+Client Performance is one Runtime tab that may contain multiple independently
+named tables.
 
-This milestone does not create a second performance engine.
+### Confirmed Product Rules
 
-The platform continues to preserve:
+- Shared application code and a reusable schema support the feature.
+- Table definitions are provisioned only for the Organization that requests
+  them; they are not automatically available to every tenant.
+- CascadEffects platform/IT personnel own table-definition and column-structure
+  provisioning.
+- Organization Admins may enable or disable provisioned tables, but may not
+  create table definitions or configure columns.
+- The Organization Admin Custom Tables page lists only that tenant's
+  provisioned tables.
+- An Organization with no provisioned tables sees an explanatory empty state.
+- A floating Custom Tables assistance panel remains visible even when the
+  tenant has no tables and directs the tenant to its CascadEffects IT Admin.
+- Remove the Reports card from the Organization Admin dashboard's Analytics
+  group only; preserve the Reports route and underlying feature.
+- Add a Custom Tables card to the Organization Admin dashboard.
+- Preserve existing Member Runtime navigation, Member OKRs, Builder
+  composition, monthly execution, and historical records.
 
-- Member OKRs as the employee performance source of truth
-- Runtime as the time-bound execution and history layer
-- Builder as the reusable presentation/composition layer
-- monthly performance as the product cadence
-- organization-scoped data ownership
+### Current Implementation Notes
 
-The OKR Template Library remains a planned product capability and is not
-removed from the roadmap. It is simply not the immediate implementation
-milestone.
+- The reusable Custom Tables foundation SQL and permission migration were
+  reported as successfully applied.
+- The Organization Admin Custom Tables experience still needs to be aligned
+  with platform-provisioned definitions rather than self-service table
+  creation.
+- The Organization Admin dashboard card change remains to be implemented.
+- The floating assistance panel and empty state need verification against the
+  established Custom Reporting panel design and contact details.
+- A Recruitment workspace currently encounters a duplicate-key error when
+  initializing a table/month record. Make month initialization idempotent by
+  reusing the existing unique table/month record; preserve the uniqueness
+  constraint and existing data.
+- Production authorization/RLS remains outstanding and must not be described
+  as complete merely because application permission records exist.
+
+This milestone does not create a second performance engine. Member OKRs remain
+the employee performance source of truth, Runtime remains the time-bound
+execution/history layer, and Builder remains the reusable presentation and
+composition layer.
+
+The OKR Template Library remains planned and is not the immediate milestone.
 
 ---
 
@@ -1115,6 +1143,122 @@ Critical
 
 ---
 
+# Tenant-Specific Custom Tables Provisioning and Admin Experience
+
+## Provisioned Tables Only
+
+**Status**
+
+IN PROGRESS
+
+Refactor the Organization Admin Custom Tables experience to show only
+definitions provisioned for the active Organization. Remove self-service
+definition/column creation from the Organization Admin workflow. Platform/IT
+provisioning remains responsible for definitions and structures.
+
+Priority
+
+Critical
+
+---
+
+## Organization Admin Table Controls and Empty State
+
+**Status**
+
+NEXT
+
+Allow Organization Admins to enable or disable provisioned tables for Runtime.
+If no tables are provisioned, show an explanatory empty state directing the
+Organization to contact its CascadEffects IT Admin.
+
+Priority
+
+Critical
+
+---
+
+## Floating Custom Tables Assistance Panel
+
+**Status**
+
+NEXT
+
+Implement or reuse the established floating Custom Reporting assistance-panel
+design in the Custom Tables experience. It must remain visible when no tables
+are provisioned and must use the established contact details. The panel is
+informational; it does not provision tables or grant permissions.
+
+Priority
+
+High
+
+---
+
+## Organization Admin Dashboard Navigation
+
+**Status**
+
+NEXT
+
+Remove only the Reports card from the Analytics group and add a Custom Tables
+card. Preserve the Reports route, feature, and supporting services.
+
+Priority
+
+High
+
+---
+
+## Idempotent Monthly Workspace Initialization
+
+**Status**
+
+FIX REQUIRED
+
+When a Custom Table month already exists, workspace initialization must reuse
+it instead of attempting a duplicate insert. Preserve the unique
+table/month constraint and existing rows.
+
+Priority
+
+Critical
+
+---
+
+## Recruitment Operational Workflow
+
+**Status**
+
+IN PROGRESS / FUNCTIONAL VERIFICATION REQUIRED
+
+Verify the six agreed operational fields, separate standardized workflow
+status, status colors, row editing, ordering, hidden listings, month selection,
+historical retrieval, and carry-forward of open roles/latest status without
+altering the prior month. Recruitment must not affect Member OKR scoring.
+
+Priority
+
+High
+
+---
+
+## Production Authorization and RLS for Custom Tables
+
+**Status**
+
+OUTSTANDING
+
+Verify organization isolation and least-privilege access across definitions,
+columns, monthly records, and rows. SQL permission records and application
+checks do not substitute for verified database RLS and production authorization.
+
+Priority
+
+Critical
+
+---
+
 # Current Project Position
 
 Builder
@@ -1125,9 +1269,29 @@ Runtime Execution Foundation
 
 ESTABLISHED / VERIFIED
 
-Runtime Operational Tabs and Custom Tables
+Runtime Operational Tabs and Tenant-Specific Custom Tables
 
-NEXT IMPLEMENTATION MILESTONE
+IMPLEMENTATION IN PROGRESS / FUNCTIONAL VERIFICATION REQUIRED
+
+Custom Tables Foundation SQL and Permission Migration
+
+APPLIED / RLS VERIFICATION OUTSTANDING
+
+Organization Admin Custom Tables Provisioning UX
+
+REQUIRES ALIGNMENT TO PLATFORM-PROVISIONED TABLES
+
+Organization Admin Dashboard Navigation Update
+
+NEXT
+
+Monthly Operational History and Carry-Forward
+
+FUNCTIONAL VERIFICATION REQUIRED
+
+Production Authorization / RLS
+
+OUTSTANDING
 
 Administration Foundation
 
@@ -1169,10 +1333,6 @@ OKR Template Library
 
 PLANNED / NEW PRODUCT CAPABILITY
 
-Production Authorization / RLS
-
-OUTSTANDING
-
 Historical KPI Updates
 
 DEFERRED
@@ -1201,36 +1361,44 @@ PRESENTATION MOCK-UPS / LIVE FUTURE
 
 # Next Development Session
 
-Start from the latest Waypoint.
+Start from the latest Waypoint 31.
 
 Review:
 
+- Product North Star
 - latest Waypoint
 - Platform Decisions
 - Platform Backlog
-- Product North Star
 
-Confirm the Runtime Operational Tabs and Custom Tables milestone.
+Continue the existing Runtime Operational Tabs and Custom Tables milestone in
+this order. Work one file at a time, inspect the current source before editing,
+and do not broaden the task into unrelated refactoring.
 
-Then:
+1. Fix idempotent Custom Table month initialization so an existing
+   table/month record is reused rather than inserted again.
+2. Refactor the Organization Admin Custom Tables page to remove self-service
+   table-definition/column creation and list only tables provisioned for the
+   current tenant.
+3. Add enable/disable controls for provisioned tables and an accurate empty
+   state when no tables exist.
+4. Add the floating assistance panel using the established Custom Reporting
+   panel design and existing contact details.
+5. Update the Organization Admin dashboard: remove only the Reports card from
+   Analytics and add the Custom Tables card. Preserve the Reports route.
+6. Verify Recruitment fields, separate workflow status, editing, ordering,
+   hidden listings, month selection/history, and carry-forward behavior.
+7. Verify Agenda, VA List, and Client Performance (one tab with multiple
+   independently named tables), including persistence and historical months.
+8. Verify that a tenant sees only its own provisioned definitions and data.
+9. Verify production authorization/RLS; do not mark security complete without
+   actual database and access testing.
+10. Confirm existing Member Runtime navigation and Member OKR behavior remain
+    unchanged.
+11. Compile and perform focused browser/database functional tests.
+12. Commit the coherent milestone, update the relevant documentation, and
+    create a subsequent Waypoint when implementation is verified.
 
-1. Review the approved Runtime operational tab architecture.
-2. Review the Custom Tables data model and organization ownership.
-3. Identify the minimum reusable database structure.
-4. Implement Custom Tables configuration in the Performance area.
-5. Implement Runtime operational tab navigation.
-6. Implement Agenda monthly persistence.
-7. Implement VA List monthly editing and persistence.
-8. Implement Recruitment monthly editing and persistence.
-9. Implement Client Performance with independently named tables.
-10. Verify monthly historical retrieval.
-11. Confirm existing member Runtime tabs remain unchanged.
-12. Compile.
-13. Browser / functional test.
-14. Commit.
-15. Update documentation.
-16. Create the next Waypoint.
-
-Do not begin the next feature until the current milestone is documented and
-verified.
+Do not treat the SQL migrations being applied as proof that the feature is
+complete. Do not delete Reports functionality, automatically provision tables
+for all tenants, or expose table-definition creation to Organization Admins.
 

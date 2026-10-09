@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-09-30
+**Last Updated:** 2026-10-10
 
 This document records architectural decisions that have been intentionally
 adopted for the CascadEffects Performance Platform.
@@ -1074,3 +1074,97 @@ Status
 Accepted / Next Implementation Milestone
 
 ---
+
+# 31. Tenant-Specific Custom Table Provisioning and Organization Admin Controls
+
+Custom Tables use a shared platform data model and shared application code, but
+table definitions are provisioned for individual Organizations on request.
+A reusable implementation does not mean every table is automatically available
+to every tenant.
+
+## Provisioning and Definition Ownership
+
+- CascadEffects platform/IT personnel provision the table definitions and their
+  structures for the requesting Organization.
+- The provisioned definitions and operational data are scoped to that
+  Organization.
+- An Organization may have no provisioned Custom Tables.
+- Do not seed or expose a global catalog of operational tables to every
+  Organization by default.
+- Organization Admins do not create table definitions, choose arbitrary
+  table structures, or configure columns through self-service creation forms.
+- Organization Admins may enable or disable already-provisioned tables for
+  their Organization's Runtime experience.
+- Authorized Organization members may edit operational rows according to the
+  table's intended workflow and granted permissions.
+- Enabling a table controls its availability in Runtime; it does not create a
+  table, alter its schema, or grant permissions beyond the existing
+  authorization model.
+
+The Organization Admin Custom Tables page must list only the tables provisioned
+for the active Organization. If none are provisioned, show a clear empty state
+and explain that the Organization should contact its CascadEffects IT Admin to
+request a table.
+
+## Tenant-Scoped Data Integrity
+
+Table definitions, column definitions, monthly records, and operational rows
+must resolve to the owning Organization. Reads and writes must not allow one
+Organization to see or modify another Organization's tables or data.
+Application checks alone do not replace production database authorization and
+Row Level Security (RLS). Production authorization/RLS remains outstanding
+until verified.
+
+## Custom Tables Assistance Panel
+
+The Custom Tables experience must include a floating help/reminder panel based
+on the existing floating Custom Reporting assistance-panel design. It must be
+visible even when the Organization has no provisioned tables. Use the existing
+approved panel contact details and visual treatment rather than inventing a
+new contact or silently changing the established design.
+
+Suggested message:
+
+> NEED A CUSTOM TABLE? Need a specific table, custom fields, or changes to an
+> existing table? Contact your CascadEffects IT Admin for assistance.
+
+The panel is informational only. It must not automatically provision tables,
+change table definitions, enable tables, or grant access.
+
+## Organization Admin Dashboard Navigation
+
+Remove the **Reports card from the Organization Admin dashboard's Analytics
+card group only** and add a **Custom Tables card** in the appropriate
+configuration/navigation area. This is a dashboard navigation change only:
+preserve the existing Reports route, page, services, and reporting capability.
+Do not interpret removal of the card as deprecation or deletion of Reports.
+
+## Recruitment Operational Table
+
+The Recruitment table uses the agreed operational fields:
+
+- Role
+- Role Details
+- Action Plan
+- Remarks
+- Future Task
+- Current State
+
+The standardized workflow status is separate from the freeform Current State
+field. Workflow status values are In Progress, On Hold, and Completed, with
+distinct visual status treatment. The monthly list supports editing, ordering,
+hidden listings, month selection/history, and carry-forward of open roles and
+their latest status without changing prior-month records. Recruitment is an
+operational workflow and does not participate in Member OKR scoring.
+
+## Monthly Initialization Integrity
+
+Creating or opening a Custom Table workspace for a month must be safe to repeat.
+If the unique table/month record already exists, initialization must reuse that
+record rather than fail with a duplicate-key error. Preserve the database
+uniqueness constraint and existing monthly data; do not resolve the issue by
+dropping the constraint or creating duplicate month records.
+
+Status
+
+Accepted

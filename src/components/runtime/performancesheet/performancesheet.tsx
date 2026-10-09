@@ -51,19 +51,15 @@ import RuntimeOverview from "../shared/runtimeoverview";
 
 import EmployeeComments from "../shared/employeecomments";
 
-
 /* ==========================================================
    Runtime Organization Presentation
 ========================================================== */
 
 export interface RuntimeOrganization {
   id: string;
-
   company_name: string;
-
   logo_url: string | null;
 }
-
 
 /* ==========================================================
    Runtime Performance Draft
@@ -82,37 +78,33 @@ export interface RuntimeOrganization {
 
 export interface RuntimePerformanceKeyResultDraft {
   keyResultId: string;
-
   progressId: string;
-
   target: unknown;
-
   currentValue: number | string;
-
   score: number;
-
   employeeComment?: string;
-
   managerComment?: string;
 }
-
 
 /* ==========================================================
    Props
 ========================================================== */
 
+export interface RuntimeOperationalTableNavigationItem {
+  id: string;
+  tableKey: string;
+  runtimeTabKey: string;
+  name: string;
+}
+
 interface PerformanceSheetProps {
   document: BuilderDocument;
-
   objectives: RuntimePerformanceObjective[];
-
   keyResultProgress: KeyResultProgress[];
-
   previousKeyResultValues: Record<
     string,
     string | number
   >;
-
   organizationId: string;
 
   /*
@@ -124,9 +116,7 @@ interface PerformanceSheetProps {
   organization?: RuntimeOrganization;
 
   performanceInstanceId: string;
-
   performanceInstance: PerformanceInstance;
-
   subject: RuntimeSubject | null;
 
   /*
@@ -135,7 +125,6 @@ interface PerformanceSheetProps {
    * Member Workspace intentionally does not need them yet.
    */
   members?: UserManagementRecord[];
-
   dashboard?: DashboardData;
 
   /*
@@ -144,9 +133,18 @@ interface PerformanceSheetProps {
    */
   performanceMonths: string[];
 
+  /*
+   * Enabled Custom Tables available in Runtime navigation.
+   */
+  operationalTables?: RuntimeOperationalTableNavigationItem[];
+
+  /*
+   * The currently selected Runtime navigation tab, when supplied.
+   */
+  selectedRuntimeTab?: string;
+
   memberMode?: boolean;
 }
-
 
 /* ==========================================================
    Performance Sheet
@@ -154,33 +152,21 @@ interface PerformanceSheetProps {
 
 export default function PerformanceSheet({
   document,
-
   objectives: initialObjectives,
-
   keyResultProgress,
-
   previousKeyResultValues,
-
   organizationId,
-
   organization,
-
   performanceInstanceId,
-
   performanceInstance,
-
   subject,
-
   members = [],
-
   dashboard,
-
   performanceMonths,
-
+  operationalTables = [],
+  selectedRuntimeTab,
   memberMode = false,
-
 }: PerformanceSheetProps) {
-
 
   /* ========================================================
      Runtime Status
@@ -193,7 +179,6 @@ export default function PerformanceSheet({
     performanceInstance.status
   );
 
-
   /* ========================================================
      Performance Sheet Edit Mode
   ======================================================== */
@@ -202,7 +187,6 @@ export default function PerformanceSheet({
     editing,
     setEditing,
   ] = useState(false);
-
 
   /* ========================================================
      Runtime Objectives
@@ -215,12 +199,10 @@ export default function PerformanceSheet({
     initialObjectives
   );
 
-
   const [
     addingObjective,
     setAddingObjective,
   ] = useState(false);
-
 
   /* ========================================================
      Global Save State
@@ -231,7 +213,6 @@ export default function PerformanceSheet({
     setSaving,
   ] = useState(false);
 
-
   const [
     saveError,
     setSaveError,
@@ -239,12 +220,10 @@ export default function PerformanceSheet({
     null
   );
 
-
   const [
     saveSuccessful,
     setSaveSuccessful,
   ] = useState(false);
-
 
   /* ========================================================
      Runtime Performance Draft
@@ -265,7 +244,6 @@ export default function PerformanceSheet({
         string,
         RuntimePerformanceKeyResultDraft
       > = {};
-
 
     for (
       const progress
@@ -297,7 +275,6 @@ export default function PerformanceSheet({
               progress.performanceInstanceKeyResultId
           );
 
-
       initialDrafts[
         progress.id
       ] = {
@@ -328,11 +305,9 @@ export default function PerformanceSheet({
 
     }
 
-
     return initialDrafts;
 
   });
-
 
   /* ========================================================
      Employee Comments Draft
@@ -345,7 +320,6 @@ export default function PerformanceSheet({
     performanceInstance.employeeComments ??
     ""
   );
-
 
   /* ========================================================
      Runtime Draft Registration
@@ -389,11 +363,9 @@ export default function PerformanceSheet({
           })
         );
 
-
         setSaveSuccessful(
           false
         );
-
 
         setSaveError(
           null
@@ -402,7 +374,6 @@ export default function PerformanceSheet({
       },
       []
     );
-
 
   /* ========================================================
      Employee Comments Draft Change
@@ -416,18 +387,15 @@ export default function PerformanceSheet({
       comments
     );
 
-
     setSaveSuccessful(
       false
     );
-
 
     setSaveError(
       null
     );
 
   }
-
 
   /* ========================================================
      Global Performance Save
@@ -439,21 +407,17 @@ export default function PerformanceSheet({
       return;
     }
 
-
     setSaving(
       true
     );
-
 
     setSaveError(
       null
     );
 
-
     setSaveSuccessful(
       false
     );
-
 
     try {
 
@@ -461,7 +425,6 @@ export default function PerformanceSheet({
         Object.values(
           keyResultDrafts
         );
-
 
       const updated =
         await saveRuntimePerformanceSheetAction({
@@ -477,7 +440,6 @@ export default function PerformanceSheet({
 
         });
 
-
       /*
        * Saving the Performance Sheet is the Runtime
        * completion event.
@@ -489,16 +451,13 @@ export default function PerformanceSheet({
         updated.performanceInstance.status
       );
 
-
       setEditing(
         false
       );
 
-
       setSaveSuccessful(
         true
       );
-
 
     } catch (
       error
@@ -509,13 +468,11 @@ export default function PerformanceSheet({
         error
       );
 
-
       setSaveError(
         error instanceof Error
           ? error.message
           : "Failed to save the Performance Sheet."
       );
-
 
     } finally {
 
@@ -526,7 +483,6 @@ export default function PerformanceSheet({
     }
 
   }
-
 
   /* ========================================================
      Objective Updates
@@ -550,7 +506,6 @@ export default function PerformanceSheet({
 
   }
 
-
   function handleObjectiveDeleted(
     objectiveId: string
   ) {
@@ -565,7 +520,6 @@ export default function PerformanceSheet({
     );
 
   }
-
 
   function handleObjectiveCreated(
     objective:
@@ -588,13 +542,11 @@ export default function PerformanceSheet({
       ]
     );
 
-
     setAddingObjective(
       false
     );
 
   }
-
 
   /* ========================================================
      Runtime Instance With Local Status
@@ -613,7 +565,6 @@ export default function PerformanceSheet({
         employeeComments,
 
     };
-
 
   /* ========================================================
      Render
@@ -690,10 +641,16 @@ export default function PerformanceSheet({
                 performanceMonths
               }
 
+              operationalTables={
+                operationalTables
+              }
+
+              selectedRuntimeTab={
+                selectedRuntimeTab
+              }
             />
 
           )}
-
 
           {/* ======================================================
               Organization Dashboard
@@ -707,11 +664,9 @@ export default function PerformanceSheet({
               dashboard={
                 dashboard
               }
-
             />
 
           )}
-
 
           {/* ======================================================
               Runtime Header
@@ -740,7 +695,6 @@ export default function PerformanceSheet({
 
           )}
 
-
           {/* ======================================================
               Runtime Summary
           ====================================================== */}
@@ -754,7 +708,6 @@ export default function PerformanceSheet({
         </div>
 
       </div>
-
 
       {/* ======================================================
           Runtime Performance Objectives
@@ -805,7 +758,6 @@ export default function PerformanceSheet({
                 Performance
               </p>
 
-
               <h2
                 className="
                   mt-1
@@ -817,7 +769,6 @@ export default function PerformanceSheet({
               >
                 Objectives
               </h2>
-
 
               <p
                 className="
@@ -834,7 +785,6 @@ export default function PerformanceSheet({
               </p>
 
             </div>
-
 
             <div
               className="
@@ -862,7 +812,6 @@ export default function PerformanceSheet({
               >
                 Monthly Performance
               </div>
-
 
               {!editing && (
 
@@ -904,7 +853,6 @@ export default function PerformanceSheet({
                 </button>
 
               )}
-
 
               {editing && (
 
@@ -951,7 +899,6 @@ export default function PerformanceSheet({
 
           </div>
 
-
           {(saveSuccessful ||
             saveError) && (
 
@@ -978,7 +925,6 @@ export default function PerformanceSheet({
 
               )}
 
-
               {saveError && (
 
                 <div
@@ -1002,7 +948,6 @@ export default function PerformanceSheet({
                     Unable to save performance
                   </p>
 
-
                   <p
                     className="
                       mt-1
@@ -1025,7 +970,6 @@ export default function PerformanceSheet({
           )}
 
         </div>
-
 
         <div
           className="
@@ -1089,7 +1033,6 @@ export default function PerformanceSheet({
 
           )}
 
-
           {addingObjective && (
 
             <ObjectiveEditor
@@ -1115,7 +1058,6 @@ export default function PerformanceSheet({
             />
 
           )}
-
 
           {!addingObjective &&
             editing && (
@@ -1176,7 +1118,6 @@ export default function PerformanceSheet({
                 +
               </span>
 
-
               Add Objective
 
             </button>
@@ -1186,7 +1127,6 @@ export default function PerformanceSheet({
         </div>
 
       </section>
-
 
       {/* ======================================================
           Employee Comments
@@ -1225,7 +1165,6 @@ export default function PerformanceSheet({
             Reflection
           </p>
 
-
           <h2
             className="
               mt-1
@@ -1239,7 +1178,6 @@ export default function PerformanceSheet({
           </h2>
 
         </div>
-
 
         <div
           className="

@@ -13,6 +13,13 @@ import {
   loadRuntimeNavigationTabs,
 } from "@/services/runtimenavigation.service";
 
+interface RuntimeOperationalTableTab {
+  id: string;
+  tableKey: string;
+  runtimeTabKey: string;
+  name: string;
+}
+
 interface RuntimeNavigationProps {
   organizationId: string;
   members: UserManagementRecord[];
@@ -20,6 +27,8 @@ interface RuntimeNavigationProps {
   performanceMonth: string;
   performanceMonths: string[];
   tabOrder?: string[];
+  operationalTables?: RuntimeOperationalTableTab[];
+  selectedRuntimeTab?: string;
 }
 
 /* ==========================================================
@@ -83,8 +92,7 @@ function addMonths(
   }
 
   date.setUTCMonth(
-    date.getUTCMonth() +
-      amount
+    date.getUTCMonth() + amount
   );
 
   return [
@@ -109,10 +117,7 @@ function getAvailablePerformanceMonths(): string[] {
     {
       length: 13,
     },
-    (
-      _,
-      index
-    ) =>
+    (_, index) =>
       addMonths(
         currentMonth,
         -index
@@ -138,9 +143,7 @@ function formatMonthName(
       month: "long",
       timeZone: "UTC",
     }
-  ).format(
-    date
-  );
+  ).format(date);
 }
 
 function getYear(
@@ -212,6 +215,8 @@ export default function RuntimeNavigation({
   performanceMonth,
   performanceMonths,
   tabOrder,
+  operationalTables = [],
+  selectedRuntimeTab,
 }: RuntimeNavigationProps) {
   /*
    * The existing prop is retained for compatibility with
@@ -220,6 +225,7 @@ export default function RuntimeNavigation({
    * Organization-level Runtime navigation configuration is
    * loaded when available.
    */
+
   const [
     configuredTabOrder,
     setConfiguredTabOrder,
@@ -248,6 +254,7 @@ export default function RuntimeNavigation({
            * Hidden tabs remain persisted in the database but
            * must not appear in Runtime.
            */
+
           setConfiguredTabOrder(
             configuredTabs
               .filter(
@@ -279,6 +286,7 @@ export default function RuntimeNavigation({
          * Fall back to the existing navigation order when
          * configuration cannot be loaded.
          */
+
         console.error(
           "Error loading Runtime navigation configuration:",
           error
@@ -307,6 +315,7 @@ export default function RuntimeNavigation({
    * current + previous 12 month window regardless of whether
    * a Performance Instance already exists.
    */
+
   const availablePerformanceMonths =
     getAvailablePerformanceMonths();
 
@@ -372,21 +381,29 @@ export default function RuntimeNavigation({
 
   /* ========================================================
      Unified Runtime Tab Order
-     --------------------------------------------------------
+
      Runtime navigation is organization-configurable.
 
-     Each current tab has a stable navigation key:
+     Stable navigation keys:
 
        dashboard
        member:<user-id>
+       <runtime-tab-key>
 
-     Hidden tabs are excluded from the Runtime navigation.
-     Any active current tabs that are not yet present in the
-     saved order are appended.
+     Operational tabs are included only when supplied by
+     Runtime. Their availability is controlled by the enabled
+     Custom Table definitions supplied by the Runtime page.
 
-     Operational Runtime tabs are intentionally not included
-     until their actual Runtime features are implemented.
+     Hidden tabs are excluded from the saved order.
+     Active tabs missing from the saved order are appended.
   ======================================================== */
+
+  const operationalTabKeys =
+    operationalTables.map(
+      (table) =>
+        table.runtimeTabKey ||
+        table.tableKey
+    );
 
   const currentTabKeys = [
     "dashboard",
@@ -395,6 +412,8 @@ export default function RuntimeNavigation({
       (member) =>
         `member:${member.user.id}`
     ),
+
+    ...operationalTabKeys,
   ];
 
   const orderedTabKeys = [
@@ -423,8 +442,7 @@ export default function RuntimeNavigation({
   ======================================================== */
 
   function handleYearChange(
-    event:
-      React.ChangeEvent<HTMLSelectElement>
+    event: React.ChangeEvent<HTMLSelectElement>
   ) {
     const selectedYear =
       event.target.value;
@@ -440,6 +458,7 @@ export default function RuntimeNavigation({
      * year. Otherwise select the first valid month available
      * in that year.
      */
+
     const currentMonthStillValid =
       availablePerformanceMonths.includes(
         `${selectedYear}-${currentMonth}-01`
@@ -477,8 +496,11 @@ export default function RuntimeNavigation({
     window.location.href =
       buildRuntimeHref(
         organizationId,
-        selectedSubjectId,
-        nextPerformanceMonth
+        selectedRuntimeTab
+          ? undefined
+          : selectedSubjectId,
+        nextPerformanceMonth,
+        selectedRuntimeTab
       );
   }
 
@@ -487,8 +509,7 @@ export default function RuntimeNavigation({
   ======================================================== */
 
   function handleMonthChange(
-    event:
-      React.ChangeEvent<HTMLSelectElement>
+    event: React.ChangeEvent<HTMLSelectElement>
   ) {
     const selectedMonth =
       event.target.value;
@@ -506,6 +527,7 @@ export default function RuntimeNavigation({
      * Only allow months that are inside the 13-month Runtime
      * window.
      */
+
     const normalizedMonth =
       `${nextPerformanceMonth}-01`;
 
@@ -520,8 +542,11 @@ export default function RuntimeNavigation({
     window.location.href =
       buildRuntimeHref(
         organizationId,
-        selectedSubjectId,
-        nextPerformanceMonth
+        selectedRuntimeTab
+          ? undefined
+          : selectedSubjectId,
+        nextPerformanceMonth,
+        selectedRuntimeTab
       );
   }
 
@@ -553,9 +578,7 @@ export default function RuntimeNavigation({
           md:px-3
         "
       >
-        {/* ==================================================
-            Platform Label
-        ================================================== */}
+        {/* Platform Label */}
 
         <div
           className="
@@ -581,12 +604,7 @@ export default function RuntimeNavigation({
           </span>
         </div>
 
-        {/* ==================================================
-            Unified Runtime Tabs
-            --------------------------------------------------
-            Dashboard and member tabs share one
-            organization-configurable ordering.
-        ================================================== */}
+        {/* Unified Runtime Tabs */}
 
         {orderedTabKeys.map(
           (tabKey) => {
@@ -594,11 +612,20 @@ export default function RuntimeNavigation({
               tabKey ===
               "dashboard"
             ) {
+              const isSelected =
+                !selectedSubjectId &&
+                !selectedRuntimeTab;
+
               return (
                 <a
                   key="dashboard"
                   href={
                     dashboardHref
+                  }
+                  aria-current={
+                    isSelected
+                      ? "page"
+                      : undefined
                   }
                   className={`
                     relative
@@ -611,7 +638,7 @@ export default function RuntimeNavigation({
                     transition-all
                     duration-200
                     ${
-                      !selectedSubjectId
+                      isSelected
                         ? `
                             bg-primary
                             text-primary-foreground
@@ -627,7 +654,7 @@ export default function RuntimeNavigation({
                 >
                   Dashboard
 
-                  {!selectedSubjectId && (
+                  {isSelected && (
                     <span
                       aria-hidden="true"
                       className="
@@ -669,7 +696,8 @@ export default function RuntimeNavigation({
 
               const isSelected =
                 selectedSubjectId ===
-                member.user.id;
+                  member.user.id &&
+                !selectedRuntimeTab;
 
               return (
                 <a
@@ -678,6 +706,11 @@ export default function RuntimeNavigation({
                   }
                   href={
                     href
+                  }
+                  aria-current={
+                    isSelected
+                      ? "page"
+                      : undefined
                   }
                   className={`
                     shrink-0
@@ -712,13 +745,77 @@ export default function RuntimeNavigation({
               );
             }
 
+            const operationalTable =
+              operationalTables.find(
+                (table) =>
+                  (
+                    table.runtimeTabKey ||
+                    table.tableKey
+                  ) === tabKey
+              );
+
+            if (operationalTable) {
+              const runtimeTabKey =
+                operationalTable.runtimeTabKey ||
+                operationalTable.tableKey;
+
+              const href =
+                buildRuntimeHref(
+                  organizationId,
+                  undefined,
+                  performanceMonth,
+                  runtimeTabKey
+                );
+
+              const isSelected =
+                selectedRuntimeTab ===
+                runtimeTabKey;
+
+              return (
+                <a
+                  key={`operational:${operationalTable.id}`}
+                  href={
+                    href
+                  }
+                  aria-current={
+                    isSelected
+                      ? "page"
+                      : undefined
+                  }
+                  className={`
+                    shrink-0
+                    rounded-lg
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
+                    transition-all
+                    duration-200
+                    ${
+                      isSelected
+                        ? `
+                            bg-primary
+                            text-primary-foreground
+                            shadow-sm
+                          `
+                        : `
+                            text-foreground
+                            hover:bg-accent
+                            hover:text-accent-foreground
+                          `
+                    }
+                  `}
+                >
+                  {operationalTable.name}
+                </a>
+              );
+            }
+
             return null;
           }
         )}
 
-        {/* ==================================================
-            Performance Month
-        ================================================== */}
+        {/* Performance Month */}
 
         <div
           className="
@@ -758,9 +855,7 @@ export default function RuntimeNavigation({
             </p>
           </div>
 
-          {/* ==================================================
-              Year Selector
-          ================================================== */}
+          {/* Year Selector */}
 
           <label
             htmlFor="runtime-performance-year"
@@ -796,9 +891,7 @@ export default function RuntimeNavigation({
             "
           >
             {availableYears.map(
-              (
-                year
-              ) => (
+              (year) => (
                 <option
                   key={
                     year
@@ -815,9 +908,7 @@ export default function RuntimeNavigation({
             )}
           </select>
 
-          {/* ==================================================
-              Month Selector
-          ================================================== */}
+          {/* Month Selector */}
 
           <label
             htmlFor="runtime-performance-month"
@@ -855,9 +946,7 @@ export default function RuntimeNavigation({
             "
           >
             {availableMonthsForYear.map(
-              (
-                month
-              ) => (
+              (month) => (
                 <option
                   key={
                     month
