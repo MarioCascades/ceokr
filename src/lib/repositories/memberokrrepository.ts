@@ -44,6 +44,8 @@ interface MemberObjectiveRecord {
 
   position: number;
 
+  is_hidden: boolean;
+
   created_at: string;
 
   updated_at: string;
@@ -345,6 +347,14 @@ function mapObjective(
 
     position:
       record.position,
+
+
+    /*
+     * Objective visibility is separate from the visibility
+     * state of its individual Key Results.
+     */
+    isHidden:
+      record.is_hidden,
 
 
     createdAt:
@@ -810,6 +820,12 @@ export async function createMemberObjective(
         position:
           finalPosition,
 
+        /*
+         * New Objectives always begin visible.
+         */
+        is_hidden:
+          false,
+
       })
       .select()
       .single();
@@ -929,6 +945,168 @@ export async function updateMemberObjective(
 
     throw new Error(
       `Failed to update member Objective: ${error.message}`
+    );
+
+  }
+
+
+  return mapObjective(
+    data as MemberObjectiveRecord
+  );
+
+}
+
+
+/* ==========================================================
+   Hide Objective
+========================================================== */
+
+/**
+ * Hides a persistent Member Objective.
+ *
+ * IMPORTANT:
+ *
+ * Hide is NOT Delete.
+ *
+ * The Objective remains stored and can be activated again.
+ * Historical Runtime records are not modified.
+ *
+ * Hiding an Objective does NOT modify the is_hidden state
+ * of any Key Results belonging to that Objective.
+ */
+export async function hideMemberObjective(
+  organizationId: string,
+  membershipId: string,
+  objectiveId: string
+): Promise<MemberObjective> {
+
+  await requireMembership(
+    organizationId,
+    membershipId
+  );
+
+
+  await requireObjectiveOwnership(
+    organizationId,
+    membershipId,
+    objectiveId
+  );
+
+
+  const {
+    data,
+    error,
+  } =
+    await supabase
+      .from(
+        "member_objectives"
+      )
+      .update({
+
+        is_hidden:
+          true,
+
+        updated_at:
+          new Date().toISOString(),
+
+      })
+      .eq(
+        "id",
+        objectiveId
+      )
+      .eq(
+        "organization_membership_id",
+        membershipId
+      )
+      .select()
+      .single();
+
+
+  if (error) {
+
+    throw new Error(
+      `Failed to hide member Objective: ${error.message}`
+    );
+
+  }
+
+
+  return mapObjective(
+    data as MemberObjectiveRecord
+  );
+
+}
+
+
+/* ==========================================================
+   Activate Objective
+========================================================== */
+
+/**
+ * Activates a previously hidden Member Objective.
+ *
+ * IMPORTANT:
+ *
+ * Activate is NOT Create.
+ *
+ * The original Objective record is restored by changing
+ * its visibility flag back to false.
+ *
+ * The visibility state of its individual Key Results is
+ * not changed.
+ */
+export async function activateMemberObjective(
+  organizationId: string,
+  membershipId: string,
+  objectiveId: string
+): Promise<MemberObjective> {
+
+  await requireMembership(
+    organizationId,
+    membershipId
+  );
+
+
+  await requireObjectiveOwnership(
+    organizationId,
+    membershipId,
+    objectiveId
+  );
+
+
+  const {
+    data,
+    error,
+  } =
+    await supabase
+      .from(
+        "member_objectives"
+      )
+      .update({
+
+        is_hidden:
+          false,
+
+        updated_at:
+          new Date().toISOString(),
+
+      })
+      .eq(
+        "id",
+        objectiveId
+      )
+      .eq(
+        "organization_membership_id",
+        membershipId
+      )
+      .select()
+      .single();
+
+
+  if (error) {
+
+    throw new Error(
+      `Failed to activate member Objective: ${error.message}`
     );
 
   }

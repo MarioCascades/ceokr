@@ -10,6 +10,8 @@ import {
   createMemberObjectiveAction,
   updateMemberObjectiveAction,
   deleteMemberObjectiveAction,
+  hideMemberObjectiveAction,
+  activateMemberObjectiveAction,
   createMemberKeyResultAction,
   updateMemberKeyResultAction,
   hideMemberKeyResultAction,
@@ -105,8 +107,13 @@ function ObjectiveForm({
       return;
     }
 
-    setSaving(true);
-    setError(null);
+    setSaving(
+      true
+    );
+
+    setError(
+      null
+    );
 
     try {
       await onSave({
@@ -123,7 +130,9 @@ function ObjectiveForm({
           : "Failed to save Objective."
       );
 
-      setSaving(false);
+      setSaving(
+        false
+      );
     }
   }
 
@@ -302,6 +311,11 @@ export default function MemberOKRWorkspace({
   );
 
   const [
+    showHiddenObjectives,
+    setShowHiddenObjectives,
+  ] = useState(false);
+
+  const [
     showHiddenKeyResults,
     setShowHiddenKeyResults,
   ] = useState(false);
@@ -404,13 +418,6 @@ export default function MemberOKRWorkspace({
 
             description:
               values.description,
-
-            position:
-              objectives.find(
-                (objective) =>
-                  objective.id ===
-                  editingObjectiveId
-              )?.position ?? 0,
           }
         );
 
@@ -505,6 +512,105 @@ export default function MemberOKRWorkspace({
 
 
   /* ========================================================
+     Objective Hide
+     --------------------------------------------------------
+     Hides the persistent Objective without changing the
+     visibility state of any Key Results beneath it.
+  ======================================================== */
+
+  async function hideObjective(
+    objectiveId: string
+  ) {
+    if (!membershipId) {
+      return;
+    }
+
+    try {
+      setError(null);
+
+      const hidden =
+        await hideMemberObjectiveAction(
+          organizationId,
+          membershipId,
+          objectiveId
+        );
+
+      setObjectives(
+        (items) =>
+          items.map(
+            (objective) =>
+              objective.id === hidden.id
+                ? {
+                    ...objective,
+                    ...hidden,
+                    isHidden: true,
+                    keyResults:
+                      objective.keyResults,
+                  }
+                : objective
+          )
+      );
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Failed to hide Objective."
+      );
+    }
+  }
+
+
+  /* ========================================================
+     Objective Activate
+     --------------------------------------------------------
+     Restores a previously hidden Objective.
+
+     Key Result visibility is preserved independently.
+  ======================================================== */
+
+  async function activateObjective(
+    objectiveId: string
+  ) {
+    if (!membershipId) {
+      return;
+    }
+
+    try {
+      setError(null);
+
+      const activated =
+        await activateMemberObjectiveAction(
+          organizationId,
+          membershipId,
+          objectiveId
+        );
+
+      setObjectives(
+        (items) =>
+          items.map(
+            (objective) =>
+              objective.id === activated.id
+                ? {
+                    ...objective,
+                    ...activated,
+                    isHidden: false,
+                    keyResults:
+                      objective.keyResults,
+                  }
+                : objective
+          )
+      );
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Failed to activate Objective."
+      );
+    }
+  }
+
+
+  /* ========================================================
      Key Result Save
   ======================================================== */
 
@@ -571,23 +677,27 @@ export default function MemberOKRWorkspace({
       setObjectives(
         (items) =>
           items.map(
-            (objective) => ({
-              ...objective,
+            (objective) =>
+              objective.id ===
+              objectiveId
+                ? {
+                    ...objective,
 
-              keyResults:
-                objective.keyResults.map(
-                  (keyResult) =>
-                    keyResult.id ===
-                    updated.id
-                      ? {
-                          ...keyResult,
-                          ...updated,
-                          initiatives:
-                            keyResult.initiatives,
-                        }
-                      : keyResult
-                ),
-            })
+                    keyResults:
+                      objective.keyResults.map(
+                        (keyResult) =>
+                          keyResult.id ===
+                          updated.id
+                            ? {
+                                ...keyResult,
+                                ...updated,
+                                initiatives:
+                                  keyResult.initiatives,
+                              }
+                            : keyResult
+                      ),
+                  }
+                : objective
           )
       );
     } else {
@@ -646,28 +756,18 @@ export default function MemberOKRWorkspace({
 
 
   /* ========================================================
-     Key Result Reordering
-     --------------------------------------------------------
-     Key Result ordering is persisted through the existing
-     Member Key Result position field.
-
-     When hidden Key Results are not being displayed, only the
-     active Key Results are rearranged and the existing position
-     slots occupied by active Key Results are preserved. This
-     keeps hidden Key Results in their existing positions.
-
-     When hidden Key Results are explicitly displayed, the full
-     persistent Key Result list can be rearranged.
+     Key Result Reorder
   ======================================================== */
 
   async function reorderKeyResults(
     objectiveId: string,
-    draggedId: string,
-    targetId: string
+    draggedKeyResultId: string,
+    targetKeyResultId: string
   ) {
     if (
       !membershipId ||
-      draggedId === targetId
+      draggedKeyResultId ===
+        targetKeyResultId
     ) {
       return;
     }
@@ -675,36 +775,34 @@ export default function MemberOKRWorkspace({
     const objective =
       objectives.find(
         (item) =>
-          item.id === objectiveId
+          item.id ===
+          objectiveId
       );
 
     if (!objective) {
       return;
     }
 
-    const visibleKeyResults =
-      objective.keyResults
-        .filter(
-          (keyResult) =>
-            showHiddenKeyResults
-              ? true
-              : !keyResult.isHidden
-        )
+    const ordered =
+      [...objective.keyResults]
         .sort(
           (a, b) =>
-            a.position - b.position
+            a.position -
+            b.position
         );
 
     const draggedIndex =
-      visibleKeyResults.findIndex(
+      ordered.findIndex(
         (keyResult) =>
-          keyResult.id === draggedId
+          keyResult.id ===
+          draggedKeyResultId
       );
 
     const targetIndex =
-      visibleKeyResults.findIndex(
+      ordered.findIndex(
         (keyResult) =>
-          keyResult.id === targetId
+          keyResult.id ===
+          targetKeyResultId
       );
 
     if (
@@ -714,119 +812,98 @@ export default function MemberOKRWorkspace({
       return;
     }
 
-    const reordered = [
-      ...visibleKeyResults,
-    ];
-
     const [
-      draggedKeyResult,
-    ] = reordered.splice(
+      dragged,
+    ] = ordered.splice(
       draggedIndex,
       1
     );
 
-    reordered.splice(
+    ordered.splice(
       targetIndex,
       0,
-      draggedKeyResult
+      dragged
     );
-
-    const positionSlots =
-      visibleKeyResults
-        .map(
-          (keyResult) =>
-            keyResult.position
-        )
-        .sort(
-          (a, b) => a - b
-        );
-
-    setReorderingObjectiveId(
-      objectiveId
-    );
-    setError(null);
 
     try {
-      await Promise.all(
-        reordered.map(
-          (keyResult, index) =>
-            updateMemberKeyResultAction(
-              organizationId,
-              membershipId,
-              {
-                keyResultId:
-                  keyResult.id,
-
-                title:
-                  keyResult.title,
-
-                target:
-                  keyResult.target,
-
-                currentValue:
-                  keyResult.currentValue,
-
-                measurementType:
-                  keyResult.measurementType,
-
-                scoringMethod:
-                  keyResult.scoringMethod,
-
-                status:
-                  keyResult.status,
-
-                weight:
-                  keyResult.weight,
-
-                position:
-                  positionSlots[index],
-              }
-            )
-        )
+      setError(null);
+      setReorderingObjectiveId(
+        objectiveId
       );
+
+      const updated =
+        await Promise.all(
+          ordered.map(
+            (
+              keyResult,
+              index
+            ) =>
+              updateMemberKeyResultAction(
+                organizationId,
+                membershipId,
+                {
+                  keyResultId:
+                    keyResult.id,
+
+                  title:
+                    keyResult.title,
+
+                  target:
+                    keyResult.target,
+
+                  measurementType:
+                    keyResult.measurementType,
+
+                  scoringMethod:
+                    keyResult.scoringMethod,
+
+                  weight:
+                    keyResult.weight,
+
+                  position:
+                    index,
+                }
+              )
+          )
+        );
 
       setObjectives(
         (items) =>
           items.map(
-            (item) => {
-              if (
-                item.id !==
-                objectiveId
-              ) {
-                return item;
-              }
+            (item) =>
+              item.id ===
+              objectiveId
+                ? {
+                    ...item,
 
-              const reorderedById =
-                new Map(
-                  reordered.map(
-                    (keyResult, index) => [
-                      keyResult.id,
-                      {
-                        ...keyResult,
-                        position:
-                          positionSlots[index],
-                      },
-                    ]
-                  )
-                );
+                    keyResults:
+                      item.keyResults.map(
+                        (keyResult) => {
+                          const replacement =
+                            updated.find(
+                              (
+                                candidate
+                              ) =>
+                                candidate.id ===
+                                keyResult.id
+                            );
 
-              return {
-                ...item,
-                keyResults:
-                  item.keyResults
-                    .map(
-                      (keyResult) =>
-                        reorderedById.get(
-                          keyResult.id
-                        ) ?? keyResult
-                    )
-                    .sort(
-                      (a, b) =>
-                        a.position -
-                        b.position
-                    ),
-              };
-            }
+                          return replacement
+                            ? {
+                                ...keyResult,
+                                ...replacement,
+                                initiatives:
+                                  keyResult.initiatives,
+                              }
+                            : keyResult;
+                        }
+                      ).sort(
+                        (a, b) =>
+                          a.position -
+                          b.position
+                      ),
+                  }
+                : item
           )
       );
     } catch (caughtError) {
@@ -835,8 +912,6 @@ export default function MemberOKRWorkspace({
           ? caughtError.message
           : "Failed to reorder Key Results."
       );
-
-      await loadWorkspace();
     } finally {
       setReorderingObjectiveId(
         null
@@ -852,7 +927,8 @@ export default function MemberOKRWorkspace({
   /* ========================================================
      Key Result Hide
      --------------------------------------------------------
-     Hiding a Key Result changes visibility only.
+     Hiding a Key Result removes it from the active Member
+     OKR view and future Runtime initialization.
 
      The persistent Key Result remains stored.
      Historical Runtime records are not modified.
@@ -1059,7 +1135,11 @@ export default function MemberOKRWorkspace({
             initiativeId:
               existing.id,
 
-            text,
+            text:
+              text.trim(),
+
+            position:
+              existing.position,
           }
         );
 
@@ -1071,23 +1151,40 @@ export default function MemberOKRWorkspace({
 
               keyResults:
                 objective.keyResults.map(
-                  (keyResult) => ({
-                    ...keyResult,
+                  (keyResult) =>
+                    keyResult.id ===
+                    keyResultId
+                      ? {
+                          ...keyResult,
 
-                    initiatives:
-                      keyResult.initiatives.map(
-                        (initiative) =>
-                          initiative.id ===
-                          updated.id
-                            ? updated
-                            : initiative
-                      ),
-                  })
+                          initiatives:
+                            keyResult.initiatives.map(
+                              (initiative) =>
+                                initiative.id ===
+                                updated.id
+                                  ? updated
+                                  : initiative
+                            ),
+                        }
+                      : keyResult
                 ),
             })
           )
       );
     } else {
+      const existingInitiatives =
+        objectives
+          .flatMap(
+            (objective) =>
+              objective.keyResults
+          )
+          .find(
+            (keyResult) =>
+              keyResult.id ===
+              keyResultId
+          )
+          ?.initiatives ?? [];
+
       const created =
         await createMemberInitiativeAction(
           organizationId,
@@ -1096,7 +1193,11 @@ export default function MemberOKRWorkspace({
             memberKeyResultId:
               keyResultId,
 
-            text,
+            text:
+              text.trim(),
+
+            position:
+              existingInitiatives.length,
           }
         );
 
@@ -1141,7 +1242,6 @@ export default function MemberOKRWorkspace({
   ======================================================== */
 
   async function deleteInitiative(
-    keyResultId: string,
     initiativeId: string
   ) {
     if (!membershipId) {
@@ -1173,20 +1273,16 @@ export default function MemberOKRWorkspace({
 
               keyResults:
                 objective.keyResults.map(
-                  (keyResult) =>
-                    keyResult.id ===
-                    keyResultId
-                      ? {
-                          ...keyResult,
+                  (keyResult) => ({
+                    ...keyResult,
 
-                          initiatives:
-                            keyResult.initiatives.filter(
-                              (initiative) =>
-                                initiative.id !==
-                                initiativeId
-                            ),
-                        }
-                      : keyResult
+                    initiatives:
+                      keyResult.initiatives.filter(
+                        (initiative) =>
+                          initiative.id !==
+                          initiativeId
+                      ),
+                  })
                 ),
             })
           )
@@ -1208,10 +1304,12 @@ export default function MemberOKRWorkspace({
   if (loading) {
     return (
       <main className="min-h-screen bg-gray-50 px-8 py-10">
-        <div className="mx-auto max-w-6xl rounded-xl border bg-white p-8 shadow-sm">
-          <p className="text-sm text-muted-foreground">
-            Loading member OKRs...
-          </p>
+        <div className="mx-auto max-w-6xl">
+          <section className="rounded-xl border bg-white p-8 text-center shadow-sm">
+            <p className="text-sm text-muted-foreground">
+              Loading member OKRs...
+            </p>
+          </section>
         </div>
       </main>
     );
@@ -1219,13 +1317,14 @@ export default function MemberOKRWorkspace({
 
 
   /* ========================================================
-     Failed Workspace State
+     Error State
   ======================================================== */
 
   if (!subject) {
     return (
       <main className="min-h-screen bg-gray-50 px-8 py-10">
-        <div className="mx-auto max-w-6xl space-y-4">
+        <div className="mx-auto max-w-6xl space-y-6">
+
           <button
             type="button"
             onClick={() =>
@@ -1250,6 +1349,25 @@ export default function MemberOKRWorkspace({
       </main>
     );
   }
+
+
+  /* ========================================================
+     Derived Objective Visibility
+  ======================================================== */
+
+  const hiddenObjectiveCount =
+    objectives.filter(
+      (objective) =>
+        objective.isHidden
+    ).length;
+
+  const visibleObjectives =
+    objectives.filter(
+      (objective) =>
+        showHiddenObjectives
+          ? true
+          : !objective.isHidden
+    );
 
 
   /* ========================================================
@@ -1319,18 +1437,11 @@ export default function MemberOKRWorkspace({
 
             <div className="rounded-lg bg-gray-100 px-4 py-3 text-right">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Persistent OKR Profile
-              </p>
-
-              <p className="mt-1 font-medium">
                 Objectives
               </p>
 
-              <p className="mt-1 text-xs text-muted-foreground">
-                {objectives.length} Objective
-                {objectives.length === 1
-                  ? ""
-                  : "s"}
+              <p className="mt-1 text-2xl font-semibold">
+                {visibleObjectives.length}
               </p>
             </div>
           </div>
@@ -1382,6 +1493,42 @@ export default function MemberOKRWorkspace({
             + Add Objective
           </button>
         </section>
+
+
+        {/* ==================================================
+            Hidden Objectives Toolbar
+        ================================================== */}
+
+        {hiddenObjectiveCount > 0 && (
+          <section className="flex items-center justify-between rounded-xl border bg-white px-4 py-3 shadow-sm">
+            <div>
+              <p className="text-sm font-medium">
+                Hidden Objectives
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                {hiddenObjectiveCount} hidden Objective
+                {hiddenObjectiveCount === 1
+                  ? ""
+                  : "s"} are preserved for historical records.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="rounded-md border px-3 py-1.5 text-sm"
+              onClick={() =>
+                setShowHiddenObjectives(
+                  (visible) => !visible
+                )
+              }
+            >
+              {showHiddenObjectives
+                ? "Hide Hidden Objectives"
+                : "Show Hidden Objectives"}
+            </button>
+          </section>
+        )}
 
 
         {/* ==================================================
@@ -1440,16 +1587,19 @@ export default function MemberOKRWorkspace({
             Empty State
         ================================================== */}
 
-        {objectives.length === 0 &&
+        {visibleObjectives.length === 0 &&
           !addingObjective && (
             <section className="rounded-xl border bg-white p-8 text-center shadow-sm">
               <h2 className="font-semibold">
-                No Objectives yet
+                {objectives.length === 0
+                  ? "No Objectives yet"
+                  : "No Active Objectives"}
               </h2>
 
               <p className="mt-2 text-sm text-muted-foreground">
-                Add an Objective to start building this
-                member's OKRs.
+                {objectives.length === 0
+                  ? "Add an Objective to start building this member's OKRs."
+                  : "All Objectives are currently hidden. Use Show Hidden Objectives to recover them."}
               </p>
             </section>
           )}
@@ -1460,7 +1610,7 @@ export default function MemberOKRWorkspace({
         ================================================== */}
 
         <section className="space-y-5">
-          {objectives.map(
+          {visibleObjectives.map(
             (objective) => (
               <section
                 key={
@@ -1498,11 +1648,19 @@ export default function MemberOKRWorkspace({
                             1}
                         </p>
 
-                        <h2 className="mt-1 text-lg font-semibold">
-                          {
-                            objective.title
-                          }
-                        </h2>
+                        <div className="mt-1 flex items-center gap-2">
+                          <h2 className="text-lg font-semibold">
+                            {
+                              objective.title
+                            }
+                          </h2>
+
+                          {objective.isHidden && (
+                            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                              Hidden
+                            </span>
+                          )}
+                        </div>
 
                         {objective.description && (
                           <p className="mt-2 text-sm text-muted-foreground">
@@ -1524,6 +1682,24 @@ export default function MemberOKRWorkspace({
                           }
                         >
                           Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          className="rounded-md border px-3 py-1.5 text-sm"
+                          onClick={() =>
+                            objective.isHidden
+                              ? void activateObjective(
+                                  objective.id
+                                )
+                              : void hideObjective(
+                                  objective.id
+                                )
+                          }
+                        >
+                          {objective.isHidden
+                            ? "Activate"
+                            : "Hide"}
                         </button>
 
                         <button
@@ -1552,8 +1728,14 @@ export default function MemberOKRWorkspace({
                         </h3>
 
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {activeKeyResultCount} active Key Result
-                          {activeKeyResultCount === 1
+                          {objective.keyResults.filter(
+                            (keyResult) =>
+                              !keyResult.isHidden
+                          ).length} active Key Result
+                          {objective.keyResults.filter(
+                            (keyResult) =>
+                              !keyResult.isHidden
+                          ).length === 1
                             ? ""
                             : "s"}
                         </p>
@@ -1685,62 +1867,49 @@ export default function MemberOKRWorkspace({
                                 />
                               ) : (
                                 <>
-                                  <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span
-                                      aria-hidden="true"
-                                      className="cursor-grab select-none text-base leading-none"
-                                    >
-                                      ⋮⋮
-                                    </span>
-
-                                    <span>
-                                      Drag to reorder
-                                    </span>
-                                  </div>
-
                                   <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                        Key Result{" "}
-                                        {keyResult.position +
-                                          1}
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <p className="font-medium">
+                                          {
+                                            keyResult.title
+                                          }
+                                        </p>
 
                                         {keyResult.isHidden && (
-                                          <span className="ml-2 rounded-full border border-gray-300 bg-white px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500">
+                                          <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600">
                                             Hidden
                                           </span>
                                         )}
-                                      </p>
+                                      </div>
 
-                                      <h4 className="mt-1 font-medium">
-                                        {
-                                          keyResult.title
-                                        }
-                                      </h4>
+                                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                        <span>
+                                          Target:{" "}
+                                          {String(
+                                            keyResult.target ??
+                                              ""
+                                          )}
+                                        </span>
 
-                                      <p className="mt-1 text-sm text-muted-foreground">
-                                        Target:{" "}
-                                        {String(
-                                          keyResult.target
-                                        )}
-                                      </p>
+                                        <span>
+                                          Measurement:{" "}
+                                          {keyResult.measurementType ??
+                                            "numeric"}
+                                        </span>
 
-                                      {keyResult.weight !==
-                                        undefined && (
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                          Weight:{" "}
-                                          {
-                                            keyResult.weight
-                                          }
-                                          %
-                                        </p>
-                                      )}
+                                        <span>
+                                          Scoring:{" "}
+                                          {keyResult.scoringMethod ??
+                                            "percent_into_period"}
+                                        </span>
+                                      </div>
                                     </div>
 
-                                    <div className="flex gap-2">
+                                    <div className="flex shrink-0 gap-2">
                                       <button
                                         type="button"
-                                        className="rounded-md border px-3 py-1.5 text-xs"
+                                        className="rounded-md border px-3 py-1.5 text-sm"
                                         onClick={() =>
                                           setEditingKeyResultId(
                                             keyResult.id
@@ -1750,35 +1919,27 @@ export default function MemberOKRWorkspace({
                                         Edit
                                       </button>
 
-                                      {keyResult.isHidden ? (
-                                        <button
-                                          type="button"
-                                          className="rounded-md border border-green-200 bg-white px-3 py-1.5 text-xs text-green-700"
-                                          onClick={() =>
-                                            void activateKeyResult(
-                                              keyResult.id
-                                            )
-                                          }
-                                        >
-                                          Activate
-                                        </button>
-                                      ) : (
-                                        <button
-                                          type="button"
-                                          className="rounded-md border border-amber-200 bg-white px-3 py-1.5 text-xs text-amber-700"
-                                          onClick={() =>
-                                            void hideKeyResult(
-                                              keyResult.id
-                                            )
-                                          }
-                                        >
-                                          Hide
-                                        </button>
-                                      )}
+                                      <button
+                                        type="button"
+                                        className="rounded-md border px-3 py-1.5 text-sm"
+                                        onClick={() =>
+                                          keyResult.isHidden
+                                            ? void activateKeyResult(
+                                                keyResult.id
+                                              )
+                                            : void hideKeyResult(
+                                                keyResult.id
+                                              )
+                                        }
+                                      >
+                                        {keyResult.isHidden
+                                          ? "Activate"
+                                          : "Hide"}
+                                      </button>
 
                                       <button
                                         type="button"
-                                        className="rounded-md border px-3 py-1.5 text-xs text-red-600"
+                                        className="rounded-md border px-3 py-1.5 text-sm text-red-600"
                                         onClick={() =>
                                           void deleteKeyResult(
                                             keyResult.id
@@ -1791,36 +1952,25 @@ export default function MemberOKRWorkspace({
                                   </div>
 
 
-                                  {/* ==========================
+                                  {/* ==============================
                                       Initiatives
-                                  ========================== */}
+                                  ============================== */}
 
-                                  <div className="mt-4">
+                                  <div className="mt-4 rounded-lg border bg-white p-4">
                                     <div className="flex items-center justify-between">
                                       <div>
-                                        <h5 className="text-sm font-medium">
+                                        <h4 className="text-sm font-medium">
                                           Initiatives
-                                        </h5>
+                                        </h4>
 
                                         <p className="mt-1 text-xs text-muted-foreground">
-                                          {
-                                            keyResult
-                                              .initiatives
-                                              .length
-                                          }{" "}
-                                          Initiative
-                                          {keyResult
-                                            .initiatives
-                                            .length ===
-                                          1
-                                            ? ""
-                                            : "s"}
+                                          Supporting work for this Key Result.
                                         </p>
                                       </div>
 
                                       <button
                                         type="button"
-                                        className="rounded-md border px-3 py-1.5 text-xs"
+                                        className="rounded-md border px-3 py-1.5 text-sm"
                                         onClick={() => {
                                           setAddingInitiativeKeyResultId(
                                             keyResult.id
@@ -1836,13 +1986,9 @@ export default function MemberOKRWorkspace({
                                     </div>
 
 
-                                    {/* ========================
-                                        Add Initiative
-                                    ======================== */}
-
                                     {addingInitiativeKeyResultId ===
                                       keyResult.id && (
-                                      <div className="mt-3">
+                                      <div className="mt-4">
                                         <InitiativeEditor
                                           onCancel={() =>
                                             setAddingInitiativeKeyResultId(
@@ -1862,80 +2008,79 @@ export default function MemberOKRWorkspace({
                                     )}
 
 
-                                    {/* ========================
-                                        Initiative List
-                                    ======================== */}
-
-                                    <div className="mt-3 space-y-2">
-                                      {keyResult.initiatives.map(
-                                        (
-                                          initiative
-                                        ) => (
-                                          <div
-                                            key={
-                                              initiative.id
-                                            }
-                                            className="rounded-md border bg-white p-3"
-                                          >
-                                            {editingInitiativeId ===
-                                            initiative.id ? (
-                                              <InitiativeEditor
-                                                initialText={
-                                                  initiative.text
-                                                }
-                                                onCancel={() =>
-                                                  setEditingInitiativeId(
-                                                    null
-                                                  )
-                                                }
-                                                onSave={(
-                                                  text
-                                                ) =>
-                                                  saveInitiative(
-                                                    keyResult.id,
-                                                    text
-                                                  )
-                                                }
-                                              />
-                                            ) : (
-                                              <div className="flex items-start justify-between gap-4">
-                                                <p className="text-sm">
-                                                  {
-                                                    initiative.text
-                                                  }
-                                                </p>
-
-                                                <div className="flex shrink-0 gap-2">
-                                                  <button
-                                                    type="button"
-                                                    className="rounded-md border px-2.5 py-1 text-xs"
-                                                    onClick={() =>
-                                                      setEditingInitiativeId(
-                                                        initiative.id
-                                                      )
-                                                    }
-                                                  >
-                                                    Edit
-                                                  </button>
-
-                                                  <button
-                                                    type="button"
-                                                    className="rounded-md border px-2.5 py-1 text-xs text-red-600"
-                                                    onClick={() =>
-                                                      void deleteInitiative(
-                                                        keyResult.id,
-                                                        initiative.id
-                                                      )
-                                                    }
-                                                  >
-                                                    Delete
-                                                  </button>
-                                                </div>
-                                              </div>
-                                            )}
-                                          </div>
+                                    <div className="mt-4 space-y-3">
+                                      {keyResult.initiatives
+                                        .sort(
+                                          (a, b) =>
+                                            a.position -
+                                            b.position
                                         )
-                                      )}
+                                        .map(
+                                          (initiative) => (
+                                            <div
+                                              key={
+                                                initiative.id
+                                              }
+                                              className="rounded-md border bg-gray-50 p-3"
+                                            >
+                                              {editingInitiativeId ===
+initiative.id ? (
+  <InitiativeEditor
+    initialText={
+      initiative.text
+    }
+    onCancel={() =>
+      setEditingInitiativeId(
+        null
+      )
+    }
+                                                  onSave={(
+                                                    text
+                                                  ) =>
+                                                    saveInitiative(
+                                                      keyResult.id,
+                                                      text
+                                                    )
+                                                  }
+                                                />
+                                              ) : (
+                                                <div className="flex items-start justify-between gap-4">
+                                                  <p className="text-sm">
+                                                    {
+                                                      initiative.text
+                                                    }
+                                                  </p>
+
+                                                  <div className="flex shrink-0 gap-2">
+                                                    <button
+                                                      type="button"
+                                                      className="rounded-md border px-3 py-1.5 text-sm"
+                                                      onClick={() =>
+                                                        setEditingInitiativeId(
+                                                          initiative.id
+                                                        )
+                                                      }
+                                                    >
+                                                      Edit
+                                                    </button>
+
+                                                    <button
+                                                      type="button"
+                                                      className="rounded-md border px-3 py-1.5 text-sm text-red-600"
+                                                      onClick={() =>
+                                                        void deleteInitiative(
+                                                          initiative.id
+                                                        )
+                                                      }
+                                                    >
+                                                      Delete
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )
+                                        )}
                                     </div>
                                   </div>
                                 </>

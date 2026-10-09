@@ -44,6 +44,22 @@ export interface MemberObjective {
 
   weight?: number;
 
+  /*
+   * Visibility is separate from the Objective's content and
+   * from the visibility state of its individual Key Results.
+   *
+   * Hidden means the Objective is no longer shown in the
+   * member's current active Objective list.
+   *
+   * The Objective itself remains stored so that its complete
+   * Objective and Key Result configuration can be recovered
+   * and the Objective can be activated again.
+   *
+   * Hiding an Objective does NOT change the isHidden state of
+   * any Key Results belonging to that Objective.
+   */
+  isHidden: boolean;
+
   position: number;
 
   createdAt: string;

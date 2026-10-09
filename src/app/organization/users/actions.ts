@@ -10,6 +10,8 @@ import {
   createMemberObjective,
   updateMemberObjective,
   deleteMemberObjective,
+  hideMemberObjective,
+  activateMemberObjective,
   createMemberKeyResult,
   updateMemberKeyResult,
   deleteMemberKeyResult,
@@ -42,15 +44,15 @@ import type {
 
    Persistent ownership:
 
-      User
-        ↓
-      Organization Membership
-        ↓
-      Member Objective
-        ↓
-      Member Key Result
-        ↓
-      Member Initiative
+   User
+     ↓
+   Organization Membership
+     ↓
+   Member Objective
+     ↓
+   Member Key Result
+     ↓
+   Member Initiative
 
    IMPORTANT:
 
@@ -240,6 +242,54 @@ export async function updateMemberObjectiveAction(
     organizationId,
     membershipId,
     input
+  );
+}
+
+
+/* ==========================================================
+   Hide Member Objective
+   ----------------------------------------------------------
+   Hiding an Objective is a visibility change only.
+
+   The persistent Objective and all of its Key Results remain
+   stored.
+
+   The visibility state of individual Key Results is NOT
+   modified when their parent Objective is hidden.
+========================================================== */
+
+export async function hideMemberObjectiveAction(
+  organizationId: string,
+  membershipId: string,
+  objectiveId: string
+): Promise<MemberObjective> {
+  return hideMemberObjective(
+    organizationId,
+    membershipId,
+    objectiveId
+  );
+}
+
+
+/* ==========================================================
+   Activate Member Objective
+   ----------------------------------------------------------
+   Restores a previously hidden persistent Objective to the
+   active Member OKR list.
+
+   Existing Key Result visibility states are preserved.
+   Historical Runtime snapshots are not modified.
+========================================================== */
+
+export async function activateMemberObjectiveAction(
+  organizationId: string,
+  membershipId: string,
+  objectiveId: string
+): Promise<MemberObjective> {
+  return activateMemberObjective(
+    organizationId,
+    membershipId,
+    objectiveId
   );
 }
 

@@ -39,6 +39,12 @@ import {
    - comments
    - execution state
 
+   Hidden Member Objectives:
+   - remain in the persistent Member OKR domain
+   - remain available for recovery
+   - are not added to newly initialized months
+   - do not modify the visibility state of their Key Results
+
    Hidden Member Key Results:
    - remain in the persistent Member OKR domain
    - remain available to historical Runtime snapshots
@@ -97,6 +103,23 @@ export async function initializeMemberPerformanceInstance(
     objectivePosition++
   ) {
     const objective = objectives[objectivePosition];
+
+    /*
+    ----------------------------------------------------------
+    Only active Member Objectives participate in a new
+    Runtime snapshot.
+
+    Hidden Objectives remain in the persistent Member OKR
+    domain but are intentionally excluded from new months.
+
+    This does not modify the Objective or the visibility state
+    of any Key Results belonging to the Objective.
+    ----------------------------------------------------------
+    */
+
+    if (objective.isHidden) {
+      continue;
+    }
 
     /*
     ----------------------------------------------------------
