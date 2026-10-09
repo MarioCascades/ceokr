@@ -306,6 +306,20 @@ export default function MemberOKRWorkspace({
     setShowHiddenKeyResults,
   ] = useState(false);
 
+  const [
+    draggedKeyResultId,
+    setDraggedKeyResultId,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    reorderingObjectiveId,
+    setReorderingObjectiveId,
+  ] = useState<string | null>(
+    null
+  );
+
 
   /* ========================================================
      Load Workspace
@@ -632,6 +646,210 @@ export default function MemberOKRWorkspace({
 
 
   /* ========================================================
+     Key Result Reordering
+     --------------------------------------------------------
+     Key Result ordering is persisted through the existing
+     Member Key Result position field.
+
+     When hidden Key Results are not being displayed, only the
+     active Key Results are rearranged and the existing position
+     slots occupied by active Key Results are preserved. This
+     keeps hidden Key Results in their existing positions.
+
+     When hidden Key Results are explicitly displayed, the full
+     persistent Key Result list can be rearranged.
+  ======================================================== */
+
+  async function reorderKeyResults(
+    objectiveId: string,
+    draggedId: string,
+    targetId: string
+  ) {
+    if (
+      !membershipId ||
+      draggedId === targetId
+    ) {
+      return;
+    }
+
+    const objective =
+      objectives.find(
+        (item) =>
+          item.id === objectiveId
+      );
+
+    if (!objective) {
+      return;
+    }
+
+    const visibleKeyResults =
+      objective.keyResults
+        .filter(
+          (keyResult) =>
+            showHiddenKeyResults
+              ? true
+              : !keyResult.isHidden
+        )
+        .sort(
+          (a, b) =>
+            a.position - b.position
+        );
+
+    const draggedIndex =
+      visibleKeyResults.findIndex(
+        (keyResult) =>
+          keyResult.id === draggedId
+      );
+
+    const targetIndex =
+      visibleKeyResults.findIndex(
+        (keyResult) =>
+          keyResult.id === targetId
+      );
+
+    if (
+      draggedIndex < 0 ||
+      targetIndex < 0
+    ) {
+      return;
+    }
+
+    const reordered = [
+      ...visibleKeyResults,
+    ];
+
+    const [
+      draggedKeyResult,
+    ] = reordered.splice(
+      draggedIndex,
+      1
+    );
+
+    reordered.splice(
+      targetIndex,
+      0,
+      draggedKeyResult
+    );
+
+    const positionSlots =
+      visibleKeyResults
+        .map(
+          (keyResult) =>
+            keyResult.position
+        )
+        .sort(
+          (a, b) => a - b
+        );
+
+    setReorderingObjectiveId(
+      objectiveId
+    );
+    setError(null);
+
+    try {
+      await Promise.all(
+        reordered.map(
+          (keyResult, index) =>
+            updateMemberKeyResultAction(
+              organizationId,
+              membershipId,
+              {
+                keyResultId:
+                  keyResult.id,
+
+                title:
+                  keyResult.title,
+
+                target:
+                  keyResult.target,
+
+                currentValue:
+                  keyResult.currentValue,
+
+                measurementType:
+                  keyResult.measurementType,
+
+                scoringMethod:
+                  keyResult.scoringMethod,
+
+                status:
+                  keyResult.status,
+
+                weight:
+                  keyResult.weight,
+
+                position:
+                  positionSlots[index],
+              }
+            )
+        )
+      );
+
+      setObjectives(
+        (items) =>
+          items.map(
+            (item) => {
+              if (
+                item.id !==
+                objectiveId
+              ) {
+                return item;
+              }
+
+              const reorderedById =
+                new Map(
+                  reordered.map(
+                    (keyResult, index) => [
+                      keyResult.id,
+                      {
+                        ...keyResult,
+                        position:
+                          positionSlots[index],
+                      },
+                    ]
+                  )
+                );
+
+              return {
+                ...item,
+                keyResults:
+                  item.keyResults
+                    .map(
+                      (keyResult) =>
+                        reorderedById.get(
+                          keyResult.id
+                        ) ?? keyResult
+                    )
+                    .sort(
+                      (a, b) =>
+                        a.position -
+                        b.position
+                    ),
+              };
+            }
+          )
+      );
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Failed to reorder Key Results."
+      );
+
+      await loadWorkspace();
+    } finally {
+      setReorderingObjectiveId(
+        null
+      );
+
+      setDraggedKeyResultId(
+        null
+      );
+    }
+  }
+
+
+  /* ========================================================
      Key Result Hide
      --------------------------------------------------------
      Hiding a Key Result changes visibility only.
@@ -671,6 +889,8 @@ export default function MemberOKRWorkspace({
                       ? {
                           ...keyResult,
                           ...hidden,
+                          isHidden:
+                            true,
                           initiatives:
                             keyResult.initiatives,
                         }
@@ -727,6 +947,8 @@ export default function MemberOKRWorkspace({
                       ? {
                           ...keyResult,
                           ...activated,
+                          isHidden:
+                            false,
                           initiatives:
                             keyResult.initiatives,
                         }
@@ -1393,11 +1615,46 @@ export default function MemberOKRWorkspace({
                               ? true
                               : !keyResult.isHidden
                         )
+                        .sort(
+                          (a, b) =>
+                            a.position -
+                            b.position
+                        )
                         .map(
                           (keyResult) => (
                             <div
                               key={
                                 keyResult.id
+                              }
+                              draggable={
+                                reorderingObjectiveId !==
+                                  objective.id
+                              }
+                              onDragStart={() =>
+                                setDraggedKeyResultId(
+                                  keyResult.id
+                                )
+                              }
+                              onDragOver={(event) =>
+                                event.preventDefault()
+                              }
+                              onDrop={(event) => {
+                                event.preventDefault();
+
+                                if (
+                                  draggedKeyResultId
+                                ) {
+                                  void reorderKeyResults(
+                                    objective.id,
+                                    draggedKeyResultId,
+                                    keyResult.id
+                                  );
+                                }
+                              }}
+                              onDragEnd={() =>
+                                setDraggedKeyResultId(
+                                  null
+                                )
                               }
                               className={
                                 keyResult.isHidden
@@ -1428,6 +1685,19 @@ export default function MemberOKRWorkspace({
                                 />
                               ) : (
                                 <>
+                                  <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+                                    <span
+                                      aria-hidden="true"
+                                      className="cursor-grab select-none text-base leading-none"
+                                    >
+                                      ⋮⋮
+                                    </span>
+
+                                    <span>
+                                      Drag to reorder
+                                    </span>
+                                  </div>
+
                                   <div className="flex items-start justify-between gap-4">
                                     <div>
                                       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
