@@ -1,20 +1,17 @@
+
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
-
 import { listUserManagementRecords } from "@/services/user.service";
+import { listRuntimeNavigationCustomTablesAction } from "@/app/organization/settings/actions";
 import {
   createRuntimeNavigationConfiguration,
   loadRuntimeNavigationTabs,
   updateRuntimeNavigationConfiguration,
 } from "@/services/runtimenavigation.service";
-
 import type { RuntimeNavigationTab } from "@/lib/types/domain/runtimenavigationtab";
-
 type RuntimeNavigationSettingsProps = {
   organizationId: string;
 };
-
 type NavigationItem = {
   tabKey: string;
   tabType:
@@ -26,65 +23,50 @@ type NavigationItem = {
   isHidden: boolean;
   existingId?: string;
 };
-
 export default function RuntimeNavigationSettings({
   organizationId,
 }: RuntimeNavigationSettingsProps) {
   const [items, setItems] = useState<NavigationItem[]>(
     []
   );
-
   const [loading, setLoading] =
     useState(true);
-
   const [saving, setSaving] =
     useState(false);
-
   const [saved, setSaved] =
     useState(false);
-
   const [error, setError] =
     useState<string | null>(null);
-
   const [draggedTabKey, setDraggedTabKey] =
     useState<string | null>(null);
-
   /*
    * ==========================================================
    * Load Navigation
    * ==========================================================
    */
-
   useEffect(() => {
     let cancelled = false;
-
     async function loadNavigation() {
       setLoading(true);
       setError(null);
-
       try {
         const [
           configuredTabs,
           members,
+          customTables,
         ] = await Promise.all([
-          loadRuntimeNavigationTabs(
-            organizationId
-          ),
-          listUserManagementRecords(
-            organizationId
-          ),
+          loadRuntimeNavigationTabs(organizationId),
+          listUserManagementRecords(organizationId),
+          listRuntimeNavigationCustomTablesAction(organizationId),
         ]);
-
         if (cancelled) {
           return;
         }
-
         const activeMembers =
           members.filter(
             (member) =>
               member.user.is_active !== false
           );
-
         const memberItems: NavigationItem[] =
           activeMembers.map(
             (member) => ({
@@ -100,7 +82,6 @@ export default function RuntimeNavigationSettings({
               isHidden: false,
             })
           );
-
         const dashboardItem: NavigationItem = {
           tabKey:
             "dashboard",
@@ -111,32 +92,39 @@ export default function RuntimeNavigationSettings({
           position: 0,
           isHidden: false,
         };
-
         /*
-         * Runtime operational tabs are intentionally NOT
-         * created here.
+         * Include the Custom Tables provisioned for this organization.
+         * Use the same stable key as Runtime navigation:
+         * runtimeTabKey when available, otherwise tableKey.
          *
-         * Agenda, VA List, Recruitment, and Client
-         * Performance will be introduced when their actual
-         * Runtime operational features are implemented.
+         * This only configures navigation for existing table definitions.
+         * It does not create Custom Table definitions.
          */
+        const operationalItems: NavigationItem[] =
+          customTables.map((table) => ({
+            tabKey: table.runtimeTabKey?.trim() || table.tableKey,
+            tabType: "operational",
+            label: table.name,
+            position: 0,
+            isHidden: false,
+          }));
         const defaultItems: NavigationItem[] = [
           dashboardItem,
           ...memberItems,
+          ...operationalItems,
         ];
-
         /*
          * No saved configuration yet.
          *
-         * Create only the Runtime tabs that actually exist
-         * today: Dashboard and active organization members.
+         * Create the Runtime tabs that currently exist:
+         * Dashboard, active organization members, and
+         * provisioned Custom Tables.
          */
         if (
           configuredTabs.length === 0
         ) {
           const createdItems: NavigationItem[] =
             [];
-
           for (
             let index = 0;
             index < defaultItems.length;
@@ -144,7 +132,6 @@ export default function RuntimeNavigationSettings({
           ) {
             const item =
               defaultItems[index];
-
             const created =
               await createRuntimeNavigationConfiguration(
                 {
@@ -161,7 +148,6 @@ export default function RuntimeNavigationSettings({
                     false,
                 }
               );
-
             createdItems.push({
               ...item,
               position:
@@ -172,18 +158,14 @@ export default function RuntimeNavigationSettings({
                 created.id,
             });
           }
-
           if (cancelled) {
             return;
           }
-
           setItems(
             createdItems
           );
-
           return;
         }
-
         /*
          * Existing configuration is authoritative.
          *
@@ -191,14 +173,14 @@ export default function RuntimeNavigationSettings({
          * in the configuration. They are simply excluded from
          * the active Runtime navigation.
          *
-         * Newly available active members are appended.
+         * Newly available active members and provisioned
+         * Custom Tables are appended.
          */
         const configuredByKey =
           new Map<
             string,
             RuntimeNavigationTab
           >();
-
         for (
           const tab of configuredTabs
         ) {
@@ -207,7 +189,6 @@ export default function RuntimeNavigationSettings({
             tab
           );
         }
-
         const orderedItems: NavigationItem[] =
           configuredTabs.map(
             (tab) => ({
@@ -228,7 +209,6 @@ export default function RuntimeNavigationSettings({
                 tab.id,
             })
           );
-
         const missingItems =
           defaultItems.filter(
             (item) =>
@@ -236,13 +216,11 @@ export default function RuntimeNavigationSettings({
                 item.tabKey
               )
           );
-
         if (
           missingItems.length > 0
         ) {
           let nextPosition =
             orderedItems.length;
-
           for (
             const item of missingItems
           ) {
@@ -262,7 +240,6 @@ export default function RuntimeNavigationSettings({
                     false,
                 }
               );
-
             orderedItems.push({
               ...item,
               position:
@@ -272,15 +249,12 @@ export default function RuntimeNavigationSettings({
               existingId:
                 created.id,
             });
-
             nextPosition += 1;
           }
         }
-
         if (cancelled) {
           return;
         }
-
         setItems(
           sortNavigationItems(
             orderedItems
@@ -290,12 +264,10 @@ export default function RuntimeNavigationSettings({
         if (cancelled) {
           return;
         }
-
         console.error(
           "Error loading Runtime navigation settings:",
           loadError
         );
-
         setError(
           loadError instanceof Error
             ? loadError.message
@@ -307,20 +279,16 @@ export default function RuntimeNavigationSettings({
         }
       }
     }
-
     void loadNavigation();
-
     return () => {
       cancelled = true;
     };
   }, [organizationId]);
-
   /*
    * ==========================================================
    * Active / Hidden Lists
    * ==========================================================
    */
-
   const activeItems =
     useMemo(
       () =>
@@ -332,7 +300,6 @@ export default function RuntimeNavigationSettings({
         ),
       [items]
     );
-
   const hiddenItems =
     useMemo(
       () =>
@@ -344,13 +311,11 @@ export default function RuntimeNavigationSettings({
         ),
       [items]
     );
-
   /*
    * ==========================================================
    * Reorder Active Navigation
    * ==========================================================
    */
-
   const reorderItems = (
     draggedKey: string,
     targetKey: string
@@ -360,7 +325,6 @@ export default function RuntimeNavigationSettings({
     ) {
       return;
     }
-
     setItems(
       (currentItems) => {
         const active =
@@ -370,37 +334,31 @@ export default function RuntimeNavigationSettings({
                 !item.isHidden
             )
           );
-
         const hidden =
           currentItems.filter(
             (item) =>
               item.isHidden
           );
-
         const currentIndex =
           active.findIndex(
             (item) =>
               item.tabKey ===
               draggedKey
           );
-
         const targetIndex =
           active.findIndex(
             (item) =>
               item.tabKey ===
               targetKey
           );
-
         if (
           currentIndex === -1 ||
           targetIndex === -1
         ) {
           return currentItems;
         }
-
         const reordered =
           [...active];
-
         const [
           draggedItem,
         ] =
@@ -408,13 +366,11 @@ export default function RuntimeNavigationSettings({
             currentIndex,
             1
           );
-
         reordered.splice(
           targetIndex,
           0,
           draggedItem
         );
-
         const reorderedActive =
           reordered.map(
             (item, index) => ({
@@ -423,7 +379,6 @@ export default function RuntimeNavigationSettings({
                 index,
             })
           );
-
         /*
          * Hidden tabs retain their hidden state and remain
          * outside the active ordering.
@@ -434,16 +389,13 @@ export default function RuntimeNavigationSettings({
         ];
       }
     );
-
     setSaved(false);
   };
-
   /*
    * ==========================================================
    * Hide / Activate
    * ==========================================================
    */
-
   const setTabHidden = (
     tabKey: string,
     hidden: boolean
@@ -462,21 +414,17 @@ export default function RuntimeNavigationSettings({
               : item
         )
     );
-
     setSaved(false);
   };
-
   /*
    * ==========================================================
    * Save Navigation
    * ==========================================================
    */
-
   const saveOrder = async () => {
     setSaving(true);
     setSaved(false);
     setError(null);
-
     try {
       /*
        * Only active tabs participate in the visible
@@ -489,7 +437,6 @@ export default function RuntimeNavigationSettings({
               !item.isHidden
           )
         );
-
       /*
        * Persist active positions.
        */
@@ -501,11 +448,9 @@ export default function RuntimeNavigationSettings({
       ) {
         const item =
           orderedActiveItems[index];
-
         if (!item.existingId) {
           continue;
         }
-
         await updateRuntimeNavigationConfiguration(
           organizationId,
           item.existingId,
@@ -519,7 +464,6 @@ export default function RuntimeNavigationSettings({
           }
         );
       }
-
       /*
        * Persist hidden state.
        *
@@ -532,14 +476,12 @@ export default function RuntimeNavigationSettings({
           (item) =>
             item.isHidden
         );
-
       for (
         const item of hiddenItemsToSave
       ) {
         if (!item.existingId) {
           continue;
         }
-
         await updateRuntimeNavigationConfiguration(
           organizationId,
           item.existingId,
@@ -553,7 +495,6 @@ export default function RuntimeNavigationSettings({
           }
         );
       }
-
       setItems(
         (currentItems) => {
           const activeKeys =
@@ -563,7 +504,6 @@ export default function RuntimeNavigationSettings({
                   item.tabKey
               )
             );
-
           return currentItems.map(
             (item) => {
               if (
@@ -577,7 +517,6 @@ export default function RuntimeNavigationSettings({
                       activeItem.tabKey ===
                       item.tabKey
                   );
-
                 return {
                   ...item,
                   position:
@@ -586,7 +525,6 @@ export default function RuntimeNavigationSettings({
                     false,
                 };
               }
-
               return {
                 ...item,
                 isHidden:
@@ -596,14 +534,12 @@ export default function RuntimeNavigationSettings({
           );
         }
       );
-
       setSaved(true);
     } catch (saveError) {
       console.error(
         "Error saving Runtime navigation:",
         saveError
       );
-
       setError(
         saveError instanceof Error
           ? saveError.message
@@ -613,13 +549,11 @@ export default function RuntimeNavigationSettings({
       setSaving(false);
     }
   };
-
   /*
    * ==========================================================
    * Drag Handlers
    * ==========================================================
    */
-
   const handleDragStart = (
     tabKey: string
   ) => {
@@ -629,54 +563,45 @@ export default function RuntimeNavigationSettings({
           currentItem.tabKey ===
           tabKey
       );
-
     if (
       !item ||
       item.isHidden
     ) {
       return;
     }
-
     setDraggedTabKey(
       tabKey
     );
   };
-
   const handleDragOver = (
     event: React.DragEvent
   ) => {
     event.preventDefault();
   };
-
   const handleDrop = (
     targetKey: string
   ) => {
     if (!draggedTabKey) {
       return;
     }
-
     reorderItems(
       draggedTabKey,
       targetKey
     );
-
     setDraggedTabKey(
       null
     );
   };
-
   const handleDragEnd = () => {
     setDraggedTabKey(
       null
     );
   };
-
   /*
    * ==========================================================
    * Loading
    * ==========================================================
    */
-
   if (loading) {
     return (
       <section className="rounded-xl border border-[#B4C2D1]/70 bg-white p-6 shadow-sm">
@@ -684,27 +609,22 @@ export default function RuntimeNavigationSettings({
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E26D5C]">
             RUNTIME WORKSPACE
           </p>
-
           <h2 className="mt-1 text-xl font-black uppercase text-[#082550]">
             Runtime Navigation
           </h2>
-
           <p className="mt-2 text-sm leading-6 text-[#272D2C]/65">
             Loading Runtime navigation configuration...
           </p>
         </div>
-
         <div className="h-24 animate-pulse rounded-lg bg-[#F7F9FB]" />
       </section>
     );
   }
-
   /*
    * ==========================================================
    * Error
    * ==========================================================
    */
-
   if (
     error &&
     items.length === 0
@@ -715,17 +635,14 @@ export default function RuntimeNavigationSettings({
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E26D5C]">
             RUNTIME WORKSPACE
           </p>
-
           <h2 className="mt-1 text-xl font-black uppercase text-[#082550]">
             Runtime Navigation
           </h2>
         </div>
-
         <div className="rounded-lg border border-[#E26D5C]/30 bg-[#FFF7F5] p-4">
           <p className="text-sm font-bold text-[#082550]">
             Unable to load Runtime navigation.
           </p>
-
           <p className="mt-1 text-xs leading-5 text-[#272D2C]/65">
             {error}
           </p>
@@ -733,13 +650,11 @@ export default function RuntimeNavigationSettings({
       </section>
     );
   }
-
   /*
    * ==========================================================
    * Render
    * ==========================================================
    */
-
   return (
     <section className="rounded-xl border border-[#B4C2D1]/70 bg-white p-6 shadow-sm">
       {/* HEADER */}
@@ -748,11 +663,9 @@ export default function RuntimeNavigationSettings({
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E26D5C]">
             RUNTIME WORKSPACE
           </p>
-
           <h2 className="mt-1 text-xl font-black uppercase text-[#082550]">
             Runtime Navigation
           </h2>
-
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#272D2C]/65">
             Arrange every Runtime tab in the order your
             organization wants to use them. Hide tabs that
@@ -760,7 +673,6 @@ export default function RuntimeNavigationSettings({
             activate them again whenever they are needed.
           </p>
         </div>
-
         <button
           type="button"
           onClick={() =>
@@ -779,7 +691,6 @@ export default function RuntimeNavigationSettings({
               : "Save Navigation"}
         </button>
       </div>
-
       {/* ERROR */}
       {error && (
         <div className="mb-5 rounded-lg border border-[#E26D5C]/30 bg-[#FFF7F5] p-4">
@@ -788,19 +699,16 @@ export default function RuntimeNavigationSettings({
           </p>
         </div>
       )}
-
       {/* INSTRUCTIONS */}
       <div className="mb-6 rounded-lg border border-[#B4C2D1]/60 bg-[#E9F4F8] p-4">
         <div className="flex gap-3">
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#082550] text-xs font-black text-white">
             i
           </div>
-
           <div>
             <p className="text-xs font-black uppercase tracking-wide text-[#082550]">
               Runtime Navigation
             </p>
-
             <p className="mt-1 text-xs leading-5 text-[#272D2C]/65">
               Drag any active Runtime tab to another position.
               Use Hide to remove a tab from Runtime without
@@ -810,19 +718,16 @@ export default function RuntimeNavigationSettings({
           </div>
         </div>
       </div>
-
       {/* ACTIVE TABS */}
       <div>
         <div className="mb-3">
           <h3 className="text-sm font-black uppercase tracking-wide text-[#082550]">
             Active Runtime Tabs
           </h3>
-
           <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
             These tabs appear in Runtime in the order shown below.
           </p>
         </div>
-
         <div className="overflow-hidden rounded-lg border border-[#B4C2D1]/60">
           {activeItems.length === 0 ? (
             <div className="px-5 py-8 text-center text-xs text-[#272D2C]/50">
@@ -869,7 +774,6 @@ export default function RuntimeNavigationSettings({
           )}
         </div>
       </div>
-
       {/* HIDDEN TABS */}
       <div className="mt-8">
         <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -877,18 +781,15 @@ export default function RuntimeNavigationSettings({
             <h3 className="text-sm font-black uppercase tracking-wide text-[#082550]">
               Hidden Runtime Tabs
             </h3>
-
             <p className="mt-1 text-xs leading-5 text-[#272D2C]/60">
               Hidden tabs do not appear in Runtime but remain
               configured for this organization.
             </p>
           </div>
-
           <span className="text-xs font-bold text-[#272D2C]/45">
             {hiddenItems.length} hidden
           </span>
         </div>
-
         <div className="overflow-hidden rounded-lg border border-[#B4C2D1]/60">
           {hiddenItems.length === 0 ? (
             <div className="px-5 py-8 text-center text-xs text-[#272D2C]/50">
@@ -916,18 +817,15 @@ export default function RuntimeNavigationSettings({
           )}
         </div>
       </div>
-
       {/* SUMMARY */}
       <div className="mt-6 border-t border-[#B4C2D1]/50 pt-5">
         <div className="flex flex-wrap items-center gap-2 text-xs text-[#272D2C]/60">
           <span>
             {activeItems.length} active Runtime tabs
           </span>
-
           <span>
             •
           </span>
-
           <span>
             {hiddenItems.length} hidden Runtime tabs
           </span>
@@ -936,13 +834,11 @@ export default function RuntimeNavigationSettings({
     </section>
   );
 }
-
 /*
  * ============================================================
  * Navigation Row
  * ============================================================
  */
-
 type NavigationRowProps = {
   item: NavigationItem;
   index: number;
@@ -959,7 +855,6 @@ type NavigationRowProps = {
   onDragEnd: () => void;
   onHide: () => void;
 };
-
 function NavigationRow({
   item,
   index,
@@ -999,7 +894,6 @@ function NavigationRow({
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E9F4F8] text-xs font-black text-[#082550]">
         {index + 1}
       </div>
-
       {/* DRAG HANDLE */}
       <div
         className="flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-md border border-[#B4C2D1]/70 bg-[#F7F9FB] text-[#082550] active:cursor-grabbing"
@@ -1010,18 +904,15 @@ function NavigationRow({
           ⋮⋮
         </span>
       </div>
-
       {/* LABEL */}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold text-[#272D2C]">
           {item.label}
         </p>
-
         <p className="mt-1 truncate text-[11px] text-[#272D2C]/45">
           {item.tabKey}
         </p>
       </div>
-
       {/* TYPE */}
       <span
         className={`hidden rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide sm:inline-flex ${
@@ -1042,7 +933,6 @@ function NavigationRow({
             ? "Member"
             : "Operational"}
       </span>
-
       {/* HIDE */}
       <button
         type="button"
@@ -1056,18 +946,15 @@ function NavigationRow({
     </div>
   );
 }
-
 /*
  * ============================================================
  * Hidden Navigation Row
  * ============================================================
  */
-
 type HiddenNavigationRowProps = {
   item: NavigationItem;
   onActivate: () => void;
 };
-
 function HiddenNavigationRow({
   item,
   onActivate,
@@ -1078,18 +965,15 @@ function HiddenNavigationRow({
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E5E7EB] text-xs font-black text-[#6B7280]">
         —
       </div>
-
       {/* LABEL */}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold text-[#272D2C]/75">
           {item.label}
         </p>
-
         <p className="mt-1 truncate text-[11px] text-[#272D2C]/40">
           {item.tabKey}
         </p>
       </div>
-
       {/* TYPE */}
       <span
         className={`hidden rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide sm:inline-flex ${
@@ -1110,7 +994,6 @@ function HiddenNavigationRow({
             ? "Member"
             : "Operational"}
       </span>
-
       {/* ACTIVATE */}
       <button
         type="button"
@@ -1124,13 +1007,11 @@ function HiddenNavigationRow({
     </div>
   );
 }
-
 /*
  * ============================================================
  * Helpers
  * ============================================================
  */
-
 function resolveNavigationLabel(
   tab: RuntimeNavigationTab,
   defaults: NavigationItem[]
@@ -1141,14 +1022,11 @@ function resolveNavigationLabel(
         item.tabKey ===
         tab.tabKey
     );
-
   if (matchingDefault) {
     return matchingDefault.label;
   }
-
   return tab.label;
 }
-
 function sortNavigationItems(
   items: NavigationItem[]
 ): NavigationItem[] {

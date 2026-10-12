@@ -1,4 +1,3 @@
-
 /**
  * ==========================================================
  * CascadEffects Performance Platform
@@ -20,6 +19,7 @@
 import "server-only";
 
 import { requirePermission } from "@/lib/auth/authorization";
+import { getAuthorizationContext } from "@/lib/auth/authorizationcontext";
 
 import {
   loadCustomTableDefinitions,
@@ -45,6 +45,7 @@ import {
   restoreCustomTableRow,
   deleteCustomTableRow,
   saveCustomTableRowOrder,
+  copyForwardCustomTableMonthAtomic,
 } from "@/lib/repositories/customtablerepository";
 
 import type {
@@ -124,6 +125,25 @@ async function requireCustomTableManage(
   );
 }
 
+/**
+ * Provisioning changes alter the organization-specific table
+ * schema. Only a CascadEffects Platform Super Admin may create,
+ * delete, or change table definitions and column definitions.
+ */
+async function requireCustomTableProvisioning(
+  organizationId: string
+): Promise<void> {
+  requireOrganizationId(organizationId);
+
+  const context = await getAuthorizationContext(organizationId);
+
+  if (!context?.isPlatformSuperAdmin) {
+    throw new Error(
+      "Only a CascadEffects Platform Super Admin can provision or configure Custom Tables."
+    );
+  }
+}
+
 async function requireCustomTableRowsEdit(
   organizationId: string
 ): Promise<void> {
@@ -153,6 +173,27 @@ async function requireOwnedDefinition(
     throw new Error(
       "Custom Table definition was not found in this organization."
     );
+  }
+
+  return definition;
+}
+
+/**
+ * Require that a table belongs to the organization and is enabled.
+ * Row-changing operations use this check so disabling a table
+ * prevents edits through the service, not just through the UI.
+ */
+async function requireEnabledDefinition(
+  organizationId: string,
+  tableDefinitionId: string
+): Promise<CustomTableDefinition> {
+  const definition = await requireOwnedDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
+  if (!definition.isEnabled) {
+    throw new Error("This Custom Table is disabled.");
   }
 
   return definition;
@@ -265,7 +306,7 @@ export async function getCustomTableByKey(
 export async function createCustomTable(
   input: CreateCustomTableDefinitionInput
 ): Promise<CustomTableDefinition> {
-  await requireCustomTableManage(input.organizationId);
+  await requireCustomTableProvisioning(input.organizationId);
 
   requireIdentifier(input.tableKey, "Custom Table key");
   requireIdentifier(input.name, "Custom Table name");
@@ -317,7 +358,31 @@ export async function editCustomTable(
   tableDefinitionId: string,
   input: UpdateCustomTableDefinitionInput
 ): Promise<CustomTableDefinition> {
-  await requireCustomTableManage(organizationId);
+  requireOrganizationId(organizationId);
+
+  const context = await getAuthorizationContext(organizationId);
+
+  if (!context) {
+    throw new Error("You must be signed in to manage Custom Tables.");
+  }
+
+  if (context.isPlatformSuperAdmin) {
+    await requireCustomTableProvisioning(organizationId);
+  } else {
+    await requireCustomTableManage(organizationId);
+
+    const submittedKeys = Object.keys(input);
+    const containsOnlyEnablement =
+      submittedKeys.length === 1 &&
+      submittedKeys[0] === "isEnabled" &&
+      typeof input.isEnabled === "boolean";
+
+    if (!containsOnlyEnablement) {
+      throw new Error(
+        "Organization Admins can only enable or disable provisioned Custom Tables. Table definitions can only be changed by a CascadEffects Platform Super Admin."
+      );
+    }
+  }
 
   await requireOwnedDefinition(
     organizationId,
@@ -339,7 +404,7 @@ export async function removeCustomTable(
   organizationId: string,
   tableDefinitionId: string
 ): Promise<void> {
-  await requireCustomTableManage(organizationId);
+  await requireCustomTableProvisioning(organizationId);
 
   await requireOwnedDefinition(
     organizationId,
@@ -376,7 +441,7 @@ export async function listCustomTableColumns(
 export async function addCustomTableColumn(
   input: CreateCustomTableColumnInput
 ): Promise<CustomTableColumn> {
-  await requireCustomTableManage(input.organizationId);
+  await requireCustomTableProvisioning(input.organizationId);
 
   await requireOwnedDefinition(
     input.organizationId,
@@ -410,7 +475,7 @@ export async function editCustomTableColumn(
   columnId: string,
   input: UpdateCustomTableColumnInput
 ): Promise<CustomTableColumn> {
-  await requireCustomTableManage(organizationId);
+  await requireCustomTableProvisioning(organizationId);
 
   await requireOwnedDefinition(
     organizationId,
@@ -443,7 +508,7 @@ export async function removeCustomTableColumn(
   tableDefinitionId: string,
   columnId: string
 ): Promise<void> {
-  await requireCustomTableManage(organizationId);
+  await requireCustomTableProvisioning(organizationId);
 
   await requireOwnedDefinition(
     organizationId,
@@ -665,6 +730,11 @@ export async function editCustomTableRow(
 ): Promise<CustomTableRow> {
   await requireCustomTableRowsEdit(organizationId);
 
+  await requireEnabledDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
   const { month } = await requireOwnedRow(
     organizationId,
     tableDefinitionId,
@@ -690,6 +760,11 @@ export async function hideCustomTableRowInWorkspace(
 ): Promise<CustomTableRow> {
   await requireCustomTableRowsEdit(organizationId);
 
+  await requireEnabledDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
   const { month } = await requireOwnedRow(
     organizationId,
     tableDefinitionId,
@@ -713,6 +788,11 @@ export async function restoreCustomTableRowInWorkspace(
   rowId: string
 ): Promise<CustomTableRow> {
   await requireCustomTableRowsEdit(organizationId);
+
+  await requireEnabledDefinition(
+    organizationId,
+    tableDefinitionId
+  );
 
   const { month } = await requireOwnedRow(
     organizationId,
@@ -738,6 +818,11 @@ export async function removeCustomTableRow(
 ): Promise<void> {
   await requireCustomTableRowsEdit(organizationId);
 
+  await requireEnabledDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
   const { month } = await requireOwnedRow(
     organizationId,
     tableDefinitionId,
@@ -762,6 +847,11 @@ export async function reorderCustomTableRows(
   isHidden: boolean
 ): Promise<CustomTableRow[]> {
   await requireCustomTableRowsEdit(organizationId);
+
+  await requireEnabledDefinition(
+    organizationId,
+    tableDefinitionId
+  );
 
   const month = await requireOwnedMonth(
     organizationId,
@@ -819,49 +909,13 @@ export async function copyForwardCustomTableMonth(
     throw new Error("The source month was not found.");
   }
 
-  const existingTarget = await findCustomTableMonthByPerformanceMonth(
-    input.organizationId,
-    input.tableDefinitionId,
-    input.targetPerformanceMonth
-  );
-
-  if (existingTarget) {
-    return existingTarget;
-  }
-
-  const sourceRows = await loadCustomTableRows(
-    input.organizationId,
-    sourceMonth.id
-  );
-
-  const targetMonth = await createCustomTableMonth({
-    organizationId: input.organizationId,
-    tableDefinitionId: input.tableDefinitionId,
-    performanceMonth: input.targetPerformanceMonth,
-  } as CreateCustomTableMonthInput);
-
-  const rowsToCarryForward = sourceRows.filter(
-    (row) =>
-      !row.isHidden &&
-      row.operationalStatus !== "completed"
-  );
-
-  for (
-    let position = 0;
-    position < rowsToCarryForward.length;
-    position += 1
-  ) {
-    const sourceRow = rowsToCarryForward[position];
-
-    await createCustomTableRow({
+  const { month: targetMonth } =
+    await copyForwardCustomTableMonthAtomic({
       organizationId: input.organizationId,
-      tableMonthId: targetMonth.id,
-      rowData: { ...sourceRow.rowData },
-      operationalStatus: sourceRow.operationalStatus,
-      isHidden: false,
-      position,
+      tableDefinitionId: input.tableDefinitionId,
+      sourceMonthId: sourceMonth.id,
+      targetPerformanceMonth: input.targetPerformanceMonth,
     });
-  }
 
   return targetMonth;
 }

@@ -1,13 +1,26 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createCustomTable } from "@/services/customtableservice";
+import {
+  createCustomTable,
+  editCustomTable,
+} from "@/services/customtableservice";
 import type {
   CreateCustomTableDefinitionInput,
   CustomTableDefinition,
 } from "@/lib/types/domain/customtable";
 
 export type CreateCustomTableActionResult =
+  | {
+      success: true;
+      table: CustomTableDefinition;
+    }
+  | {
+      success: false;
+      error: string;
+    };
+
+export type UpdateCustomTableAvailabilityActionResult =
   | {
       success: true;
       table: CustomTableDefinition;
@@ -139,8 +152,8 @@ export async function createCustomTableAction(
       isEnabled,
     };
 
-    // The service enforces the custom_tables.manage permission
-    // and checks whether the table key already exists.
+    // The service restricts table provisioning to a
+    // CascadEffects Platform Super Admin.
     const table = await createCustomTable(input);
 
     revalidatePath("/organization/customtables");
@@ -160,6 +173,71 @@ export async function createCustomTableAction(
         error instanceof Error
           ? error.message
           : "Unable to create the Custom Table. Please try again.",
+    };
+  }
+}
+
+export async function updateCustomTableAvailabilityAction(
+  organizationId: string,
+  tableDefinitionId: string,
+  isEnabled: boolean
+): Promise<UpdateCustomTableAvailabilityActionResult> {
+  try {
+    const normalizedOrganizationId = organizationId.trim();
+    const normalizedTableDefinitionId =
+      tableDefinitionId.trim();
+
+    if (!normalizedOrganizationId) {
+      return {
+        success: false,
+        error: "Organization is required.",
+      };
+    }
+
+    if (!normalizedTableDefinitionId) {
+      return {
+        success: false,
+        error: "Custom Table ID is required.",
+      };
+    }
+
+    if (typeof isEnabled !== "boolean") {
+      return {
+        success: false,
+        error: "A valid availability status is required.",
+      };
+    }
+
+    // Organization Admins may change only isEnabled.
+    // The service enforces permission and organization ownership.
+    const table = await editCustomTable(
+      normalizedOrganizationId,
+      normalizedTableDefinitionId,
+      { isEnabled }
+    );
+
+    revalidatePath("/organization/customtables");
+    revalidatePath(
+      `/organization/customtables/${normalizedTableDefinitionId}`
+    );
+    revalidatePath(
+      `/organization/customtables/${normalizedTableDefinitionId}?organizationId=${encodeURIComponent(
+        normalizedOrganizationId
+      )}`
+    );
+    revalidatePath("/runtime");
+
+    return {
+      success: true,
+      table,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to update Custom Table availability. Please try again.",
     };
   }
 }

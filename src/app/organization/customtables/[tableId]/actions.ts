@@ -1,3 +1,4 @@
+
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -8,6 +9,7 @@ import {
 } from "@/services/customtableservice";
 import type {
   CreateCustomTableColumnInput,
+  CustomTableColumnDataType,
   UpdateCustomTableColumnInput,
 } from "@/lib/types/domain/customtable";
 
@@ -20,6 +22,15 @@ export type CustomTableColumnActionResult =
       success: false;
       error: string;
     };
+
+const ALLOWED_DATA_TYPES: readonly CustomTableColumnDataType[] = [
+  "text",
+  "number",
+  "date",
+  "boolean",
+  "select",
+  "status",
+];
 
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -64,6 +75,16 @@ function validateContext(formData: FormData) {
   return { organizationId, tableDefinitionId };
 }
 
+function readDataType(value: string): CustomTableColumnDataType {
+  if (
+    !ALLOWED_DATA_TYPES.includes(value as CustomTableColumnDataType)
+  ) {
+    throw new Error("Select a supported column data type.");
+  }
+
+  return value as CustomTableColumnDataType;
+}
+
 function revalidateTable(
   organizationId: string,
   tableDefinitionId: string
@@ -88,7 +109,7 @@ export async function addCustomTableColumnAction(
 
     const columnKey = readString(formData, "columnKey");
     const label = readString(formData, "label");
-    const dataType = readString(formData, "dataType");
+    const dataType = readDataType(readString(formData, "dataType"));
     const position = readPosition(formData);
 
     if (!columnKey) {
@@ -113,20 +134,6 @@ export async function addCustomTableColumnAction(
       throw new Error("Column label cannot exceed 120 characters.");
     }
 
-    const allowedDataTypes = [
-      "text",
-      "textarea",
-      "number",
-      "date",
-      "boolean",
-      "select",
-      "status",
-    ];
-
-    if (!allowedDataTypes.includes(dataType)) {
-      throw new Error("Select a supported column data type.");
-    }
-
     if (position === null) {
       throw new Error(
         "Position must be a non-negative whole number."
@@ -138,7 +145,7 @@ export async function addCustomTableColumnAction(
       tableDefinitionId,
       columnKey,
       label,
-      dataType: dataType as CreateCustomTableColumnInput["dataType"],
+      dataType,
       position,
       isRequired: readBoolean(formData, "isRequired"),
       isVisible: readBoolean(formData, "isVisible"),
@@ -175,6 +182,7 @@ export async function editCustomTableColumnAction(
     const columnId = readString(formData, "columnId");
     const label = readString(formData, "label");
     const position = readPosition(formData);
+    const dataType = readDataType(readString(formData, "dataType"));
 
     if (!columnId) {
       throw new Error("Column identifier is required.");
@@ -194,25 +202,9 @@ export async function editCustomTableColumnAction(
       );
     }
 
-    const dataType = readString(formData, "dataType");
-
-    const allowedDataTypes = [
-      "text",
-      "textarea",
-      "number",
-      "date",
-      "boolean",
-      "select",
-      "status",
-    ];
-
-    if (!allowedDataTypes.includes(dataType)) {
-      throw new Error("Select a supported column data type.");
-    }
-
     const input: UpdateCustomTableColumnInput = {
       label,
-      dataType: dataType as UpdateCustomTableColumnInput["dataType"],
+      dataType,
       position,
       isRequired: readBoolean(formData, "isRequired"),
       isVisible: readBoolean(formData, "isVisible"),

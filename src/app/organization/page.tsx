@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -76,9 +75,7 @@ export default function OrganizationWorkspacePage() {
   return (
     <main className="min-h-screen bg-gray-200 px-6 py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-7xl space-y-8">
-        {/* ==================================================
-            Page Header
-        ================================================== */}
+        {/* Page Header */}
 
         <header className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -117,9 +114,7 @@ export default function OrganizationWorkspacePage() {
           </div>
         </header>
 
-        {/* ==================================================
-            Current Organization Context
-        ================================================== */}
+        {/* Current Organization Context */}
 
         <section className="rounded-2xl border border-gray-300 bg-white p-6 shadow-sm lg:p-7">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -171,9 +166,7 @@ export default function OrganizationWorkspacePage() {
           )}
         </section>
 
-        {/* ==================================================
-            Organization
-        ================================================== */}
+        {/* Organization */}
 
         <WorkspaceSection
           title="Organization"
@@ -212,9 +205,7 @@ export default function OrganizationWorkspacePage() {
           />
         </WorkspaceSection>
 
-        {/* ==================================================
-            Performance
-        ================================================== */}
+        {/* Performance */}
 
         <WorkspaceSection
           title="Performance"
@@ -233,42 +224,31 @@ export default function OrganizationWorkspacePage() {
           />
         </WorkspaceSection>
 
-        {/* ==================================================
-            Analytics
-        ================================================== */}
+        {/* Analytics */}
 
         <WorkspaceSection
           title="Analytics"
-          description="Understand organizational performance through dashboards and reports."
+          description="Understand organizational performance through dashboards and reporting."
         >
           <WorkspaceCard
             title="📊 Dashboards"
             description="Configure organization dashboards, charts, tables, and performance views."
             href={workspaceHref("/organization/dashboards")}
           />
-
-          <WorkspaceCard
-            title="📑 Reports"
-            description="Review and manage organization performance reporting."
-            href={workspaceHref("/organization/reports")}
-            comingSoon
-          />
-
-          <WorkspaceCard
-            title="📋 Custom Tables"
-            description="Create and manage reusable operational tables, configure columns, and prepare tables for the existing Runtime workspace."
-            href={workspaceHref("/organization/customtables")}
-          />
         </WorkspaceSection>
 
-        {/* ==================================================
-            Configuration
-        ================================================== */}
+        {/* Configuration */}
 
         <WorkspaceSection
           title="Configuration"
           description="Configure organization-level platform behavior and services."
         >
+          <WorkspaceCard
+            title="📋 Custom Tables"
+            description="Access operational tables provisioned for your organization, manage their Runtime availability, and work with monthly operational records. Table definitions and column configuration are managed by CascadEffects platform personnel."
+            href={workspaceHref("/organization/customtables")}
+          />
+
           <WorkspaceCard
             title="⚙️ Settings"
             description="Manage organization-level configuration and preferences."

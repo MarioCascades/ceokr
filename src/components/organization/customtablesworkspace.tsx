@@ -1,12 +1,11 @@
-
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import type {
-  CustomTableListItem,
-} from "@/lib/types/domain/customtable";
+import { updateCustomTableAvailabilityAction } from "@/app/organization/customtables/actions";
+import type { CustomTableListItem } from "@/lib/types/domain/customtable";
 
 type CustomTablesWorkspaceProps = {
   organizationId: string;
@@ -21,13 +20,36 @@ export default function CustomTablesWorkspace({
   tables,
   canManage,
 }: CustomTablesWorkspaceProps) {
+  const router = useRouter();
+
   const [filter, setFilter] = useState<TableFilter>("all");
   const [search, setSearch] = useState("");
+  const [availabilityOverrides, setAvailabilityOverrides] =
+    useState<Record<string, boolean>>({});
+  const [processingTableId, setProcessingTableId] =
+    useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    tableId: string;
+    message: string;
+    success: boolean;
+  } | null>(null);
+
+  const effectiveTables = useMemo(
+    () =>
+      tables.map((table) => {
+        const override = availabilityOverrides[table.id];
+
+        return override === undefined
+          ? table
+          : { ...table, isEnabled: override };
+      }),
+    [tables, availabilityOverrides]
+  );
 
   const filteredTables = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
-    return tables.filter((table) => {
+    return effectiveTables.filter((table) => {
       const matchesFilter =
         filter === "all" ||
         (filter === "enabled" && table.isEnabled) ||
@@ -43,13 +65,13 @@ export default function CustomTablesWorkspace({
 
       return matchesFilter && matchesSearch;
     });
-  }, [filter, search, tables]);
+  }, [effectiveTables, filter, search]);
 
-  const enabledCount = tables.filter(
+  const enabledCount = effectiveTables.filter(
     (table) => table.isEnabled
   ).length;
 
-  const disabledCount = tables.length - enabledCount;
+  const disabledCount = effectiveTables.length - enabledCount;
 
   const getTableHref = (tableId: string) => {
     const params = new URLSearchParams({
@@ -61,13 +83,70 @@ export default function CustomTablesWorkspace({
     )}?${params.toString()}`;
   };
 
+  async function handleAvailabilityChange(
+    tableId: string,
+    currentEnabledState: boolean
+  ) {
+    if (!canManage || processingTableId !== null) {
+      return;
+    }
+
+    const nextEnabledState = !currentEnabledState;
+
+    setProcessingTableId(tableId);
+    setFeedback(null);
+
+    try {
+      const result = await updateCustomTableAvailabilityAction(
+        organizationId,
+        tableId,
+        nextEnabledState
+      );
+
+      if (!result.success) {
+        setFeedback({
+          tableId,
+          message: result.error,
+          success: false,
+        });
+        return;
+      }
+
+      setAvailabilityOverrides((current) => ({
+        ...current,
+        [tableId]: result.table.isEnabled,
+      }));
+
+      setFeedback({
+        tableId,
+        message: result.table.isEnabled
+          ? "Custom Table enabled successfully."
+          : "Custom Table disabled successfully.",
+        success: true,
+      });
+
+      router.refresh();
+    } catch (error) {
+      setFeedback({
+        tableId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to update Custom Table availability. Please try again.",
+        success: false,
+      });
+    } finally {
+      setProcessingTableId(null);
+    }
+  }
+
   return (
     <section className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-3">
         <SummaryCard
           label="Total Tables"
-          value={tables.length}
-          description="Configured operational tables"
+          value={effectiveTables.length}
+          description="Provisioned operational tables"
         />
 
         <SummaryCard
@@ -89,17 +168,29 @@ export default function CustomTablesWorkspace({
         <div className="flex flex-col gap-4 border-b border-gray-200 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-gray-950">
-              Table Definitions
+              Provisioned Tables
             </h2>
 
             <p className="mt-1 text-sm text-gray-500">
-              Browse and manage this organization&apos;s
-              operational tables.
+              Browse the operational tables assigned to this
+              organization. Other organizations may have different
+              tables and configurations.
             </p>
+
+            {canManage && (
+              <p className="mt-2 text-xs text-gray-500">
+                You can enable or disable provisioned tables.
+                Table definitions and column configuration are
+                managed by CascadEffects platform personnel.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <label className="sr-only" htmlFor="custom-table-search">
+            <label
+              className="sr-only"
+              htmlFor="custom-table-search"
+            >
               Search tables
             </label>
 
@@ -107,14 +198,15 @@ export default function CustomTablesWorkspace({
               id="custom-table-search"
               type="search"
               value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
+              onChange={(event) => setSearch(event.target.value)}
               placeholder="Search tables..."
               className="min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-64"
             />
 
-            <label className="sr-only" htmlFor="custom-table-filter">
+            <label
+              className="sr-only"
+              htmlFor="custom-table-filter"
+            >
               Filter tables
             </label>
 
@@ -156,94 +248,162 @@ export default function CustomTablesWorkspace({
             </div>
 
             <h3 className="mt-4 text-base font-semibold text-gray-900">
-              {tables.length === 0
-                ? "No custom tables yet"
+              {effectiveTables.length === 0
+                ? "No operational tables have been provisioned"
                 : "No matching tables"}
             </h3>
 
             <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
-              {tables.length === 0
-                ? canManage
-                  ? "Create your first operational table to begin configuring reusable columns and monthly records."
-                  : "No operational tables have been configured for this organization yet."
+              {effectiveTables.length === 0
+                ? "There are currently no Custom Tables assigned to this organization. Please contact your CascadEffects IT administrator to request provisioning."
                 : "Try changing your search or filter to find a table."}
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[680px] text-left text-sm">
+            <table className="w-full min-w-[850px] text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
                   <th className="px-5 py-3 font-semibold">
                     Table
                   </th>
+
                   <th className="px-5 py-3 font-semibold">
                     Table Key
                   </th>
+
                   <th className="px-5 py-3 font-semibold">
                     Columns
                   </th>
+
                   <th className="px-5 py-3 font-semibold">
                     Runtime
                   </th>
+
                   <th className="px-5 py-3 font-semibold">
                     Status
                   </th>
+
                   <th className="px-5 py-3 text-right font-semibold">
-                    Action
+                    Actions
                   </th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-gray-100">
-                {filteredTables.map((table) => (
-                  <tr
-                    key={table.id}
-                    className="transition hover:bg-gray-50"
-                  >
-                    <td className="px-5 py-4">
-                      <div className="font-medium text-gray-950">
-                        {table.name}
-                      </div>
+                {filteredTables.map((table) => {
+                  const isProcessing =
+                    processingTableId === table.id;
 
-                      {table.description && (
-                        <p className="mt-1 max-w-sm text-xs leading-5 text-gray-500">
-                          {table.description}
-                        </p>
-                      )}
-                    </td>
+                  const isAnotherTableProcessing =
+                    processingTableId !== null &&
+                    processingTableId !== table.id;
 
-                    <td className="px-5 py-4">
-                      <code className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
-                        {table.tableKey}
-                      </code>
-                    </td>
+                  const tableFeedback =
+                    feedback?.tableId === table.id
+                      ? feedback
+                      : null;
 
-                    <td className="px-5 py-4 tabular-nums text-gray-700">
-                      {table.columnCount}
-                    </td>
+                  return (
+                    <tr
+                      key={table.id}
+                      className="transition hover:bg-gray-50"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="font-medium text-gray-950">
+                          {table.name}
+                        </div>
 
-                    <td className="px-5 py-4">
-                      <span className="text-gray-700">
-                        {table.runtimeTabKey || "Not assigned"}
-                      </span>
-                    </td>
+                        {table.description && (
+                          <p className="mt-1 max-w-sm text-xs leading-5 text-gray-500">
+                            {table.description}
+                          </p>
+                        )}
 
-                    <td className="px-5 py-4">
-                      <StatusBadge enabled={table.isEnabled} />
-                    </td>
+                        {tableFeedback && (
+                          <p
+                            role={
+                              tableFeedback.success
+                                ? "status"
+                                : "alert"
+                            }
+                            className={`mt-2 max-w-sm text-xs ${
+                              tableFeedback.success
+                                ? "text-green-700"
+                                : "text-red-700"
+                            }`}
+                          >
+                            {tableFeedback.message}
+                          </p>
+                        )}
+                      </td>
 
-                    <td className="px-5 py-4 text-right">
-                      <Link
-                        href={getTableHref(table.id)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-800 transition hover:border-gray-400 hover:bg-gray-100"
-                      >
-                        {canManage ? "Configure" : "View"}
-                        <span aria-hidden="true">→</span>
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="px-5 py-4">
+                        <code className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
+                          {table.tableKey}
+                        </code>
+                      </td>
+
+                      <td className="px-5 py-4 tabular-nums text-gray-700">
+                        {table.columnCount}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <span className="text-gray-700">
+                          {table.runtimeTabKey || "Not assigned"}
+                        </span>
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <StatusBadge enabled={table.isEnabled} />
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          {canManage && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleAvailabilityChange(
+                                  table.id,
+                                  table.isEnabled
+                                )
+                              }
+                              disabled={
+                                isProcessing ||
+                                isAnotherTableProcessing
+                              }
+                              aria-label={
+                                table.isEnabled
+                                  ? `Disable ${table.name}`
+                                  : `Enable ${table.name}`
+                              }
+                              className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                table.isEnabled
+                                  ? "border-amber-300 text-amber-800 hover:bg-amber-50"
+                                  : "border-green-300 text-green-800 hover:bg-green-50"
+                              }`}
+                            >
+                              {isProcessing
+                                ? "Saving..."
+                                : table.isEnabled
+                                  ? "Disable"
+                                  : "Enable"}
+                            </button>
+                          )}
+
+                          <Link
+                            href={getTableHref(table.id)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-800 transition hover:border-gray-400 hover:bg-gray-100"
+                          >
+                            View
+                            <span aria-hidden="true">→</span>
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -251,11 +411,12 @@ export default function CustomTablesWorkspace({
 
         <div className="flex flex-col gap-2 border-t border-gray-200 px-5 py-4 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
           <span>
-            Showing {filteredTables.length} of {tables.length} tables
+            Showing {filteredTables.length} of {effectiveTables.length} tables
           </span>
 
           <span>
-            Table configuration is restricted to authorized administrators.
+            Table definitions and column configuration are managed
+            by authorized CascadEffects platform personnel.
           </span>
         </div>
       </div>

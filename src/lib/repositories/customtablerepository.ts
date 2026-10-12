@@ -1,3 +1,4 @@
+
 /**
  * ==========================================================
  * CascadEffects Performance Platform
@@ -17,6 +18,9 @@
  * ==========================================================
  */
 
+import "server-only";
+
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type {
@@ -92,6 +96,11 @@ interface CustomTableRowRecord {
   updated_at: string;
 }
 
+interface AtomicCustomTableMonthResult {
+  month_id: string;
+  created: boolean;
+}
+
 /* ==========================================================
    Record Mapping
 ========================================================== */
@@ -147,9 +156,7 @@ function mapMonth(
   };
 }
 
-function mapRow(
-  record: CustomTableRowRecord
-): CustomTableRow {
+function mapRow(record: CustomTableRowRecord): CustomTableRow {
   return {
     id: record.id,
     organizationId: record.organization_id,
@@ -161,6 +168,25 @@ function mapRow(
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };
+}
+
+/**
+ * Atomic row RPCs return a set of records. Normalize the
+ * response and fail explicitly if the expected row is absent.
+ */
+function requireAtomicRow(
+  data: unknown,
+  operation: string
+): CustomTableRow {
+  const record = Array.isArray(data) ? data[0] : data;
+
+  if (!record || typeof record !== "object") {
+    throw new Error(
+      `Atomic Custom Table row ${operation} returned no row.`
+    );
+  }
+
+  return mapRow(record as CustomTableRowRecord);
 }
 
 /* ==========================================================
@@ -657,14 +683,14 @@ export async function findCustomTableMonthByPerformanceMonth(
 }
 
 /**
- * Create a monthly instance.
+ * Create a monthly instance only when one does not already exist.
  *
- * If no snapshot is supplied, the current configured columns
- * are loaded and captured before creating the month.
+ * A unique-constraint race is handled by reading the winning record.
+ * Other database errors are surfaced instead of being masked.
  */
-export async function createCustomTableMonth(
+export async function createCustomTableMonthIfAbsent(
   input: CreateCustomTableMonthInput
-): Promise<CustomTableMonth> {
+): Promise<{ month: CustomTableMonth; created: boolean }> {
   const existing = await findCustomTableMonthByPerformanceMonth(
     input.organizationId,
     input.tableDefinitionId,
@@ -672,7 +698,7 @@ export async function createCustomTableMonth(
   );
 
   if (existing) {
-    return existing;
+    return { month: existing, created: false };
   }
 
   const columnsSnapshot =
@@ -709,12 +735,128 @@ export async function createCustomTableMonth(
     .single();
 
   if (error) {
+    if (error.code === "23505") {
+      const existingAfterInsert =
+        await findCustomTableMonthByPerformanceMonth(
+          input.organizationId,
+          input.tableDefinitionId,
+          input.performanceMonth
+        );
+
+      if (existingAfterInsert) {
+        return { month: existingAfterInsert, created: false };
+      }
+    }
+
     throw new Error(
       `Failed to create Custom Table month: ${error.message}`
     );
   }
 
-  return mapMonth(data as CustomTableMonthRecord);
+  return {
+    month: mapMonth(data as CustomTableMonthRecord),
+    created: true,
+  };
+}
+
+/**
+ * Atomically create a target month and copy eligible rows from
+ * a source month.
+ *
+ * The database function creates the target month and copies
+ * eligible rows in one transaction. If the target month already
+ * exists, it returns that month without modifying its rows.
+ *
+ * The calling service must authorize this operation before use.
+ *
+ * IMPORTANT: This RPC uses the privileged server-side client
+ * because the migration restricts function execution to service_role.
+ * Never import this repository into client-side code.
+ */
+export async function copyForwardCustomTableMonthAtomic(input: {
+  organizationId: string;
+  tableDefinitionId: string;
+  sourceMonthId: string;
+  targetPerformanceMonth: string;
+  columnsSnapshot?: CustomTableColumnSnapshot[];
+}): Promise<{ month: CustomTableMonth; created: boolean }> {
+  const columnsSnapshot =
+    input.columnsSnapshot ??
+    (await loadCustomTableColumns(
+      input.organizationId,
+      input.tableDefinitionId
+    )).map(
+      (column): CustomTableColumnSnapshot => ({
+        id: column.id,
+        columnKey: column.columnKey,
+        label: column.label,
+        dataType: column.dataType,
+        position: column.position,
+        isRequired: column.isRequired,
+        isVisible: column.isVisible,
+        isEditable: column.isEditable,
+        settings: column.settings,
+      })
+    );
+
+  const { data, error } = await supabaseAdmin.rpc(
+    "copy_forward_custom_table_month_atomic",
+    {
+      p_organization_id: input.organizationId,
+      p_table_definition_id: input.tableDefinitionId,
+      p_source_month_id: input.sourceMonthId,
+      p_target_performance_month: input.targetPerformanceMonth,
+      p_columns_snapshot: columnsSnapshot,
+    }
+  );
+
+  if (error) {
+    throw new Error(
+      `Failed to copy forward Custom Table month: ${error.message}`
+    );
+  }
+
+  const result = (
+    Array.isArray(data) ? data[0] : data
+  ) as AtomicCustomTableMonthResult | null;
+
+  if (!result || typeof result.month_id !== "string") {
+    throw new Error(
+      "Atomic Custom Table carry-forward returned no target month."
+    );
+  }
+
+  const month = await findCustomTableMonthById(
+    input.organizationId,
+    input.tableDefinitionId,
+    result.month_id
+  );
+
+  if (!month) {
+    throw new Error(
+      "The target Custom Table month could not be loaded after carry-forward."
+    );
+  }
+
+  return {
+    month,
+    created: result.created === true,
+  };
+}
+
+/**
+ * Create a monthly instance, returning an existing instance if one
+ * already exists for the requested performance month.
+ *
+ * This preserves the behavior expected by ordinary workspace
+ * initialization. Carry-forward operations should use the atomic
+ * repository function above.
+ */
+export async function createCustomTableMonth(
+  input: CreateCustomTableMonthInput
+): Promise<CustomTableMonth> {
+  const result = await createCustomTableMonthIfAbsent(input);
+  return result.month;
 }
 
 /**
@@ -842,26 +984,23 @@ export async function findCustomTableRowById(
 }
 
 /**
- * Create an operational row.
+ * Create an operational row through the atomic database
+ * function. The database assigns its position while holding
+ * the monthly lock, avoiding concurrent insert collisions.
  */
 export async function createCustomTableRow(
   input: CreateCustomTableRowInput
 ): Promise<CustomTableRow> {
-  const supabase = await createSupabaseServerClient();
-
-  const { data, error } = await supabase
-    .from("custom_table_rows")
-    .insert({
-      organization_id: input.organizationId,
-      table_month_id: input.tableMonthId,
-      row_data: input.rowData ?? {},
-      operational_status:
-        input.operationalStatus ?? "in_progress",
-      is_hidden: input.isHidden ?? false,
-      position: input.position ?? 0,
-    })
-    .select("*")
-    .single();
+  const { data, error } = await supabaseAdmin.rpc(
+    "create_custom_table_row_atomic",
+    {
+      p_organization_id: input.organizationId,
+      p_table_month_id: input.tableMonthId,
+      p_row_data: input.rowData ?? {},
+      p_operational_status: input.operationalStatus ?? "in_progress",
+      p_is_hidden: input.isHidden ?? false,
+    }
+  );
 
   if (error) {
     throw new Error(
@@ -869,13 +1008,12 @@ export async function createCustomTableRow(
     );
   }
 
-  return mapRow(data as CustomTableRowRecord);
+  return requireAtomicRow(data, "creation");
 }
 
 /**
- * Update the supplied row properties.
- *
- * Partial updates preserve values that were not supplied.
+ * Update the supplied row properties through the atomic database
+ * function. Partial updates preserve properties not supplied.
  */
 export async function updateCustomTableRow(
   organizationId: string,
@@ -883,30 +1021,13 @@ export async function updateCustomTableRow(
   rowId: string,
   input: UpdateCustomTableRowInput
 ): Promise<CustomTableRow> {
-  const updates: {
-    row_data?: CustomTableRowData;
-    operational_status?: CustomTableOperationalStatus;
-    is_hidden?: boolean;
-    position?: number;
-  } = {};
+  const hasUpdates =
+    input.rowData !== undefined ||
+    input.operationalStatus !== undefined ||
+    input.isHidden !== undefined ||
+    input.position !== undefined;
 
-  if (input.rowData !== undefined) {
-    updates.row_data = input.rowData;
-  }
-
-  if (input.operationalStatus !== undefined) {
-    updates.operational_status = input.operationalStatus;
-  }
-
-  if (input.isHidden !== undefined) {
-    updates.is_hidden = input.isHidden;
-  }
-
-  if (input.position !== undefined) {
-    updates.position = input.position;
-  }
-
-  if (Object.keys(updates).length === 0) {
+  if (!hasUpdates) {
     const existing = await findCustomTableRowById(
       organizationId,
       tableMonthId,
@@ -920,16 +1041,18 @@ export async function updateCustomTableRow(
     return existing;
   }
 
-  const supabase = await createSupabaseServerClient();
-
-  const { data, error } = await supabase
-    .from("custom_table_rows")
-    .update(updates)
-    .eq("organization_id", organizationId)
-    .eq("table_month_id", tableMonthId)
-    .eq("id", rowId)
-    .select("*")
-    .single();
+  const { data, error } = await supabaseAdmin.rpc(
+    "update_custom_table_row_atomic",
+    {
+      p_organization_id: organizationId,
+      p_table_month_id: tableMonthId,
+      p_row_id: rowId,
+      p_row_data: input.rowData ?? null,
+      p_operational_status: input.operationalStatus ?? null,
+      p_is_hidden: input.isHidden ?? null,
+      p_position: input.position ?? null,
+    }
+  );
 
   if (error) {
     throw new Error(
@@ -937,7 +1060,7 @@ export async function updateCustomTableRow(
     );
   }
 
-  return mapRow(data as CustomTableRowRecord);
+  return requireAtomicRow(data, "update");
 }
 
 /**
@@ -973,7 +1096,7 @@ export async function restoreCustomTableRow(
 }
 
 /**
- * Delete a row permanently.
+ * Delete a row permanently through the atomic database function.
  *
  * Prefer hiding a row for ordinary operational removal.
  * This function is available for explicitly authorized
@@ -984,16 +1107,14 @@ export async function deleteCustomTableRow(
   tableMonthId: string,
   rowId: string
 ): Promise<void> {
-  const supabase = await createSupabaseServerClient();
-
-  const { data, error } = await supabase
-    .from("custom_table_rows")
-    .delete()
-    .eq("organization_id", organizationId)
-    .eq("table_month_id", tableMonthId)
-    .eq("id", rowId)
-    .select("id")
-    .maybeSingle();
+  const { data, error } = await supabaseAdmin.rpc(
+    "delete_custom_table_row_atomic",
+    {
+      p_organization_id: organizationId,
+      p_table_month_id: tableMonthId,
+      p_row_id: rowId,
+    }
+  );
 
   if (error) {
     throw new Error(
@@ -1001,8 +1122,10 @@ export async function deleteCustomTableRow(
     );
   }
 
-  if (!data) {
-    throw new Error("Custom Table row was not found.");
+  if (data !== true) {
+    throw new Error(
+      "Atomic Custom Table row deletion was not confirmed."
+    );
   }
 }
 
@@ -1016,9 +1139,13 @@ export async function deleteCustomTableRow(
  * The caller must pass every row ID in that section exactly
  * once, in the intended order.
  *
- * Updates are organization- and month-scoped. This operation
- * is not atomic: use a database RPC/transaction before relying
- * on concurrent multi-user reordering in production.
+ * The database RPC validates the supplied IDs and updates
+ * positions atomically. The service layer must authorize
+ * this operation before calling the repository.
+ *
+ * IMPORTANT: This RPC uses the privileged server-side client
+ * because the migration restricts function execution to service_role.
+ * Never import this repository into client-side code.
  */
 export async function saveCustomTableRowOrder(
   organizationId: string,
@@ -1029,66 +1156,24 @@ export async function saveCustomTableRowOrder(
   const uniqueIds = new Set(rowIds);
 
   if (uniqueIds.size !== rowIds.length) {
+    throw new Error("Row ordering contains duplicate row IDs.");
+  }
+
+  const { data, error } = await supabaseAdmin.rpc(
+    "save_custom_table_row_order_atomic",
+    {
+      p_organization_id: organizationId,
+      p_table_month_id: tableMonthId,
+      p_row_ids: rowIds,
+      p_is_hidden: isHidden,
+    }
+  );
+
+  if (error) {
     throw new Error(
-      "Row ordering contains duplicate row IDs."
+      `Failed to save Custom Table row order: ${error.message}`
     );
   }
 
-  const currentRows = await loadCustomTableRows(
-    organizationId,
-    tableMonthId
-  );
-
-  const sectionRows = currentRows.filter(
-    (row) => row.isHidden === isHidden
-  );
-
-  const expectedIds = new Set(
-    sectionRows.map((row) => row.id)
-  );
-
-  if (
-    expectedIds.size !== uniqueIds.size ||
-    rowIds.some((rowId) => !expectedIds.has(rowId))
-  ) {
-    throw new Error(
-      "Row ordering must contain every row in the selected section."
-    );
-  }
-
-  for (
-    let position = 0;
-    position < rowIds.length;
-    position += 1
-  ) {
-    const rowId = rowIds[position];
-    const supabase = await createSupabaseServerClient();
-
-    const { data, error } = await supabase
-      .from("custom_table_rows")
-      .update({ position })
-      .eq("organization_id", organizationId)
-      .eq("table_month_id", tableMonthId)
-      .eq("id", rowId)
-      .eq("is_hidden", isHidden)
-      .select("id")
-      .maybeSingle();
-
-    if (error) {
-      throw new Error(
-        `Failed to save Custom Table row order: ${error.message}`
-      );
-    }
-
-    if (!data) {
-      throw new Error(
-        `Could not update row order for row ${rowId}.`
-      );
-    }
-  }
-
-  return loadCustomTableRows(
-    organizationId,
-    tableMonthId
-  );
+  return ((data ?? []) as CustomTableRowRecord[]).map(mapRow);
 }

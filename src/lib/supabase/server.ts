@@ -27,7 +27,7 @@
  * It must not be imported by client components.
  * ==========================================================
  */
-
+import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 

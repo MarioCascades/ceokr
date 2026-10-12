@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -68,9 +67,8 @@ export default async function CustomTableConfigurationPage({
     notFound();
   }
 
-  const [columns, canManage, canEditRows] = await Promise.all([
+  const [columns, canEditRows] = await Promise.all([
     listCustomTableColumns(organizationId, table.id),
-    hasPermission(organizationId, "custom_tables.manage"),
     hasPermission(organizationId, "custom_tables.rows.edit"),
   ]);
 
@@ -135,7 +133,7 @@ export default async function CustomTableConfigurationPage({
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
               {table.description ||
-                "Configure this operational table and manage its monthly records."}
+                "Review this provisioned operational table and manage its monthly records according to your permissions."}
             </p>
           </div>
 
@@ -168,7 +166,7 @@ export default async function CustomTableConfigurationPage({
           <InfoCard
             label="Configured Columns"
             value={String(columns.length)}
-            description="Fields defined for this table"
+            description="Fields provisioned for this table"
           />
 
           <InfoCard
@@ -181,13 +179,13 @@ export default async function CustomTableConfigurationPage({
         <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div>
             <h2 className="text-xl font-semibold text-gray-950">
-              Column Definitions
+              Configured Fields
             </h2>
 
             <p className="mt-1 text-sm text-gray-500">
-              {canManage
-                ? "Add, edit, and remove fields for this operational table."
-                : "Review the configured fields and their display settings."}
+              Review the fields provisioned for this table. Table
+              definitions and column configuration are managed by
+              authorized CascadEffects platform personnel.
             </p>
           </div>
 
@@ -196,7 +194,7 @@ export default async function CustomTableConfigurationPage({
               organizationId={organizationId}
               tableDefinitionId={table.id}
               columns={columns}
-              canManage={canManage}
+              canManage={false}
             />
           </div>
         </section>
@@ -240,7 +238,7 @@ export default async function CustomTableConfigurationPage({
                     0,
                     7
                   )}. A user with permission to edit operational records can initialize this month.`
-                : "Enable this Custom Table before creating or managing monthly operational records."}
+                : "This Custom Table is disabled. It must be enabled before its monthly operational records can be accessed through this workspace."}
             </p>
           </section>
         )}

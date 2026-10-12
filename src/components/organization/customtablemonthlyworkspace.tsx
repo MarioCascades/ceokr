@@ -31,6 +31,15 @@ type OperationalStatus =
   | "on_hold"
   | "completed";
 
+const BRAND = {
+  navy: "#082550",
+  blueGray: "#B4C2D1",
+  lightBlue: "#E9F4F8",
+  charcoal: "#272D2C",
+  white: "#FFFFFF",
+  coral: "#E26D5C",
+};
+
 const STATUS_OPTIONS: {
   value: OperationalStatus;
   label: string;
@@ -39,27 +48,19 @@ const STATUS_OPTIONS: {
   {
     value: "in_progress",
     label: "In Progress",
-    classes: "bg-blue-100 text-blue-800",
+    classes: "border-[#B4C2D1] bg-[#E9F4F8] text-[#082550]",
   },
   {
     value: "on_hold",
     label: "On Hold",
-    classes: "bg-amber-100 text-amber-800",
+    classes: "border-[#E6C99B] bg-[#FFF5E8] text-[#80551C]",
   },
   {
     value: "completed",
     label: "Completed",
-    classes: "bg-green-100 text-green-800",
+    classes: "border-[#B7D8C6] bg-[#EEF8F1] text-[#236342]",
   },
 ];
-
-function currentMonthValue(): string {
-  const now = new Date();
-
-  return `${now.getFullYear()}-${String(
-    now.getMonth() + 1
-  ).padStart(2, "0")}`;
-}
 
 function toPerformanceMonth(month: string): string {
   return `${month}-01`;
@@ -72,7 +73,8 @@ function toMonthInputValue(performanceMonth: string): string {
 function getStatusClasses(status: string): string {
   return (
     STATUS_OPTIONS.find((option) => option.value === status)
-      ?.classes ?? "bg-gray-100 text-gray-700"
+      ?.classes ??
+    "border-[#B4C2D1] bg-[#F7F9FB] text-[#272D2C]"
   );
 }
 
@@ -114,9 +116,6 @@ export default function CustomTableMonthlyWorkspace({
   );
 
   const [showHidden, setShowHidden] = useState(false);
-  const [newRowData, setNewRowData] = useState<
-    Record<string, string>
-  >({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -185,25 +184,17 @@ export default function CustomTableMonthlyWorkspace({
       if (result) {
         setWorkspace(result);
         setSelectedMonth(monthValue);
-        setNewRowData({});
         setNotice("Workspace loaded.");
       }
     },
-    [
-      organizationId,
-      tableDefinitionId,
-      runAction,
-    ]
+    [organizationId, tableDefinitionId, runAction]
   );
 
   async function handleAddRow() {
     const rowData: Record<string, unknown> = {};
 
     for (const column of workspace.columns) {
-      if (column.isVisible || column.isRequired) {
-        rowData[column.columnKey] =
-          newRowData[column.columnKey] ?? "";
-      }
+      rowData[column.columnKey] = "";
     }
 
     const result = await runAction(() =>
@@ -224,8 +215,7 @@ export default function CustomTableMonthlyWorkspace({
         rows: [...current.rows, result],
       }));
 
-      setNewRowData({});
-      setNotice("Record added.");
+      setNotice("Blank row added. Click a cell to enter details.");
     }
   }
 
@@ -418,264 +408,298 @@ export default function CustomTableMonthlyWorkspace({
 
   const isFinalized = workspace.month.isFinalized;
 
+  const buttonBase =
+    "inline-flex items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-semibold transition duration-150 focus:outline-none focus:ring-2 focus:ring-[#E26D5C] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45";
+
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-950">
-            Monthly Workspace
-          </h2>
+    <section className="space-y-5 text-[#272D2C]">
+      {/* WORKSPACE HEADER */}
+      <div className="relative overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-[0_3px_12px_rgba(8,37,80,0.06)]">
+        <div className="h-1.5 bg-[#082550]" />
 
-          <p className="mt-1 text-sm text-gray-500">
-            Manage operational records and review monthly history.
-          </p>
-        </div>
+        <div className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E26D5C]">
+              Operational Workspace
+            </p>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
-            Performance Month
-            <input
-              type="month"
-              value={selectedMonth}
-              disabled={busy}
-              onChange={(event) => {
-                const value = event.target.value;
+            <h2 className="mt-2 text-xl font-black uppercase tracking-tight text-[#082550] sm:text-2xl">
+              Monthly Workspace
+            </h2>
 
-                if (value) {
-                  void refreshWorkspace(value);
-                }
-              }}
-              className="rounded-lg border border-gray-300 px-3 py-2 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-[#272D2C]/70">
+              Manage operational records, update recruitment progress, and review
+              historical performance by month.
+            </p>
+          </div>
 
-          {canEditRows && (
-            <button
-              type="button"
-              disabled={busy || isFinalized}
-              onClick={() => void handleCarryForward()}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Carry Forward
-            </button>
-          )}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label className="flex flex-col gap-1.5 text-xs font-semibold text-[#272D2C]">
+              <span className="uppercase tracking-wider text-[#082550]">
+                Performance Month
+              </span>
+              <input
+                type="month"
+                value={selectedMonth}
+                disabled={busy}
+                onChange={(event) => {
+                  const value = event.target.value;
+
+                  if (value) {
+                    setShowHidden(false);
+                    void refreshWorkspace(value);
+                  }
+                }}
+                className="min-h-11 rounded-lg border border-[#B4C2D1] bg-white px-3 py-2 text-sm font-medium text-[#082550] outline-none transition hover:border-[#082550] focus:border-[#E26D5C] focus:ring-2 focus:ring-[#E26D5C]/20 disabled:bg-[#F5F7F9]"
+              />
+            </label>
+
+            {canEditRows && (
+              <button
+                type="button"
+                disabled={busy || isFinalized}
+                onClick={() => void handleCarryForward()}
+                className={`${buttonBase} border-[#082550] bg-[#082550] text-white hover:bg-[#12396C]`}
+              >
+                Carry Forward
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* FINALIZED MONTH */}
       {isFinalized && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          This month is finalized. Operational records cannot be edited.
+        <div className="flex gap-3 rounded-xl border border-[#E6C99B] bg-[#FFF8ED] p-4">
+          <span className="mt-0.5 h-5 w-1 shrink-0 rounded-full bg-[#E26D5C]" />
+          <div>
+            <p className="text-sm font-bold text-[#80551C]">
+              This month is finalized
+            </p>
+            <p className="mt-1 text-sm leading-5 text-[#80551C]/85">
+              Operational records are read-only for this month.
+            </p>
+          </div>
         </div>
       )}
 
+      {/* FEEDBACK */}
       {error && (
         <div
           role="alert"
-          className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+          className="rounded-xl border border-[#E26D5C]/50 bg-[#FFF4F1] p-4"
         >
-          {error}
+          <p className="text-sm font-bold text-[#9D352A]">
+            The operation could not be completed
+          </p>
+          <p className="mt-1 text-sm leading-5 text-[#9D352A]">
+            {error}
+          </p>
         </div>
       )}
 
       {notice && !error && (
         <div
           role="status"
-          className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800"
+          className="rounded-xl border border-[#B4C2D1] bg-[#E9F4F8] px-4 py-3"
         >
-          {notice}
+          <p className="text-sm font-medium text-[#082550]">
+            {notice}
+          </p>
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-800">
-            Active: {activeRows.length}
-          </span>
+      {/* LISTING SUMMARY AND CONTROLS */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#B4C2D1]/70 bg-white px-3.5 py-2 shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-[#082550]" />
+            <span className="text-xs font-semibold text-[#082550]">
+              Active
+            </span>
+            <span className="text-sm font-black tabular-nums text-[#082550]">
+              {activeRows.length}
+            </span>
+          </div>
 
-          <span className="rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700">
-            Hidden: {hiddenRows.length}
-          </span>
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#B4C2D1]/50 bg-[#E9F4F8] px-3.5 py-2">
+            <span className="h-2 w-2 rounded-full bg-[#B4C2D1]" />
+            <span className="text-xs font-semibold text-[#272D2C]">
+              Hidden
+            </span>
+            <span className="text-sm font-black tabular-nums text-[#272D2C]">
+              {hiddenRows.length}
+            </span>
+          </div>
         </div>
 
         <button
           type="button"
           onClick={() => setShowHidden((current) => !current)}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-white"
+          className={`${buttonBase} border-[#B4C2D1] bg-white text-[#082550] hover:border-[#082550] hover:bg-[#E9F4F8]`}
         >
-          {showHidden ? "Show Active Listings" : "Show Hidden Listings"}
+          {showHidden ? "View Active Listings" : "Show Hidden Listings"}
+          <span className="ml-2 rounded-full bg-[#E9F4F8] px-2 py-0.5 text-xs text-[#082550]">
+            {showHidden ? activeRows.length : hiddenRows.length}
+          </span>
         </button>
       </div>
 
-      {canEditRows && !showHidden && !isFinalized && (
-        <section className="rounded-2xl border border-blue-200 bg-blue-50/50 p-5">
-          <h3 className="font-semibold text-gray-950">
-            Add Record
-          </h3>
-
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {visibleColumns.map((column) => (
-              <label
-                key={column.id}
-                className="flex flex-col gap-1 text-sm font-medium text-gray-700"
-              >
-                {column.label}
-                {column.isRequired && (
-                  <span className="text-xs font-normal text-gray-500">
-                    Required
-                  </span>
-                )}
-
-                <input
-                  value={newRowData[column.columnKey] ?? ""}
-                  required={column.isRequired}
-                  disabled={busy}
-                  onChange={(event) =>
-                    setNewRowData((current) => ({
-                      ...current,
-                      [column.columnKey]: event.target.value,
-                    }))
-                  }
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
-              </label>
-            ))}
-          </div>
-
-          <div className="mt-4">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleAddRow()}
-              className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Add Record
-            </button>
-          </div>
-        </section>
-      )}
-
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
+      {/* SPREADSHEET */}
+      <div className="overflow-hidden rounded-2xl border border-[#B4C2D1]/80 bg-white shadow-[0_4px_18px_rgba(8,37,80,0.07)]">
+        <div className="flex flex-col gap-3 border-b border-[#B4C2D1]/60 bg-[#F7F9FB] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="font-semibold text-gray-950">
-              {showHidden ? "Hidden Listings" : "Active Listings"}
-            </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-black uppercase tracking-wide text-[#082550]">
+                {showHidden ? "Hidden Listings" : "Active Listings"}
+              </h3>
+              <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#082550] ring-1 ring-[#B4C2D1]/70">
+                {selectedMonth}
+              </span>
+            </div>
 
-            <p className="mt-1 text-xs text-gray-500">
-              {workspace.month.performanceMonth}
+            <p className="mt-1.5 text-xs text-[#272D2C]/65">
+              {showHidden
+                ? "Restore a hidden row whenever it needs to return to the worksheet."
+                : "Select a cell to edit. Changes are saved when you leave the cell."}
             </p>
           </div>
 
-          {busy && (
-            <span className="text-sm text-gray-500">
-              Saving...
+          <div className="flex items-center gap-2">
+            {busy && (
+              <span className="inline-flex items-center gap-2 rounded-full bg-[#E9F4F8] px-3 py-1.5 text-xs font-semibold text-[#082550]">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#E26D5C]" />
+                Saving changes
+              </span>
+            )}
+            <span className="text-xs font-medium text-[#272D2C]/55">
+              {displayedRows.length} rows
             </span>
-          )}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Order</th>
+          <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
+            <thead>
+              <tr className="bg-[#082550] text-white">
+                <th className="w-24 border-r border-white/15 px-3 py-4 text-center text-[10px] font-bold uppercase tracking-wider">
+                  Order
+                </th>
 
                 {visibleColumns.map((column) => (
                   <th
                     key={column.id}
-                    className="px-4 py-3 font-semibold"
+                    className="border-r border-white/15 px-4 py-4 text-[10px] font-bold uppercase tracking-wider last:border-r-0"
                   >
                     {column.label}
+                    {column.isRequired && (
+                      <span className="ml-1 text-[#E26D5C]">*</span>
+                    )}
                   </th>
                 ))}
 
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Actions</th>
+                <th className="min-w-40 border-r border-white/15 px-4 py-4 text-[10px] font-bold uppercase tracking-wider">
+                  Workflow Status
+                </th>
+
+                <th className="w-24 px-4 py-4 text-[10px] font-bold uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[#B4C2D1]/60">
               {displayedRows.length > 0 ? (
                 displayedRows.map((row, index) => (
                   <tr
                     key={row.id}
-                    className={row.isHidden ? "bg-gray-50" : ""}
+                    className={`group transition-colors ${
+                      row.isHidden
+                        ? "bg-[#F7F9FB]"
+                        : index % 2 === 0
+                          ? "bg-white hover:bg-[#E9F4F8]/55"
+                          : "bg-[#F7F9FB]/70 hover:bg-[#E9F4F8]/70"
+                    }`}
                   >
-                    <td className="px-4 py-3 align-top">
-                      <div className="flex flex-wrap gap-1">
-                        <button
-                          type="button"
-                          title="Move to top"
-                          disabled={
-                            !canEditRows || busy || isFinalized || index === 0
-                          }
-                          onClick={() =>
-                            void handleMove(row, "top")
-                          }
-                          className="rounded border border-gray-300 px-2 py-1 text-xs disabled:opacity-40"
-                        >
-                          Top
-                        </button>
+                    <td className="border-r border-[#B4C2D1]/45 px-3 py-3 align-top">
+                      <div className="flex min-w-20 flex-col items-center gap-2">
+                        <span className="text-xs font-bold tabular-nums text-[#082550]/70">
+                          {(index + 1).toString().padStart(2, "0")}
+                        </span>
 
-                        <button
-                          type="button"
-                          title="Move up"
-                          disabled={
-                            !canEditRows || busy || isFinalized || index === 0
-                          }
-                          onClick={() =>
-                            void handleMove(row, "up")
-                          }
-                          className="rounded border border-gray-300 px-2 py-1 text-xs disabled:opacity-40"
-                        >
-                          ↑
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            title="Move to top"
+                            aria-label="Move row to top"
+                            disabled={
+                              !canEditRows || busy || isFinalized || index === 0
+                            }
+                            onClick={() => void handleMove(row, "top")}
+                            className="rounded border border-[#B4C2D1]/80 bg-white px-1.5 py-1 text-[10px] font-bold text-[#082550] transition hover:border-[#082550] hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            Top
+                          </button>
 
-                        <button
-                          type="button"
-                          title="Move down"
-                          disabled={
-                            !canEditRows ||
-                            busy ||
-                            isFinalized ||
-                            index === displayedRows.length - 1
-                          }
-                          onClick={() =>
-                            void handleMove(row, "down")
-                          }
-                          className="rounded border border-gray-300 px-2 py-1 text-xs disabled:opacity-40"
-                        >
-                          ↓
-                        </button>
+                          <button
+                            type="button"
+                            title="Move up"
+                            aria-label="Move row up"
+                            disabled={
+                              !canEditRows || busy || isFinalized || index === 0
+                            }
+                            onClick={() => void handleMove(row, "up")}
+                            className="rounded border border-[#B4C2D1]/80 bg-white px-1.5 py-1 text-xs font-bold text-[#082550] transition hover:border-[#082550] hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            ↑
+                          </button>
 
-                        <button
-                          type="button"
-                          title="Move to bottom"
-                          disabled={
-                            !canEditRows ||
-                            busy ||
-                            isFinalized ||
-                            index === displayedRows.length - 1
-                          }
-                          onClick={() =>
-                            void handleMove(row, "bottom")
-                          }
-                          className="rounded border border-gray-300 px-2 py-1 text-xs disabled:opacity-40"
-                        >
-                          Bottom
-                        </button>
+                          <button
+                            type="button"
+                            title="Move down"
+                            aria-label="Move row down"
+                            disabled={
+                              !canEditRows ||
+                              busy ||
+                              isFinalized ||
+                              index === displayedRows.length - 1
+                            }
+                            onClick={() => void handleMove(row, "down")}
+                            className="rounded border border-[#B4C2D1]/80 bg-white px-1.5 py-1 text-xs font-bold text-[#082550] transition hover:border-[#082550] hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            ↓
+                          </button>
+
+                          <button
+                            type="button"
+                            title="Move to bottom"
+                            aria-label="Move row to bottom"
+                            disabled={
+                              !canEditRows ||
+                              busy ||
+                              isFinalized ||
+                              index === displayedRows.length - 1
+                            }
+                            onClick={() => void handleMove(row, "bottom")}
+                            className="rounded border border-[#B4C2D1]/80 bg-white px-1.5 py-1 text-[10px] font-bold text-[#082550] transition hover:border-[#082550] hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            End
+                          </button>
+                        </div>
                       </div>
                     </td>
 
                     {visibleColumns.map((column) => (
                       <td
                         key={column.id}
-                        className="px-4 py-3 align-top"
+                        className="min-w-44 border-r border-[#B4C2D1]/40 px-3 py-3 align-top last:border-r-0"
                       >
                         {canEditRows &&
                         column.isEditable &&
                         !isFinalized ? (
                           <input
                             key={`${row.id}-${column.id}-${getCellValue(row, column)}`}
+                            aria-label={`${column.label}, row ${index + 1}`}
                             defaultValue={getCellValue(row, column)}
                             disabled={busy || row.isHidden}
                             onBlur={(event) =>
@@ -690,19 +714,22 @@ export default function CustomTableMonthlyWorkspace({
                                 event.currentTarget.blur();
                               }
                             }}
-                            className="w-full min-w-32 rounded-md border border-transparent bg-transparent px-2 py-1 text-gray-800 outline-none transition hover:border-gray-200 focus:border-blue-500 focus:bg-white"
+                            className="w-full min-w-32 rounded-md border border-transparent bg-transparent px-2.5 py-2 text-sm leading-5 text-[#272D2C] outline-none transition placeholder:text-[#B4C2D1] hover:border-[#B4C2D1] focus:border-[#E26D5C] focus:bg-white focus:ring-2 focus:ring-[#E26D5C]/15 disabled:cursor-not-allowed disabled:opacity-65"
                           />
                         ) : (
-                          <span className="whitespace-pre-wrap text-gray-700">
-                            {getCellValue(row, column) || "—"}
-                          </span>
+                          <div className="min-h-9 whitespace-pre-wrap break-words px-2.5 py-2 text-sm leading-5 text-[#272D2C]/85">
+                            {getCellValue(row, column) || (
+                              <span className="text-[#B4C2D1]">Not entered</span>
+                            )}
+                          </div>
                         )}
                       </td>
                     ))}
 
-                    <td className="px-4 py-3 align-top">
+                    <td className="border-r border-[#B4C2D1]/40 px-3 py-3 align-top">
                       {canEditRows && !isFinalized && !row.isHidden ? (
                         <select
+                          aria-label={`Workflow status, row ${index + 1}`}
                           value={row.operationalStatus}
                           disabled={busy}
                           onChange={(event) =>
@@ -711,7 +738,7 @@ export default function CustomTableMonthlyWorkspace({
                               event.target.value as OperationalStatus
                             )
                           }
-                          className="rounded-lg border border-gray-300 bg-white px-2 py-2 text-sm outline-none focus:border-blue-500"
+                          className="w-full min-w-32 rounded-lg border border-[#B4C2D1]/80 bg-white px-2.5 py-2 text-xs font-semibold text-[#082550] outline-none transition hover:border-[#082550] focus:border-[#E26D5C] focus:ring-2 focus:ring-[#E26D5C]/15 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {STATUS_OPTIONS.map((option) => (
                             <option
@@ -724,19 +751,20 @@ export default function CustomTableMonthlyWorkspace({
                         </select>
                       ) : (
                         <span
-                          className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(row.operationalStatus)}`}
+                          className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold ${getStatusClasses(row.operationalStatus)}`}
                         >
                           {getStatusLabel(row.operationalStatus)}
                         </span>
                       )}
                     </td>
 
-                    <td className="px-4 py-3 align-top">
+                    <td className="px-3 py-3 align-top">
                       <button
                         type="button"
+                        aria-label={row.isHidden ? "Restore row" : "Hide row"}
                         disabled={!canEditRows || busy || isFinalized}
                         onClick={() => void handleHideRestore(row)}
-                        className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex items-center justify-center rounded-lg border border-[#B4C2D1] bg-white px-3 py-2 text-xs font-semibold text-[#082550] transition hover:border-[#E26D5C] hover:bg-[#FFF4F1] hover:text-[#9D352A] focus:outline-none focus:ring-2 focus:ring-[#E26D5C]/25 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {row.isHidden ? "Restore" : "Hide"}
                       </button>
@@ -747,16 +775,65 @@ export default function CustomTableMonthlyWorkspace({
                 <tr>
                   <td
                     colSpan={visibleColumns.length + 3}
-                    className="px-6 py-12 text-center text-gray-500"
+                    className="px-6 py-16 text-center"
                   >
-                    {showHidden
-                      ? "There are no hidden records for this month."
-                      : "There are no records for this month yet."}
+                    <div className="mx-auto flex max-w-sm flex-col items-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#B4C2D1]/70 bg-[#E9F4F8] text-xl text-[#082550]">
+                        {showHidden ? "–" : "+"}
+                      </div>
+                      <p className="mt-4 text-sm font-bold text-[#082550]">
+                        {showHidden
+                          ? "No hidden listings"
+                          : "Your worksheet is ready"}
+                      </p>
+                      <p className="mt-1 text-sm leading-5 text-[#272D2C]/65">
+                        {showHidden
+                          ? "There are no hidden records for this month."
+                          : "Add your first row below to start recording this month's operational activity."}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+
+              {/* ADD ROW */}
+              {canEditRows && !showHidden && !isFinalized && (
+                <tr className="bg-[#E9F4F8]/55">
+                  <td
+                    colSpan={visibleColumns.length + 3}
+                    className="border-t border-[#B4C2D1]/60 px-4 py-3"
+                  >
+                    <button
+                      type="button"
+                      aria-label="Add recruitment row"
+                      title="Add row"
+                      disabled={busy}
+                      onClick={() => void handleAddRow()}
+                      className="group inline-flex items-center gap-2 rounded-lg border border-dashed border-[#B4C2D1] bg-white px-3.5 py-2.5 text-sm font-semibold text-[#082550] transition hover:border-[#E26D5C] hover:bg-white hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#082550] text-lg font-normal leading-none text-white transition group-hover:bg-[#E26D5C]">
+                        +
+                      </span>
+                      <span>Add row</span>
+                    </button>
+                    <span className="ml-3 hidden text-xs text-[#272D2C]/50 sm:inline">
+                      Add a new record directly to this month's worksheet
+                    </span>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* WORKSHEET FOOTER */}
+        <div className="flex flex-col gap-2 border-t border-[#B4C2D1]/60 bg-[#F7F9FB] px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[11px] text-[#272D2C]/60">
+            CascadEffects Operations Project Management
+          </p>
+          <p className="text-[11px] font-medium text-[#082550]/70">
+            {selectedMonth} · {displayedRows.length} displayed records
+          </p>
         </div>
       </div>
     </section>
