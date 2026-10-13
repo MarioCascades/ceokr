@@ -21,7 +21,6 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type {
   CustomTableDefinition,
@@ -219,6 +218,10 @@ function requireAtomicOperationalRow(
   return mapOperationalRow(record as CustomTableOperationalRowRecord);
 }
 
+/**
+ * Atomic Custom Table row RPCs return a set of records.
+ * Normalize the response and fail if the expected row is absent.
+ */
 function mapRow(record: CustomTableRowRecord): CustomTableRow {
   return {
     id: record.id,
@@ -233,10 +236,6 @@ function mapRow(record: CustomTableRowRecord): CustomTableRow {
   };
 }
 
-/**
- * Atomic Custom Table row RPCs return a set of records.
- * Normalize the response and fail if the expected row is absent.
- */
 function requireAtomicRow(
   data: unknown,
   operation: string
@@ -266,7 +265,7 @@ function requireAtomicRow(
 export async function loadCustomTableDefinitions(
   organizationId: string
 ): Promise<CustomTableDefinition[]> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_definitions")
@@ -292,7 +291,7 @@ export async function findCustomTableDefinitionById(
   organizationId: string,
   tableDefinitionId: string
 ): Promise<CustomTableDefinition | null> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_definitions")
@@ -319,7 +318,7 @@ export async function findCustomTableDefinitionByKey(
   organizationId: string,
   tableKey: string
 ): Promise<CustomTableDefinition | null> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_definitions")
@@ -340,18 +339,44 @@ export async function findCustomTableDefinitionByKey(
 }
 
 /**
+ * Resolve persistence from the trusted stable table key.
+ *
+ * The persistence mode is platform-defined, not user-configurable.
+ * Runtime operational tables keep current-state data, while
+ * Recruitment and other custom tables retain monthly behavior.
+ */
+function persistenceModeForTableKey(
+  tableKey: string
+): CustomTablePersistenceMode {
+  const normalizedKey = tableKey.trim().toLowerCase();
+
+  switch (normalizedKey) {
+    case "va-list":
+    case "va-roster":
+    case "agenda":
+    case "client-performance":
+      return "current_state";
+
+    case "recruitment":
+    default:
+      return "monthly";
+  }
+}
+
+/**
  * Create a Custom Table definition.
  *
  * Permission checks must be performed by the calling
  * service before this operation is exposed to a user.
  *
- * Persistence mode is assigned by the database default.
- * It must not be trusted as a client-supplied setting.
+ * Persistence mode is derived from the stable table key and
+ * is never accepted as a client-supplied setting.
  */
 export async function createCustomTableDefinition(
   input: CreateCustomTableDefinitionInput
 ): Promise<CustomTableDefinition> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
+  const persistenceMode = persistenceModeForTableKey(input.tableKey);
 
   const { data, error } = await supabase
     .from("custom_table_definitions")
@@ -362,6 +387,7 @@ export async function createCustomTableDefinition(
       description: input.description ?? null,
       runtime_tab_key: input.runtimeTabKey ?? null,
       is_enabled: input.isEnabled ?? true,
+      persistence_mode: persistenceMode,
     })
     .select("*")
     .single();
@@ -420,7 +446,7 @@ export async function updateCustomTableDefinition(
     return existing;
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_definitions")
@@ -450,7 +476,7 @@ export async function deleteCustomTableDefinition(
   organizationId: string,
   tableDefinitionId: string
 ): Promise<void> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_definitions")
@@ -483,7 +509,7 @@ export async function loadCustomTableColumns(
   organizationId: string,
   tableDefinitionId: string
 ): Promise<CustomTableColumn[]> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_columns")
@@ -509,7 +535,7 @@ export async function loadCustomTableColumns(
 export async function createCustomTableColumn(
   input: CreateCustomTableColumnInput
 ): Promise<CustomTableColumn> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_columns")
@@ -584,7 +610,7 @@ export async function updateCustomTableColumn(
     updates.settings = input.settings;
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   if (Object.keys(updates).length === 0) {
     const { data, error } = await supabase
@@ -638,7 +664,7 @@ export async function deleteCustomTableColumn(
   tableDefinitionId: string,
   columnId: string
 ): Promise<void> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_columns")
@@ -671,7 +697,7 @@ export async function loadCustomTableMonths(
   organizationId: string,
   tableDefinitionId: string
 ): Promise<CustomTableMonth[]> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_months")
@@ -699,7 +725,7 @@ export async function findCustomTableMonthById(
   tableDefinitionId: string,
   tableMonthId: string
 ): Promise<CustomTableMonth | null> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_months")
@@ -728,7 +754,7 @@ export async function findCustomTableMonthByPerformanceMonth(
   tableDefinitionId: string,
   performanceMonth: string
 ): Promise<CustomTableMonth | null> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_months")
@@ -787,7 +813,7 @@ export async function createCustomTableMonthIfAbsent(
       })
     );
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_months")
@@ -965,7 +991,7 @@ export async function updateCustomTableMonth(
     return existing;
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_months")
@@ -999,7 +1025,7 @@ export async function loadCustomTableRows(
   organizationId: string,
   tableMonthId: string
 ): Promise<CustomTableRow[]> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_rows")
@@ -1029,7 +1055,7 @@ export async function findCustomTableRowById(
   tableMonthId: string,
   rowId: string
 ): Promise<CustomTableRow | null> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseAdmin;
 
   const { data, error } = await supabase
     .from("custom_table_rows")

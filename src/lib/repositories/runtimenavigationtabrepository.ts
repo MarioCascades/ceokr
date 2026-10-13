@@ -1,4 +1,6 @@
-import { supabase } from "@/lib/supabase/client";
+import "server-only";
+
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 import type {
   RuntimeNavigationTab,
@@ -6,34 +8,21 @@ import type {
   UpdateRuntimeNavigationTabInput,
 } from "@/lib/types/domain/runtimenavigationtab";
 
-
 /* ==========================================================
    Database Record
 ========================================================== */
 
 interface RuntimeNavigationTabRecord {
   id: string;
-
   organization_id: string;
-
   tab_key: string;
-
-  tab_type:
-    | "dashboard"
-    | "member"
-    | "operational";
-
+  tab_type: "dashboard" | "member" | "operational";
   label: string;
-
   position: number;
-
   is_hidden: boolean;
-
   created_at: string;
-
   updated_at: string;
 }
-
 
 /* ==========================================================
    Mapper
@@ -44,33 +33,16 @@ function mapRecordToRuntimeNavigationTab(
 ): RuntimeNavigationTab {
   return {
     id: record.id,
-
-    organizationId:
-      record.organization_id,
-
-    tabKey:
-      record.tab_key,
-
-    tabType:
-      record.tab_type,
-
-    label:
-      record.label,
-
-    position:
-      record.position,
-
-    isHidden:
-      record.is_hidden,
-
-    createdAt:
-      record.created_at,
-
-    updatedAt:
-      record.updated_at,
+    organizationId: record.organization_id,
+    tabKey: record.tab_key,
+    tabType: record.tab_type,
+    label: record.label,
+    position: record.position,
+    isHidden: record.is_hidden,
+    createdAt: record.created_at,
+    updatedAt: record.updated_at,
   };
 }
-
 
 /* ==========================================================
    Create
@@ -79,29 +51,15 @@ function mapRecordToRuntimeNavigationTab(
 export async function createRuntimeNavigationTab(
   input: CreateRuntimeNavigationTabInput
 ): Promise<RuntimeNavigationTab> {
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("runtime_navigation_tabs")
     .insert({
-      organization_id:
-        input.organizationId,
-
-      tab_key:
-        input.tabKey,
-
-      tab_type:
-        input.tabType,
-
-      label:
-        input.label,
-
-      position:
-        input.position,
-
-      is_hidden:
-        input.isHidden ?? false,
+      organization_id: input.organizationId,
+      tab_key: input.tabKey,
+      tab_type: input.tabType,
+      label: input.label,
+      position: input.position,
+      is_hidden: input.isHidden ?? false,
     })
     .select()
     .single();
@@ -116,7 +74,6 @@ export async function createRuntimeNavigationTab(
     data as RuntimeNavigationTabRecord
   );
 }
-
 
 /* ==========================================================
    Update
@@ -133,49 +90,29 @@ export async function updateRuntimeNavigationTab(
     is_hidden?: boolean;
   } = {};
 
-  if (
-    typeof input.tabKey === "string"
-  ) {
-    updates.tab_key =
-      input.tabKey;
+  if (typeof input.tabKey === "string") {
+    updates.tab_key = input.tabKey;
   }
 
-  if (
-    typeof input.position === "number"
-  ) {
-    updates.position =
-      input.position;
+  if (typeof input.position === "number") {
+    updates.position = input.position;
   }
 
-  if (
-    typeof input.isHidden === "boolean"
-  ) {
-    updates.is_hidden =
-      input.isHidden;
+  if (typeof input.isHidden === "boolean") {
+    updates.is_hidden = input.isHidden;
   }
 
-  if (
-    Object.keys(updates).length === 0
-  ) {
+  if (Object.keys(updates).length === 0) {
     throw new Error(
       "No Runtime navigation tab updates were provided."
     );
   }
 
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("runtime_navigation_tabs")
     .update(updates)
-    .eq(
-      "id",
-      tabId
-    )
-    .eq(
-      "organization_id",
-      organizationId
-    )
+    .eq("id", tabId)
+    .eq("organization_id", organizationId)
     .select()
     .single();
 
@@ -190,7 +127,6 @@ export async function updateRuntimeNavigationTab(
   );
 }
 
-
 /* ==========================================================
    Delete
 ========================================================== */
@@ -199,19 +135,11 @@ export async function deleteRuntimeNavigationTab(
   organizationId: string,
   tabId: string
 ): Promise<void> {
-  const {
-    error,
-  } = await supabase
+  const { error } = await supabaseAdmin
     .from("runtime_navigation_tabs")
     .delete()
-    .eq(
-      "id",
-      tabId
-    )
-    .eq(
-      "organization_id",
-      organizationId
-    );
+    .eq("id", tabId)
+    .eq("organization_id", organizationId);
 
   if (error) {
     throw new Error(
@@ -219,7 +147,6 @@ export async function deleteRuntimeNavigationTab(
     );
   }
 }
-
 
 /* ==========================================================
    Find By Id
@@ -229,20 +156,11 @@ export async function findRuntimeNavigationTabById(
   organizationId: string,
   tabId: string
 ): Promise<RuntimeNavigationTab | null> {
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("runtime_navigation_tabs")
     .select("*")
-    .eq(
-      "id",
-      tabId
-    )
-    .eq(
-      "organization_id",
-      organizationId
-    )
+    .eq("id", tabId)
+    .eq("organization_id", organizationId)
     .maybeSingle();
 
   if (error) {
@@ -259,7 +177,6 @@ export async function findRuntimeNavigationTabById(
     data as RuntimeNavigationTabRecord
   );
 }
-
 
 /* ==========================================================
    Find By Tab Key
@@ -269,20 +186,11 @@ export async function findRuntimeNavigationTabByKey(
   organizationId: string,
   tabKey: string
 ): Promise<RuntimeNavigationTab | null> {
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("runtime_navigation_tabs")
     .select("*")
-    .eq(
-      "organization_id",
-      organizationId
-    )
-    .eq(
-      "tab_key",
-      tabKey
-    )
+    .eq("organization_id", organizationId)
+    .eq("tab_key", tabKey)
     .maybeSingle();
 
   if (error) {
@@ -299,7 +207,6 @@ export async function findRuntimeNavigationTabByKey(
     data as RuntimeNavigationTabRecord
   );
 }
-
 
 /* ==========================================================
    Find By Organization
@@ -311,28 +218,16 @@ export async function findRuntimeNavigationTabByKey(
 export async function findRuntimeNavigationTabsByOrganization(
   organizationId: string
 ): Promise<RuntimeNavigationTab[]> {
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("runtime_navigation_tabs")
     .select("*")
-    .eq(
-      "organization_id",
-      organizationId
-    )
-    .order(
-      "position",
-      {
-        ascending: true,
-      }
-    )
-    .order(
-      "created_at",
-      {
-        ascending: true,
-      }
-    );
+    .eq("organization_id", organizationId)
+    .order("position", {
+      ascending: true,
+    })
+    .order("created_at", {
+      ascending: true,
+    });
 
   if (error) {
     throw new Error(
@@ -340,9 +235,7 @@ export async function findRuntimeNavigationTabsByOrganization(
     );
   }
 
-  return (
-    data as RuntimeNavigationTabRecord[]
-  ).map(
+  return (data as RuntimeNavigationTabRecord[]).map(
     mapRecordToRuntimeNavigationTab
   );
 }

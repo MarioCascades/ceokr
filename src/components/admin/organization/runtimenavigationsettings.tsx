@@ -4,13 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 
 import { listUserManagementRecords } from "@/services/user.service";
 
-import { listRuntimeNavigationCustomTablesAction } from "@/app/organization/settings/actions";
-
 import {
-  createRuntimeNavigationConfiguration,
-  loadRuntimeNavigationTabs,
-  updateRuntimeNavigationConfiguration,
-} from "@/services/runtimenavigation.service";
+  createRuntimeNavigationConfigurationAction,
+  listRuntimeNavigationCustomTablesAction,
+  loadRuntimeNavigationTabsAction,
+  updateRuntimeNavigationConfigurationAction,
+} from "@/app/organization/settings/actions";
 
 import type { RuntimeNavigationTab } from "@/lib/types/domain/runtimenavigationtab";
 
@@ -56,7 +55,7 @@ export default function RuntimeNavigationSettings({
           members,
           customTables,
         ] = await Promise.all([
-          loadRuntimeNavigationTabs(organizationId),
+          loadRuntimeNavigationTabsAction(organizationId),
           listUserManagementRecords(organizationId),
           listRuntimeNavigationCustomTablesAction(organizationId),
         ]);
@@ -170,14 +169,15 @@ export default function RuntimeNavigationSettings({
           ) {
             const item = defaultItems[index];
 
-            const created = await createRuntimeNavigationConfiguration({
-              organizationId,
-              tabKey: item.tabKey,
-              tabType: item.tabType,
-              label: item.label,
-              position: index,
-              isHidden: false,
-            });
+            const created =
+              await createRuntimeNavigationConfigurationAction({
+                organizationId,
+                tabKey: item.tabKey,
+                tabType: item.tabType,
+                label: item.label,
+                position: index,
+                isHidden: false,
+              });
 
             createdItems.push({
               ...item,
@@ -241,14 +241,15 @@ export default function RuntimeNavigationSettings({
           let nextPosition = orderedItems.length;
 
           for (const item of missingItems) {
-            const created = await createRuntimeNavigationConfiguration({
-              organizationId,
-              tabKey: item.tabKey,
-              tabType: item.tabType,
-              label: item.label,
-              position: nextPosition,
-              isHidden: false,
-            });
+            const created =
+              await createRuntimeNavigationConfigurationAction({
+                organizationId,
+                tabKey: item.tabKey,
+                tabType: item.tabType,
+                label: item.label,
+                position: nextPosition,
+                isHidden: false,
+              });
 
             orderedItems.push({
               ...item,
@@ -378,16 +379,27 @@ export default function RuntimeNavigationSettings({
    */
 
   const setTabHidden = (tabKey: string, hidden: boolean) => {
-    setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.tabKey === tabKey
-          ? {
-              ...item,
-              isHidden: hidden,
-            }
-          : item
-      )
-    );
+    setItems((currentItems) => {
+      const currentActiveItems = sortNavigationItems(
+        currentItems.filter(
+          (item) => !item.isHidden && item.tabKey !== tabKey
+        )
+      );
+
+      const nextActivePosition = currentActiveItems.length;
+
+      return currentItems.map((item) => {
+        if (item.tabKey !== tabKey) {
+          return item;
+        }
+
+        return {
+          ...item,
+          isHidden: hidden,
+          position: hidden ? item.position : nextActivePosition,
+        };
+      });
+    });
 
     setSaved(false);
   };
@@ -427,7 +439,7 @@ export default function RuntimeNavigationSettings({
           continue;
         }
 
-        await updateRuntimeNavigationConfiguration(
+        await updateRuntimeNavigationConfigurationAction(
           organizationId,
           item.existingId,
           {
@@ -454,7 +466,7 @@ export default function RuntimeNavigationSettings({
           continue;
         }
 
-        await updateRuntimeNavigationConfiguration(
+        await updateRuntimeNavigationConfigurationAction(
           organizationId,
           item.existingId,
           {

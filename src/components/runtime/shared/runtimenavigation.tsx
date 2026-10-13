@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -11,8 +10,8 @@ import type {
 } from "@/lib/types/domain/usermanagement";
 
 import {
-  loadRuntimeNavigationTabs,
-} from "@/services/runtimenavigation.service";
+  loadRuntimeNavigationTabsAction,
+} from "@/app/organization/settings/actions";
 
 interface RuntimeOperationalTableTab {
   id: string;
@@ -251,7 +250,7 @@ export default function RuntimeNavigation({
    * existing Runtime components.
    *
    * Organization-level Runtime navigation configuration is
-   * loaded when available.
+   * loaded through a server action.
    */
 
   const [
@@ -267,7 +266,7 @@ export default function RuntimeNavigation({
     async function loadNavigationConfiguration() {
       try {
         const configuredTabs =
-          await loadRuntimeNavigationTabs(
+          await loadRuntimeNavigationTabsAction(
             organizationId
           );
 
@@ -373,18 +372,46 @@ export default function RuntimeNavigation({
       "recruitment-updates",
     ]);
 
-    const selectedTables =
-      operationalTables.filter(
-        (table) =>
-          normalizeOperationalKey(
-            table.runtimeTabKey?.trim() ||
-              table.tableKey
-          ) === selectedRuntimeTabKey
+    /*
+     * Recruitment may use either "recruitment" or
+     * "recruitment-updates" as its configured key.
+     * Treat those keys as equivalent for selector visibility
+     * without changing the actual navigation URL.
+     */
+
+    const isRecruitmentKey =
+      monthlyRecruitmentKeys.has(
+        selectedRuntimeTabKey
       );
 
-    if (selectedTables.length === 0) {
-      return false;
-    }
+    const selectedTables =
+      operationalTables.filter(
+        (table) => {
+          const tableKeys = [
+            table.tableKey,
+            table.runtimeTabKey,
+          ]
+            .filter(Boolean)
+            .map(normalizeOperationalKey);
+
+          const primaryTabKey =
+            normalizeOperationalKey(
+              table.runtimeTabKey?.trim() ||
+                table.tableKey
+            );
+
+          return (
+            primaryTabKey ===
+              selectedRuntimeTabKey ||
+            (
+              isRecruitmentKey &&
+              tableKeys.some((key) =>
+                monthlyRecruitmentKeys.has(key)
+              )
+            )
+          );
+        }
+      );
 
     return selectedTables.some(
       (table) =>
@@ -392,10 +419,10 @@ export default function RuntimeNavigation({
           table.tableKey,
           table.runtimeTabKey,
         ]
+          .filter(Boolean)
           .map(normalizeOperationalKey)
-          .some(
-            (key) =>
-              monthlyRecruitmentKeys.has(key)
+          .some((key) =>
+            monthlyRecruitmentKeys.has(key)
           )
     );
   })();

@@ -317,7 +317,7 @@ export default function CustomTableOperationalWorkspace({
   );
 
   const latestUpdatedAt = useMemo(() => {
-    const timestamps = rows
+    const timestamps = activeRows
       .map((row) => new Date(row.updatedAt).getTime())
       .filter((timestamp) => Number.isFinite(timestamp));
 
@@ -326,7 +326,7 @@ export default function CustomTableOperationalWorkspace({
     }
 
     return new Date(Math.max(...timestamps)).toISOString();
-  }, [rows]);
+  }, [activeRows]);
 
   const totalWeeklyHours = useMemo(
     () =>
@@ -708,8 +708,8 @@ export default function CustomTableOperationalWorkspace({
 
             <MetricCard
               label="Adjusted VA Number"
-              value="Pending formula"
-              description="Awaiting confirmation of the original spreadsheet formula"
+              value={formatNumber(totalWeeklyHours / 40)}
+              description="Total weekly hours divided by 40"
             />
 
             <MetricCard

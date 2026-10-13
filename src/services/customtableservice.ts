@@ -677,11 +677,18 @@ export async function editCustomTableMonth(
     tableDefinitionId
   );
 
-  await requireOwnedMonth(
+  const month = await requireOwnedMonth(
     organizationId,
     tableDefinitionId,
     tableMonthId
   );
+
+  // A finalized month is immutable through this service.
+  // This prevents changing its snapshot or setting isFinalized
+  // back to false through the month-update operation.
+  // An editable month can still be finalized by setting
+  // input.isFinalized to true.
+  requireMonthEditable(month);
 
   return updateCustomTableMonth(
     organizationId,
