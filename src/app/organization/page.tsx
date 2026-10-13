@@ -89,7 +89,7 @@ export default function OrganizationWorkspacePage() {
 
             <p className="mt-2 max-w-3xl text-muted-foreground">
               Administer your organization&apos;s people, structure,
-              performance system, analytics, and configuration.
+              performance system, reports, and configuration.
             </p>
           </div>
 
@@ -224,16 +224,22 @@ export default function OrganizationWorkspacePage() {
           />
         </WorkspaceSection>
 
-        {/* Analytics */}
+        {/* Reports */}
 
         <WorkspaceSection
-          title="Analytics"
-          description="Understand organizational performance through dashboards and reporting."
+          title="Reports"
+          description="Review organizational dashboards and manage the operational tables available to your organization."
         >
           <WorkspaceCard
             title="📊 Dashboards"
             description="Configure organization dashboards, charts, tables, and performance views."
             href={workspaceHref("/organization/dashboards")}
+          />
+
+          <WorkspaceCard
+            title="📋 Custom Tables"
+            description="View operational tables provisioned for your organization and control whether each table is available in Runtime. Table definitions and columns are managed by CascadEffects platform personnel."
+            href={workspaceHref("/organization/customtables")}
           />
         </WorkspaceSection>
 
@@ -243,12 +249,6 @@ export default function OrganizationWorkspacePage() {
           title="Configuration"
           description="Configure organization-level platform behavior and services."
         >
-          <WorkspaceCard
-            title="📋 Custom Tables"
-            description="Access operational tables provisioned for your organization, manage their Runtime availability, and work with monthly operational records. Table definitions and column configuration are managed by CascadEffects platform personnel."
-            href={workspaceHref("/organization/customtables")}
-          />
-
           <WorkspaceCard
             title="⚙️ Settings"
             description="Manage organization-level configuration and preferences."

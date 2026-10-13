@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -164,6 +165,33 @@ function getMonthNumber(
   );
 }
 
+function normalizeOperationalKey(
+  value: string
+): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
+}
+
+function getOperationalTableDisplayName(
+  table: RuntimeOperationalTableTab
+): string {
+  const keys = [
+    table.tableKey,
+    table.runtimeTabKey,
+  ].map(normalizeOperationalKey);
+
+  if (
+    keys.includes("va-list") ||
+    keys.includes("va-roster")
+  ) {
+    return "VA Roster";
+  }
+
+  return table.name;
+}
+
 /* ==========================================================
    Runtime URL
 ========================================================== */
@@ -318,6 +346,59 @@ export default function RuntimeNavigation({
 
   const availablePerformanceMonths =
     getAvailablePerformanceMonths();
+
+  /*
+   * Dashboard and Member tabs retain their performance-month
+   * selector. Recruitment also retains its monthly selector.
+   *
+   * VA Roster, Agenda, and Client Performance are current-state
+   * operational experiences and must not show the selector.
+   *
+   * Recruitment Updates is recognized as a monthly workflow
+   * even when its configured key differs from "recruitment".
+   */
+
+  const showPerformanceMonthSelector = (() => {
+    if (!selectedRuntimeTab) {
+      return true;
+    }
+
+    const selectedRuntimeTabKey =
+      normalizeOperationalKey(
+        selectedRuntimeTab
+      );
+
+    const monthlyRecruitmentKeys = new Set([
+      "recruitment",
+      "recruitment-updates",
+    ]);
+
+    const selectedTables =
+      operationalTables.filter(
+        (table) =>
+          normalizeOperationalKey(
+            table.runtimeTabKey?.trim() ||
+              table.tableKey
+          ) === selectedRuntimeTabKey
+      );
+
+    if (selectedTables.length === 0) {
+      return false;
+    }
+
+    return selectedTables.some(
+      (table) =>
+        [
+          table.tableKey,
+          table.runtimeTabKey,
+        ]
+          .map(normalizeOperationalKey)
+          .some(
+            (key) =>
+              monthlyRecruitmentKeys.has(key)
+          )
+    );
+  })();
 
   const currentYear =
     getYear(
@@ -806,7 +887,7 @@ export default function RuntimeNavigation({
                     }
                   `}
                 >
-                  {operationalTable.name}
+                  {getOperationalTableDisplayName(operationalTable)}
                 </a>
               );
             }
@@ -815,156 +896,160 @@ export default function RuntimeNavigation({
           }
         )}
 
-        {/* Performance Month */}
+        {showPerformanceMonthSelector && (
+          <>
+            {/* Performance Month */}
 
-        <div
-          className="
-            flex
-            w-full
-            shrink-0
-            items-center
-            gap-2
-            border-t
-            border-border/70
-            pt-2
-            md:ml-auto
-            md:w-auto
-            md:border-t-0
-            md:border-l
-            md:pl-3
-            md:pt-0
-          "
-        >
-          <div
-            className="
-              hidden
-              shrink-0
-              lg:block
-            "
-          >
-            <p
+            <div
               className="
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.14em]
-                text-muted-foreground
+                flex
+                w-full
+                shrink-0
+                items-center
+                gap-2
+                border-t
+                border-border/70
+                pt-2
+                md:ml-auto
+                md:w-auto
+                md:border-t-0
+                md:border-l
+                md:pl-3
+                md:pt-0
               "
             >
-              Performance Month
-            </p>
-          </div>
-
-          {/* Year Selector */}
-
-          <label
-            htmlFor="runtime-performance-year"
-            className="sr-only"
-          >
-            Select performance year
-          </label>
-
-          <select
-            id="runtime-performance-year"
-            value={
-              currentYear
-            }
-            onChange={
-              handleYearChange
-            }
-            className="
-              rounded-lg
-              border
-              border-input
-              bg-background
-              px-2.5
-              py-1.5
-              text-xs
-              font-bold
-              text-primary
-              outline-none
-              transition-all
-              duration-200
-              focus:border-primary
-              focus:ring-2
-              focus:ring-primary/10
-            "
-          >
-            {availableYears.map(
-              (year) => (
-                <option
-                  key={
-                    year
-                  }
-                  value={
-                    year
-                  }
+              <div
+                className="
+                  hidden
+                  shrink-0
+                  lg:block
+                "
+              >
+                <p
+                  className="
+                    text-[9px]
+                    font-bold
+                    uppercase
+                    tracking-[0.14em]
+                    text-muted-foreground
+                  "
                 >
-                  {
-                    year
-                  }
-                </option>
-              )
-            )}
-          </select>
+                  Performance Month
+                </p>
+              </div>
 
-          {/* Month Selector */}
+              {/* Year Selector */}
 
-          <label
-            htmlFor="runtime-performance-month"
-            className="sr-only"
-          >
-            Select performance month
-          </label>
+              <label
+                htmlFor="runtime-performance-year"
+                className="sr-only"
+              >
+                Select performance year
+              </label>
 
-          <select
-            id="runtime-performance-month"
-            value={
-              currentMonth
-            }
-            onChange={
-              handleMonthChange
-            }
-            className="
-              min-w-0
-              rounded-lg
-              border
-              border-input
-              bg-background
-              px-2.5
-              py-1.5
-              text-xs
-              font-bold
-              text-primary
-              outline-none
-              transition-all
-              duration-200
-              focus:border-primary
-              focus:ring-2
-              focus:ring-primary/10
-              md:w-[130px]
-            "
-          >
-            {availableMonthsForYear.map(
-              (month) => (
-                <option
-                  key={
-                    month
-                  }
-                  value={
-                    month
-                  }
-                >
-                  {
-                    formatMonthName(
-                      Number(month)
-                    )
-                  }
-                </option>
-              )
-            )}
-          </select>
-        </div>
+              <select
+                id="runtime-performance-year"
+                value={
+                  currentYear
+                }
+                onChange={
+                  handleYearChange
+                }
+                className="
+                  rounded-lg
+                  border
+                  border-input
+                  bg-background
+                  px-2.5
+                  py-1.5
+                  text-xs
+                  font-bold
+                  text-primary
+                  outline-none
+                  transition-all
+                  duration-200
+                  focus:border-primary
+                  focus:ring-2
+                  focus:ring-primary/10
+                "
+              >
+                {availableYears.map(
+                  (year) => (
+                    <option
+                      key={
+                        year
+                      }
+                      value={
+                        year
+                      }
+                    >
+                      {
+                        year
+                      }
+                    </option>
+                  )
+                )}
+              </select>
+
+              {/* Month Selector */}
+
+              <label
+                htmlFor="runtime-performance-month"
+                className="sr-only"
+              >
+                Select performance month
+              </label>
+
+              <select
+                id="runtime-performance-month"
+                value={
+                  currentMonth
+                }
+                onChange={
+                  handleMonthChange
+                }
+                className="
+                  min-w-0
+                  rounded-lg
+                  border
+                  border-input
+                  bg-background
+                  px-2.5
+                  py-1.5
+                  text-xs
+                  font-bold
+                  text-primary
+                  outline-none
+                  transition-all
+                  duration-200
+                  focus:border-primary
+                  focus:ring-2
+                  focus:ring-primary/10
+                  md:w-[130px]
+                "
+              >
+                {availableMonthsForYear.map(
+                  (month) => (
+                    <option
+                      key={
+                        month
+                      }
+                      value={
+                        month
+                      }
+                    >
+                      {
+                        formatMonthName(
+                          Number(month)
+                        )
+                      }
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
+          </>
+        )}
       </div>
     </nav>
   );

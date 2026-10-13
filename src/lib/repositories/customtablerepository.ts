@@ -1,4 +1,3 @@
-
 /**
  * ==========================================================
  * CascadEffects Performance Platform
@@ -11,7 +10,8 @@
  * - custom_table_definitions
  * - custom_table_columns
  * - custom_table_months
- * - custom_table_rows
+ * - custom_table_rows (monthly operational data)
+ * - custom_table_operational_rows (persistent current-state data)
  *
  * This repository does not replace the application service
  * layer or authorization policies.
@@ -53,6 +53,7 @@ interface CustomTableDefinitionRecord {
   description: string | null;
   runtime_tab_key: string | null;
   is_enabled: boolean;
+  persistence_mode?: "monthly" | "current_state";
   created_at: string;
   updated_at: string;
 }
@@ -82,6 +83,32 @@ interface CustomTableMonthRecord {
   is_finalized: boolean;
   created_at: string;
   updated_at: string;
+}
+
+interface CustomTableOperationalRowRecord {
+  id: string;
+  organization_id: string;
+  table_definition_id: string;
+  row_data: CustomTableRowData;
+  operational_status: CustomTableOperationalStatus;
+  is_hidden: boolean;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CustomTablePersistenceMode = "monthly" | "current_state";
+
+export interface CustomTableOperationalRow {
+  id: string;
+  organizationId: string;
+  tableDefinitionId: string;
+  rowData: CustomTableRowData;
+  operationalStatus: CustomTableOperationalStatus;
+  isHidden: boolean;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface CustomTableRowRecord {
@@ -116,6 +143,7 @@ function mapDefinition(
     description: record.description,
     runtimeTabKey: record.runtime_tab_key,
     isEnabled: record.is_enabled,
+    persistenceMode: record.persistence_mode ?? "monthly",
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };
@@ -156,6 +184,41 @@ function mapMonth(
   };
 }
 
+function mapOperationalRow(
+  record: CustomTableOperationalRowRecord
+): CustomTableOperationalRow {
+  return {
+    id: record.id,
+    organizationId: record.organization_id,
+    tableDefinitionId: record.table_definition_id,
+    rowData: record.row_data ?? {},
+    operationalStatus: record.operational_status,
+    isHidden: record.is_hidden,
+    position: record.position,
+    createdAt: record.created_at,
+    updatedAt: record.updated_at,
+  };
+}
+
+/**
+ * Atomic row RPCs return a set of records. Normalize the
+ * response and fail explicitly if the expected row is absent.
+ */
+function requireAtomicOperationalRow(
+  data: unknown,
+  operation: string
+): CustomTableOperationalRow {
+  const record = Array.isArray(data) ? data[0] : data;
+
+  if (!record || typeof record !== "object") {
+    throw new Error(
+      `Atomic persistent Custom Table row ${operation} returned no row.`
+    );
+  }
+
+  return mapOperationalRow(record as CustomTableOperationalRowRecord);
+}
+
 function mapRow(record: CustomTableRowRecord): CustomTableRow {
   return {
     id: record.id,
@@ -171,8 +234,8 @@ function mapRow(record: CustomTableRowRecord): CustomTableRow {
 }
 
 /**
- * Atomic row RPCs return a set of records. Normalize the
- * response and fail explicitly if the expected row is absent.
+ * Atomic Custom Table row RPCs return a set of records.
+ * Normalize the response and fail if the expected row is absent.
  */
 function requireAtomicRow(
   data: unknown,
@@ -281,6 +344,9 @@ export async function findCustomTableDefinitionByKey(
  *
  * Permission checks must be performed by the calling
  * service before this operation is exposed to a user.
+ *
+ * Persistence mode is assigned by the database default.
+ * It must not be trusted as a client-supplied setting.
  */
 export async function createCustomTableDefinition(
   input: CreateCustomTableDefinitionInput
@@ -310,7 +376,8 @@ export async function createCustomTableDefinition(
 }
 
 /**
- * Update a definition without changing its stable table key.
+ * Update a definition without changing its stable table key
+ * or persistence mode.
  */
 export async function updateCustomTableDefinition(
   organizationId: string,
@@ -919,7 +986,7 @@ export async function updateCustomTableMonth(
 }
 
 /* ==========================================================
-   Operational Rows
+   Monthly Operational Rows
 ========================================================== */
 
 /**
@@ -1130,7 +1197,7 @@ export async function deleteCustomTableRow(
 }
 
 /* ==========================================================
-   Row Ordering
+   Monthly Row Ordering
 ========================================================== */
 
 /**
@@ -1176,4 +1243,237 @@ export async function saveCustomTableRowOrder(
   }
 
   return ((data ?? []) as CustomTableRowRecord[]).map(mapRow);
+}
+
+/* ==========================================================
+   Persistent Operational Rows
+========================================================== */
+
+/**
+ * Load persistent current-state rows for one organization and
+ * table definition.
+ *
+ * This uses the server-only service-role client because the
+ * migration intentionally denies direct authenticated access.
+ * The service layer must authorize the caller and verify tenant
+ * ownership before invoking it.
+ */
+export async function loadCustomTableOperationalRows(
+  organizationId: string,
+  tableDefinitionId: string
+): Promise<CustomTableOperationalRow[]> {
+  const { data, error } = await supabaseAdmin
+    .from("custom_table_operational_rows")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("table_definition_id", tableDefinitionId)
+    .order("is_hidden", { ascending: true })
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (error) {
+    throw new Error(
+      `Failed to load persistent Custom Table rows: ${error.message}`
+    );
+  }
+
+  return ((data ?? []) as CustomTableOperationalRowRecord[]).map(
+    mapOperationalRow
+  );
+}
+
+/**
+ * Find one persistent row inside its organization and table.
+ */
+export async function findCustomTableOperationalRowById(
+  organizationId: string,
+  tableDefinitionId: string,
+  rowId: string
+): Promise<CustomTableOperationalRow | null> {
+  const { data, error } = await supabaseAdmin
+    .from("custom_table_operational_rows")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("table_definition_id", tableDefinitionId)
+    .eq("id", rowId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Failed to find persistent Custom Table row: ${error.message}`
+    );
+  }
+
+  return data
+    ? mapOperationalRow(data as CustomTableOperationalRowRecord)
+    : null;
+}
+
+/**
+ * Create a persistent row using the atomic database RPC.
+ */
+export async function createCustomTableOperationalRow(input: {
+  organizationId: string;
+  tableDefinitionId: string;
+  rowData?: CustomTableRowData;
+  operationalStatus?: CustomTableOperationalStatus;
+  isHidden?: boolean;
+  position?: number;
+}): Promise<CustomTableOperationalRow> {
+  const { data, error } = await supabaseAdmin.rpc(
+    "create_custom_table_operational_row_atomic",
+    {
+      p_organization_id: input.organizationId,
+      p_table_definition_id: input.tableDefinitionId,
+      p_row_data: input.rowData ?? {},
+      p_operational_status: input.operationalStatus ?? "in_progress",
+      p_is_hidden: input.isHidden ?? false,
+      p_position: input.position ?? null,
+    }
+  );
+
+  if (error) {
+    throw new Error(
+      `Failed to create persistent Custom Table row: ${error.message}`
+    );
+  }
+
+  return requireAtomicOperationalRow(data, "creation");
+}
+
+/**
+ * Update a persistent row using the atomic database RPC.
+ */
+export async function updateCustomTableOperationalRow(input: {
+  organizationId: string;
+  tableDefinitionId: string;
+  rowId: string;
+  rowData?: CustomTableRowData;
+  operationalStatus?: CustomTableOperationalStatus;
+  isHidden?: boolean;
+  position?: number;
+}): Promise<CustomTableOperationalRow> {
+  const { data, error } = await supabaseAdmin.rpc(
+    "update_custom_table_operational_row_atomic",
+    {
+      p_organization_id: input.organizationId,
+      p_table_definition_id: input.tableDefinitionId,
+      p_row_id: input.rowId,
+      p_row_data: input.rowData ?? null,
+      p_operational_status: input.operationalStatus ?? null,
+      p_is_hidden: input.isHidden ?? null,
+      p_position: input.position ?? null,
+    }
+  );
+
+  if (error) {
+    throw new Error(
+      `Failed to update persistent Custom Table row: ${error.message}`
+    );
+  }
+
+  return requireAtomicOperationalRow(data, "update");
+}
+
+/**
+ * Permanently delete one persistent row through the atomic RPC.
+ *
+ * Treat a false result as a failure rather than silently
+ * reporting a successful deletion.
+ */
+export async function deleteCustomTableOperationalRow(input: {
+  organizationId: string;
+  tableDefinitionId: string;
+  rowId: string;
+}): Promise<boolean> {
+  const { data, error } = await supabaseAdmin.rpc(
+    "delete_custom_table_operational_row_atomic",
+    {
+      p_organization_id: input.organizationId,
+      p_table_definition_id: input.tableDefinitionId,
+      p_row_id: input.rowId,
+    }
+  );
+
+  if (error) {
+    throw new Error(
+      `Failed to delete persistent Custom Table row: ${error.message}`
+    );
+  }
+
+  if (data !== true) {
+    throw new Error(
+      "Persistent Custom Table row deletion was not confirmed."
+    );
+  }
+
+  return true;
+}
+
+/**
+ * Hide a persistent row without deleting its stored values.
+ */
+export async function hideCustomTableOperationalRow(input: {
+  organizationId: string;
+  tableDefinitionId: string;
+  rowId: string;
+}): Promise<CustomTableOperationalRow> {
+  return updateCustomTableOperationalRow({
+    ...input,
+    isHidden: true,
+  });
+}
+
+/**
+ * Restore a hidden persistent row to the active list.
+ */
+export async function restoreCustomTableOperationalRow(input: {
+  organizationId: string;
+  tableDefinitionId: string;
+  rowId: string;
+}): Promise<CustomTableOperationalRow> {
+  return updateCustomTableOperationalRow({
+    ...input,
+    isHidden: false,
+  });
+}
+
+/**
+ * Persist the complete ordering of one visibility section.
+ *
+ * The RPC validates the submitted IDs and updates positions
+ * atomically, preventing partial order updates.
+ */
+export async function saveCustomTableOperationalRowOrder(input: {
+  organizationId: string;
+  tableDefinitionId: string;
+  rowIds: string[];
+  isHidden: boolean;
+}): Promise<CustomTableOperationalRow[]> {
+  if (new Set(input.rowIds).size !== input.rowIds.length) {
+    throw new Error(
+      "Persistent row ordering contains duplicate row IDs."
+    );
+  }
+
+  const { data, error } = await supabaseAdmin.rpc(
+    "save_custom_table_operational_row_order_atomic",
+    {
+      p_organization_id: input.organizationId,
+      p_table_definition_id: input.tableDefinitionId,
+      p_row_ids: input.rowIds,
+      p_is_hidden: input.isHidden,
+    }
+  );
+
+  if (error) {
+    throw new Error(
+      `Failed to save persistent Custom Table row order: ${error.message}`
+    );
+  }
+
+  return ((data ?? []) as CustomTableOperationalRowRecord[]).map(
+    mapOperationalRow
+  );
 }

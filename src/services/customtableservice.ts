@@ -15,12 +15,9 @@
  * - custom_tables.rows.edit
  * ==========================================================
  */
-
 import "server-only";
-
 import { requirePermission } from "@/lib/auth/authorization";
 import { getAuthorizationContext } from "@/lib/auth/authorizationcontext";
-
 import {
   loadCustomTableDefinitions,
   findCustomTableDefinitionById,
@@ -46,8 +43,15 @@ import {
   deleteCustomTableRow,
   saveCustomTableRowOrder,
   copyForwardCustomTableMonthAtomic,
+  loadCustomTableOperationalRows,
+  findCustomTableOperationalRowById,
+  createCustomTableOperationalRow,
+  updateCustomTableOperationalRow,
+  deleteCustomTableOperationalRow,
+  hideCustomTableOperationalRow,
+  restoreCustomTableOperationalRow,
+  saveCustomTableOperationalRowOrder,
 } from "@/lib/repositories/customtablerepository";
-
 import type {
   CustomTableDefinition,
   CreateCustomTableDefinitionInput,
@@ -59,13 +63,15 @@ import type {
   CreateCustomTableMonthInput,
   UpdateCustomTableMonthInput,
   CustomTableRow,
+  CustomTableOperationalStatus,
+  CustomTableRowData,
   CreateCustomTableRowInput,
   UpdateCustomTableRowInput,
   CustomTableWorkspace,
   CopyForwardCustomTableMonthInput,
 } from "@/lib/types/domain/customtable";
-
 import { RECRUITMENT_DEFAULT_COLUMNS } from "@/lib/types/domain/customtable";
+import type { CustomTableOperationalRow } from "@/lib/repositories/customtablerepository";
 
 /* ==========================================================
    Permission Keys
@@ -199,12 +205,79 @@ async function requireEnabledDefinition(
   return definition;
 }
 
+/**
+ * Monthly instances and carry-forward are only valid for
+ * tables configured with monthly persistence.
+ */
+async function requireMonthlyDefinition(
+  organizationId: string,
+  tableDefinitionId: string
+): Promise<CustomTableDefinition> {
+  const definition = await requireOwnedDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
+  if (definition.persistenceMode !== "monthly") {
+    throw new Error(
+      "This Custom Table uses persistent current-state rows and does not support monthly instances."
+    );
+  }
+
+  return definition;
+}
+
+/**
+ * Persistent operational rows are only valid for tables
+ * configured with current-state persistence.
+ */
+async function requireCurrentStateDefinition(
+  organizationId: string,
+  tableDefinitionId: string
+): Promise<CustomTableDefinition> {
+  const definition = await requireOwnedDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
+  if (definition.persistenceMode !== "current_state") {
+    throw new Error(
+      "This Custom Table uses monthly persistence and does not support persistent current-state rows."
+    );
+  }
+
+  return definition;
+}
+
+async function requireEnabledCurrentStateDefinition(
+  organizationId: string,
+  tableDefinitionId: string
+): Promise<CustomTableDefinition> {
+  const definition = await requireEnabledDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
+  if (definition.persistenceMode !== "current_state") {
+    throw new Error(
+      "This Custom Table does not use persistent current-state rows."
+    );
+  }
+
+  return definition;
+}
+
 async function requireOwnedMonth(
   organizationId: string,
   tableDefinitionId: string,
   tableMonthId: string
 ): Promise<CustomTableMonth> {
   requireIdentifier(tableMonthId, "Custom Table month ID");
+
+  await requireMonthlyDefinition(
+    organizationId,
+    tableDefinitionId
+  );
 
   const month = await findCustomTableMonthById(
     organizationId,
@@ -541,7 +614,7 @@ export async function listCustomTableMonths(
 ): Promise<CustomTableMonth[]> {
   await requireCustomTableView(organizationId);
 
-  await requireOwnedDefinition(
+  await requireMonthlyDefinition(
     organizationId,
     tableDefinitionId
   );
@@ -559,7 +632,7 @@ export async function getOrCreateCustomTableMonth(
 ): Promise<CustomTableMonth> {
   await requireCustomTableView(organizationId);
 
-  const definition = await requireOwnedDefinition(
+  const definition = await requireMonthlyDefinition(
     organizationId,
     tableDefinitionId
   );
@@ -599,7 +672,7 @@ export async function editCustomTableMonth(
 ): Promise<CustomTableMonth> {
   await requireCustomTableManage(organizationId);
 
-  await requireOwnedDefinition(
+  await requireMonthlyDefinition(
     organizationId,
     tableDefinitionId
   );
@@ -631,7 +704,7 @@ export async function loadCustomTableWorkspace(
 
   requirePerformanceMonth(performanceMonth);
 
-  const definition = await requireOwnedDefinition(
+  const definition = await requireMonthlyDefinition(
     organizationId,
     tableDefinitionId
   );
@@ -659,7 +732,7 @@ export async function loadCustomTableWorkspace(
 }
 
 /* ==========================================================
-   Operational Rows
+   Monthly Operational Rows
 ========================================================== */
 
 export async function listCustomTableRows(
@@ -688,7 +761,7 @@ export async function addCustomTableRow(
 ): Promise<CustomTableRow> {
   await requireCustomTableRowsEdit(input.organizationId);
 
-  const definition = await requireOwnedDefinition(
+  const definition = await requireMonthlyDefinition(
     input.organizationId,
     input.tableDefinitionId
   );
@@ -878,7 +951,7 @@ export async function copyForwardCustomTableMonth(
 ): Promise<CustomTableMonth> {
   await requireCustomTableRowsEdit(input.organizationId);
 
-  const definition = await requireOwnedDefinition(
+  const definition = await requireMonthlyDefinition(
     input.organizationId,
     input.tableDefinitionId
   );
@@ -918,4 +991,221 @@ export async function copyForwardCustomTableMonth(
     });
 
   return targetMonth;
+}
+
+/* ==========================================================
+   Persistent Current-State Operational Rows
+========================================================== */
+
+/**
+ * Load persistent rows for a current-state table.
+ *
+ * This path is used by operational lists such as VA Roster,
+ * Agenda, and Client Performance. It deliberately does not
+ * create or load a monthly instance.
+ */
+export async function listCustomTableOperationalRows(
+  organizationId: string,
+  tableDefinitionId: string
+): Promise<CustomTableOperationalRow[]> {
+  await requireCustomTableView(organizationId);
+
+  // Enforce organization ownership, current-state persistence,
+  // and enabled status before returning operational records.
+  await requireEnabledCurrentStateDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
+  return loadCustomTableOperationalRows(
+    organizationId,
+    tableDefinitionId
+  );
+}
+
+/**
+ * Create a persistent row in a current-state table.
+ */
+export async function addCustomTableOperationalRow(input: {
+  organizationId: string;
+  tableDefinitionId: string;
+  rowData?: CustomTableRowData;
+  operationalStatus?: CustomTableOperationalStatus;
+  isHidden?: boolean;
+  position?: number;
+}): Promise<CustomTableOperationalRow> {
+  await requireCustomTableRowsEdit(input.organizationId);
+
+  await requireEnabledCurrentStateDefinition(
+    input.organizationId,
+    input.tableDefinitionId
+  );
+
+  return createCustomTableOperationalRow(input);
+}
+
+/**
+ * Update a persistent current-state row after verifying that
+ * it belongs to the requested organization and table.
+ */
+export async function editCustomTableOperationalRow(input: {
+  organizationId: string;
+  tableDefinitionId: string;
+  rowId: string;
+  rowData?: CustomTableRowData;
+  operationalStatus?: CustomTableOperationalStatus;
+  isHidden?: boolean;
+  position?: number;
+}): Promise<CustomTableOperationalRow> {
+  await requireCustomTableRowsEdit(input.organizationId);
+
+  await requireEnabledCurrentStateDefinition(
+    input.organizationId,
+    input.tableDefinitionId
+  );
+
+  const row = await findCustomTableOperationalRowById(
+    input.organizationId,
+    input.tableDefinitionId,
+    input.rowId
+  );
+
+  if (!row) {
+    throw new Error(
+      "Persistent Custom Table row was not found in this organization."
+    );
+  }
+
+  return updateCustomTableOperationalRow(input);
+}
+
+/**
+ * Hide a persistent row without deleting its data.
+ */
+export async function hideCustomTableOperationalRowInWorkspace(
+  organizationId: string,
+  tableDefinitionId: string,
+  rowId: string
+): Promise<CustomTableOperationalRow> {
+  await requireCustomTableRowsEdit(organizationId);
+
+  await requireEnabledCurrentStateDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
+  const row = await findCustomTableOperationalRowById(
+    organizationId,
+    tableDefinitionId,
+    rowId
+  );
+
+  if (!row) {
+    throw new Error(
+      "Persistent Custom Table row was not found in this organization."
+    );
+  }
+
+  return hideCustomTableOperationalRow({
+    organizationId,
+    tableDefinitionId,
+    rowId,
+  });
+}
+
+/**
+ * Restore a hidden persistent row.
+ */
+export async function restoreCustomTableOperationalRowInWorkspace(
+  organizationId: string,
+  tableDefinitionId: string,
+  rowId: string
+): Promise<CustomTableOperationalRow> {
+  await requireCustomTableRowsEdit(organizationId);
+
+  await requireEnabledCurrentStateDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
+  const row = await findCustomTableOperationalRowById(
+    organizationId,
+    tableDefinitionId,
+    rowId
+  );
+
+  if (!row) {
+    throw new Error(
+      "Persistent Custom Table row was not found in this organization."
+    );
+  }
+
+  return restoreCustomTableOperationalRow({
+    organizationId,
+    tableDefinitionId,
+    rowId,
+  });
+}
+
+/**
+ * Permanently remove a persistent row.
+ *
+ * Normal operational workflows should prefer hiding rows so
+ * that they can be restored later.
+ */
+export async function removeCustomTableOperationalRow(
+  organizationId: string,
+  tableDefinitionId: string,
+  rowId: string
+): Promise<void> {
+  await requireCustomTableRowsEdit(organizationId);
+
+  await requireEnabledCurrentStateDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
+  const row = await findCustomTableOperationalRowById(
+    organizationId,
+    tableDefinitionId,
+    rowId
+  );
+
+  if (!row) {
+    throw new Error(
+      "Persistent Custom Table row was not found in this organization."
+    );
+  }
+
+  await deleteCustomTableOperationalRow({
+    organizationId,
+    tableDefinitionId,
+    rowId,
+  });
+}
+
+/**
+ * Persist the ordering of rows in one visibility section of a
+ * current-state table. The repository validates and saves the
+ * order atomically.
+ */
+export async function reorderCustomTableOperationalRows(
+  organizationId: string,
+  tableDefinitionId: string,
+  rowIds: string[],
+  isHidden: boolean
+): Promise<CustomTableOperationalRow[]> {
+  await requireCustomTableRowsEdit(organizationId);
+
+  await requireEnabledCurrentStateDefinition(
+    organizationId,
+    tableDefinitionId
+  );
+
+  return saveCustomTableOperationalRowOrder({
+    organizationId,
+    tableDefinitionId,
+    rowIds,
+    isHidden,
+  });
 }

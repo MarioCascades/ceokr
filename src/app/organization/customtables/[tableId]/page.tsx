@@ -5,14 +5,15 @@ import {
   getCustomTable,
   listCustomTableColumns,
   listCustomTableMonths,
+  listCustomTableOperationalRows,
   loadCustomTableWorkspace,
 } from "@/services/customtableservice";
 
 import { hasPermission } from "@/lib/auth/authorization";
 
 import CustomTableColumnManager from "@/components/organization/customtablecolumnmanager";
-
 import CustomTableMonthlyWorkspace from "@/components/organization/customtablemonthlyworkspace";
+import CustomTableOperationalWorkspace from "@/components/organization/customtableoperationalworkspace";
 
 type CustomTableConfigurationPageProps = {
   params: Promise<{
@@ -81,13 +82,24 @@ export default async function CustomTableConfigurationPage({
     query.performanceMonth
   );
 
-  let workspace = null;
+  let monthlyWorkspace = null;
+  let operationalRows: Awaited<
+    ReturnType<typeof listCustomTableOperationalRows>
+  > = [];
+
   let workspaceUnavailableReason:
     | "disabled"
     | "missing-month"
     | null = null;
 
-  if (table.isEnabled) {
+  if (!table.isEnabled) {
+    workspaceUnavailableReason = "disabled";
+  } else if (table.persistenceMode === "current_state") {
+    operationalRows = await listCustomTableOperationalRows(
+      organizationId,
+      table.id
+    );
+  } else {
     const existingMonths = await listCustomTableMonths(
       organizationId,
       table.id
@@ -98,7 +110,7 @@ export default async function CustomTableConfigurationPage({
     );
 
     if (monthExists || canEditRows) {
-      workspace = await loadCustomTableWorkspace(
+      monthlyWorkspace = await loadCustomTableWorkspace(
         organizationId,
         table.id,
         performanceMonth
@@ -106,9 +118,10 @@ export default async function CustomTableConfigurationPage({
     } else {
       workspaceUnavailableReason = "missing-month";
     }
-  } else {
-    workspaceUnavailableReason = "disabled";
   }
+
+  const isCurrentStateTable =
+    table.persistenceMode === "current_state";
 
   return (
     <main className="min-h-screen bg-gray-100 px-6 py-8 lg:px-8 lg:py-10">
@@ -133,7 +146,9 @@ export default async function CustomTableConfigurationPage({
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
               {table.description ||
-                "Review this provisioned operational table and manage its monthly records according to your permissions."}
+                (isCurrentStateTable
+                  ? "Review this provisioned operational table and manage its persistent records according to your permissions."
+                  : "Review this provisioned operational table and manage its monthly records according to your permissions.")}
             </p>
           </div>
 
@@ -170,9 +185,17 @@ export default async function CustomTableConfigurationPage({
           />
 
           <InfoCard
-            label="Runtime Tab"
-            value={table.runtimeTabKey || "Not assigned"}
-            description="Associated Runtime navigation key"
+            label="Persistence Mode"
+            value={
+              isCurrentStateTable
+                ? "Current State"
+                : "Monthly"
+            }
+            description={
+              isCurrentStateTable
+                ? "Records persist in one operational list"
+                : "Records are organized by performance month"
+            }
           />
         </section>
 
@@ -199,46 +222,44 @@ export default async function CustomTableConfigurationPage({
           </div>
         </section>
 
-        {workspace ? (
+        {!table.isEnabled ? (
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+            <h2 className="text-lg font-semibold text-amber-900">
+              Workspace Unavailable
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-amber-800">
+              This Custom Table is disabled. It must be enabled
+              before its operational records can be accessed through
+              this workspace.
+            </p>
+          </section>
+        ) : isCurrentStateTable ? (
+          <CustomTableOperationalWorkspace
+            organizationId={organizationId}
+            tableDefinitionId={table.id}
+            tableName={table.name}
+            columns={columns}
+            initialRows={operationalRows}
+            canEditRows={canEditRows}
+          />
+        ) : monthlyWorkspace ? (
           <CustomTableMonthlyWorkspace
             organizationId={organizationId}
             tableDefinitionId={table.id}
-            initialWorkspace={workspace}
+            initialWorkspace={monthlyWorkspace}
             canEditRows={canEditRows}
           />
         ) : (
-          <section
-            className={`rounded-2xl border p-6 ${
-              workspaceUnavailableReason === "missing-month"
-                ? "border-gray-200 bg-white"
-                : "border-amber-200 bg-amber-50"
-            }`}
-          >
-            <h2
-              className={`text-lg font-semibold ${
-                workspaceUnavailableReason === "missing-month"
-                  ? "text-gray-950"
-                  : "text-amber-900"
-              }`}
-            >
-              {workspaceUnavailableReason === "missing-month"
-                ? "No Monthly Records Yet"
-                : "Monthly Workspace Unavailable"}
+          <section className="rounded-2xl border border-gray-200 bg-white p-6">
+            <h2 className="text-lg font-semibold text-gray-950">
+              No Monthly Records Yet
             </h2>
 
-            <p
-              className={`mt-2 text-sm leading-6 ${
-                workspaceUnavailableReason === "missing-month"
-                  ? "text-gray-600"
-                  : "text-amber-800"
-              }`}
-            >
-              {workspaceUnavailableReason === "missing-month"
-                ? `There are no records for ${performanceMonth.slice(
-                    0,
-                    7
-                  )}. A user with permission to edit operational records can initialize this month.`
-                : "This Custom Table is disabled. It must be enabled before its monthly operational records can be accessed through this workspace."}
+            <p className="mt-2 text-sm leading-6 text-gray-600">
+              There are no records for{" "}
+              {performanceMonth.slice(0, 7)}. A user with permission
+              to edit operational records can initialize this month.
             </p>
           </section>
         )}

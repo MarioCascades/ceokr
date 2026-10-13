@@ -1,4 +1,3 @@
-
 /*
  * ==========================================================
  * CascadEffects Performance Platform
@@ -10,7 +9,7 @@
  *
  * - Recruitment
  * - Agenda
- * - VA List
+ * - VA Roster
  * - Client Performance
  *
  * Custom Tables are independent of Member OKRs, performance
@@ -22,6 +21,7 @@
  * - custom_table_columns
  * - custom_table_months
  * - custom_table_rows
+ * - custom_table_operational_rows
  * ==========================================================
  */
 
@@ -40,6 +40,26 @@ export type CustomTableOperationalStatus =
   | "on_hold"
   | "completed"
   | "cancelled";
+
+/* ==========================================================
+   Custom Table Persistence Mode
+========================================================== */
+
+/**
+ * Determines how a Custom Table stores its operational rows.
+ *
+ * monthly:
+ * Rows belong to a specific performance month and retain
+ * historical column snapshots. Recruitment uses this mode.
+ *
+ * current_state:
+ * Rows belong directly to the table definition and remain
+ * persistent without monthly snapshots or copy-forward.
+ * Agenda, VA Roster, and Client Performance use this mode.
+ */
+export type CustomTablePersistenceMode =
+  | "monthly"
+  | "current_state";
 
 /* ==========================================================
    Custom Table Column Data Types
@@ -94,6 +114,14 @@ export interface CustomTableColumnSettings {
  *
  * isEnabled controls whether the table is available for
  * Runtime. A separate showInRuntime setting is not used.
+ *
+ * persistenceMode determines how the table stores its rows:
+ *
+ * - monthly: rows belong to monthly instances and retain
+ *   historical snapshots.
+ *
+ * - current_state: rows persist as the current operational
+ *   state without monthly snapshots or copy-forward.
  */
 export interface CustomTableDefinition {
   id: string;
@@ -107,6 +135,8 @@ export interface CustomTableDefinition {
   description: string | null;
 
   runtimeTabKey: string | null;
+
+  persistenceMode: CustomTablePersistenceMode;
 
   isEnabled: boolean;
 
@@ -142,6 +172,9 @@ export interface CreateCustomTableDefinitionInput {
  *
  * Authorization for configuration changes must be enforced
  * by the application service layer.
+ *
+ * Persistence mode and the stable table key are not changed
+ * through ordinary organization-admin updates.
  */
 export interface UpdateCustomTableDefinitionInput {
   name?: string;
@@ -161,7 +194,8 @@ export interface UpdateCustomTableDefinitionInput {
  * Defines a configurable column within a Custom Table.
  *
  * columnKey is the stable identifier used to access the
- * corresponding value inside CustomTableRow.rowData.
+ * corresponding value inside CustomTableRow.rowData or
+ * CustomTableOperationalRow.rowData.
  */
 export interface CustomTableColumn {
   id: string;
@@ -250,6 +284,9 @@ export interface UpdateCustomTableColumnInput {
  *
  * The snapshot does not replace the reusable column
  * definition used by future months.
+ *
+ * Persistent current-state tables use their current
+ * configured columns instead of monthly snapshots.
  */
 export interface CustomTableColumnSnapshot {
   id: string;
@@ -283,6 +320,8 @@ export interface CustomTableColumnSnapshot {
  *
  * Each month has independent operational rows and a
  * historical snapshot of its column configuration.
+ *
+ * This model applies only to monthly persistence mode.
  */
 export interface CustomTableMonth {
   id: string;
@@ -353,7 +392,7 @@ export interface UpdateCustomTableMonthInput {
  * }
  *
  * The standardized operational status is stored separately
- * in CustomTableRow.operationalStatus.
+ * from the row's editable column values.
  */
 export type CustomTableRowData = Record<string, unknown>;
 
@@ -369,6 +408,8 @@ export type CustomTableRowData = Record<string, unknown>;
  *
  * Hidden rows remain stored and can be restored without
  * deleting or recreating the record.
+ *
+ * This interface is used by monthly Custom Tables.
  */
 export interface CustomTableRow {
   id: string;
@@ -437,8 +478,8 @@ export interface UpdateCustomTableRowInput {
 /**
  * Supported explicit ordering operations.
  *
- * Ordering applies within the relevant monthly table and
- * visibility section. It must not change row identity.
+ * Ordering applies within the relevant table and visibility
+ * section. It must not change row identity.
  */
 export type CustomTableRowMoveAction =
   | "top"
@@ -470,6 +511,8 @@ export interface MoveCustomTableRowInput {
  * The service layer determines which rows are eligible
  * for carry-forward and creates independent destination
  * records.
+ *
+ * Persistent current-state tables do not use copy-forward.
  */
 export interface CopyForwardCustomTableMonthInput {
   organizationId: string;
@@ -499,10 +542,13 @@ export type CustomTablePermissionKey =
 ========================================================== */
 
 /**
- * Combined data model for presenting a Custom Table
+ * Combined data model for presenting a monthly Custom Table
  * workspace without requiring each screen to reconstruct
  * the relationships between definitions, columns, months,
  * and rows independently.
+ *
+ * Persistent current-state workspaces use operational rows
+ * directly and do not require a CustomTableMonth.
  */
 export interface CustomTableWorkspace {
   definition: CustomTableDefinition;

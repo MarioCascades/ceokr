@@ -128,24 +128,38 @@ export async function updateRuntimeNavigationTab(
   input: UpdateRuntimeNavigationTabInput
 ): Promise<RuntimeNavigationTab> {
   const updates: {
+    tab_key?: string;
     position?: number;
     is_hidden?: boolean;
   } = {};
 
   if (
-    typeof input.position ===
-    "number"
+    typeof input.tabKey === "string"
+  ) {
+    updates.tab_key =
+      input.tabKey;
+  }
+
+  if (
+    typeof input.position === "number"
   ) {
     updates.position =
       input.position;
   }
 
   if (
-    typeof input.isHidden ===
-    "boolean"
+    typeof input.isHidden === "boolean"
   ) {
     updates.is_hidden =
       input.isHidden;
+  }
+
+  if (
+    Object.keys(updates).length === 0
+  ) {
+    throw new Error(
+      "No Runtime navigation tab updates were provided."
+    );
   }
 
   const {

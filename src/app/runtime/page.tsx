@@ -2,33 +2,22 @@ import type { CSSProperties } from "react";
 
 import PerformanceSheet from "@/components/runtime/performancesheet/performancesheet";
 import CustomTableMonthlyWorkspace from "@/components/organization/customtablemonthlyworkspace";
+import CustomTableOperationalWorkspace from "@/components/organization/customtableoperationalworkspace";
 import RuntimeNavigation from "@/components/runtime/shared/runtimenavigation";
 import RuntimeOverview from "@/components/runtime/shared/runtimeoverview";
 
-import {
-  hasPermission,
-} from "@/lib/auth/authorization";
-
-import {
-  loadRuntimeExecution,
-} from "@/lib/runtime/runtimeexecution";
-
-import {
-  getOrganization,
-} from "@/services/organization.service";
-
-import {
-  listUserManagementRecords,
-} from "@/services/user.service";
-
-import {
-  loadDashboard,
-} from "@/services/dashboard.service";
+import { hasPermission } from "@/lib/auth/authorization";
+import { loadRuntimeExecution } from "@/lib/runtime/runtimeexecution";
+import { getOrganization } from "@/services/organization.service";
+import { listUserManagementRecords } from "@/services/user.service";
+import { loadDashboard } from "@/services/dashboard.service";
 
 import {
   listCustomTables,
+  listCustomTableColumns,
   listCustomTableMonths,
   loadCustomTableWorkspace,
+  listCustomTableOperationalRows,
 } from "@/services/customtableservice";
 
 interface RuntimePageProps {
@@ -40,25 +29,131 @@ interface RuntimePageProps {
   }>;
 }
 
+type MonthlyWorkspace = Awaited<
+  ReturnType<typeof loadCustomTableWorkspace>
+>;
+
+type PersistentRows = Awaited<
+  ReturnType<typeof listCustomTableOperationalRows>
+>;
+
+type TableColumns = Awaited<
+  ReturnType<typeof listCustomTableColumns>
+>;
+
+interface OperationalTableResult {
+  tableId: string;
+  tableName: string;
+  persistenceMode: "monthly" | "current_state";
+  columns: TableColumns;
+  monthlyWorkspace: MonthlyWorkspace | null;
+  persistentRows: PersistentRows;
+  error: string | null;
+}
+
 function getCurrentPerformanceMonth(): string {
   const now = new Date();
 
   const year = now.getUTCFullYear();
-  const month = String(
-    now.getUTCMonth() + 1
-  ).padStart(2, "0");
+  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
 
   return `${year}-${month}`;
 }
 
-function toPerformanceMonthDate(
-  month: string
-): string {
+function toPerformanceMonthDate(month: string): string {
   if (/^\d{4}-\d{2}$/.test(month)) {
     return `${month}-01`;
   }
 
   return month;
+}
+
+function resolveRuntimeTabKey(table: {
+  tableKey: string;
+  runtimeTabKey?: string | null;
+}): string {
+  return table.runtimeTabKey?.trim() || table.tableKey;
+}
+
+async function loadOperationalTableResult(
+  organizationId: string,
+  table: {
+    id: string;
+    name: string;
+    persistenceMode: "monthly" | "current_state";
+  },
+  performanceMonthDate: string,
+  canEditRows: boolean
+): Promise<OperationalTableResult> {
+  try {
+    if (table.persistenceMode === "current_state") {
+      const [columns, persistentRows] = await Promise.all([
+        listCustomTableColumns(organizationId, table.id),
+        listCustomTableOperationalRows(organizationId, table.id),
+      ]);
+
+      return {
+        tableId: table.id,
+        tableName: table.name,
+        persistenceMode: "current_state",
+        columns,
+        monthlyWorkspace: null,
+        persistentRows,
+        error: null,
+      };
+    }
+
+    const months = await listCustomTableMonths(
+      organizationId,
+      table.id
+    );
+
+    const monthExists = months.some(
+      (month) => month.performanceMonth === performanceMonthDate
+    );
+
+    if (!monthExists && !canEditRows) {
+      return {
+        tableId: table.id,
+        tableName: table.name,
+        persistenceMode: "monthly",
+        columns: [],
+        monthlyWorkspace: null,
+        persistentRows: [],
+        error:
+          "There is no workspace for this month yet. You need row-edit permission to create one.",
+      };
+    }
+
+    const monthlyWorkspace = await loadCustomTableWorkspace(
+      organizationId,
+      table.id,
+      performanceMonthDate
+    );
+
+    return {
+      tableId: table.id,
+      tableName: table.name,
+      persistenceMode: "monthly",
+      columns: monthlyWorkspace.columns,
+      monthlyWorkspace,
+      persistentRows: [],
+      error: null,
+    };
+  } catch (error) {
+    return {
+      tableId: table.id,
+      tableName: table.name,
+      persistenceMode: table.persistenceMode,
+      columns: [],
+      monthlyWorkspace: null,
+      persistentRows: [],
+      error:
+        error instanceof Error
+          ? error.message
+          : "The operational workspace could not be loaded.",
+    };
+  }
 }
 
 export default async function RuntimePage({
@@ -110,44 +205,33 @@ export default async function RuntimePage({
 
   /* ========================================================
      Performance Month
+
+     Monthly execution remains available for Member Runtime
+     and monthly operational tables. Persistent operational
+     tables do not use this value for storage.
   ======================================================== */
 
   const performanceMonth =
-    params.performanceMonth ||
-    getCurrentPerformanceMonth();
+    params.performanceMonth || getCurrentPerformanceMonth();
 
   const performanceMonthDate =
     toPerformanceMonthDate(performanceMonth);
 
   /* ========================================================
-     Organization Members + Dashboard
+     Organization Members and Dashboard
   ======================================================== */
 
-  const [
-    members,
-    dashboard,
-  ] = await Promise.all([
-    listUserManagementRecords(
-      organization.id
-    ),
-    loadDashboard(
-      organization.id
-    ),
+  const [members, dashboard] = await Promise.all([
+    listUserManagementRecords(organization.id),
+    loadDashboard(organization.id),
   ]);
 
   const activeMembers = members.filter(
-    (record) =>
-      record.user.is_active !== false
+    (record) => record.user.is_active !== false
   );
 
   /* ========================================================
      Custom Tables and Runtime Navigation
-
-     Load enabled Custom Tables for the existing Runtime
-     navigation, including on the Dashboard and Member views.
-
-     Table visibility in Runtime is governed by isEnabled.
-     Viewing tables and editing rows remain permission-based.
   ======================================================== */
 
   let customTables: Awaited<
@@ -158,21 +242,22 @@ export default async function RuntimePage({
   let canEditCustomTableRows = false;
 
   try {
-    canViewCustomTables = await hasPermission(
-      organization.id,
-      "custom_tables.view"
-    );
-
-    canEditCustomTableRows = await hasPermission(
-      organization.id,
-      "custom_tables.rows.edit"
-    );
+    [canViewCustomTables, canEditCustomTableRows] =
+      await Promise.all([
+        hasPermission(
+          organization.id,
+          "custom_tables.view"
+        ),
+        hasPermission(
+          organization.id,
+          "custom_tables.rows.edit"
+        ),
+      ]);
 
     if (canViewCustomTables) {
-      const organizationTables =
-        await listCustomTables(
-          organization.id
-        );
+      const organizationTables = await listCustomTables(
+        organization.id
+      );
 
       customTables = organizationTables.filter(
         (table) => table.isEnabled
@@ -189,17 +274,12 @@ export default async function RuntimePage({
     canEditCustomTableRows = false;
   }
 
-  const operationalTables =
-    customTables.map(
-      (table) => ({
-        id: table.id,
-        tableKey: table.tableKey,
-        runtimeTabKey:
-          table.runtimeTabKey ||
-          table.tableKey,
-        name: table.name,
-      })
-    );
+  const operationalTables = customTables.map((table) => ({
+    id: table.id,
+    tableKey: table.tableKey,
+    runtimeTabKey: resolveRuntimeTabKey(table),
+    name: table.name,
+  }));
 
   const runtimeNavigationProps = {
     organizationId: organization.id,
@@ -212,66 +292,63 @@ export default async function RuntimePage({
   /* ========================================================
      Operational Custom Table Workspace
 
-     A Runtime operational tab is resolved against enabled
-     tables available to the current user.
-
-     View-only users may access an existing monthly workspace.
-     Creating a missing month requires row-edit permission.
+     Tables sharing a Runtime tab key are rendered together.
+     Monthly tables retain their monthly workspace.
+     Current-state tables use the interactive persistent
+     operational workspace.
   ======================================================== */
 
   if (params.runtimeTab) {
+    const requestedRuntimeTab = params.runtimeTab.trim();
+
     const selectedTable = customTables.find(
       (table) =>
-        table.runtimeTabKey ===
-          params.runtimeTab ||
-        table.tableKey ===
-          params.runtimeTab ||
-        table.id ===
-          params.runtimeTab
+        resolveRuntimeTabKey(table) === requestedRuntimeTab ||
+        table.tableKey === requestedRuntimeTab ||
+        table.id === requestedRuntimeTab
     );
 
-    let workspace = null;
+    const resolvedRuntimeTabKey = selectedTable
+      ? resolveRuntimeTabKey(selectedTable)
+      : requestedRuntimeTab;
+
+    const selectedTables = selectedTable
+      ? customTables.filter(
+          (table) =>
+            resolveRuntimeTabKey(table) ===
+            resolvedRuntimeTabKey
+        )
+      : [];
+
     let workspaceMessage = "";
+    let tableResults: OperationalTableResult[] = [];
 
     if (!canViewCustomTables) {
       workspaceMessage =
         "You do not have permission to view operational tables.";
-    } else if (!selectedTable) {
+    } else if (selectedTables.length === 0) {
       workspaceMessage =
         "This operational table is unavailable or has been disabled.";
     } else {
-      try {
-        const months = await listCustomTableMonths(
-          organization.id,
-          selectedTable.id
-        );
-
-        const monthExists = months.some(
-          (month) =>
-            month.performanceMonth ===
-            performanceMonthDate
-        );
-
-        if (
-          monthExists ||
-          canEditCustomTableRows
-        ) {
-          workspace = await loadCustomTableWorkspace(
+      tableResults = await Promise.all(
+        selectedTables.map((table) =>
+          loadOperationalTableResult(
             organization.id,
-            selectedTable.id,
-            performanceMonthDate
-          );
-        } else {
-          workspaceMessage =
-            "There is no workspace for this month yet. You need row-edit permission to create one.";
-        }
-      } catch (error) {
-        workspaceMessage =
-          error instanceof Error
-            ? error.message
-            : "The operational workspace could not be loaded.";
-      }
+            {
+              id: table.id,
+              name: table.name,
+              persistenceMode: table.persistenceMode,
+            },
+            performanceMonthDate,
+            canEditCustomTableRows
+          )
+        )
+      );
     }
+
+    const hasMonthlyWorkspace = tableResults.some(
+      (result) => result.monthlyWorkspace !== null
+    );
 
     return (
       <main
@@ -292,15 +369,8 @@ export default async function RuntimePage({
       >
         <RuntimeNavigation
           {...runtimeNavigationProps}
-          selectedSubjectId={
-            params.subjectId
-          }
-          selectedRuntimeTab={
-            selectedTable
-              ? selectedTable.runtimeTabKey ||
-                selectedTable.tableKey
-              : params.runtimeTab
-          }
+          selectedSubjectId={params.subjectId}
+          selectedRuntimeTab={resolvedRuntimeTabKey}
         />
 
         <section className="space-y-2">
@@ -309,24 +379,28 @@ export default async function RuntimePage({
           </p>
 
           <h1 className="text-3xl font-semibold tracking-tight">
-            {selectedTable?.name ?? "Custom Table"}
+            {selectedTables.length > 1
+              ? resolvedRuntimeTabKey
+              : selectedTable?.name ?? "Custom Table"}
           </h1>
 
-          {selectedTable?.description && (
-            <p className="max-w-3xl text-sm text-muted-foreground">
-              {selectedTable.description}
+          {selectedTables.length === 1 &&
+            selectedTables[0].description && (
+              <p className="max-w-3xl text-sm text-muted-foreground">
+                {selectedTables[0].description}
+              </p>
+            )}
+
+          {selectedTables.some(
+            (table) => table.persistenceMode === "monthly"
+          ) && (
+            <p className="text-sm text-muted-foreground">
+              Performance month: {performanceMonth}
             </p>
           )}
         </section>
 
-        {workspace && selectedTable ? (
-          <CustomTableMonthlyWorkspace
-            organizationId={organization.id}
-            tableDefinitionId={selectedTable.id}
-            initialWorkspace={workspace}
-            canEditRows={canEditCustomTableRows}
-          />
-        ) : (
+        {workspaceMessage ? (
           <section
             role="status"
             className="rounded-xl border border-gray-200 bg-white p-6"
@@ -339,6 +413,83 @@ export default async function RuntimePage({
               {workspaceMessage}
             </p>
           </section>
+        ) : (
+          <div className="space-y-8">
+            {tableResults.map((result) => {
+              if (result.error) {
+                return (
+                  <section
+                    key={result.tableId}
+                    role="status"
+                    className="rounded-xl border border-gray-200 bg-white p-6"
+                  >
+                    <h2 className="font-semibold text-gray-950">
+                      {result.tableName}
+                    </h2>
+
+                    <p className="mt-2 text-sm text-gray-600">
+                      {result.error}
+                    </p>
+                  </section>
+                );
+              }
+
+              if (result.persistenceMode === "monthly") {
+                if (!result.monthlyWorkspace) {
+                  return null;
+                }
+
+                return (
+                  <section
+                    key={result.tableId}
+                    className="space-y-3"
+                  >
+                    {selectedTables.length > 1 && (
+                      <h2 className="text-xl font-semibold">
+                        {result.tableName}
+                      </h2>
+                    )}
+
+                    <CustomTableMonthlyWorkspace
+                      organizationId={organization.id}
+                      tableDefinitionId={result.tableId}
+                      initialWorkspace={result.monthlyWorkspace}
+                      canEditRows={canEditCustomTableRows}
+                    />
+                  </section>
+                );
+              }
+
+              return (
+                <section
+                  key={result.tableId}
+                  className="space-y-3"
+                >
+                  {selectedTables.length > 1 && (
+                    <h2 className="text-xl font-semibold">
+                      {result.tableName}
+                    </h2>
+                  )}
+
+                  <CustomTableOperationalWorkspace
+                    organizationId={organization.id}
+                    tableDefinitionId={result.tableId}
+                    tableName={result.tableName}
+                    columns={result.columns}
+                    initialRows={result.persistentRows}
+                    canEditRows={canEditCustomTableRows}
+                  />
+                </section>
+              );
+            })}
+          </div>
+        )}
+
+        {hasMonthlyWorkspace && (
+          <p className="text-xs text-muted-foreground">
+            Monthly operational data remains associated with its
+            selected performance month.
+          </p>
         )}
       </main>
     );
@@ -369,13 +520,9 @@ export default async function RuntimePage({
           xl:px-10
         "
       >
-        <RuntimeNavigation
-          {...runtimeNavigationProps}
-        />
+        <RuntimeNavigation {...runtimeNavigationProps} />
 
-        <RuntimeOverview
-          dashboard={dashboard}
-        />
+        <RuntimeOverview dashboard={dashboard} />
       </main>
     );
   }
@@ -388,12 +535,11 @@ export default async function RuntimePage({
      intentionally not used as a fallback.
   ======================================================== */
 
-  const runtimeExecution =
-    await loadRuntimeExecution(
-      organization.id,
-      params.subjectId,
-      performanceMonth
-    );
+  const runtimeExecution = await loadRuntimeExecution(
+    organization.id,
+    params.subjectId,
+    performanceMonth
+  );
 
   /* ========================================================
      Runtime Execution Required
@@ -411,9 +557,7 @@ export default async function RuntimePage({
       >
         <RuntimeNavigation
           {...runtimeNavigationProps}
-          selectedSubjectId={
-            params.subjectId
-          }
+          selectedSubjectId={params.subjectId}
         />
 
         <div className="mx-auto max-w-5xl p-8">
@@ -429,9 +573,7 @@ export default async function RuntimePage({
           <div className="mt-6 rounded-lg border bg-muted/30 p-4">
             <div className="grid gap-3 text-sm">
               <div>
-                <span className="font-medium">
-                  Member:
-                </span>{" "}
+                <span className="font-medium">Member:</span>{" "}
                 {params.subjectId}
               </div>
 
@@ -468,32 +610,22 @@ export default async function RuntimePage({
       className="ce-runtime-theme min-h-screen"
     >
       <PerformanceSheet
-        document={
-          runtimeExecution.performanceSheet.document
-        }
-        objectives={
-          runtimeExecution.objectives
-        }
-        keyResultProgress={
-          runtimeExecution.keyResultProgress
-        }
+        document={runtimeExecution.performanceSheet.document}
+        objectives={runtimeExecution.objectives}
+        keyResultProgress={runtimeExecution.keyResultProgress}
         organizationId={organization.id}
         organization={organization}
         performanceInstanceId={
           runtimeExecution.performanceInstance.id
         }
-        performanceInstance={
-          runtimeExecution.performanceInstance
-        }
+        performanceInstance={runtimeExecution.performanceInstance}
         subject={runtimeExecution.subject}
         members={activeMembers}
         dashboard={dashboard}
         previousKeyResultValues={
           runtimeExecution.previousKeyResultValues
         }
-        performanceMonths={
-          runtimeExecution.performanceMonths
-        }
+        performanceMonths={runtimeExecution.performanceMonths}
         operationalTables={operationalTables}
       />
     </div>
