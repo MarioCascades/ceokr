@@ -65,7 +65,6 @@ function OrganizationNavSection({
 }) {
   return (
     <div className="space-y-1">
-
       <div
         className="
           px-3
@@ -84,7 +83,6 @@ function OrganizationNavSection({
       <div className="space-y-1">
         {children}
       </div>
-
     </div>
   );
 }
@@ -104,18 +102,15 @@ export default function OrganizationShell({
   ] = useState("Organization");
 
   useEffect(() => {
-
     let cancelled = false;
 
     async function loadOrganizationName() {
-
       if (!organizationId) {
         setOrganizationName("Organization");
         return;
       }
 
       try {
-
         const organization =
           await getOrganization(
             organizationId
@@ -129,9 +124,7 @@ export default function OrganizationShell({
           organization?.company_name?.trim() ||
           "Organization"
         );
-
       } catch (error) {
-
         console.error(
           "Failed to load organization name:",
           error
@@ -140,7 +133,6 @@ export default function OrganizationShell({
         if (!cancelled) {
           setOrganizationName("Organization");
         }
-
       }
     }
 
@@ -149,7 +141,6 @@ export default function OrganizationShell({
     return () => {
       cancelled = true;
     };
-
   }, [
     organizationId,
   ]);
@@ -160,14 +151,10 @@ export default function OrganizationShell({
     useOrganizationFeatures();
 
   const departmentsEnabled =
-    isEnabled(
-      "departments"
-    );
+    isEnabled("departments");
 
   const teamsEnabled =
-    isEnabled(
-      "teams"
-    );
+    isEnabled("teams");
 
   /*
    * Organization Admin navigation always
@@ -215,10 +202,7 @@ export default function OrganizationShell({
         bg-background
       "
     >
-
-      {/* ==================================================
-          Sidebar
-      ================================================== */}
+      {/* Sidebar */}
 
       <aside
         className="
@@ -235,10 +219,7 @@ export default function OrganizationShell({
           lg:flex-col
         "
       >
-
-        {/* ==================================================
-            Brand
-        ================================================== */}
+        {/* Brand */}
 
         <div
           className="
@@ -248,14 +229,12 @@ export default function OrganizationShell({
             py-5
           "
         >
-
           <Link
             href={organizationHref(
               "/organization"
             )}
             className="block"
           >
-
             <div
               className="
                 text-lg
@@ -278,14 +257,10 @@ export default function OrganizationShell({
             >
               Organization Admin
             </div>
-
           </Link>
-
         </div>
 
-        {/* ==================================================
-            Navigation
-        ================================================== */}
+        {/* Navigation */}
 
         <nav
           className="
@@ -295,30 +270,22 @@ export default function OrganizationShell({
             pb-6
           "
         >
-
-          {/* ==================================================
-              Overview
-          ================================================== */}
+          {/* Overview */}
 
           <div className="pt-4">
-
             <OrganizationNavLink
               href={organizationHref(
                 "/organization"
               )}
               label="Overview"
             />
-
           </div>
 
-          {/* ==================================================
-              Organization
-          ================================================== */}
+          {/* Organization */}
 
           <OrganizationNavSection
             title="Organization"
           >
-
             <OrganizationNavLink
               href={organizationHref(
                 "/organization/organization"
@@ -357,17 +324,13 @@ export default function OrganizationShell({
               )}
               label="Roles & Permissions"
             />
-
           </OrganizationNavSection>
 
-          {/* ==================================================
-              Performance
-          ================================================== */}
+          {/* Performance */}
 
           <OrganizationNavSection
             title="Performance"
           >
-
             <OrganizationNavLink
               href={performanceWorkspaceHref}
               label="Performance Workspace"
@@ -379,17 +342,13 @@ export default function OrganizationShell({
               )}
               label="OKR Templates"
             />
-
           </OrganizationNavSection>
 
-          {/* ==================================================
-              Analytics
-          ================================================== */}
+          {/* Reports */}
 
           <OrganizationNavSection
-            title="Analytics"
+            title="Reports"
           >
-
             <OrganizationNavLink
               href={organizationHref(
                 "/organization/dashboards"
@@ -399,21 +358,17 @@ export default function OrganizationShell({
 
             <OrganizationNavLink
               href={organizationHref(
-                "/organization/reports"
+                "/organization/customtables"
               )}
-              label="Reports"
+              label="Custom Tables"
             />
-
           </OrganizationNavSection>
 
-          {/* ==================================================
-              Configuration
-          ================================================== */}
+          {/* Configuration */}
 
           <OrganizationNavSection
             title="Configuration"
           >
-
             <OrganizationNavLink
               href={organizationHref(
                 "/organization/settings"
@@ -427,14 +382,10 @@ export default function OrganizationShell({
               )}
               label="AI Configuration"
             />
-
           </OrganizationNavSection>
-
         </nav>
 
-        {/* ==================================================
-            Footer
-        ================================================== */}
+        {/* Footer */}
 
         <div
           className="
@@ -444,7 +395,6 @@ export default function OrganizationShell({
             py-4
           "
         >
-
           <div
             className="
               text-xs
@@ -453,20 +403,13 @@ export default function OrganizationShell({
           >
             Organization-scoped workspace
           </div>
-
         </div>
-
       </aside>
 
-      {/* ==================================================
-          Main Content
-      ================================================== */}
+      {/* Main Content */}
 
       <div className="lg:pl-64">
-
-        {/* ==================================================
-            Mobile Header
-        ================================================== */}
+        {/* Mobile Header */}
 
         <header
           className="
@@ -478,14 +421,12 @@ export default function OrganizationShell({
             lg:hidden
           "
         >
-
           <Link
             href={organizationHref(
               "/organization"
             )}
             className="block"
           >
-
             <div
               className="
                 text-lg
@@ -508,21 +449,15 @@ export default function OrganizationShell({
             >
               Organization Admin
             </div>
-
           </Link>
-
         </header>
 
-        {/* ==================================================
-            Page
-        ================================================== */}
+        {/* Page */}
 
         <div className="min-h-screen">
           {children}
         </div>
-
       </div>
-
     </div>
   );
 }

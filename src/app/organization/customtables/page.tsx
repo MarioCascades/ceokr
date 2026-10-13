@@ -22,18 +22,18 @@ export default async function OrganizationCustomTablesPage({
 
   if (!organizationId) {
     return (
-      <main className="min-h-screen bg-slate-100 px-6 py-8 lg:px-8 lg:py-10">
+      <main className="min-h-screen bg-[#E9F4F8] px-6 py-8 lg:px-8 lg:py-10">
         <div className="mx-auto max-w-7xl space-y-8">
           <header>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#64748b]">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#272D2C]">
               Organization Administration
             </p>
 
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-[#0b2347]">
-              Custom Tables
+            <h1 className="mt-2 text-4xl font-black tracking-tight text-[#082550]">
+              CUSTOM TABLES
             </h1>
 
-            <p className="mt-2 max-w-3xl text-slate-600">
+            <p className="mt-2 max-w-3xl text-[#272D2C]">
               Access the operational tables provisioned for your
               organization. Manage table availability and work with
               monthly operational records without changing the
@@ -41,19 +41,19 @@ export default async function OrganizationCustomTablesPage({
             </p>
           </header>
 
-          <section className="rounded-2xl border border-amber-300 bg-amber-50 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-amber-950">
+          <section className="rounded-2xl border border-[#B4C2D1] border-l-4 border-l-[#E26D5C] bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-[#082550]">
               Organization context required
             </h2>
 
-            <p className="mt-2 text-sm text-amber-900">
+            <p className="mt-2 text-sm leading-6 text-[#272D2C]">
               Select an organization from the main workspace before
               accessing its Custom Tables.
             </p>
 
             <Link
               href="/organization"
-              className="mt-4 inline-flex rounded-lg border border-[#0b2347] bg-[#0b2347] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#163b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b2347] focus-visible:ring-offset-2"
+              className="mt-4 inline-flex rounded-lg bg-[#E26D5C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#cf5d4d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#082550] focus-visible:ring-offset-2"
             >
               Return to Organization Workspace
             </Link>
@@ -91,21 +91,21 @@ export default async function OrganizationCustomTablesPage({
   );
 
   return (
-    <main className="min-h-screen bg-slate-100 px-6 py-8 lg:px-8 lg:py-10">
+    <main className="min-h-screen bg-[#E9F4F8] px-6 py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-7xl space-y-8">
         {/* Page Header */}
 
         <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#64748b]">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#272D2C]">
               Organization Administration
             </p>
 
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-[#0b2347]">
-              Custom Tables
+            <h1 className="mt-2 text-4xl font-black tracking-tight text-[#082550]">
+              CUSTOM TABLES
             </h1>
 
-            <p className="mt-2 max-w-3xl leading-6 text-slate-600">
+            <p className="mt-2 max-w-3xl leading-6 text-[#272D2C]">
               Access the operational tables provisioned for your
               organization. Manage table availability and work with
               monthly operational records without changing the
@@ -115,7 +115,7 @@ export default async function OrganizationCustomTablesPage({
 
           <Link
             href="/organization"
-            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#cbd5e1] bg-white px-4 py-2 text-sm font-semibold text-[#0b2347] shadow-sm transition hover:border-[#0b2347] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b2347] focus-visible:ring-offset-2"
+            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#B4C2D1] bg-white px-4 py-2 text-sm font-semibold text-[#082550] transition hover:border-[#082550] hover:bg-[#E9F4F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#082550] focus-visible:ring-offset-2"
           >
             Back to Organization Workspace
           </Link>
@@ -123,18 +123,18 @@ export default async function OrganizationCustomTablesPage({
 
         {/* Provisioning Overview */}
 
-        <section className="rounded-2xl border border-slate-200 border-t-4 border-t-[#0b2347] bg-white p-6 shadow-sm lg:p-7">
+        <section className="rounded-2xl border border-[#B4C2D1] border-t-4 border-t-[#082550] bg-white p-6 shadow-sm lg:p-7">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#64748b]">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#272D2C]">
                 Organization Operations
               </p>
 
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#0b2347]">
-                Provisioned Operational Tables
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#082550]">
+                PROVISIONED OPERATIONAL TABLES
               </h2>
 
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#272D2C]">
                 This workspace displays the Custom Tables provisioned
                 for the selected organization. Table definitions and
                 column configurations are managed by authorized
@@ -142,34 +142,34 @@ export default async function OrganizationCustomTablesPage({
               </p>
             </div>
 
-            <span className="w-fit shrink-0 rounded-lg border border-[#cbd5e1] bg-slate-100 px-3 py-2 text-xs font-semibold text-[#0b2347]">
+            <span className="w-fit shrink-0 rounded-lg border border-[#B4C2D1] bg-[#E9F4F8] px-3 py-2 text-xs font-semibold text-[#082550]">
               Organization-scoped
             </span>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 transition-colors hover:border-[#94a3b8]">
-              <div className="mb-3 h-1 w-10 rounded-full bg-[#0b2347]" />
+            <div className="rounded-xl border border-[#B4C2D1] bg-[#E9F4F8] p-5">
+              <div className="mb-3 h-1 w-10 rounded-full bg-[#082550]" />
 
-              <h3 className="font-semibold text-[#0b2347]">
-                Provisioned Tables
+              <h3 className="font-semibold text-[#082550]">
+                PROVISIONED TABLES
               </h3>
 
-              <p className="mt-2 text-sm leading-6 text-slate-600">
+              <p className="mt-2 text-sm leading-6 text-[#272D2C]">
                 Access the operational tables assigned to this
                 organization. Other organizations may have different
                 tables and configurations.
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 transition-colors hover:border-[#94a3b8]">
-              <div className="mb-3 h-1 w-10 rounded-full bg-[#244b78]" />
+            <div className="rounded-xl border border-[#B4C2D1] bg-[#E9F4F8] p-5">
+              <div className="mb-3 h-1 w-10 rounded-full bg-[#082550]" />
 
-              <h3 className="font-semibold text-[#0b2347]">
-                Runtime Availability
+              <h3 className="font-semibold text-[#082550]">
+                RUNTIME AVAILABILITY
               </h3>
 
-              <p className="mt-2 text-sm leading-6 text-slate-600">
+              <p className="mt-2 text-sm leading-6 text-[#272D2C]">
                 Authorized organization administrators can manage
                 availability for provisioned tables. Table
                 provisioning and column configuration remain
@@ -177,14 +177,14 @@ export default async function OrganizationCustomTablesPage({
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 transition-colors hover:border-[#94a3b8]">
-              <div className="mb-3 h-1 w-10 rounded-full bg-[#64748b]" />
+            <div className="rounded-xl border border-[#B4C2D1] bg-[#E9F4F8] p-5">
+              <div className="mb-3 h-1 w-10 rounded-full bg-[#E26D5C]" />
 
-              <h3 className="font-semibold text-[#0b2347]">
-                Monthly Records
+              <h3 className="font-semibold text-[#082550]">
+                MONTHLY RECORDS
               </h3>
 
-              <p className="mt-2 text-sm leading-6 text-slate-600">
+              <p className="mt-2 text-sm leading-6 text-[#272D2C]">
                 Work with month-specific operational records while
                 preserving historical records and eligible
                 carry-forward data.
@@ -196,12 +196,12 @@ export default async function OrganizationCustomTablesPage({
         {/* Empty State */}
 
         {tables.length === 0 && (
-          <section className="rounded-2xl border border-[#cbd5e1] border-l-4 border-l-[#0b2347] bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#0b2347]">
-              No operational tables have been provisioned
+          <section className="rounded-2xl border border-[#B4C2D1] border-l-4 border-l-[#E26D5C] bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-[#082550]">
+              NO OPERATIONAL TABLES HAVE BEEN PROVISIONED
             </h2>
 
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#272D2C]">
               There are currently no Custom Tables assigned to this
               organization. Please contact your CascadEffects IT
               administrator to request provisioning of the required
@@ -218,7 +218,7 @@ export default async function OrganizationCustomTablesPage({
           canManage={canManage}
         />
 
-        {/* Help Panel */}
+        {/* Floating Help Panel */}
 
         <CustomTablesHelpPanel />
       </div>
@@ -230,15 +230,17 @@ function CustomTablesHelpPanel() {
   return (
     <aside
       aria-labelledby="custom-tables-help-title"
-      className="fixed bottom-5 right-5 z-40 w-[calc(100%-2.5rem)] max-w-sm rounded-2xl border border-slate-200 border-t-4 border-t-[#0b2347] bg-white shadow-xl"
+      className="fixed bottom-5 right-5 z-40 w-[calc(100%-2.5rem)] max-w-sm rounded-2xl border border-[#B4C2D1] bg-[#082550] text-white shadow-xl"
     >
-      <div className="flex items-start gap-3 p-5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0b2347] text-white">
+      <div className="flex items-start gap-3 p-4">
+        {/* Floater Icon */}
+
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white">
           <svg
             aria-hidden="true"
             viewBox="0 0 24 24"
             fill="none"
-            className="h-5 w-5"
+            className="h-4 w-4"
             stroke="currentColor"
             strokeWidth="1.8"
           >
@@ -251,50 +253,35 @@ function CustomTablesHelpPanel() {
         </div>
 
         <div className="min-w-0 flex-1">
-          <h2
-            id="custom-tables-help-title"
-            className="text-sm font-bold text-[#0b2347]"
-          >
-            Need help with Custom Tables?
-          </h2>
-
-          <p className="mt-2 text-sm leading-5 text-slate-600">
-            Use this workspace to access provisioned operational
-            tables and manage their Runtime availability.
+          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#B4C2D1]">
+            Custom Tables Support
           </p>
 
-          <div className="mt-3 space-y-3 text-xs leading-5 text-slate-600">
-            <p>
-              <span className="font-semibold text-[#0b2347]">
-                Missing a table?
-              </span>{" "}
-              Contact your CascadEffects IT administrator to request
-              provisioning.
-            </p>
+          <h2
+            id="custom-tables-help-title"
+            className="mt-1 text-xs font-bold uppercase leading-5 text-white"
+          >
+            NEED HELP WITH CUSTOM TABLES?
+          </h2>
 
-            <p>
-              <span className="font-semibold text-[#0b2347]">
-                Need a column or configuration change?
-              </span>{" "}
-              These changes are handled by authorized CascadEffects
-              platform personnel.
-            </p>
+          <p className="mt-2 text-xs leading-[1.4rem] text-[#E9F4F8]">
+            Need a table enabled, a missing table provisioned, or a
+            column configuration changed? Contact CascadEffects IT
+            for assistance.
+          </p>
 
-            <p>
-              <span className="font-semibold text-[#0b2347]">
-                Working with historical records?
-              </span>{" "}
-              Select the relevant month within the operational table
-              to review its monthly workspace.
-            </p>
-          </div>
+          <a
+            href="mailto:mario@cascadeffects.com"
+            className="mt-2 inline-block break-all text-xs font-semibold text-white underline decoration-[#B4C2D1] underline-offset-2 transition hover:text-[#E26D5C]"
+          >
+            mario@cascadeffects.com
+          </a>
 
           <Link
             href="/organization"
-            className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#0b2347] transition hover:text-[#315b8c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b2347] focus-visible:ring-offset-2"
+            className="mt-3 block text-xs font-semibold text-white transition hover:text-[#E26D5C]"
           >
-            Return to Organization Workspace
-            <span aria-hidden="true">→</span>
+            Return to Organization Workspace →
           </Link>
         </div>
       </div>
