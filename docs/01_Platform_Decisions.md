@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-10-10
+**Last Updated:** 2026-10-13
 
 This document records architectural decisions that have been intentionally
 adopted for the CascadEffects Performance Platform.
@@ -1168,3 +1168,65 @@ dropping the constraint or creating duplicate month records.
 Status
 
 Accepted
+---
+
+# 23. Runtime Operational Lists: Persistent Current-State Data
+
+**Decision recorded:** 2026-10-13
+
+The Runtime operational tabs do not all share the same persistence cadence. The data lifecycle is determined by the purpose of each operational experience.
+
+## Recruitment
+
+Recruitment remains a monthly operational workflow. It retains month selection, historical monthly records, and the agreed carry-forward behavior. Prior months must remain unchanged when a new month is created or edited.
+
+The standardized workflow status is separate from the freeform `Current State` field. The supported workflow statuses are:
+
+- In Progress (`in_progress`)
+- On Hold (`on_hold`)
+- Completed (`completed`)
+- Cancelled (`cancelled`)
+
+The Cancelled status has been added to the Custom Tables domain type and the user confirmed that changing a row to Cancelled now saves and remains Cancelled after refresh. This confirms that specific UI workflow; it does not establish that all Custom Tables security or other workflows are verified.
+
+## VA Roster
+
+The Runtime tab title and page heading should be **VA Roster**, replacing **VA List**. This is a continuously maintained current-state roster, not a monthly worksheet. Do not create monthly snapshots, month selectors, or copy-forward behavior for it.
+
+The roster table has exactly these business columns:
+
+- VA Name
+- Client / Account
+- Pre-Defined Hours / Week
+
+Place the following summary metrics above the table:
+
+- Total Hours / Week
+- Adjusted VA Number
+- Actual VA Number
+
+Show a Last Updated date/time for the latest saved roster change. The summary metrics remain at the top regardless of table sorting, filtering, or hidden-row display.
+
+Required table behavior:
+
+- Add, edit, save, and reorder VA rows.
+- Sort and filter by VA Name, Client / Account, and Pre-Defined Hours / Week. Name and client sorting support alphabetical ascending/descending order; hours support ascending/descending order and appropriate value filtering.
+- Hide individual rows without deleting or deactivating the VA.
+- Provide a Show Hidden Rows control so hidden VAs can be viewed and restored.
+- Persist changes across refreshes and visits.
+- Filtering/sorting changes presentation only; it must not modify records or alter summary calculations.
+- Hidden VAs remain stored as the roster's historical record. The visible roster is the default operational view; summary metrics use visible roster rows, not merely the currently filtered search results.
+
+The apparent Adjusted VA Number calculation is total weekly hours divided by 40 based on the existing spreadsheet values. Confirm the original spreadsheet formula before hard-coding this rule in production. Do not invent a separate deactivation lifecycle unless a later product decision requires it.
+
+The VA Roster tab itself must support the existing Runtime show/enable and hide/disable configuration behavior. Hiding the tab is distinct from hiding an individual VA row.
+
+## Agenda and Client Performance
+
+Agenda and Client Performance are also persistent current-state operational experiences, with no monthly historical snapshots, month selectors, or copy-forward. Save edits to their existing records and load the latest saved state when the user returns.
+
+Client Performance remains one Runtime tab that can contain multiple independently named tables. Reuse the shared Custom Tables infrastructure where appropriate, but do not force Recruitment's monthly model onto these current-state lists.
+
+## Scope Guardrail
+
+These decisions do not change Member OKR ownership, Builder composition, Runtime performance-history architecture, tenant boundaries, or the requirement for production authorization/RLS verification. They define the persistence and interaction behavior of these operational lists only.

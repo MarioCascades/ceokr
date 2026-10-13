@@ -1,0 +1,217 @@
+# CascadEffects Performance Platform
+
+# Waypoint 32: Runtime Operational Lists and VA Roster Requirements
+
+**Date:** 2026-10-13  
+**Status:** REQUIREMENTS CONFIRMED / IMPLEMENTATION PENDING  
+**Previous Waypoint:** Waypoint 31: Tenant-Specific Custom Tables and Organization Admin Experience
+
+---
+
+# 1. Purpose
+
+This Waypoint records the current resume point after confirming the Custom Tables status behavior and defining the next operational-list requirements. It supersedes older next-step wording where that wording conflicts with the decisions recorded here. Waypoints 30 and 31 remain historical checkpoints and must not be silently rewritten.
+
+The repository's latest Waypoint, Platform Decisions, and Platform Backlog remain the authoritative engineering record.
+
+---
+
+# 2. Recent Verified Progress
+
+The user confirmed that the Custom Tables row workflow now permits changing a row to **Cancelled**, saving it, refreshing the page, and seeing the Cancelled status persist.
+
+The domain type in `src/lib/types/domain/customtable.ts` was identified as needing `cancelled` in `CustomTableOperationalStatus`, with the matching status label and color maps. The workspace component already had Cancelled in its local status options. The user reported that the behavior is now working.
+
+This verification is specific to the Cancelled row-status workflow. It does not mean all Custom Tables requirements, security/RLS, or all operational tabs are complete.
+
+---
+
+# 3. Operational Tabs in Scope
+
+The Runtime operational experiences under discussion are:
+
+- Agenda
+- VA Roster (formerly VA List)
+- Recruitment
+- Client Performance
+
+Client Performance remains one Runtime tab that may contain multiple independently named tables.
+
+These are operational experiences, not a second Member OKR or performance-scoring engine.
+
+---
+
+# 4. Persistence Rules by Experience
+
+## 4.1 Recruitment
+
+Recruitment remains a monthly operational list. Preserve month selection, prior-month history, and carry-forward behavior. Carry-forward must not alter source-month records.
+
+Fields:
+
+- Role
+- Role Details
+- Action Plan
+- Remarks
+- Future Task
+- Current State
+
+Workflow status is separate from freeform Current State and supports:
+
+- In Progress (`in_progress`)
+- On Hold (`on_hold`)
+- Completed (`completed`)
+- Cancelled (`cancelled`)
+
+The row workflow must continue to support editing, ordering, hidden rows, month selection, and historical viewing.
+
+## 4.2 VA Roster
+
+VA Roster is a continuously maintained, persistent roster. It has no monthly selector, monthly snapshots, or copy-forward.
+
+The Runtime tab title and page heading should be **VA Roster**, replacing **VA List**.
+
+### Summary at the Top
+
+Always place these metrics above the table:
+
+1. Total Hours / Week
+2. Adjusted VA Number
+3. Actual VA Number
+
+Show a Last Updated date/time reflecting the latest saved roster change. These summary items remain at the top when the table is sorted, filtered, or showing hidden rows.
+
+The existing screenshot showed 2,214.5 total weekly hours, an adjusted VA number of 55.3625, and an actual VA number of 61. Those are reference values from the screenshot, not live data or values to hard-code. The adjusted number appears to equal total hours divided by 40, but the original spreadsheet formula must be confirmed before implementing the calculation.
+
+### Roster Columns
+
+The simple roster table has only:
+
+- VA Name
+- Client / Account
+- Pre-Defined Hours / Week
+
+### Required Roster Behavior
+
+- Add and edit rows.
+- Persist changes across refreshes and visits.
+- Reorder rows.
+- Sort/filter by VA Name, Client / Account, and Pre-Defined Hours / Week.
+- Support alphabetical name and client ordering in both directions.
+- Support hours ordering from low to high and high to low, plus appropriate hours filtering.
+- Hide an individual VA row without deleting or deactivating the VA.
+- Provide a **Show Hidden Rows** control to view hidden records and restore them.
+- Retain hidden VA records as historical roster records.
+- Keep summary calculations independent of the active search/filter; use visible roster rows for the visible-roster metrics.
+- Keep the Runtime tab's enable/hide setting distinct from hiding an individual row.
+
+Do not add a separate deactivation lifecycle unless a later product decision requires it.
+
+## 4.3 Agenda
+
+Agenda is a persistent current-state operational list. It saves updates to existing records and reloads the latest saved state. It does not require monthly snapshots, a month selector, or copy-forward.
+
+## 4.4 Client Performance
+
+Client Performance is a persistent current-state operational tab that may contain multiple independently named tables. It saves updates to existing records and reloads the latest saved state. It does not require monthly snapshots, a month selector, or copy-forward.
+
+---
+
+# 5. Shared Architecture and Guardrails
+
+- Reuse the existing Custom Tables infrastructure where appropriate; avoid a separate, duplicated persistence system.
+- Do not force Recruitment's monthly model onto VA Roster, Agenda, or Client Performance.
+- Keep tenant-scoped definitions and data.
+- Preserve the existing Member OKR, Builder, Runtime performance-history, and navigation architecture except for the specifically agreed Runtime operational-tab changes.
+- Organization Admins can enable or hide provisioned tables but do not create table definitions or configure columns; CascadEffects platform/IT personnel provision definitions and columns.
+- Runtime tab visibility is not the same as row visibility.
+- Hiding a VA is not deleting or deactivating the VA.
+- Production authorization/RLS must be verified separately; successful UI behavior or applied permission records do not prove that RLS is complete.
+
+---
+
+# 6. Documentation State
+
+The user provided current copies of:
+
+- `01_Platform_Decisions.md`
+- `02_Platform_Backlog.md`
+- `03_Product_North_Star.md`
+- `00_Engineering_Process.md`
+- Waypoint 31
+
+For this checkpoint:
+
+- Update Platform Decisions with the operational-list persistence rules and VA Roster behavior.
+- Update Platform Backlog with the implementation requirements and corrected work sequence.
+- Preserve Waypoint 31 as a historical checkpoint.
+- Leave Product North Star and Engineering Process unchanged because these decisions do not change the product North Star or the established engineering workflow.
+- This Waypoint becomes the next session's resume point after the updated decision and backlog files are incorporated into the repository.
+
+---
+
+# 7. Next Session: Exact Starting Point
+
+Start by reviewing, in order:
+
+1. `docs/03_Product_North_Star.md`
+2. This Waypoint 32
+3. `docs/01_Platform_Decisions.md`
+4. `docs/02_Platform_Backlog.md`
+5. `docs/00_Engineering_Process.md`
+
+Then continue with the existing one-file-at-a-time workflow.
+
+### First inspection
+
+Ask the user for the current full source file that controls Runtime navigation and operational tab configuration. The purpose is to locate how the existing VA List is registered, how the displayed tab label is resolved, and how Runtime tab visibility is managed. Inspect the actual current file before editing it.
+
+Do not assume the underlying table identifiers should be renamed just because the user-facing tab title changes to VA Roster.
+
+After that, inspect the relevant current Custom Tables model/service/repository and implement VA Roster against the confirmed requirements. Request each current file before editing; return the exact path and complete replacement file. Do not provide partial snippets or reconstruct unreviewed files.
+
+Then implement/adapt Agenda and Client Performance as persistent current-state lists. Verify Recruitment's monthly workflow and Cancelled status remain intact.
+
+Build and test the focused changes. Record only verified implementation and database changes as completed. Update the backlog and create a later completion Waypoint after the coherent milestone has been built, tested, and committed.
+
+---
+
+# 8. Current Milestone Status
+
+```text
+Custom Tables foundation / permissions
+    Previously reported applied; production authorization/RLS still requires verification
+
+Recruitment row editing and persistence
+    In use; continue regression testing
+
+Recruitment Cancelled status
+    USER CONFIRMED WORKING AFTER SAVE AND REFRESH
+
+VA Roster requirements
+    CONFIRMED / IMPLEMENTATION PENDING
+
+Agenda current-state persistence requirements
+    CONFIRMED / IMPLEMENTATION NOT VERIFIED
+
+Client Performance current-state persistence requirements
+    CONFIRMED / IMPLEMENTATION NOT VERIFIED
+
+Organization Admin provisioned-table experience
+    IMPLEMENTATION / VERIFICATION REQUIRED
+
+Organization Admin dashboard navigation
+    IMPLEMENTATION / VERIFICATION REQUIRED
+
+Production authorization/RLS
+    OUTSTANDING UNTIL TESTED
+
+OKR Template Library
+    PLANNED / SEPARATE PRODUCT CAPABILITY
+```
+
+---
+
+# 9. Governing Rules for Resuming
+
+> VA Roster is a persistent live roster with summary metrics at the top, sortable/filterable columns, row ordering, and hide/restore behavior. Hidden VAs are retained as historical records, not deleted or deactivated. Agenda and Client Performance are persistent current-state lists without monthly history. Recruitment remains monthly. Inspect the actual current source before changing it, work one file at a time, and do not claim implementation is complete until it is verified.

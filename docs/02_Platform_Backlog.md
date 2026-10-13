@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-10-10
+**Last Updated:** 2026-10-13
 
 This document tracks intentionally deferred architecture, product
 capabilities, migration work, and future platform work.
@@ -1402,3 +1402,62 @@ Do not treat the SQL migrations being applied as proof that the feature is
 complete. Do not delete Reports functionality, automatically provision tables
 for all tenants, or expose table-definition creation to Organization Admins.
 
+---
+
+# 2026-10-13 Update: VA Roster, Agenda, and Client Performance
+
+This section records newer decisions and supersedes any earlier backlog wording that implies all three of these operational experiences require monthly history.
+
+## Confirmed Current-State Behavior
+
+### VA Roster (formerly VA List)
+
+**Status: DESIGN AGREED / IMPLEMENTATION NOT STARTED OR VERIFIED**
+
+- Rename the Runtime tab and page heading to **VA Roster**.
+- Keep Total Hours / Week, Adjusted VA Number, Actual VA Number, and Last Updated at the top.
+- Use a simple persistent table with VA Name, Client / Account, and Pre-Defined Hours / Week.
+- Support adding, editing, saving, and reordering rows.
+- Support sorting/filtering by name, client/account, and weekly hours.
+- Support hiding individual VA rows and a Show Hidden Rows control to view and restore them.
+- Never delete or deactivate a VA merely to remove it from the current visible roster. Hidden rows are retained as historical roster records.
+- Keep the roster persistent as current-state data. No monthly selector, monthly snapshots, or copy-forward.
+- Summary metrics must be independent of the current sort/filter and use visible roster rows. Confirm the original spreadsheet formula before hard-coding the adjusted VA calculation (the screenshot suggests weekly hours divided by 40).
+- The table's Runtime visibility/enablement is separate from individual row visibility.
+
+### Agenda
+
+**Status: REQUIREMENTS AGREED / IMPLEMENTATION NOT VERIFIED**
+
+- Persistent current-state operational list.
+- Save edits to existing records and reload the latest saved state.
+- No monthly snapshots, month selector, or copy-forward.
+
+### Client Performance
+
+**Status: REQUIREMENTS AGREED / IMPLEMENTATION NOT VERIFIED**
+
+- One Runtime tab may contain multiple independently named tables.
+- Persistent current-state data; no monthly snapshots, month selector, or copy-forward.
+- Save edits to existing records and reload the latest saved state.
+
+## Shared Implementation Guardrails
+
+- Reuse existing Custom Tables infrastructure when it fits; do not create an unnecessary parallel persistence system.
+- Keep tenant scoping and authorization checks intact.
+- Runtime tab enable/hide controls are distinct from row-level hide/restore controls.
+- Do not mark any of these experiences implemented until the current code is inspected, build passes, and focused browser/database tests confirm the behavior.
+- Continue one file at a time: request the current full file, review it, return the complete replacement with its exact path, then continue to the next file.
+
+## Next Work Sequence
+
+1. Review the latest Waypoint 32 before resuming.
+2. Inspect the current Runtime navigation and operational-tab configuration to determine how VA List is currently registered and how tab labels/visibility are resolved.
+3. Inspect the current Custom Tables definition/data model and current implementation touchpoints before choosing the VA Roster persistence model.
+4. Implement VA Roster against the agreed current-state requirements.
+5. Implement or adapt Agenda and Client Performance as current-state lists.
+6. Verify Recruitment's monthly behavior and Cancelled status without regressing existing row editing, ordering, hidden rows, history, or carry-forward.
+7. Verify tenant boundaries and production authorization/RLS; do not infer security completion from UI success.
+8. Build and run focused functional tests, then commit the coherent milestone and update documentation.
+
+This update supersedes the older backlog step that described Agenda, VA List, and Client Performance as requiring monthly historical retrieval. Recruitment remains monthly.
