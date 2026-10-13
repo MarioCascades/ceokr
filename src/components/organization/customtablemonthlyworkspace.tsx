@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
@@ -29,7 +28,8 @@ type CustomTableMonthlyWorkspaceProps = {
 type OperationalStatus =
   | "in_progress"
   | "on_hold"
-  | "completed";
+  | "completed"
+  | "cancelled";
 
 const BRAND = {
   navy: "#082550",
@@ -48,17 +48,22 @@ const STATUS_OPTIONS: {
   {
     value: "in_progress",
     label: "In Progress",
-    classes: "border-[#B4C2D1] bg-[#E9F4F8] text-[#082550]",
+    classes: "border-[#F97316] bg-[#F97316] text-white",
   },
   {
     value: "on_hold",
     label: "On Hold",
-    classes: "border-[#E6C99B] bg-[#FFF5E8] text-[#80551C]",
+    classes: "border-[#FACC15] bg-[#FACC15] text-[#272D2C]",
   },
   {
     value: "completed",
     label: "Completed",
-    classes: "border-[#B7D8C6] bg-[#EEF8F1] text-[#236342]",
+    classes: "border-[#16A34A] bg-[#16A34A] text-white",
+  },
+  {
+    value: "cancelled",
+    label: "Cancelled",
+    classes: "border-[#DC2626] bg-[#DC2626] text-white",
   },
 ];
 
@@ -438,6 +443,7 @@ export default function CustomTableMonthlyWorkspace({
               <span className="uppercase tracking-wider text-[#082550]">
                 Performance Month
               </span>
+
               <input
                 type="month"
                 value={selectedMonth}
@@ -697,29 +703,46 @@ export default function CustomTableMonthlyWorkspace({
                         {canEditRows &&
                         column.isEditable &&
                         !isFinalized ? (
-                          <input
+                          <textarea
                             key={`${row.id}-${column.id}-${getCellValue(row, column)}`}
                             aria-label={`${column.label}, row ${index + 1}`}
                             defaultValue={getCellValue(row, column)}
+                            rows={1}
                             disabled={busy || row.isHidden}
+                            onFocus={(event) => {
+                              const textarea = event.currentTarget;
+                              textarea.style.height = "auto";
+                              textarea.style.height = `${textarea.scrollHeight}px`;
+                            }}
+                            onInput={(event) => {
+                              const textarea = event.currentTarget;
+                              textarea.style.height = "auto";
+                              textarea.style.height = `${textarea.scrollHeight}px`;
+                            }}
                             onBlur={(event) =>
                               void handleSaveCell(
                                 row,
                                 column,
-                                event.target.value
+                                event.currentTarget.value
                               )
                             }
                             onKeyDown={(event) => {
-                              if (event.key === "Enter") {
+                              if (
+                                event.key === "Enter" &&
+                                (event.ctrlKey || event.metaKey)
+                              ) {
+                                event.preventDefault();
                                 event.currentTarget.blur();
                               }
                             }}
-                            className="w-full min-w-32 rounded-md border border-transparent bg-transparent px-2.5 py-2 text-sm leading-5 text-[#272D2C] outline-none transition placeholder:text-[#B4C2D1] hover:border-[#B4C2D1] focus:border-[#E26D5C] focus:bg-white focus:ring-2 focus:ring-[#E26D5C]/15 disabled:cursor-not-allowed disabled:opacity-65"
+                            className="block min-h-9 w-full min-w-32 resize-none overflow-hidden whitespace-pre-wrap break-words rounded-md border border-transparent bg-transparent px-2.5 py-2 text-sm leading-5 text-[#272D2C] outline-none transition placeholder:text-[#B4C2D1] hover:border-[#B4C2D1] focus:border-[#E26D5C] focus:bg-white focus:ring-2 focus:ring-[#E26D5C]/15 disabled:cursor-not-allowed disabled:opacity-65"
                           />
                         ) : (
                           <div className="min-h-9 whitespace-pre-wrap break-words px-2.5 py-2 text-sm leading-5 text-[#272D2C]/85">
                             {getCellValue(row, column) || (
-                              <span className="text-[#B4C2D1]">Not entered</span>
+                              <span className="text-[#B4C2D1]">
+                                Not entered
+                              </span>
                             )}
                           </div>
                         )}
@@ -738,7 +761,7 @@ export default function CustomTableMonthlyWorkspace({
                               event.target.value as OperationalStatus
                             )
                           }
-                          className="w-full min-w-32 rounded-lg border border-[#B4C2D1]/80 bg-white px-2.5 py-2 text-xs font-semibold text-[#082550] outline-none transition hover:border-[#082550] focus:border-[#E26D5C] focus:ring-2 focus:ring-[#E26D5C]/15 disabled:cursor-not-allowed disabled:opacity-50"
+                          className={`w-full min-w-32 rounded-lg border px-2.5 py-2 text-xs font-semibold outline-none transition focus:border-[#E26D5C] focus:ring-2 focus:ring-[#E26D5C]/15 disabled:cursor-not-allowed disabled:opacity-50 ${getStatusClasses(row.operationalStatus)}`}
                         >
                           {STATUS_OPTIONS.map((option) => (
                             <option
@@ -781,11 +804,13 @@ export default function CustomTableMonthlyWorkspace({
                       <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#B4C2D1]/70 bg-[#E9F4F8] text-xl text-[#082550]">
                         {showHidden ? "–" : "+"}
                       </div>
+
                       <p className="mt-4 text-sm font-bold text-[#082550]">
                         {showHidden
                           ? "No hidden listings"
                           : "Your worksheet is ready"}
                       </p>
+
                       <p className="mt-1 text-sm leading-5 text-[#272D2C]/65">
                         {showHidden
                           ? "There are no hidden records for this month."

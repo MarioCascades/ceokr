@@ -1,7 +1,8 @@
 
-/**
+/*
  * ==========================================================
  * CascadEffects Performance Platform
+ *
  * Custom Tables Domain
  * ----------------------------------------------------------
  * Defines the reusable organization-scoped Custom Tables
@@ -24,7 +25,6 @@
  * ==========================================================
  */
 
-
 /* ==========================================================
    Operational Status
 ========================================================== */
@@ -38,8 +38,8 @@
 export type CustomTableOperationalStatus =
   | "in_progress"
   | "on_hold"
-  | "completed";
-
+  | "completed"
+  | "cancelled";
 
 /* ==========================================================
    Custom Table Column Data Types
@@ -55,7 +55,6 @@ export type CustomTableColumnDataType =
   | "boolean"
   | "status"
   | "select";
-
 
 /* ==========================================================
    Custom Table Column Settings
@@ -84,7 +83,6 @@ export interface CustomTableColumnSettings {
 
   [key: string]: unknown;
 }
-
 
 /* ==========================================================
    Custom Table Definition
@@ -117,7 +115,6 @@ export interface CustomTableDefinition {
   updatedAt: string;
 }
 
-
 /* ==========================================================
    Custom Table Definition Create Input
 ========================================================== */
@@ -135,7 +132,6 @@ export interface CreateCustomTableDefinitionInput {
 
   isEnabled?: boolean;
 }
-
 
 /* ==========================================================
    Custom Table Definition Update Input
@@ -156,7 +152,6 @@ export interface UpdateCustomTableDefinitionInput {
 
   isEnabled?: boolean;
 }
-
 
 /* ==========================================================
    Custom Table Column
@@ -196,7 +191,6 @@ export interface CustomTableColumn {
   updatedAt: string;
 }
 
-
 /* ==========================================================
    Custom Table Column Create Input
 ========================================================== */
@@ -223,7 +217,6 @@ export interface CreateCustomTableColumnInput {
   settings?: CustomTableColumnSettings;
 }
 
-
 /* ==========================================================
    Custom Table Column Update Input
 ========================================================== */
@@ -243,7 +236,6 @@ export interface UpdateCustomTableColumnInput {
 
   settings?: CustomTableColumnSettings;
 }
-
 
 /* ==========================================================
    Custom Table Column Snapshot
@@ -279,7 +271,6 @@ export interface CustomTableColumnSnapshot {
   settings: CustomTableColumnSettings;
 }
 
-
 /* ==========================================================
    Custom Table Month
 ========================================================== */
@@ -311,7 +302,6 @@ export interface CustomTableMonth {
   updatedAt: string;
 }
 
-
 /* ==========================================================
    Custom Table Month Create Input
 ========================================================== */
@@ -328,7 +318,6 @@ export interface CreateCustomTableMonthInput {
   isFinalized?: boolean;
 }
 
-
 /* ==========================================================
    Custom Table Month Update Input
 ========================================================== */
@@ -342,7 +331,6 @@ export interface UpdateCustomTableMonthInput {
 
   isFinalized?: boolean;
 }
-
 
 /* ==========================================================
    Custom Table Row Data
@@ -368,7 +356,6 @@ export interface UpdateCustomTableMonthInput {
  * in CustomTableRow.operationalStatus.
  */
 export type CustomTableRowData = Record<string, unknown>;
-
 
 /* ==========================================================
    Custom Table Row
@@ -403,7 +390,6 @@ export interface CustomTableRow {
   updatedAt: string;
 }
 
-
 /* ==========================================================
    Custom Table Row Create Input
 ========================================================== */
@@ -421,7 +407,6 @@ export interface CreateCustomTableRowInput {
 
   position?: number;
 }
-
 
 /* ==========================================================
    Custom Table Row Update Input
@@ -445,7 +430,6 @@ export interface UpdateCustomTableRowInput {
   position?: number;
 }
 
-
 /* ==========================================================
    Custom Table Row Reordering
 ========================================================== */
@@ -462,7 +446,6 @@ export type CustomTableRowMoveAction =
   | "down"
   | "bottom";
 
-
 /**
  * Request to move one row within its monthly table.
  */
@@ -475,7 +458,6 @@ export interface MoveCustomTableRowInput {
 
   action: CustomTableRowMoveAction;
 }
-
 
 /* ==========================================================
    Custom Table Monthly Copy-Forward
@@ -499,7 +481,6 @@ export interface CopyForwardCustomTableMonthInput {
   targetPerformanceMonth: string;
 }
 
-
 /* ==========================================================
    Custom Table Permissions
 ========================================================== */
@@ -512,7 +493,6 @@ export type CustomTablePermissionKey =
   | "custom_tables.view"
   | "custom_tables.manage"
   | "custom_tables.rows.edit";
-
 
 /* ==========================================================
    Custom Table Workspace
@@ -533,7 +513,6 @@ export interface CustomTableWorkspace {
 
   rows: CustomTableRow[];
 }
-
 
 /* ==========================================================
    Custom Table List Item
@@ -561,7 +540,6 @@ export interface CustomTableListItem {
   columnCount: number;
 }
 
-
 /* ==========================================================
    Recruitment Defaults
 ========================================================== */
@@ -581,10 +559,8 @@ export const RECRUITMENT_COLUMN_KEYS = [
   "current_state",
 ] as const;
 
-
 export type RecruitmentColumnKey =
   (typeof RECRUITMENT_COLUMN_KEYS)[number];
-
 
 /**
  * Initial column definitions for the Recruitment table.
@@ -683,7 +659,6 @@ export const RECRUITMENT_DEFAULT_COLUMNS: ReadonlyArray<{
   },
 ];
 
-
 /* ==========================================================
    Operational Status Labels
 ========================================================== */
@@ -698,8 +673,8 @@ export const CUSTOM_TABLE_STATUS_LABELS: Record<
   in_progress: "In Progress",
   on_hold: "On Hold",
   completed: "Completed",
+  cancelled: "Cancelled",
 };
-
 
 /**
  * Default presentation colors for standardized status
@@ -713,4 +688,5 @@ export const CUSTOM_TABLE_STATUS_COLORS: Record<
   in_progress: "blue",
   on_hold: "amber",
   completed: "green",
+  cancelled: "red",
 };
