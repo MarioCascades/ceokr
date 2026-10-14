@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -22,55 +23,42 @@ import {
 
 import CECard from "@/components/ui/cecard";
 
-
 type Organization = {
   id: string;
-
   company_name: string;
 };
 
-
 interface SuperAdminLaunchpadProps {
   displayName: string;
-
   organizations: Organization[];
 }
-
 
 export default function SuperAdminLaunchpad({
   displayName,
   organizations,
 }: SuperAdminLaunchpadProps) {
+  const router = useRouter();
 
-  const router =
-    useRouter();
+  // Do not automatically select the first organization.
+  // The platform super admin must explicitly choose one.
+  const [selectedOrganizationId, setSelectedOrganizationId] =
+    useState("");
 
-
-  const [
-    selectedOrganizationId,
-    setSelectedOrganizationId,
-  ] = useState(
-    organizations[0]?.id ?? ""
+  const selectedOrganizationExists = organizations.some(
+    (organization) => organization.id === selectedOrganizationId
   );
 
-
   function openPerformance() {
-
-    if (
-      !selectedOrganizationId
-    ) {
+    if (!selectedOrganizationExists) {
       return;
     }
-
 
     router.push(
       `/runtime?organizationId=${encodeURIComponent(
         selectedOrganizationId
       )}`
     );
-
   }
-
 
   return (
     <main
@@ -83,18 +71,13 @@ export default function SuperAdminLaunchpad({
         lg:py-14
       "
     >
-
       <div
         className="
           mx-auto
           max-w-5xl
         "
       >
-
-        {/* ==================================================
-            Brand
-        ================================================== */}
-
+        {/* Brand */}
         <div
           className="
             mb-8
@@ -102,7 +85,6 @@ export default function SuperAdminLaunchpad({
             justify-center
           "
         >
-
           <Image
             src="/logos/CECleanlogo.png"
             alt="CascadEffects"
@@ -115,21 +97,15 @@ export default function SuperAdminLaunchpad({
               object-contain
             "
           />
-
         </div>
 
-
-        {/* ==================================================
-            Welcome
-        ================================================== */}
-
+        {/* Welcome */}
         <header
           className="
             mb-8
             text-center
           "
         >
-
           <p
             className="
               text-xs
@@ -141,7 +117,6 @@ export default function SuperAdminLaunchpad({
           >
             Platform Super Admin
           </p>
-
 
           <h1
             className="
@@ -155,7 +130,6 @@ export default function SuperAdminLaunchpad({
             Welcome back, {displayName}
           </h1>
 
-
           <p
             className="
               mx-auto
@@ -167,14 +141,9 @@ export default function SuperAdminLaunchpad({
           >
             What would you like to do?
           </p>
-
         </header>
 
-
-        {/* ==================================================
-            Launch Choices
-        ================================================== */}
-
+        {/* Launch Choices */}
         <div
           className="
             grid
@@ -182,11 +151,7 @@ export default function SuperAdminLaunchpad({
             lg:grid-cols-2
           "
         >
-
-          {/* ==================================================
-              Administration
-          ================================================== */}
-
+          {/* Administration */}
           <CECard
             className="
               flex
@@ -195,7 +160,6 @@ export default function SuperAdminLaunchpad({
               p-7
             "
           >
-
             <div
               className="
                 flex
@@ -208,13 +172,8 @@ export default function SuperAdminLaunchpad({
                 text-primary
               "
             >
-
-              <Settings
-                className="h-6 w-6"
-              />
-
+              <Settings className="h-6 w-6" />
             </div>
-
 
             <h2
               className="
@@ -225,7 +184,6 @@ export default function SuperAdminLaunchpad({
             >
               Administration
             </h2>
-
 
             <p
               className="
@@ -241,14 +199,12 @@ export default function SuperAdminLaunchpad({
               configuration.
             </p>
 
-
             <div
               className="
                 mt-auto
                 pt-7
               "
             >
-
               <Button
                 size="lg"
                 className="
@@ -257,26 +213,15 @@ export default function SuperAdminLaunchpad({
                   text-white
                   hover:bg-[#0B2A5B]/90
                 "
-                onClick={() =>
-                  router.push("/admin")
-                }
+                onClick={() => router.push("/admin")}
               >
-
                 Open Administration
-
                 <ArrowRight />
-
               </Button>
-
             </div>
-
           </CECard>
 
-
-          {/* ==================================================
-              Organization Performance
-          ================================================== */}
-
+          {/* Organization Performance */}
           <CECard
             className="
               flex
@@ -285,7 +230,6 @@ export default function SuperAdminLaunchpad({
               p-7
             "
           >
-
             <div
               className="
                 flex
@@ -298,13 +242,8 @@ export default function SuperAdminLaunchpad({
                 text-primary
               "
             >
-
-              <Building2
-                className="h-6 w-6"
-              />
-
+              <Building2 className="h-6 w-6" />
             </div>
-
 
             <h2
               className="
@@ -315,7 +254,6 @@ export default function SuperAdminLaunchpad({
             >
               Organization Performance
             </h2>
-
 
             <p
               className="
@@ -329,18 +267,13 @@ export default function SuperAdminLaunchpad({
               its live performance experience.
             </p>
 
-
-            {/* ==================================================
-                Organization Selector
-            ================================================== */}
-
+            {/* Organization Selector */}
             <div
               className="
                 mt-5
                 space-y-2
               "
             >
-
               <label
                 htmlFor="organization"
                 className="
@@ -354,20 +287,13 @@ export default function SuperAdminLaunchpad({
                 Organization
               </label>
 
-
               <select
                 id="organization"
-                value={
-                  selectedOrganizationId
-                }
+                value={selectedOrganizationId}
                 onChange={(event) =>
-                  setSelectedOrganizationId(
-                    event.target.value
-                  )
+                  setSelectedOrganizationId(event.target.value)
                 }
-                disabled={
-                  organizations.length === 0
-                }
+                disabled={organizations.length === 0}
                 className="
                   h-10
                   w-full
@@ -385,41 +311,22 @@ export default function SuperAdminLaunchpad({
                   focus:ring-primary/10
                 "
               >
+                <option value="">
+                  {organizations.length === 0
+                    ? "No organizations available"
+                    : "Select an organization"}
+                </option>
 
-                {organizations.length ===
-                0 ? (
-
-                  <option value="">
-                    No organizations available
+                {organizations.map((organization) => (
+                  <option
+                    key={organization.id}
+                    value={organization.id}
+                  >
+                    {organization.company_name}
                   </option>
-
-                ) : (
-
-                  organizations.map(
-                    (organization) => (
-
-                      <option
-                        key={
-                          organization.id
-                        }
-                        value={
-                          organization.id
-                        }
-                      >
-                        {
-                          organization.company_name
-                        }
-                      </option>
-
-                    )
-                  )
-
-                )}
-
+                ))}
               </select>
-
             </div>
-
 
             <div
               className="
@@ -428,7 +335,6 @@ export default function SuperAdminLaunchpad({
                 pt-5
               "
             >
-
               <Button
                 size="lg"
                 className="
@@ -437,31 +343,17 @@ export default function SuperAdminLaunchpad({
                   text-white
                   hover:bg-[#E26D5C]/90
                 "
-                disabled={
-                  !selectedOrganizationId
-                }
-                onClick={
-                  openPerformance
-                }
+                disabled={!selectedOrganizationExists}
+                onClick={openPerformance}
               >
-
                 Open Performance
-
                 <ArrowRight />
-
               </Button>
-
             </div>
-
           </CECard>
-
         </div>
 
-
-        {/* ==================================================
-            Footer Context
-        ================================================== */}
-
+        {/* Footer Context */}
         <div
           className="
             mt-7
@@ -473,9 +365,7 @@ export default function SuperAdminLaunchpad({
           Platform access is determined by
           your CascadEffects account authority.
         </div>
-
       </div>
-
     </main>
   );
 }

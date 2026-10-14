@@ -176,17 +176,33 @@ async function loadOperationalTableResult(
 export default async function RuntimePage({
   searchParams,
 }: RuntimePageProps) {
+ 
   const params = await searchParams;
 
   /* ========================================================
      Organization
   ======================================================== */
 
-  const organization = await getOrganization(
-    params.organizationId
-  );
+  const organizationId = params.organizationId?.trim();
 
-  if (!organization) {
+  if (!organizationId) {
+    return (
+      <main className="mx-auto max-w-5xl p-8">
+        <h1 className="text-2xl font-semibold">
+          Organization ID required
+        </h1>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          Runtime requires an explicit organization ID. Please
+          return to your organization entry point and try again.
+        </p>
+      </main>
+    );
+  }
+
+  const organization = await getOrganization(organizationId);
+
+  if (!organization || organization.id !== organizationId) {
     return (
       <main className="mx-auto max-w-5xl p-8">
         <h1 className="text-2xl font-semibold">
@@ -194,7 +210,8 @@ export default async function RuntimePage({
         </h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
-          The requested organization could not be found.
+          The requested organization could not be found. Runtime
+          will not switch to another organization automatically.
         </p>
       </main>
     );

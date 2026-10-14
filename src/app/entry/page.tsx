@@ -1,68 +1,74 @@
-import {
-  redirect,
-} from "next/navigation";
+
+import { redirect } from "next/navigation";
 
 import {
   getCurrentEntryContext,
 } from "@/lib/auth/currententry";
 
+import { getOrganization } from "@/services/organization.service";
+
 import RoleEntryLaunchpad from "@/components/auth/roleentrylaunchpad";
 
-
-export const dynamic =
-  "force-dynamic";
-
+export const dynamic = "force-dynamic";
 
 export default async function EntryPage() {
-
   /* ========================================================
      Resolve Entry Context
   ======================================================== */
 
-  const entryContext =
-    await getCurrentEntryContext();
+  let entryContext;
 
+  try {
+    entryContext = await getCurrentEntryContext();
+  } catch (error) {
+    console.error("Failed to resolve entry context:", error);
 
-  if (!entryContext) {
-
-    redirect(
-      "/login?error=account_not_configured"
-    );
-
+    redirect("/login?error=account_not_configured");
   }
 
+  if (!entryContext) {
+    redirect("/login?error=account_not_configured");
+  }
 
   /* ========================================================
      Platform Super Admin
   ======================================================== */
 
-  if (
-    entryContext.actor ===
-    "super_admin"
-  ) {
-
-    redirect(
-      "/superadmin"
-    );
-
+  if (entryContext.actor === "super_admin") {
+    redirect("/superadmin");
   }
-
 
   /* ========================================================
      Organization Context
   ======================================================== */
 
-  if (
-    !entryContext.organizationId ||
-    !entryContext.organizationName
-  ) {
+  const organizationId = entryContext.organizationId?.trim();
+  const organizationName = entryContext.organizationName?.trim();
 
-    redirect(
-      "/login?error=account_not_configured"
-    );
-
+  if (!organizationId || !organizationName) {
+    redirect("/login?error=account_not_configured");
   }
 
+  /* ========================================================
+     Validate Explicit Organization
+     --------------------------------------------------------
+     Never substitute a default organization when the supplied
+     organization ID is missing, invalid, or unavailable.
+  ======================================================== */
+
+  let organization;
+
+  try {
+    organization = await getOrganization(organizationId);
+  } catch (error) {
+    console.error("Failed to validate entry organization:", error);
+
+    redirect("/login?error=organization_unavailable");
+  }
+
+  if (!organization || organization.id !== organizationId) {
+    redirect("/login?error=organization_unavailable");
+  }
 
   /* ========================================================
      Member
@@ -71,29 +77,20 @@ export default async function EntryPage() {
      experience. There is no Member launchpad.
   ======================================================== */
 
-  if (
-    entryContext.actor ===
-    "member"
-  ) {
-
+  if (entryContext.actor === "member") {
     redirect(
-      `/runtime?organizationId=${encodeURIComponent(
-        entryContext.organizationId
-      )}`
+      `/runtime?organizationId=${encodeURIComponent(organizationId)}`
     );
-
   }
-
 
   /* ========================================================
      Display Name
-     ======================================================== */
+  ======================================================== */
 
   const displayName =
     entryContext.user.display_name?.trim() ||
     `${entryContext.user.first_name} ${entryContext.user.last_name}`.trim() ||
     entryContext.user.email;
-
 
   /* ========================================================
      Organization Admin Launchpad
@@ -101,20 +98,9 @@ export default async function EntryPage() {
 
   return (
     <RoleEntryLaunchpad
-
-      displayName={
-        displayName
-      }
-
-      organizationId={
-        entryContext.organizationId
-      }
-
-      organizationName={
-        entryContext.organizationName
-      }
-
+      displayName={displayName}
+      organizationId={organizationId}
+      organizationName={organization.company_name}
     />
   );
-
 }

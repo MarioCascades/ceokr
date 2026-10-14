@@ -46,21 +46,11 @@ export default function OrganizationPage() {
   const [organization, setOrganization] =
     useState<Organization | null>(null);
 
-  const [companyName, setCompanyName] =
-    useState("");
-
-  const [logoUrl, setLogoUrl] =
-    useState("");
-
-  const [primaryColor, setPrimaryColor] =
-    useState("");
-
-  const [secondaryColor, setSecondaryColor] =
-    useState("");
-
-  const [timezone, setTimezone] =
-    useState("UTC");
-
+  const [companyName, setCompanyName] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("");
+  const [secondaryColor, setSecondaryColor] = useState("");
+  const [timezone, setTimezone] = useState("UTC");
   const [reportingFrequency, setReportingFrequency] =
     useState("monthly");
 
@@ -76,9 +66,7 @@ export default function OrganizationPage() {
   const [createCompanyName, setCreateCompanyName] =
     useState("");
 
-  const [createLogoUrl, setCreateLogoUrl] =
-    useState("");
-
+  const [createLogoUrl, setCreateLogoUrl] = useState("");
   const [createPrimaryColor, setCreatePrimaryColor] =
     useState("");
 
@@ -93,17 +81,10 @@ export default function OrganizationPage() {
     setCreateReportingFrequency,
   ] = useState("monthly");
 
-  const [isLoading, setIsLoading] =
-    useState(true);
-
-  const [isSaving, setIsSaving] =
-    useState(false);
-
-  const [isCreating, setIsCreating] =
-    useState(false);
-
-  const [isSaved, setIsSaved] =
-    useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
@@ -115,14 +96,15 @@ export default function OrganizationPage() {
   const [deleteConfirmation, setDeleteConfirmation] =
     useState("");
 
-  const [isDeleting, setIsDeleting] =
-    useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   /* ========================================================
      Load Organization
   ======================================================== */
 
   useEffect(() => {
+    let active = true;
+
     async function loadOrganization() {
       try {
         setIsLoading(true);
@@ -131,48 +113,63 @@ export default function OrganizationPage() {
         const availableOrganizations =
           await listOrganizations();
 
-        setOrganizations(
-          availableOrganizations
-        );
+        if (!active) return;
 
-        const existingOrganization =
-          await getOrganization(
-            selectedOrganizationId ?? undefined
-          );
+        setOrganizations(availableOrganizations);
 
-        if (!existingOrganization) {
+        const normalizedOrganizationId =
+          selectedOrganizationId?.trim();
+
+        if (!normalizedOrganizationId) {
           setOrganization(null);
+          setCompanyName("");
+          setLogoUrl("");
+          setPrimaryColor("");
+          setSecondaryColor("");
+          setTimezone("UTC");
+          setReportingFrequency("monthly");
+
           setErrorMessage(
-            "No organization has been configured yet."
+            "No organization is selected. Please select an organization to continue."
           );
 
           return;
         }
 
-        setOrganization(
-          existingOrganization
-        );
+        const existingOrganization =
+          await getOrganization(normalizedOrganizationId);
 
-        setCompanyName(
-          existingOrganization.company_name
-        );
+        if (!active) return;
 
-        setLogoUrl(
-          existingOrganization.logo_url ?? ""
-        );
+        if (
+          !existingOrganization ||
+          existingOrganization.id !== normalizedOrganizationId
+        ) {
+          setOrganization(null);
+          setCompanyName("");
+          setLogoUrl("");
+          setPrimaryColor("");
+          setSecondaryColor("");
+          setTimezone("UTC");
+          setReportingFrequency("monthly");
 
+          setErrorMessage(
+            "The selected organization could not be found. Please select a valid organization."
+          );
+
+          return;
+        }
+
+        setOrganization(existingOrganization);
+        setCompanyName(existingOrganization.company_name);
+        setLogoUrl(existingOrganization.logo_url ?? "");
         setPrimaryColor(
           existingOrganization.primary_color ?? ""
         );
-
         setSecondaryColor(
           existingOrganization.secondary_color ?? ""
         );
-
-        setTimezone(
-          existingOrganization.timezone
-        );
-
+        setTimezone(existingOrganization.timezone);
         setReportingFrequency(
           existingOrganization.reporting_frequency
         );
@@ -184,17 +181,33 @@ export default function OrganizationPage() {
           error
         );
 
+        if (!active) return;
+
+        setOrganization(null);
+        setCompanyName("");
+        setLogoUrl("");
+        setPrimaryColor("");
+        setSecondaryColor("");
+        setTimezone("UTC");
+        setReportingFrequency("monthly");
+
         setErrorMessage(
           error instanceof Error
             ? error.message
             : "Failed to load organization."
         );
       } finally {
-        setIsLoading(false);
+        if (active) {
+          setIsLoading(false);
+        }
       }
     }
 
     loadOrganization();
+
+    return () => {
+      active = false;
+    };
   }, [selectedOrganizationId]);
 
   /* ========================================================
@@ -204,14 +217,25 @@ export default function OrganizationPage() {
   function handleOrganizationChange(
     organizationId: string
   ) {
-    const params =
-      new URLSearchParams(
-        searchParams.toString()
-      );
+    const normalizedOrganizationId =
+      organizationId.trim();
+
+    if (
+      !normalizedOrganizationId ||
+      !organizations.some(
+        (item) => item.id === normalizedOrganizationId
+      )
+    ) {
+      return;
+    }
+
+    const params = new URLSearchParams(
+      searchParams.toString()
+    );
 
     params.set(
       "organizationId",
-      organizationId
+      normalizedOrganizationId
     );
 
     router.push(
@@ -250,10 +274,7 @@ export default function OrganizationPage() {
 
   async function handleCreateOrganization() {
     if (!createCompanyName.trim()) {
-      setErrorMessage(
-        "Company name is required."
-      );
-
+      setErrorMessage("Company name is required.");
       return;
     }
 
@@ -263,71 +284,47 @@ export default function OrganizationPage() {
 
     try {
       const input: CreateOrganizationInput = {
-        company_name:
-          createCompanyName.trim(),
-
-        logo_url:
-          createLogoUrl.trim() || null,
-
+        company_name: createCompanyName.trim(),
+        logo_url: createLogoUrl.trim() || null,
         primary_color:
           createPrimaryColor.trim() || null,
-
         secondary_color:
           createSecondaryColor.trim() || null,
-
-        timezone:
-          createTimezone.trim() || "UTC",
-
+        timezone: createTimezone.trim() || "UTC",
         reporting_frequency:
           createReportingFrequency,
-
         setup_completed: false,
       };
 
       const createdOrganization =
-        await createOrganization(
-          input
-        );
+        await createOrganization(input);
 
       const availableOrganizations =
         await listOrganizations();
 
-      setOrganizations(
-        availableOrganizations
-      );
-
-      setOrganization(
-        createdOrganization
-      );
+      setOrganizations(availableOrganizations);
+      setOrganization(createdOrganization);
 
       setCompanyName(
         createdOrganization.company_name
       );
-
       setLogoUrl(
         createdOrganization.logo_url ?? ""
       );
-
       setPrimaryColor(
         createdOrganization.primary_color ?? ""
       );
-
       setSecondaryColor(
         createdOrganization.secondary_color ?? ""
       );
-
-      setTimezone(
-        createdOrganization.timezone
-      );
-
+      setTimezone(createdOrganization.timezone);
       setReportingFrequency(
         createdOrganization.reporting_frequency
       );
 
-      const params =
-        new URLSearchParams(
-          searchParams.toString()
-        );
+      const params = new URLSearchParams(
+        searchParams.toString()
+      );
 
       params.set(
         "organizationId",
@@ -366,10 +363,7 @@ export default function OrganizationPage() {
     }
 
     if (!companyName.trim()) {
-      setErrorMessage(
-        "Company name is required."
-      );
-
+      setErrorMessage("Company name is required.");
       return;
     }
 
@@ -382,39 +376,25 @@ export default function OrganizationPage() {
         await updateOrganization(
           organization.id,
           {
-            company_name:
-              companyName.trim(),
-
-            logo_url:
-              logoUrl.trim() || null,
-
+            company_name: companyName.trim(),
+            logo_url: logoUrl.trim() || null,
             primary_color:
               primaryColor.trim() || null,
-
             secondary_color:
               secondaryColor.trim() || null,
-
-            timezone:
-              timezone.trim() || "UTC",
-
+            timezone: timezone.trim() || "UTC",
             reporting_frequency:
               reportingFrequency,
-
             setup_completed: true,
           }
         );
 
-      setOrganization(
-        updatedOrganization
-      );
+      setOrganization(updatedOrganization);
 
       const updatedOrganizations =
         await listOrganizations();
 
-      setOrganizations(
-        updatedOrganizations
-      );
-
+      setOrganizations(updatedOrganizations);
       setIsSaved(true);
     } catch (error) {
       console.error(
@@ -457,85 +437,41 @@ export default function OrganizationPage() {
     setIsSaved(false);
 
     try {
-      await deleteOrganization(
-        organization.id
-      );
+      await deleteOrganization(organization.id);
 
       const remainingOrganizations =
         await listOrganizations();
 
-      setOrganizations(
-        remainingOrganizations
-      );
-
+      setOrganizations(remainingOrganizations);
       setDeleteConfirmation("");
 
-      if (remainingOrganizations.length > 0) {
-        const nextOrganization =
-          remainingOrganizations[0];
+      /*
+       * Do not automatically switch to another organization
+       * after deletion. Clear the selected organization
+       * and require an explicit selection.
+       */
 
-        setOrganization(
-          nextOrganization
-        );
+      setOrganization(null);
+      setCompanyName("");
+      setLogoUrl("");
+      setPrimaryColor("");
+      setSecondaryColor("");
+      setTimezone("UTC");
+      setReportingFrequency("monthly");
 
-        setCompanyName(
-          nextOrganization.company_name
-        );
+      const params = new URLSearchParams(
+        searchParams.toString()
+      );
 
-        setLogoUrl(
-          nextOrganization.logo_url ?? ""
-        );
+      params.delete("organizationId");
 
-        setPrimaryColor(
-          nextOrganization.primary_color ?? ""
-        );
+      const query = params.toString();
 
-        setSecondaryColor(
-          nextOrganization.secondary_color ?? ""
-        );
-
-        setTimezone(
-          nextOrganization.timezone
-        );
-
-        setReportingFrequency(
-          nextOrganization.reporting_frequency
-        );
-
-        const params =
-          new URLSearchParams(
-            searchParams.toString()
-          );
-
-        params.set(
-          "organizationId",
-          nextOrganization.id
-        );
-
-        router.push(
-          `${window.location.pathname}?${params.toString()}`
-        );
-      } else {
-        setOrganization(null);
-
-        const params =
-          new URLSearchParams(
-            searchParams.toString()
-          );
-
-        params.delete(
-          "organizationId"
-        );
-
-        const query =
-          params.toString();
-
-        router.push(
-          query
-            ? `${window.location.pathname}?${query}`
-            : window.location.pathname
-        );
-      }
+      router.push(
+        query
+          ? `${window.location.pathname}?${query}`
+          : window.location.pathname
+      );
     } catch (error) {
       console.error(
         "Failed to delete organization:",
@@ -577,7 +513,6 @@ export default function OrganizationPage() {
   return (
     <main className="min-h-screen bg-gray-50 px-8 py-10">
       <div className="mx-auto max-w-4xl space-y-8">
-
         {/* ================= Header ================= */}
 
         <AdminPageHeader
@@ -589,11 +524,8 @@ export default function OrganizationPage() {
         {/* ================= Organization Context ================= */}
 
         <section className="rounded-xl border bg-white p-6 shadow-sm">
-
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-
             <div className="min-w-0 flex-1">
-
               <label
                 htmlFor="organization-context"
                 className="mb-2 block text-sm font-medium"
@@ -611,6 +543,10 @@ export default function OrganizationPage() {
                 }
                 className="h-10 w-full rounded-md border bg-white px-3 text-sm"
               >
+                <option value="">
+                  Select an organization
+                </option>
+
                 {organizations.map((item) => (
                   <option
                     key={item.id}
@@ -620,11 +556,9 @@ export default function OrganizationPage() {
                   </option>
                 ))}
               </select>
-
             </div>
 
             <div className="flex flex-wrap gap-2">
-
               <Button
                 type="button"
                 onClick={
@@ -649,20 +583,15 @@ export default function OrganizationPage() {
                   ? "Cancel"
                   : "+ Create Organization"}
               </Button>
-
             </div>
-
           </div>
-
         </section>
 
         {/* ================= Create Organization ================= */}
 
         {isCreatingOrganization && (
           <section className="rounded-xl border bg-white p-6 shadow-sm">
-
             <div className="space-y-6">
-
               <div>
                 <h2 className="text-xl font-semibold">
                   Create Organization
@@ -713,7 +642,6 @@ export default function OrganizationPage() {
               {/* ================= Branding ================= */}
 
               <div className="grid gap-6 md:grid-cols-2">
-
                 <div>
                   <label className="mb-2 block text-sm font-medium">
                     Primary Color
@@ -745,13 +673,11 @@ export default function OrganizationPage() {
                     placeholder="#FFFFFF"
                   />
                 </div>
-
               </div>
 
               {/* ================= Reporting ================= */}
 
               <div className="grid gap-6 md:grid-cols-2">
-
                 <div>
                   <label className="mb-2 block text-sm font-medium">
                     Timezone
@@ -774,9 +700,7 @@ export default function OrganizationPage() {
                   </label>
 
                   <Select
-                    value={
-                      createReportingFrequency
-                    }
+                    value={createReportingFrequency}
                     onValueChange={
                       setCreateReportingFrequency
                     }
@@ -800,21 +724,17 @@ export default function OrganizationPage() {
                     </SelectContent>
                   </Select>
                 </div>
-
               </div>
 
               {/* ================= Actions ================= */}
 
               <div className="flex justify-end gap-2 border-t pt-6">
-
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
                     resetCreateOrganizationForm();
-                    setIsCreatingOrganization(
-                      false
-                    );
+                    setIsCreatingOrganization(false);
                     setErrorMessage(null);
                   }}
                   disabled={isCreating}
@@ -824,20 +744,15 @@ export default function OrganizationPage() {
 
                 <Button
                   type="button"
-                  onClick={
-                    handleCreateOrganization
-                  }
+                  onClick={handleCreateOrganization}
                   disabled={isCreating}
                 >
                   {isCreating
                     ? "Creating..."
                     : "Create Organization"}
                 </Button>
-
               </div>
-
             </div>
-
           </section>
         )}
 
@@ -859,7 +774,6 @@ export default function OrganizationPage() {
 
             <section className="rounded-xl border bg-white p-6 shadow-sm">
               <div className="space-y-6">
-
                 <div>
                   <h2 className="text-xl font-semibold">
                     Organization Profile
@@ -895,14 +809,11 @@ export default function OrganizationPage() {
                   <Input
                     value={logoUrl}
                     onChange={(event) =>
-                      setLogoUrl(
-                        event.target.value
-                      )
+                      setLogoUrl(event.target.value)
                     }
                     placeholder="https://..."
                   />
                 </div>
-
               </div>
             </section>
 
@@ -910,7 +821,6 @@ export default function OrganizationPage() {
 
             <section className="rounded-xl border bg-white p-6 shadow-sm">
               <div className="space-y-6">
-
                 <div>
                   <h2 className="text-xl font-semibold">
                     Branding
@@ -923,7 +833,6 @@ export default function OrganizationPage() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
-
                   <div>
                     <label className="mb-2 block text-sm font-medium">
                       Primary Color
@@ -955,9 +864,7 @@ export default function OrganizationPage() {
                       placeholder="#FFFFFF"
                     />
                   </div>
-
                 </div>
-
               </div>
             </section>
 
@@ -965,7 +872,6 @@ export default function OrganizationPage() {
 
             <section className="rounded-xl border bg-white p-6 shadow-sm">
               <div className="space-y-6">
-
                 <div>
                   <h2 className="text-xl font-semibold">
                     Reporting Configuration
@@ -978,7 +884,6 @@ export default function OrganizationPage() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
-
                   <div>
                     <label className="mb-2 block text-sm font-medium">
                       Timezone
@@ -987,9 +892,7 @@ export default function OrganizationPage() {
                     <Input
                       value={timezone}
                       onChange={(event) =>
-                        setTimezone(
-                          event.target.value
-                        )
+                        setTimezone(event.target.value)
                       }
                       placeholder="UTC"
                     />
@@ -1025,9 +928,7 @@ export default function OrganizationPage() {
                       </SelectContent>
                     </Select>
                   </div>
-
                 </div>
-
               </div>
             </section>
 
@@ -1035,7 +936,6 @@ export default function OrganizationPage() {
 
             <section className="rounded-xl border bg-white p-6 shadow-sm">
               <div className="space-y-3">
-
                 <h2 className="text-xl font-semibold">
                   Platform Status
                 </h2>
@@ -1059,14 +959,12 @@ export default function OrganizationPage() {
                       : "Incomplete"}
                   </span>
                 </div>
-
               </div>
             </section>
 
             {/* ================= Save ================= */}
 
             <div className="flex items-center justify-between rounded-xl border bg-white p-6 shadow-sm">
-
               <div>
                 {isSaved ? (
                   <p className="text-sm font-medium text-green-700">
@@ -1088,14 +986,12 @@ export default function OrganizationPage() {
                   ? "Saving..."
                   : "Save Changes"}
               </Button>
-
             </div>
 
             {/* ================= Danger Zone ================= */}
 
             <section className="rounded-xl border border-red-200 bg-white p-6 shadow-sm">
               <div className="space-y-6">
-
                 <div>
                   <h2 className="text-xl font-semibold text-red-700">
                     Danger Zone
@@ -1147,9 +1043,7 @@ export default function OrganizationPage() {
                   <Button
                     type="button"
                     variant="destructive"
-                    onClick={
-                      handleDeleteOrganization
-                    }
+                    onClick={handleDeleteOrganization}
                     disabled={
                       isDeleting ||
                       deleteConfirmation.trim() !==
@@ -1161,12 +1055,10 @@ export default function OrganizationPage() {
                       : "Delete Organization"}
                   </Button>
                 </div>
-
               </div>
             </section>
           </>
         )}
-
       </div>
     </main>
   );

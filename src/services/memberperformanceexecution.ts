@@ -1,3 +1,4 @@
+
 import { getUser } from "@/services/user.service";
 
 import {
@@ -7,6 +8,8 @@ import {
 
 import {
   loadLatestPublishedForOrganization,
+  saveBuilderDocument,
+  publishPerformanceSheet,
 } from "@/lib/repositories/performancesheetrepository";
 
 import {
@@ -19,6 +22,14 @@ import type { PerformanceInstance } from "@/lib/domain/performanceinstance";
 import {
   initializeMemberPerformanceInstance,
 } from "@/lib/runtime/initializememberperformanceinstance";
+
+import {
+  getOrganization,
+} from "@/services/organization.service";
+
+import {
+  initialBuilderDocument,
+} from "@/lib/builder/builderdefaults";
 
 function normalizePerformanceMonth(
   performanceMonth: string
@@ -74,6 +85,96 @@ function validatePerformanceMonth(
 }
 
 /* ==========================================================
+   Ensure Organization Performance Workspace
+   ----------------------------------------------------------
+   There is one shared Performance Workspace per organization.
+
+   Existing workspaces are reused without changing their
+   document. If no workspace exists, create the initial empty
+   workspace for the exact organization and publish it.
+
+   This does not create, replace, or modify Member OKRs.
+========================================================== */
+
+async function ensurePublishedPerformanceWorkspace(
+  organizationId: string
+) {
+  const normalizedOrganizationId =
+    organizationId.trim();
+
+  if (!normalizedOrganizationId) {
+    throw new Error(
+      "Organization ID is required to load the Performance Workspace."
+    );
+  }
+
+  const organization =
+    await getOrganization(
+      normalizedOrganizationId
+    );
+
+  if (
+    !organization ||
+    organization.id !== normalizedOrganizationId
+  ) {
+    throw new Error(
+      "The requested organization could not be found."
+    );
+  }
+
+  let performanceSheet =
+    await loadLatestPublishedForOrganization(
+      normalizedOrganizationId
+    );
+
+  if (!performanceSheet) {
+    const initialDocument = {
+      ...initialBuilderDocument,
+      organization: {
+        ...initialBuilderDocument.organization,
+        companyName: organization.company_name,
+        logoUrl: organization.logo_url ?? "",
+      },
+    };
+
+    performanceSheet =
+      await saveBuilderDocument(
+        normalizedOrganizationId,
+        initialDocument
+      );
+  }
+
+  if (
+    performanceSheet.organization_id !==
+    normalizedOrganizationId
+  ) {
+    throw new Error(
+      "The Performance Workspace does not belong to the requested organization."
+    );
+  }
+
+  if (
+    performanceSheet.status !== "published"
+  ) {
+    performanceSheet =
+      await publishPerformanceSheet(
+        normalizedOrganizationId,
+        performanceSheet.id
+      );
+  }
+
+  if (
+    performanceSheet.status !== "published"
+  ) {
+    throw new Error(
+      "The organization's Performance Workspace could not be published."
+    );
+  }
+
+  return performanceSheet;
+}
+
+/* ==========================================================
    Get Or Create Member Performance Execution
    ----------------------------------------------------------
    Current Runtime identity:
@@ -94,6 +195,15 @@ export async function getOrCreateMemberPerformanceExecutionForMonth(
   memberId: string,
   performanceMonth: string
 ): Promise<PerformanceInstance> {
+  const normalizedOrganizationId =
+    organizationId.trim();
+
+  if (!normalizedOrganizationId) {
+    throw new Error(
+      "Organization ID is required."
+    );
+  }
+
   const user =
     await getUser(memberId);
 
@@ -108,7 +218,7 @@ export async function getOrCreateMemberPerformanceExecutionForMonth(
 
   const membership =
     await loadOrganizationMembershipForMember(
-      organizationId,
+      normalizedOrganizationId,
       memberId
     );
 
@@ -125,14 +235,14 @@ export async function getOrCreateMemberPerformanceExecutionForMonth(
 
   const existing =
     await findPerformanceInstanceByMemberAndMonth(
-      organizationId,
+      normalizedOrganizationId,
       memberId,
       normalizedMonth
     );
 
   const objectives =
     await loadMemberOKRs(
-      organizationId,
+      normalizedOrganizationId,
       membership.id
     );
 
@@ -146,19 +256,14 @@ export async function getOrCreateMemberPerformanceExecutionForMonth(
   }
 
   const performanceSheet =
-    await loadLatestPublishedForOrganization(
-      organizationId
+    await ensurePublishedPerformanceWorkspace(
+      normalizedOrganizationId
     );
-
-  if (!performanceSheet) {
-    throw new Error(
-      "No published Performance Sheet is available for this organization."
-    );
-  }
 
   const performanceInstance =
     await createPerformanceInstance({
-      organizationId,
+      organizationId:
+        normalizedOrganizationId,
 
       assignmentId:
         undefined,

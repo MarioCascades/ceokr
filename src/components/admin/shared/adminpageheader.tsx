@@ -76,14 +76,7 @@ function AdminPageHeaderContent({
    * from=admin indicates that the Organization Workspace
    * was entered from the Super Admin administration context.
    *
-   * IMPORTANT:
-   *
-   * This is navigation context only.
-   *
-   * It is NOT an authorization mechanism.
-   *
-   * Authentication and authorization will eventually be
-   * enforced by the platform security model and RLS.
+   * This is navigation context only, not authorization.
    */
 
   const enteredFromAdministration =
@@ -94,43 +87,42 @@ function AdminPageHeaderContent({
    * Organization Context
    * ---------------------------------------------------------
    *
-   * Organization context is preserved through the query
-   * string while authentication/RLS is not yet implemented.
+   * Organization-specific navigation must preserve an
+   * explicitly supplied organization ID.
    */
 
   const organizationId =
-    searchParams.get("organizationId");
+    searchParams.get("organizationId")?.trim() ?? "";
+
+  const hasOrganizationContext =
+    organizationId.length > 0;
 
   /*
    * ---------------------------------------------------------
-   * Organization Overview
+   * Navigation Destinations
    * ---------------------------------------------------------
+   *
+   * Do not fall back to an organization or administration
+   * URL that silently drops the current organization ID.
    */
 
   const organizationOverviewHref =
-    organizationId
+    hasOrganizationContext
       ? `/organization?organizationId=${encodeURIComponent(
           organizationId
         )}`
-      : "/organization";
-
-  /*
-   * ---------------------------------------------------------
-   * Administration
-   * ---------------------------------------------------------
-   */
+      : "/organization?error=missing_organization_id";
 
   const administrationHref =
-    organizationId
+    hasOrganizationContext
       ? `/admin?organizationId=${encodeURIComponent(
           organizationId
         )}`
-      : "/admin";
+      : "/admin?error=missing_organization_id";
 
   return (
     <div className="mb-8">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-
         {/* ===================================================
             Page Title
         =================================================== */}
@@ -152,7 +144,6 @@ function AdminPageHeaderContent({
         =================================================== */}
 
         <div className="flex flex-wrap items-end justify-end gap-3">
-
           {/* =================================================
               Super Admin Organization Selector
           ================================================= */}
@@ -175,7 +166,6 @@ function AdminPageHeaderContent({
           ================================================= */}
 
           <div className="flex flex-wrap items-center gap-3">
-
             {/* ===============================================
                 Organization Workspace
             =============================================== */}
@@ -189,6 +179,12 @@ function AdminPageHeaderContent({
                 {enteredFromAdministration && (
                   <Link
                     href={administrationHref}
+                    aria-disabled={!hasOrganizationContext}
+                    onClick={(event) => {
+                      if (!hasOrganizationContext) {
+                        event.preventDefault();
+                      }
+                    }}
                     className="rounded-md border bg-white px-4 py-2 text-sm font-medium"
                   >
                     Back to Administration
@@ -201,6 +197,12 @@ function AdminPageHeaderContent({
 
                 <Link
                   href={organizationOverviewHref}
+                  aria-disabled={!hasOrganizationContext}
+                  onClick={(event) => {
+                    if (!hasOrganizationContext) {
+                      event.preventDefault();
+                    }
+                  }}
                   className="rounded-md border bg-white px-4 py-2 text-sm font-medium"
                 >
                   Back to Overview
@@ -213,6 +215,12 @@ function AdminPageHeaderContent({
 
               <Link
                 href={administrationHref}
+                aria-disabled={!hasOrganizationContext}
+                onClick={(event) => {
+                  if (!hasOrganizationContext) {
+                    event.preventDefault();
+                  }
+                }}
                 className="rounded-md border bg-white px-4 py-2 text-sm font-medium"
               >
                 Back to Administration

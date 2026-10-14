@@ -6,6 +6,7 @@ import {
 
 import {
   saveBuilderDocument,
+  publishPerformanceSheet,
 } from "@/lib/repositories/performancesheetrepository";
 
 import type {
@@ -16,26 +17,30 @@ import type {
 
 /* ==========================================================
    Get Organization
+   ----------------------------------------------------------
+   An explicit organization ID is required.
+   Never fall back to the oldest or default organization.
 ========================================================== */
 
-export async function getOrganization(organizationId?: string): Promise<
-  Organization | null
-> {
-  let query = supabase
-    .from("organization")
-    .select("*");
+export async function getOrganization(
+  organizationId?: string
+): Promise<Organization | null> {
+  const normalizedOrganizationId =
+    organizationId?.trim();
 
-  if (organizationId) {
-    query = query.eq("id", organizationId);
-  } else {
-    query = query
-      .order("created_at", {
-        ascending: true,
-      })
-      .limit(1);
+  if (!normalizedOrganizationId) {
+    console.error(
+      "Cannot load organization: organization ID is missing."
+    );
+
+    return null;
   }
 
-  const { data, error } = await query.maybeSingle();
+  const { data, error } = await supabase
+    .from("organization")
+    .select("*")
+    .eq("id", normalizedOrganizationId)
+    .maybeSingle();
 
   if (error) {
     console.error(
@@ -54,7 +59,6 @@ export async function getOrganization(organizationId?: string): Promise<
 
   return data as Organization;
 }
-
 
 /* ==========================================================
    List Organizations
@@ -83,7 +87,6 @@ export async function listOrganizations(): Promise<
 
   return (data ?? []) as Organization[];
 }
-
 
 /* ==========================================================
    Delete Organization
@@ -165,12 +168,14 @@ export async function deleteOrganization(
   }
 }
 
-
 /* ==========================================================
    Create Organization
    ----------------------------------------------------------
-   Every organization receives one blank Performance Workspace
-   as part of tenant creation.
+   Every organization receives one blank, published
+   Performance Workspace as part of tenant creation.
+
+   The workspace is saved and then published using its
+   exact record ID and the new organization's ID.
 ========================================================== */
 
 export async function createOrganization(
@@ -215,33 +220,38 @@ export async function createOrganization(
   const organization = data as Organization;
 
   try {
-    await saveBuilderDocument(
+    const performanceWorkspace =
+      await saveBuilderDocument(
+        organization.id,
+        {
+          ...initialBuilderDocument,
+          organization: {
+            ...initialBuilderDocument.organization,
+            companyName: organization.company_name,
+            logoUrl: organization.logo_url ?? "",
+          },
+        }
+      );
+
+    await publishPerformanceSheet(
       organization.id,
-      {
-        ...initialBuilderDocument,
-        organization: {
-          ...initialBuilderDocument.organization,
-          companyName: organization.company_name,
-          logoUrl: organization.logo_url ?? "",
-        },
-      }
+      performanceWorkspace.id
     );
   } catch (workspaceError) {
     console.error(
-      "Error creating organization Performance Workspace:",
+      "Error initializing and publishing organization Performance Workspace:",
       workspaceError
     );
 
     throw new Error(
       workspaceError instanceof Error
-        ? `Organization was created, but its Performance Workspace could not be initialized: ${workspaceError.message}`
-        : "Organization was created, but its Performance Workspace could not be initialized."
+        ? `Organization was created, but its Performance Workspace could not be initialized and published: ${workspaceError.message}`
+        : "Organization was created, but its Performance Workspace could not be initialized and published."
     );
   }
 
   return organization;
 }
-
 
 /* ==========================================================
    Update Organization
@@ -271,7 +281,6 @@ export async function updateOrganization(
 
   return data as Organization;
 }
-
 
 /* ==========================================================
    Complete Organization Setup

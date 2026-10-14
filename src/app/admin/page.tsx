@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -14,14 +15,16 @@ export default async function AdminPage({
   }>;
 }) {
   const params = await searchParams;
-  const organizationId = params.organizationId;
+  const organizationId = params.organizationId?.trim();
 
   const organization = organizationId
     ? await getOrganization(organizationId)
     : null;
 
   function adminHref(path: string) {
-    if (!organizationId) return path;
+    if (!organizationId || !organization) {
+      return "/admin?error=missing_organization_id";
+    }
 
     return `${path}?organizationId=${encodeURIComponent(
       organizationId
@@ -31,7 +34,6 @@ export default async function AdminPage({
   return (
     <main className="min-h-screen bg-gray-200 px-6 py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-7xl space-y-8">
-
         {/* ==================================================
             Page Header
         ================================================== */}
@@ -53,16 +55,13 @@ export default async function AdminPage({
 
         <section className="rounded-2xl border border-gray-300 bg-white p-6 shadow-sm lg:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Currently administering
               </p>
 
               <div className="mt-2 flex items-center gap-3">
-                <span className="text-2xl">
-                  🏢
-                </span>
+                <span className="text-2xl">🏢</span>
 
                 <h2 className="text-2xl font-semibold tracking-tight text-gray-950">
                   {organization?.company_name ??
@@ -72,13 +71,13 @@ export default async function AdminPage({
 
               {!organization && (
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Select an organization before managing organization-specific resources.
+                  Select a valid organization before managing
+                  organization-specific resources.
                 </p>
               )}
             </div>
 
             <div className="flex flex-col items-stretch gap-3 sm:min-w-[260px] sm:items-end">
-
               <AdminOrganizationSelector />
 
               {organizationId && organization && (
@@ -86,10 +85,21 @@ export default async function AdminPage({
                   Organization context active
                 </div>
               )}
-
             </div>
-
           </div>
+
+          {!organization && (
+            <div
+              role="alert"
+              className="mt-5 rounded-lg border border-dashed bg-gray-50 p-5"
+            >
+              <p className="text-sm text-muted-foreground">
+                Administration requires a valid organization context.
+                Select an organization before opening organization-specific
+                administration pages.
+              </p>
+            </div>
+          )}
         </section>
 
         {/* ==================================================
@@ -193,7 +203,6 @@ export default async function AdminPage({
             href={adminHref("/admin/ai")}
           />
         </AdminSection>
-
       </div>
     </main>
   );
@@ -214,7 +223,6 @@ function AdminSection({
 }) {
   return (
     <section className="rounded-2xl border border-gray-300 bg-gray-50 p-6 shadow-sm lg:p-7">
-
       <div className="mb-6">
         <h2 className="text-2xl font-semibold tracking-tight text-gray-950">
           {title}
@@ -228,7 +236,6 @@ function AdminSection({
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {children}
       </div>
-
     </section>
   );
 }
@@ -248,7 +255,6 @@ function AdminCard({
 }) {
   return (
     <div className="flex min-h-[190px] flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-
       <h3 className="text-lg font-semibold text-gray-950">
         {title}
       </h3>
@@ -258,16 +264,10 @@ function AdminCard({
       </p>
 
       <div className="mt-auto pt-6">
-        <Button
-          asChild
-          className="w-full sm:w-auto"
-        >
-          <Link href={href}>
-            Open
-          </Link>
+        <Button asChild className="w-full sm:w-auto">
+          <Link href={href}>Open</Link>
         </Button>
       </div>
-
     </div>
   );
 }

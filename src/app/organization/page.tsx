@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -11,9 +12,7 @@ import { useOrganizationFeatures } from "@/lib/organization/useorganizationfeatu
 export default function OrganizationWorkspacePage() {
   const searchParams = useSearchParams();
 
-  const organizationId =
-    searchParams.get("organizationId") ?? undefined;
-
+  const organizationId = searchParams.get("organizationId") ?? undefined;
   const fromAdmin = searchParams.get("from") === "admin";
 
   const [organization, setOrganization] =
@@ -24,8 +23,10 @@ export default function OrganizationWorkspacePage() {
 
     async function loadOrganization() {
       try {
-        const existingOrganization = organizationId
-          ? await getOrganization(organizationId)
+        const normalizedOrganizationId = organizationId?.trim();
+
+        const existingOrganization = normalizedOrganizationId
+          ? await getOrganization(normalizedOrganizationId)
           : null;
 
         if (!cancelled) {
@@ -48,18 +49,20 @@ export default function OrganizationWorkspacePage() {
   }, [organizationId]);
 
   function workspaceHref(path: string) {
-    if (!organizationId) {
-      return path;
+    const normalizedOrganizationId = organizationId?.trim();
+
+    if (!normalizedOrganizationId) {
+      return "/organization?error=missing_organization_id";
     }
 
     return `${path}?organizationId=${encodeURIComponent(
-      organizationId
+      normalizedOrganizationId
     )}`;
   }
 
-  const administrationHref = organizationId
-    ? `/admin?organizationId=${encodeURIComponent(organizationId)}`
-    : "/admin";
+  const administrationHref = organizationId?.trim()
+    ? `/admin?organizationId=${encodeURIComponent(organizationId.trim())}`
+    : "/organization?error=missing_organization_id";
 
   /*
    * ==========================================================
