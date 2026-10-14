@@ -1,8 +1,10 @@
+
 import type { CSSProperties } from "react";
 
 import PerformanceSheet from "@/components/runtime/performancesheet/performancesheet";
 import CustomTableMonthlyWorkspace from "@/components/organization/customtablemonthlyworkspace";
 import CustomTableOperationalWorkspace from "@/components/organization/customtableoperationalworkspace";
+import AgendaOperationalWorkspace from "@/components/organization/agendaoperationalworkspace";
 import RuntimeNavigation from "@/components/runtime/shared/runtimenavigation";
 import RuntimeOverview from "@/components/runtime/shared/runtimeoverview";
 
@@ -43,6 +45,7 @@ type TableColumns = Awaited<
 
 interface OperationalTableResult {
   tableId: string;
+  tableKey: string;
   tableName: string;
   persistenceMode: "monthly" | "current_state";
   columns: TableColumns;
@@ -75,10 +78,20 @@ function resolveRuntimeTabKey(table: {
   return table.runtimeTabKey?.trim() || table.tableKey;
 }
 
+function isAgendaTable(tableKey: string): boolean {
+  const normalizedKey = tableKey.trim().toLowerCase();
+
+  return (
+    normalizedKey === "agenda" ||
+    normalizedKey === "meeting-agenda"
+  );
+}
+
 async function loadOperationalTableResult(
   organizationId: string,
   table: {
     id: string;
+    tableKey: string;
     name: string;
     persistenceMode: "monthly" | "current_state";
   },
@@ -94,6 +107,7 @@ async function loadOperationalTableResult(
 
       return {
         tableId: table.id,
+        tableKey: table.tableKey,
         tableName: table.name,
         persistenceMode: "current_state",
         columns,
@@ -115,6 +129,7 @@ async function loadOperationalTableResult(
     if (!monthExists && !canEditRows) {
       return {
         tableId: table.id,
+        tableKey: table.tableKey,
         tableName: table.name,
         persistenceMode: "monthly",
         columns: [],
@@ -133,6 +148,7 @@ async function loadOperationalTableResult(
 
     return {
       tableId: table.id,
+      tableKey: table.tableKey,
       tableName: table.name,
       persistenceMode: "monthly",
       columns: monthlyWorkspace.columns,
@@ -143,6 +159,7 @@ async function loadOperationalTableResult(
   } catch (error) {
     return {
       tableId: table.id,
+      tableKey: table.tableKey,
       tableName: table.name,
       persistenceMode: table.persistenceMode,
       columns: [],
@@ -294,8 +311,9 @@ export default async function RuntimePage({
 
      Tables sharing a Runtime tab key are rendered together.
      Monthly tables retain their monthly workspace.
-     Current-state tables use the interactive persistent
-     operational workspace.
+     Agenda uses its dedicated persistent operational board.
+     All other current-state tables retain the generic
+     persistent operational workspace.
   ======================================================== */
 
   if (params.runtimeTab) {
@@ -336,6 +354,7 @@ export default async function RuntimePage({
             organization.id,
             {
               id: table.id,
+              tableKey: table.tableKey,
               name: table.name,
               persistenceMode: table.persistenceMode,
             },
@@ -471,14 +490,24 @@ export default async function RuntimePage({
                     </h2>
                   )}
 
-                  <CustomTableOperationalWorkspace
-                    organizationId={organization.id}
-                    tableDefinitionId={result.tableId}
-                    tableName={result.tableName}
-                    columns={result.columns}
-                    initialRows={result.persistentRows}
-                    canEditRows={canEditCustomTableRows}
-                  />
+                  {isAgendaTable(result.tableKey) ? (
+                    <AgendaOperationalWorkspace
+                      organizationId={organization.id}
+                      tableDefinitionId={result.tableId}
+                      tableName={result.tableName}
+                      initialRows={result.persistentRows}
+                      canEditRows={canEditCustomTableRows}
+                    />
+                  ) : (
+                    <CustomTableOperationalWorkspace
+                      organizationId={organization.id}
+                      tableDefinitionId={result.tableId}
+                      tableName={result.tableName}
+                      columns={result.columns}
+                      initialRows={result.persistentRows}
+                      canEditRows={canEditCustomTableRows}
+                    />
+                  )}
                 </section>
               );
             })}

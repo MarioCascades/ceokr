@@ -3,8 +3,8 @@
  * CascadEffects Performance Platform
  * Current Server User
  * ----------------------------------------------------------
- * Resolves the authenticated Supabase Auth identity to the
- * CascadEffects application User.
+ * Resolves the authenticated Supabase Auth identity to an
+ * active CascadEffects application User.
  *
  * This is SERVER-SIDE infrastructure.
  *
@@ -29,6 +29,8 @@
  * - perform resource authorization
  * ==========================================================
  */
+
+import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -78,7 +80,7 @@ export async function getCurrentServerUser(): Promise<
 
 
   /* ========================================================
-     Application User
+     Active Application User
   ======================================================== */
 
   const {
@@ -90,6 +92,10 @@ export async function getCurrentServerUser(): Promise<
     .eq(
       "auth_user_id",
       authUser.id
+    )
+    .eq(
+      "is_active",
+      true
     )
     .maybeSingle();
 

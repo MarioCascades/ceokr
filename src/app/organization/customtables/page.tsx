@@ -1,11 +1,15 @@
+
 import Link from "next/link";
 
 import CustomTablesWorkspace from "@/components/organization/customtablesworkspace";
+
 import { hasPermission } from "@/lib/auth/authorization";
+
 import {
   listCustomTables,
   listCustomTableColumns,
 } from "@/services/customtableservice";
+
 import type { CustomTableListItem } from "@/lib/types/domain/customtable";
 
 type OrganizationCustomTablesPageProps = {
@@ -36,8 +40,7 @@ export default async function OrganizationCustomTablesPage({
             <p className="mt-2 max-w-3xl text-[#272D2C]">
               Access the operational tables provisioned for your
               organization. Manage table availability and work with
-              monthly operational records without changing the
-              existing OKR system.
+              operational records without changing the existing OKR system.
             </p>
           </header>
 
@@ -94,7 +97,6 @@ export default async function OrganizationCustomTablesPage({
     <main className="min-h-screen bg-[#E9F4F8] px-6 py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-7xl space-y-8">
         {/* Page Header */}
-
         <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#272D2C]">
@@ -108,8 +110,7 @@ export default async function OrganizationCustomTablesPage({
             <p className="mt-2 max-w-3xl leading-6 text-[#272D2C]">
               Access the operational tables provisioned for your
               organization. Manage table availability and work with
-              monthly operational records without changing the
-              existing OKR system.
+              operational records without changing the existing OKR system.
             </p>
           </div>
 
@@ -122,7 +123,6 @@ export default async function OrganizationCustomTablesPage({
         </header>
 
         {/* Provisioning Overview */}
-
         <section className="rounded-2xl border border-[#B4C2D1] border-t-4 border-t-[#082550] bg-white p-6 shadow-sm lg:p-7">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -135,10 +135,10 @@ export default async function OrganizationCustomTablesPage({
               </h2>
 
               <p className="mt-2 max-w-3xl text-sm leading-6 text-[#272D2C]">
-                This workspace displays the Custom Tables provisioned
-                for the selected organization. Table definitions and
-                column configurations are managed by authorized
-                CascadEffects platform personnel.
+                This workspace displays the Custom Tables provisioned for
+                the selected organization. Table definitions and column
+                configurations are managed by authorized CascadEffects
+                platform personnel.
               </p>
             </div>
 
@@ -156,9 +156,9 @@ export default async function OrganizationCustomTablesPage({
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-[#272D2C]">
-                Access the operational tables assigned to this
-                organization. Other organizations may have different
-                tables and configurations.
+                Access the operational tables assigned to this organization.
+                Other organizations may have different tables and
+                configurations.
               </p>
             </div>
 
@@ -171,9 +171,9 @@ export default async function OrganizationCustomTablesPage({
 
               <p className="mt-2 text-sm leading-6 text-[#272D2C]">
                 Authorized organization administrators can manage
-                availability for provisioned tables. Table
-                provisioning and column configuration remain
-                restricted to CascadEffects platform personnel.
+                availability for provisioned tables. Table provisioning
+                and column configuration remain restricted to
+                CascadEffects platform personnel.
               </p>
             </div>
 
@@ -181,20 +181,20 @@ export default async function OrganizationCustomTablesPage({
               <div className="mb-3 h-1 w-10 rounded-full bg-[#E26D5C]" />
 
               <h3 className="font-semibold text-[#082550]">
-                MONTHLY RECORDS
+                OPERATIONAL RECORDS
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-[#272D2C]">
-                Work with month-specific operational records while
-                preserving historical records and eligible
-                carry-forward data.
+                Work with the operational records assigned to each table.
+                Monthly tables retain history and eligible carry-forward
+                data, while current-state tables keep one persistent
+                working list.
               </p>
             </div>
           </div>
         </section>
 
         {/* Empty State */}
-
         {tables.length === 0 && (
           <section className="rounded-2xl border border-[#B4C2D1] border-l-4 border-l-[#E26D5C] bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-[#082550]">
@@ -211,7 +211,6 @@ export default async function OrganizationCustomTablesPage({
         )}
 
         {/* Existing Table Workspace */}
-
         <CustomTablesWorkspace
           organizationId={organizationId}
           tables={tables}
@@ -219,7 +218,6 @@ export default async function OrganizationCustomTablesPage({
         />
 
         {/* Floating Help Panel */}
-
         <CustomTablesHelpPanel />
       </div>
     </main>
@@ -234,7 +232,6 @@ function CustomTablesHelpPanel() {
     >
       <div className="flex items-start gap-3 p-4">
         {/* Floater Icon */}
-
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white">
           <svg
             aria-hidden="true"

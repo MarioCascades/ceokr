@@ -680,6 +680,12 @@ export default function CustomTableOperationalWorkspace({
     setError("");
   }
 
+  // Workflow Status is intentionally hidden only for VA Roster / VA List.
+  // Other operational tables retain the existing status column and controls.
+  const showWorkflowStatus = !isVaRoster;
+  const tableColumnCount =
+    visibleColumns.length + 2 + (showWorkflowStatus ? 1 : 0);
+
   return (
     <section className="space-y-5 text-[#272D2C]">
       {isVaRoster && (
@@ -923,8 +929,12 @@ export default function CustomTableOperationalWorkspace({
                   }
                   className={INPUT_CLASS}
                 >
-                  <option value="asc">Ascending, A to Z / Low to High</option>
-                  <option value="desc">Descending, Z to A / High to Low</option>
+                  <option value="asc">
+                    Ascending, A to Z / Low to High
+                  </option>
+                  <option value="desc">
+                    Descending, Z to A / High to Low
+                  </option>
                 </select>
               </div>
 
@@ -1031,9 +1041,11 @@ export default function CustomTableOperationalWorkspace({
                   </th>
                 ))}
 
-                <th className="min-w-40 px-4 py-4 text-[10px] font-bold uppercase tracking-wider">
-                  Workflow Status
-                </th>
+                {showWorkflowStatus && (
+                  <th className="min-w-40 px-4 py-4 text-[10px] font-bold uppercase tracking-wider">
+                    Workflow Status
+                  </th>
+                )}
 
                 <th className="w-24 px-4 py-4 text-[10px] font-bold uppercase tracking-wider">
                   Actions
@@ -1180,37 +1192,39 @@ export default function CustomTableOperationalWorkspace({
                       </td>
                     ))}
 
-                    <td className="border-r border-[#B4C2D1]/40 px-3 py-3 align-top">
-                      {canEditRows && !row.isHidden ? (
-                        <select
-                          aria-label={`Workflow status, row ${index + 1}`}
-                          value={row.operationalStatus}
-                          disabled={busy}
-                          onChange={(event) =>
-                            void handleStatusChange(
-                              row,
-                              event.target.value as OperationalStatus
-                            )
-                          }
-                          className={`w-full min-w-32 rounded-lg border px-2.5 py-2 text-xs font-semibold outline-none disabled:cursor-not-allowed disabled:opacity-50 ${getStatusClass(row.operationalStatus)}`}
-                        >
-                          {STATUS_OPTIONS.map((option) => (
-                            <option
-                              key={option.value}
-                              value={option.value}
-                            >
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span
-                          className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold ${getStatusClass(row.operationalStatus)}`}
-                        >
-                          {getStatusLabel(row.operationalStatus)}
-                        </span>
-                      )}
-                    </td>
+                    {showWorkflowStatus && (
+                      <td className="border-r border-[#B4C2D1]/40 px-3 py-3 align-top">
+                        {canEditRows && !row.isHidden ? (
+                          <select
+                            aria-label={`Workflow status, row ${index + 1}`}
+                            value={row.operationalStatus}
+                            disabled={busy}
+                            onChange={(event) =>
+                              void handleStatusChange(
+                                row,
+                                event.target.value as OperationalStatus
+                              )
+                            }
+                            className={`w-full min-w-32 rounded-lg border px-2.5 py-2 text-xs font-semibold outline-none disabled:cursor-not-allowed disabled:opacity-50 ${getStatusClass(row.operationalStatus)}`}
+                          >
+                            {STATUS_OPTIONS.map((option) => (
+                              <option
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span
+                            className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold ${getStatusClass(row.operationalStatus)}`}
+                          >
+                            {getStatusLabel(row.operationalStatus)}
+                          </span>
+                        )}
+                      </td>
+                    )}
 
                     <td className="px-3 py-3 align-top">
                       {canEditRows && (
@@ -1232,7 +1246,7 @@ export default function CustomTableOperationalWorkspace({
               ) : (
                 <tr>
                   <td
-                    colSpan={visibleColumns.length + 3}
+                    colSpan={tableColumnCount}
                     className="px-6 py-16 text-center"
                   >
                     <p className="text-sm font-bold text-[#082550]">
@@ -1259,7 +1273,7 @@ export default function CustomTableOperationalWorkspace({
               {canEditRows && !showHidden && (
                 <tr className="bg-[#E9F4F8]/55">
                   <td
-                    colSpan={visibleColumns.length + 3}
+                    colSpan={tableColumnCount}
                     className="border-t border-[#B4C2D1]/60 px-4 py-3"
                   >
                     <button

@@ -28,6 +28,8 @@
  * ==========================================================
  */
 
+import "server-only";
+
 import {
   createSupabaseServerClient,
 } from "@/lib/supabase/server";
@@ -165,7 +167,7 @@ export async function getCurrentEntryContext(): Promise<
 
   const {
     data: memberships,
-    error: membershipError,
+    error: membershipError
   } =
     await supabase
       .from("organization_memberships")
@@ -221,9 +223,20 @@ export async function getCurrentEntryContext(): Promise<
     );
 
 
+  const membershipOrganizationById =
+    new Map(
+      memberships.map(
+        (membership) => [
+          membership.id,
+          membership.organization_id,
+        ]
+      )
+    );
+
+
   const {
     data: membershipRoles,
-    error: membershipRoleError,
+    error: membershipRoleError
   } =
     await supabase
       .from("membership_roles")
@@ -262,16 +275,55 @@ export async function getCurrentEntryContext(): Promise<
   }
 
 
+  /*
+   * A membership-role assignment must agree with the
+   * organization recorded on its parent membership.
+   *
+   * Discard inconsistent assignments before resolving roles.
+   */
+
+  const consistentMembershipRoles =
+    membershipRoles.filter(
+      (membershipRole) => {
+
+        const membershipOrganizationId =
+          membershipOrganizationById.get(
+            membershipRole.organization_membership_id
+          );
+
+        return (
+          Boolean(membershipOrganizationId) &&
+          membershipRole.organization_id ===
+            membershipOrganizationId
+        );
+
+      }
+    );
+
+
+  if (
+    consistentMembershipRoles.length === 0
+  ) {
+
+    return null;
+
+  }
+
+
   const roleIds =
-    membershipRoles
-      .map(
-        (membershipRole) =>
-          membershipRole.role_id
+    [
+      ...new Set(
+        consistentMembershipRoles
+          .map(
+            (membershipRole) =>
+              membershipRole.role_id
+          )
+          .filter(
+            (roleId): roleId is string =>
+              Boolean(roleId)
+          )
       )
-      .filter(
-        (roleId): roleId is string =>
-          Boolean(roleId)
-      );
+    ];
 
 
   if (
@@ -289,7 +341,7 @@ export async function getCurrentEntryContext(): Promise<
 
   const {
     data: roles,
-    error: roleError,
+    error: roleError
   } =
     await supabase
       .from("roles")
@@ -329,23 +381,74 @@ export async function getCurrentEntryContext(): Promise<
 
 
   /* ========================================================
-     Resolve Organization Admin First
+     Validate Role Organization Consistency
   ======================================================== */
 
-  const organizationAdminAssignment =
-    membershipRoles.find(
+  /*
+   * A role is usable for entry resolution only when:
+   *
+   * - The role is active.
+   * - The role belongs to the same organization as the
+   *   membership-role assignment.
+   *
+   * This prevents a role ID from being used to establish
+   * entry into a different organization.
+   */
+
+  const roleById =
+    new Map(
+      roles.map(
+        (role) => [
+          role.id,
+          role,
+        ]
+      )
+    );
+
+
+  const validAssignments =
+    consistentMembershipRoles.filter(
       (membershipRole) => {
 
         const role =
-          roles.find(
-            (candidate) =>
-              candidate.id ===
-              membershipRole.role_id
+          roleById.get(
+            membershipRole.role_id
           );
 
         return (
           role?.is_active === true &&
-          role.name
+          role.organization_id ===
+            membershipRole.organization_id
+        );
+
+      }
+    );
+
+
+  if (
+    validAssignments.length === 0
+  ) {
+
+    return null;
+
+  }
+
+
+  /* ========================================================
+     Resolve Organization Admin First
+  ======================================================== */
+
+  const organizationAdminAssignment =
+    validAssignments.find(
+      (membershipRole) => {
+
+        const role =
+          roleById.get(
+            membershipRole.role_id
+          );
+
+        return (
+          role?.name
             .trim()
             .toLowerCase() ===
             "organization admin"
@@ -365,7 +468,7 @@ export async function getCurrentEntryContext(): Promise<
 
     const {
       data: organization,
-      error: organizationError,
+      error: organizationError
     } =
       await supabase
         .from("organization")
@@ -395,6 +498,11 @@ export async function getCurrentEntryContext(): Promise<
     }
 
 
+    if (!organization) {
+      return null;
+    }
+
+
     return {
 
       user,
@@ -405,8 +513,7 @@ export async function getCurrentEntryContext(): Promise<
       organizationId,
 
       organizationName:
-        organization?.company_name ??
-        null,
+        organization.company_name,
 
     };
 
@@ -418,19 +525,16 @@ export async function getCurrentEntryContext(): Promise<
   ======================================================== */
 
   const memberAssignment =
-    membershipRoles.find(
+    validAssignments.find(
       (membershipRole) => {
 
         const role =
-          roles.find(
-            (candidate) =>
-              candidate.id ===
-              membershipRole.role_id
+          roleById.get(
+            membershipRole.role_id
           );
 
         return (
-          role?.is_active === true &&
-          role.name
+          role?.name
             .trim()
             .toLowerCase() ===
             "member"
@@ -450,7 +554,7 @@ export async function getCurrentEntryContext(): Promise<
 
     const {
       data: organization,
-      error: organizationError,
+      error: organizationError
     } =
       await supabase
         .from("organization")
@@ -480,6 +584,11 @@ export async function getCurrentEntryContext(): Promise<
     }
 
 
+    if (!organization) {
+      return null;
+    }
+
+
     return {
 
       user,
@@ -490,8 +599,7 @@ export async function getCurrentEntryContext(): Promise<
       organizationId,
 
       organizationName:
-        organization?.company_name ??
-        null,
+        organization.company_name,
 
     };
 
