@@ -22,6 +22,29 @@ import {
   listCustomTableOperationalRows,
 } from "@/services/customtableservice";
 
+function OrgAdminReturnBar({
+  organizationId,
+  visible,
+}: {
+  organizationId: string;
+  visible: boolean;
+}) {
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <div className="sticky top-0 z-50 -mx-4 flex justify-end border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      <a
+        href={`/admin?organizationId=${encodeURIComponent(organizationId)}`}
+        className="inline-flex items-center rounded-md bg-[#082550] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#123969] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#082550] focus-visible:ring-offset-2"
+      >
+        Back to Org Admin Page
+      </a>
+    </div>
+  );
+}
+
 interface RuntimePageProps {
   searchParams: Promise<{
     organizationId?: string;
@@ -176,7 +199,6 @@ async function loadOperationalTableResult(
 export default async function RuntimePage({
   searchParams,
 }: RuntimePageProps) {
- 
   const params = await searchParams;
 
   /* ========================================================
@@ -214,6 +236,24 @@ export default async function RuntimePage({
           will not switch to another organization automatically.
         </p>
       </main>
+    );
+  }
+
+  /* ========================================================
+     Admin Return Navigation Permission
+  ======================================================== */
+
+  let canReturnToOrgAdmin = false;
+
+  try {
+    canReturnToOrgAdmin = await hasPermission(
+      organization.id,
+      "users.create"
+    );
+  } catch (error) {
+    console.error(
+      "Unable to determine Organization Admin navigation permission:",
+      error
     );
   }
 
@@ -403,6 +443,11 @@ export default async function RuntimePage({
           xl:px-10
         "
       >
+        <OrgAdminReturnBar
+          organizationId={organization.id}
+          visible={canReturnToOrgAdmin}
+        />
+
         <RuntimeNavigation
           {...runtimeNavigationProps}
           selectedSubjectId={params.subjectId}
@@ -566,6 +611,11 @@ export default async function RuntimePage({
           xl:px-10
         "
       >
+        <OrgAdminReturnBar
+          organizationId={organization.id}
+          visible={canReturnToOrgAdmin}
+        />
+
         <RuntimeNavigation {...runtimeNavigationProps} />
 
         <RuntimeOverview dashboard={dashboard} />
@@ -601,6 +651,11 @@ export default async function RuntimePage({
           bg-background
         "
       >
+        <OrgAdminReturnBar
+          organizationId={organization.id}
+          visible={canReturnToOrgAdmin}
+        />
+
         <RuntimeNavigation
           {...runtimeNavigationProps}
           selectedSubjectId={params.subjectId}
@@ -655,6 +710,11 @@ export default async function RuntimePage({
       style={runtimeBrandStyle}
       className="ce-runtime-theme min-h-screen"
     >
+      <OrgAdminReturnBar
+        organizationId={organization.id}
+        visible={canReturnToOrgAdmin}
+      />
+
       <PerformanceSheet
         document={runtimeExecution.performanceSheet.document}
         objectives={runtimeExecution.objectives}
