@@ -366,7 +366,8 @@ export default function KeyResultRow({
    * and must never participate in score calculation.
    */
   const isDisplayOnly =
-    currentKeyResult.weight === 0;
+  currentKeyResult.scoringMethod === "display_only" ||
+  currentKeyResult.weight === 0;
 
 
   /*

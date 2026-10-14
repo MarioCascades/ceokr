@@ -204,6 +204,7 @@ export async function updatePerformanceInstance(
     await supabase
       .from("performance_instances")
       .update({
+        updated_at: new Date().toISOString(),
         performance_month:
           performanceInstance.performanceMonth,
 
