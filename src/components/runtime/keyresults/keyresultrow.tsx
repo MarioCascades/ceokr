@@ -679,8 +679,9 @@ export default function KeyResultRow({
         | "financial";
 
       scoringMethod:
-        | "percent_into_period"
-        | "percentage_of_target";
+  | "percent_into_period"
+  | "percentage_of_target"
+  | "display_only";
 
       weight?: number;
 

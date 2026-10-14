@@ -1,3 +1,4 @@
+
 /**
  * ==========================================================
  * CascadEffects Performance Platform
@@ -30,7 +31,8 @@
 
 export type RuntimeScoringMethod =
   | "percent_into_period"
-  | "percentage_of_target";
+  | "percentage_of_target"
+  | "display_only";
 
 
 /* ==========================================================
@@ -177,6 +179,17 @@ export function calculateRuntimeKeyResultScore(
     | undefined,
   performanceMonth: string
 ): number {
+  /*
+   * Display Only Key Results are reference values.
+   * They must never receive a calculated score.
+   */
+  if (
+    scoringMethod ===
+    "display_only"
+  ) {
+    return 0;
+  }
+
   if (
     scoringMethod ===
     "percent_into_period"

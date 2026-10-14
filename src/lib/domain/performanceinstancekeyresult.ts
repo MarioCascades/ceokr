@@ -1,3 +1,4 @@
+
 export type PerformanceInstanceKeyResultMeasurementType =
   | "percentage"
   | "numeric"
@@ -5,7 +6,8 @@ export type PerformanceInstanceKeyResultMeasurementType =
 
 export type PerformanceInstanceKeyResultScoringMethod =
   | "percent_into_period"
-  | "percentage_of_target";
+  | "percentage_of_target"
+  | "display_only";
 
 export interface PerformanceInstanceKeyResult {
   id: string;

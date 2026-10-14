@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -23,7 +24,8 @@ interface KeyResultEditorProps {
         | "financial";
       scoringMethod:
         | "percent_into_period"
-        | "percentage_of_target";
+        | "percentage_of_target"
+        | "display_only";
       weight?: number;
     }
   ) => Promise<void>;
@@ -75,6 +77,7 @@ export default function KeyResultEditor({
   ] = useState<
     | "percent_into_period"
     | "percentage_of_target"
+    | "display_only"
   >(
     keyResult?.scoringMethod ??
       "percentage_of_target"
@@ -311,6 +314,7 @@ export default function KeyResultEditor({
                   .value as
                   | "percent_into_period"
                   | "percentage_of_target"
+                  | "display_only"
               )
             }
             disabled={saving}
@@ -322,6 +326,10 @@ export default function KeyResultEditor({
 
             <option value="percent_into_period">
               % Into Period
+            </option>
+
+            <option value="display_only">
+              Display Only
             </option>
           </select>
         </div>

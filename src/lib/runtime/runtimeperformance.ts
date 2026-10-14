@@ -38,7 +38,8 @@ export interface RuntimePerformanceKeyResult {
 
   scoringMethod?:
     | "percent_into_period"
-    | "percentage_of_target";
+    | "percentage_of_target"
+    | "display_only";
 
   position: number;
 

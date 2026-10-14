@@ -89,7 +89,6 @@ export async function saveRuntimePerformanceSheetAction(
   input: SaveRuntimePerformanceSheetActionInput
 ): Promise<{
   performanceInstance: PerformanceInstance;
-
   keyResultProgress: KeyResultProgress[];
 }> {
   const result =
@@ -134,7 +133,6 @@ export async function updateRuntimeKeyResultProgressAction(
   input: UpdateRuntimeKeyResultProgressActionInput
 ): Promise<{
   keyResultProgress: KeyResultProgress;
-
   performanceInstance: PerformanceInstance;
 }> {
   return updateRuntimeKeyResultProgress(
@@ -230,7 +228,8 @@ export interface CreateRuntimePerformanceInstanceKeyResultActionInput {
 
   scoringMethod?:
     | "percent_into_period"
-    | "percentage_of_target";
+    | "percentage_of_target"
+    | "display_only";
 
   weight?: number;
 }
@@ -240,7 +239,6 @@ export async function createRuntimePerformanceInstanceKeyResultAction(
   input: CreateRuntimePerformanceInstanceKeyResultActionInput
 ): Promise<{
   keyResult: PerformanceInstanceKeyResult;
-
   progress: KeyResultProgress;
 }> {
   return createRuntimePerformanceInstanceKeyResult(
@@ -267,7 +265,8 @@ export interface UpdateRuntimePerformanceInstanceKeyResultActionInput {
 
   scoringMethod?:
     | "percent_into_period"
-    | "percentage_of_target";
+    | "percentage_of_target"
+    | "display_only";
 
   weight?: number;
 }

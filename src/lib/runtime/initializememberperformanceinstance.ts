@@ -1,3 +1,4 @@
+
 import type { PerformanceInstance } from "@/lib/domain/performanceinstance";
 import type { MemberObjective } from "@/lib/domain/memberokr";
 
@@ -9,6 +10,7 @@ import {
 import {
   createPerformanceInstanceKeyResult,
   findPerformanceInstanceKeyResults,
+  updatePerformanceInstanceKeyResult,
 } from "@/lib/repositories/performanceinstancekeyresultrepository";
 
 import {
@@ -23,36 +25,18 @@ import {
 
 /* ==========================================================
    Initialize Member Performance Instance
-   ----------------------------------------------------------
-   Creates the monthly Runtime snapshot from the authoritative
-   Member OKR domain.
 
-   Member OKRs own:
-   - Objectives
-   - Key Results
-   - Initiatives
+   Member OKRs own employee performance definitions.
+   Runtime owns monthly execution and historical records.
 
-   Runtime owns:
-   - monthly snapshots
-   - current values
-   - scores
-   - comments
-   - execution state
+   Existing Runtime KR configuration is synchronized from
+   Member OKRs, but progress, scores, and comments are not
+   overwritten by this configuration update.
 
-   Hidden Member Objectives:
-   - remain in the persistent Member OKR domain
-   - remain available for recovery
-   - are not added to newly initialized months
-   - do not modify the visibility state of their Key Results
-
-   Hidden Member Key Results:
-   - remain in the persistent Member OKR domain
-   - remain available to historical Runtime snapshots
-   - are not added to newly initialized months
-   - can return to future months when activated
-
-   The Performance Builder is intentionally not involved in
-   creating employee-specific Runtime content.
+   IMPORTANT:
+   Configuration synchronization must only be invoked for
+   the active month's Runtime instance. Historical snapshots
+   must retain their original configuration.
 ========================================================== */
 
 export async function initializeMemberPerformanceInstance(
@@ -82,10 +66,15 @@ export async function initializeMemberPerformanceInstance(
   );
 
   const keyResultBySourceId = new Map(
-    existingKeyResults.map((keyResult) => [
-      keyResult.sourceKeyResultId,
-      keyResult,
-    ])
+    existingKeyResults
+      .filter(
+        (keyResult) =>
+          keyResult.sourceKeyResultId
+      )
+      .map((keyResult) => [
+        keyResult.sourceKeyResultId!,
+        keyResult,
+      ])
   );
 
   const progressBySourceKeyResultId = new Map(
@@ -104,76 +93,35 @@ export async function initializeMemberPerformanceInstance(
   ) {
     const objective = objectives[objectivePosition];
 
-    /*
-    ----------------------------------------------------------
-    Only active Member Objectives participate in a new
-    Runtime snapshot.
-
-    Hidden Objectives remain in the persistent Member OKR
-    domain but are intentionally excluded from new months.
-
-    This does not modify the Objective or the visibility state
-    of any Key Results belonging to the Objective.
-    ----------------------------------------------------------
-    */
-
     if (objective.isHidden) {
       continue;
     }
 
-    /*
-    ----------------------------------------------------------
-    Only active Member Key Results participate in a new
-    Runtime snapshot.
-
-    Hidden Key Results remain in the persistent Member OKR
-    domain but are intentionally excluded from new months.
-    ----------------------------------------------------------
-    */
-
     const activeKeyResults =
       objective.keyResults.filter(
-        (keyResult) =>
-          !keyResult.isHidden
+        (keyResult) => !keyResult.isHidden
       );
-
-    /*
-    ----------------------------------------------------------
-    If this Objective contains no active Key Results, there is
-    nothing to initialize for this monthly Runtime snapshot.
-
-    This prevents an Objective containing only hidden Key
-    Results from being created as an empty Runtime Objective.
-    ----------------------------------------------------------
-    */
 
     if (activeKeyResults.length === 0) {
       continue;
     }
 
     let instanceObjective =
-      objectiveBySourceId.get(
-        objective.id
-      );
+      objectiveBySourceId.get(objective.id);
 
     if (!instanceObjective) {
       instanceObjective =
         await createPerformanceInstanceObjective({
           performanceInstanceId:
             performanceInstance.id,
-
           sourceObjectiveId:
             objective.id,
-
           title:
             objective.title,
-
           description:
             objective.description,
-
           weight:
             objective.weight,
-
           position:
             objectivePosition,
         });
@@ -190,45 +138,30 @@ export async function initializeMemberPerformanceInstance(
       keyResultPosition++
     ) {
       const keyResult =
-        activeKeyResults[
-          keyResultPosition
-        ];
+        activeKeyResults[keyResultPosition];
 
       let instanceKeyResult =
-        keyResultBySourceId.get(
-          keyResult.id
-        );
+        keyResultBySourceId.get(keyResult.id);
 
       if (!instanceKeyResult) {
         instanceKeyResult =
           await createPerformanceInstanceKeyResult({
             performanceInstanceId:
               performanceInstance.id,
-
             performanceInstanceObjectiveId:
               instanceObjective.id,
-
             sourceKeyResultId:
               keyResult.id,
-
             title:
               keyResult.title,
-
             target:
               keyResult.target,
-
             weight:
               keyResult.weight,
-
             measurementType:
               keyResult.measurementType,
-
             scoringMethod:
-              keyResult.scoringMethod ===
-              "display_only"
-                ? undefined
-                : keyResult.scoringMethod,
-
+              keyResult.scoringMethod,
             position:
               keyResultPosition,
           });
@@ -237,6 +170,43 @@ export async function initializeMemberPerformanceInstance(
           keyResult.id,
           instanceKeyResult
         );
+      } else {
+        const configurationChanged =
+          instanceKeyResult.title !==
+            keyResult.title ||
+          String(instanceKeyResult.target ?? "") !==
+            String(keyResult.target ?? "") ||
+          instanceKeyResult.weight !==
+            keyResult.weight ||
+          instanceKeyResult.measurementType !==
+            keyResult.measurementType ||
+          instanceKeyResult.scoringMethod !==
+            keyResult.scoringMethod;
+
+        if (configurationChanged) {
+          instanceKeyResult =
+            await updatePerformanceInstanceKeyResult({
+              performanceInstanceId:
+                performanceInstance.id,
+              keyResultId:
+                instanceKeyResult.id,
+              title:
+                keyResult.title,
+              target:
+                keyResult.target,
+              weight:
+                keyResult.weight,
+              measurementType:
+                keyResult.measurementType,
+              scoringMethod:
+                keyResult.scoringMethod,
+            });
+
+          keyResultBySourceId.set(
+            keyResult.id,
+            instanceKeyResult
+          );
+        }
       }
 
       const initiatives =
@@ -261,9 +231,7 @@ export async function initializeMemberPerformanceInstance(
         initiativePosition++
       ) {
         const initiative =
-          initiatives[
-            initiativePosition
-          ];
+          initiatives[initiativePosition];
 
         if (
           existingInitiativeIds.has(
@@ -276,13 +244,10 @@ export async function initializeMemberPerformanceInstance(
         await createPerformanceInstanceInitiative({
           performanceInstanceKeyResultId:
             instanceKeyResult.id,
-
           sourceInitiativeId:
             initiative.id,
-
           text:
             initiative.text,
-
           position:
             initiativePosition,
         });
@@ -301,38 +266,27 @@ export async function initializeMemberPerformanceInstance(
         await createKeyResultProgress({
           performanceInstanceId:
             performanceInstance.id,
-
           performanceInstanceKeyResultId:
             instanceKeyResult.id,
-
           objectiveId:
             objective.id,
-
           keyResultId:
             keyResult.id,
-
           currentValue:
             "",
-
           score:
             0,
-
           confidence:
             undefined,
-
           employeeComment:
             undefined,
-
           managerComment:
             undefined,
-
           status:
             "not_started",
         });
 
-      createdProgress.push(
-        progress
-      );
+      createdProgress.push(progress);
     }
   }
 

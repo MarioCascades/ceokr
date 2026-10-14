@@ -100,6 +100,7 @@ import type {
 
 import type {
   PerformanceInstanceKeyResult,
+  PerformanceInstanceKeyResultScoringMethod,
 } from "@/lib/domain/performanceinstancekeyresult";
 
 import type {
@@ -278,10 +279,7 @@ function KeyResultEditor({
   const [
     scoringMethod,
     setScoringMethod,
-  ] = useState<
-    | "percent_into_period"
-    | "percentage_of_target"
-  >(
+  ] = useState<PerformanceInstanceKeyResultScoringMethod>(
     keyResult?.scoringMethod ??
       "percentage_of_target"
   );
@@ -319,12 +317,14 @@ function KeyResultEditor({
       : performanceMonth;
 
   const calculatedScore =
-    calculateRuntimeKeyResultScore(
-      currentValue,
-      target,
-      scoringMethod,
-      normalizedPerformanceMonth
-    );
+    scoringMethod === "display_only"
+      ? 0
+      : calculateRuntimeKeyResultScore(
+          currentValue,
+          target,
+          scoringMethod,
+          normalizedPerformanceMonth
+        );
 
   const [
     isSaving,
@@ -632,9 +632,7 @@ function KeyResultEditor({
             value={scoringMethod}
             onChange={(event) =>
               setScoringMethod(
-                event.target.value as
-                  | "percent_into_period"
-                  | "percentage_of_target"
+                event.target.value as PerformanceInstanceKeyResultScoringMethod
               )
             }
             disabled={isSaving}
@@ -646,6 +644,10 @@ function KeyResultEditor({
 
             <option value="percent_into_period">
               Percent Into Period
+            </option>
+
+            <option value="display_only">
+              Display Only - No Calculation
             </option>
           </select>
         </div>
@@ -1106,21 +1108,27 @@ function KeyResultCard({
                   </p>
 
                   <p className="mt-1 font-medium">
-                    {progress &&
-                    String(
-                      progress.currentValue
-                    ).trim() !== ""
-                      ? calculateRuntimeKeyResultScore(
-                          progress.currentValue,
-                          keyResult.target as
-                            | number
-                            | string,
-                          keyResult.scoringMethod,
-                          performanceMonth.length >= 7
-                            ? performanceMonth.slice(0, 7)
-                            : performanceMonth
-                        )
-                      : "—"}
+                    {keyResult.scoringMethod ===
+                    "display_only"
+                      ? 0
+                      : progress &&
+                        String(
+                          progress.currentValue
+                        ).trim() !== ""
+                        ? calculateRuntimeKeyResultScore(
+                            progress.currentValue,
+                            keyResult.target as
+                              | number
+                              | string,
+                            keyResult.scoringMethod ===
+                              "percent_into_period"
+                              ? "percent_into_period"
+                              : "percentage_of_target",
+                            performanceMonth.length >= 7
+                              ? performanceMonth.slice(0, 7)
+                              : performanceMonth
+                          )
+                        : "—"}
                   </p>
                 </div>
 
@@ -1146,7 +1154,10 @@ function KeyResultCard({
                   {keyResult.scoringMethod ===
                   "percent_into_period"
                     ? "Percent Into Period"
-                    : "Percentage of Target"}
+                    : keyResult.scoringMethod ===
+                        "display_only"
+                      ? "Display Only - No Calculation"
+                      : "Percentage of Target"}
                 </span>
               </div>
             </div>
