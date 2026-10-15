@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-10-13
+**Last Updated:** 2026-10-15
 
 This document tracks intentionally deferred architecture, product
 capabilities, migration work, and future platform work.
@@ -1361,46 +1361,13 @@ PRESENTATION MOCK-UPS / LIVE FUTURE
 
 # Next Development Session
 
-Start from the latest Waypoint 31.
+Resume from the latest Waypoint 33. Review Product North Star, Waypoint 33,
+Platform Decisions, Platform Backlog, and Engineering Process before coding.
 
-Review:
-
-- Product North Star
-- latest Waypoint
-- Platform Decisions
-- Platform Backlog
-
-Continue the existing Runtime Operational Tabs and Custom Tables milestone in
-this order. Work one file at a time, inspect the current source before editing,
-and do not broaden the task into unrelated refactoring.
-
-1. Fix idempotent Custom Table month initialization so an existing
-   table/month record is reused rather than inserted again.
-2. Refactor the Organization Admin Custom Tables page to remove self-service
-   table-definition/column creation and list only tables provisioned for the
-   current tenant.
-3. Add enable/disable controls for provisioned tables and an accurate empty
-   state when no tables exist.
-4. Add the floating assistance panel using the established Custom Reporting
-   panel design and existing contact details.
-5. Update the Organization Admin dashboard: remove only the Reports card from
-   Analytics and add the Custom Tables card. Preserve the Reports route.
-6. Verify Recruitment fields, separate workflow status, editing, ordering,
-   hidden listings, month selection/history, and carry-forward behavior.
-7. Verify Agenda, VA List, and Client Performance (one tab with multiple
-   independently named tables), including persistence and historical months.
-8. Verify that a tenant sees only its own provisioned definitions and data.
-9. Verify production authorization/RLS; do not mark security complete without
-   actual database and access testing.
-10. Confirm existing Member Runtime navigation and Member OKR behavior remain
-    unchanged.
-11. Compile and perform focused browser/database functional tests.
-12. Commit the coherent milestone, update the relevant documentation, and
-    create a subsequent Waypoint when implementation is verified.
-
-Do not treat the SQL migrations being applied as proof that the feature is
-complete. Do not delete Reports functionality, automatically provision tables
-for all tenants, or expose table-definition creation to Organization Admins.
+The current implementation order is recorded in the latest update below.
+Do not treat SQL migrations being applied as proof that the feature is complete.
+Do not delete Reports functionality, automatically provision tables for all
+tenants, or expose table-definition creation to Organization Admins.
 
 ---
 
@@ -1427,11 +1394,26 @@ This section records newer decisions and supersedes any earlier backlog wording 
 
 ### Agenda
 
-**Status: REQUIREMENTS AGREED / IMPLEMENTATION NOT VERIFIED**
+**Status: DETAILED DESIGN CONFIRMED / IMPLEMENTATION NOT VERIFIED**
 
-- Persistent current-state operational list.
-- Save edits to existing records and reload the latest saved state.
-- No monthly snapshots, month selector, or copy-forward.
+Agenda is a shared organization-level agenda/blackboard using the agreed simple, spreadsheet-style layout (clear section headings, table headers, editable cells/fields, and add-row controls where specified), not a generic blank notepad. It has five sections, in this order:
+
+1. **Wins** — two columns; 12 rows by default; users can add rows. The exact column headings must be taken from the agreed source/reference if available; do not invent labels.
+2. **Announcements** — persistent, freely editable text/whiteboard area.
+3. **Rocks** — columns `Rocks`, `Target`, `Current`, `Date`; users can add rows.
+4. **Where I Need Help** — columns `Name`, `Where I Need Help`, `Remarks`; users can add rows.
+5. **Items Carried Over from Last Week** — columns `Item`, `Remarks`; users can add rows.
+
+Required behavior:
+
+- Organization-scoped shared state, persisted in Supabase.
+- All five sections, including announcement text and added rows, reload after refresh, reopening, and sign-in.
+- No month selector, monthly snapshots/history, or copy-forward.
+- Display **Last Updated** using the timestamp of the last successful persisted save. Do not advance it on typing or a failed save; reload the saved timestamp on return.
+- Autosave all changes. Never report a failed save as successful.
+- Use CascadEffects colors: navy `#082550`, blue-gray `#B4C2D1`, light blue `#E9F4F8`, charcoal `#272D2C`, white `#FFFFFF`, coral `#E26D5C` sparingly.
+- Typography direction: Roboto Black, Martel Sans, and Khula, following the existing brand guide/design-system roles.
+- Preserve organization isolation.
 
 ### Client Performance
 
@@ -1451,13 +1433,15 @@ This section records newer decisions and supersedes any earlier backlog wording 
 
 ## Next Work Sequence
 
-1. Review the latest Waypoint 32 before resuming.
-2. Inspect the current Runtime navigation and operational-tab configuration to determine how VA List is currently registered and how tab labels/visibility are resolved.
-3. Inspect the current Custom Tables definition/data model and current implementation touchpoints before choosing the VA Roster persistence model.
-4. Implement VA Roster against the agreed current-state requirements.
-5. Implement or adapt Agenda and Client Performance as current-state lists.
-6. Verify Recruitment's monthly behavior and Cancelled status without regressing existing row editing, ordering, hidden rows, history, or carry-forward.
+Use the latest Waypoint 33 as the resume point.
+
+1. Inspect the current Agenda Runtime route/component, current Custom Tables services/schema, and any existing Agenda operational component. Request and review the actual current full file before proposing changes.
+2. Implement the five-section Agenda exactly as specified above, including Supabase persistence for all sections and a Last Updated timestamp that advances only after a successful save.
+3. Verify Agenda persistence and organization isolation across save, refresh, navigation away/back, and sign-in. Do not claim success until tested.
+4. Inspect Client Performance's current configuration/data model and Runtime integration. Implement multiple independently named tables with persistent current-state data and no monthly selector/history/copy-forward.
+5. Continue the VA Roster requirements from Waypoint 32, including summary metrics, sort/filter, row ordering, and hide/restore behavior. Do not hard-code the adjusted VA formula until the source spreadsheet formula is confirmed.
+6. Verify Recruitment's monthly behavior and Cancelled status without regressing row editing, ordering, hidden rows, history, or carry-forward.
 7. Verify tenant boundaries and production authorization/RLS; do not infer security completion from UI success.
 8. Build and run focused functional tests, then commit the coherent milestone and update documentation.
 
-This update supersedes the older backlog step that described Agenda, VA List, and Client Performance as requiring monthly historical retrieval. Recruitment remains monthly.
+Keep the established one-file-at-a-time workflow: inspect the current full file, return the exact path and complete replacement, and only then move to the next file. Recruitment remains monthly; Agenda and Client Performance are current-state experiences.

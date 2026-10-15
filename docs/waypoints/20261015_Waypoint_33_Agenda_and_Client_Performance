@@ -1,0 +1,206 @@
+# CascadEffects Performance Platform
+
+# Waypoint 33: Agenda and Client Performance Persistence
+
+**Date:** 2026-10-15  
+**Status:** DESIGN CONFIRMED / IMPLEMENTATION PENDING  
+**Previous Waypoint:** Waypoint 32: Runtime Operational Lists and VA Roster Requirements
+
+---
+
+# 1. Purpose
+
+This Waypoint records the next implementation checkpoint for the CascadEffects Performance Platform. It preserves Waypoint 32 as a historical record and adds the detailed Agenda layout confirmed during the October 14–15 discussion.
+
+The repository remains the engineering source of truth. This Waypoint does not claim that the Agenda or Client Performance implementation has been built, tested, committed, or deployed.
+
+---
+
+# 2. Current State and Verified Progress
+
+- Waypoint 32 records that Recruitment's Cancelled workflow status was confirmed by the user to save and remain after refresh.
+- The reusable Custom Tables foundation and permission migration were previously reported as applied in Supabase. This does not establish that all Custom Tables workflows, production authorization, or RLS are complete.
+- The Runtime performance initialization issue was reported by the user as resolved when the Runtime page loaded successfully. Do not infer broader tenant safety from that result without verification.
+- Agenda and Client Performance remain implementation/verification work.
+- No current source file, fresh build, focused database test, Git commit, or clean working tree was verified as part of creating this checkpoint.
+
+---
+
+# 3. Agenda: Confirmed Layout and Behavior
+
+Agenda is a shared, organization-scoped, persistent current-state agenda/blackboard. It should use the simple, familiar spreadsheet-style layout discussed for this feature, rather than a complicated dashboard or a generic blank notepad. It is not a monthly worksheet.
+
+Display **Last Updated** at the top. It must show the date/time of the last successful Supabase save and must not advance merely because the user typed or a save was attempted. The display must reflect persisted state after the page is reopened or refreshed.
+
+The five sections must appear in this order:
+
+## 3.1 Wins
+
+- Two columns.
+- Twelve rows by default.
+- Users can add rows.
+- The exact business column headings are not established in this checkpoint. Use the existing agreed source/reference if available; do not invent headings.
+
+## 3.2 Announcements
+
+- Persistent, freely editable text/whiteboard area.
+- Content must be saved and restored with the rest of the Agenda.
+
+## 3.3 Rocks
+
+Columns:
+
+- Rocks
+- Target
+- Current
+- Date
+
+Users can add rows.
+
+## 3.4 Where I Need Help
+
+Columns:
+
+- Name
+- Where I Need Help
+- Remarks
+
+Users can add rows.
+
+## 3.5 Items Carried Over from Last Week
+
+Columns:
+
+- Item
+- Remarks
+
+Users can add rows.
+
+## 3.6 Agenda Persistence Rules
+
+- Persist all five sections, row content, added rows, and announcement text in Supabase.
+- Scope all data to the owning Organization.
+- Authorized users must see the shared latest state across refreshes, revisits, and sign-ins.
+- No month selector, monthly snapshots, monthly history, or copy-forward. This is a deliberate correction to the earlier October 8 discussion that had described a monthly Agenda; the later October 14 decision supersedes that earlier proposal.
+- Update Last Updated only after a successful save.
+- Apply CascadEffects visual tokens: navy `#082550`, blue-gray `#B4C2D1`, light blue `#E9F4F8`, charcoal `#272D2C`, white `#FFFFFF`, and coral `#E26D5C` used sparingly.
+- Brand typography direction: Roboto Black, Martel Sans, and Khula. Follow the existing CascadEffects brand guide/design-system usage rather than applying every font indiscriminately.
+- Keep the layout clean and spreadsheet-like, with visible section headings, table headers, editable cells/fields, and add-row affordances where specified. Do not replace the agreed structured sections with a single generic textarea.
+- Autosave is required. A save failure must not be represented as a successful save; Last Updated must remain at the last confirmed successful persisted save. Provide an appropriate visible saving/error state if the existing interaction patterns support it, without inventing a new persistence model.
+
+---
+
+# 4. Client Performance: Confirmed Behavior
+
+Client Performance is one Runtime tab that may contain multiple independently named tables.
+
+- It is persistent current-state operational data.
+- It has no month selector, monthly snapshots/history, or copy-forward.
+- Save edits to existing records and reload the latest saved state when users return.
+- Reuse the existing Custom Tables infrastructure where appropriate.
+- Preserve tenant isolation and authorization boundaries.
+- Do not force Recruitment's monthly data model onto Client Performance.
+
+---
+
+# 5. Related Operational Experiences
+
+## Recruitment
+
+Recruitment remains monthly. Preserve month selection, historical records, carry-forward behavior, editable rows, ordering, hidden rows, and the separate workflow status. The supported workflow states recorded in Waypoint 32 are In Progress, On Hold, Completed, and Cancelled. Cancelled persistence was reported as working; regression testing is still required.
+
+## VA Roster
+
+Waypoint 32 remains the detailed source for VA Roster requirements. It replaces the user-facing VA List label with VA Roster and specifies summary metrics, a Last Updated value, columns, sorting/filtering, row ordering, and hide/restore behavior. It is persistent current-state data, not a monthly worksheet. The adjusted VA calculation must not be hard-coded until the original spreadsheet formula is confirmed.
+
+---
+
+# 6. Historical Requirement Clarification
+
+The October 8 initial discussion described Agenda as a monthly editable notepad with separate monthly history. That proposal was explicitly superseded by the October 14 detailed design: Agenda is now a continuously maintained shared current-state workspace with no month selector, snapshots, monthly history, or copy-forward. Do not reintroduce the earlier monthly model.
+
+The confirmed section order, column labels, default Wins row count, add-row behaviors, visual direction, shared Supabase persistence, and Last Updated semantics in this Waypoint are the implementation requirements. The only unresolved visual/data detail is the exact heading text for the two Wins columns; consult any existing reference/source if available and do not guess.
+
+---
+
+# 7. Architecture and Safety Guardrails
+
+- Reuse established Custom Tables capabilities where appropriate; do not create an unnecessary parallel persistence system.
+- Preserve Member OKR ownership, Builder composition, Runtime monthly performance execution/history, and existing navigation except for explicitly agreed operational-tab behavior.
+- Preserve organization scoping and database integrity.
+- Do not claim production authorization/RLS is complete without actual database and access testing.
+- Keep Runtime tab enable/hide controls distinct from hiding individual table rows.
+- Do not delete historical Waypoints or represent unverified work as complete.
+
+---
+
+# 8. Exact Next Session Workflow
+
+Follow the existing one-file-at-a-time workflow.
+
+1. Review the Product North Star, this Waypoint, Platform Decisions, Platform Backlog, and Engineering Process.
+2. Ask for and inspect the actual current full Agenda-related source file(s), starting with the Runtime route/navigation registration and the current Agenda operational workspace/component. Do not reconstruct files from memory or edit before reviewing the current version.
+3. Inspect the current Custom Tables schema, services, repositories, and any relevant migrations before deciding whether to extend the existing model or add a narrowly scoped persistence structure.
+4. Implement Agenda first, preserving all five sections and their specified row behavior. Verify successful-save timestamp semantics.
+5. Test shared organization-scoped persistence across save, refresh, navigation away/back, and sign-in.
+6. Implement/verify Client Performance as one tab with multiple independently named tables and current-state persistence.
+7. Continue VA Roster requirements and verify Recruitment regressions without disturbing monthly history/carry-forward.
+8. Run the build and focused functional/database checks. Record the results accurately.
+9. Commit only after the coherent milestone is verified; then update the documents and create a later completion Waypoint.
+
+For every code change, inspect the current file first and return the exact path with the complete replacement file. Proceed to the next file only after the user has had the opportunity to apply the current replacement and run their build.
+
+---
+
+# 9. Documentation Status
+
+Updated for this checkpoint:
+
+- `01_Platform_Decisions.md` — detailed Agenda layout, persistence, timestamp, and Client Performance rules.
+- `02_Platform_Backlog.md` — detailed Agenda requirements and corrected next-work sequence.
+
+Reviewed and intentionally unchanged:
+
+- `03_Product_North_Star.md` — the detailed layout does not change the product North Star or core domain boundaries.
+- `00_Engineering_Process.md` — the established one-file-at-a-time workflow and checkpoint rules already cover this work.
+
+Waypoint 32 remains historical and must not be overwritten.
+
+---
+
+# 10. Milestone Status
+
+```text
+Agenda layout and behavior
+    DESIGN CONFIRMED / IMPLEMENTATION NOT VERIFIED
+
+Agenda Supabase persistence
+    IMPLEMENTATION / FUNCTIONAL VERIFICATION PENDING
+
+Agenda Last Updated semantics
+    REQUIRED / IMPLEMENTATION NOT VERIFIED
+
+Client Performance multiple named tables
+    REQUIREMENTS CONFIRMED / IMPLEMENTATION NOT VERIFIED
+
+VA Roster
+    REQUIREMENTS CONFIRMED / IMPLEMENTATION NOT VERIFIED
+
+Recruitment monthly workflow
+    EXISTING WORKFLOW / REGRESSION TESTING REQUIRED
+
+Recruitment Cancelled status
+    USER CONFIRMED WORKING AFTER SAVE AND REFRESH
+
+Organization Admin Custom Tables experience
+    IMPLEMENTATION / VERIFICATION REQUIRED
+
+Production authorization/RLS
+    OUTSTANDING UNTIL TESTED
+```
+
+---
+
+# 11. Resume Rule
+
+> Start with Agenda. Preserve the five agreed sections in order: Wins, Announcements, Rocks, Where I Need Help, and Items Carried Over from Last Week. Wins has two columns and 12 default rows; the other table sections use their explicitly listed columns and support adding rows. Persist all Agenda content in Supabase as shared organization-level current state, with no monthly history or copy-forward. Last Updated changes only after a successful save. Inspect the actual current source, work one file at a time, and do not claim implementation is complete until verified.

@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-10-13
+**Last Updated:** 2026-10-15
 
 This document records architectural decisions that have been intentionally
 adopted for the CascadEffects Performance Platform.
@@ -1221,11 +1221,33 @@ The apparent Adjusted VA Number calculation is total weekly hours divided by 40 
 
 The VA Roster tab itself must support the existing Runtime show/enable and hide/disable configuration behavior. Hiding the tab is distinct from hiding an individual VA row.
 
-## Agenda and Client Performance
+## Agenda
 
-Agenda and Client Performance are also persistent current-state operational experiences, with no monthly historical snapshots, month selectors, or copy-forward. Save edits to their existing records and load the latest saved state when the user returns.
+Agenda is a shared, organization-scoped, persistent current-state operational workspace. It should use the simple, familiar spreadsheet-style layout agreed for this feature, with clear section headings, table headers, editable cells/fields, and add-row affordances. It is not a generic blank notepad. It is a structured agenda/blackboard with these five sections in this order:
 
-Client Performance remains one Runtime tab that can contain multiple independently named tables. Reuse the shared Custom Tables infrastructure where appropriate, but do not force Recruitment's monthly model onto these current-state lists.
+1. **Wins** — two columns, 12 rows by default, with the ability to add rows. The exact business column headings must follow the existing agreed UI/source reference if available; do not invent headings.
+2. **Announcements** — a persistent, freely editable text/whiteboard area.
+3. **Rocks** — columns: `Rocks`, `Target`, `Current`, `Date`; users can add rows.
+4. **Where I Need Help** — columns: `Name`, `Where I Need Help`, `Remarks`; users can add rows.
+5. **Items Carried Over from Last Week** — columns: `Item`, `Remarks`; users can add rows.
+
+The Agenda has no month selector, monthly snapshots, monthly history, or copy-forward. It continuously maintains the latest shared organization state. All five sections, including free-text announcements and added rows, must persist in Supabase and reload for authorized organization users across refreshes, visits, and sign-ins.
+
+Show a **Last Updated** date/time. Update it only after the corresponding Supabase save succeeds; it must represent the last successful persisted update, not a client-side typing time or an attempted save. Reload the persisted timestamp and content after refresh/reopening/sign-in. Autosave is required, and a failed save must not be presented as successful.
+
+Use the CascadEffects design system and preserve organization tenant boundaries. Color tokens: navy `#082550`, blue-gray `#B4C2D1`, light blue `#E9F4F8`, charcoal `#272D2C`, white `#FFFFFF`, and coral `#E26D5C` used sparingly. Typography direction: Roboto Black, Martel Sans, and Khula, applied according to the existing brand guide/design-system roles.
+
+**Historical clarification:** An earlier October 8 proposal described Agenda as monthly with history. The later detailed decision from October 14 supersedes that proposal. Agenda is current-state only and must not have a month selector, monthly snapshots/history, or copy-forward.
+
+## Client Performance
+
+Client Performance is a persistent current-state operational experience. It has no month selector, monthly snapshots, monthly history, or copy-forward. Save edits to existing records and reload the latest saved state when users return.
+
+Client Performance remains one Runtime tab that can contain multiple independently named tables. Retain the monthly history requirement only for workflows explicitly designed as monthly, such as Recruitment; do not force that model onto Agenda or Client Performance. Reuse the shared Custom Tables infrastructure where appropriate.
+
+## Scope Guardrail
+
+These decisions do not change Member OKR ownership, Builder composition, Runtime performance-history architecture, tenant boundaries, or the requirement for production authorization/RLS verification. They define the persistence and interaction behavior of these operational lists only.
 
 ## Scope Guardrail
 
