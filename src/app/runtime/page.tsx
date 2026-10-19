@@ -1,4 +1,3 @@
-
 import type { CSSProperties } from "react";
 
 import PerformanceSheet from "@/components/runtime/performancesheet/performancesheet";
@@ -434,7 +433,7 @@ export default async function RuntimePage({
           mx-auto
           min-h-screen
           w-full
-          max-w-[1500px]
+          max-w-none
           space-y-8
           px-4
           py-6
@@ -448,11 +447,17 @@ export default async function RuntimePage({
           visible={canReturnToOrgAdmin}
         />
 
-        <RuntimeNavigation
-          {...runtimeNavigationProps}
-          selectedSubjectId={params.subjectId}
-          selectedRuntimeTab={resolvedRuntimeTabKey}
-        />
+        <div
+          className={`sticky ${
+            canReturnToOrgAdmin ? "top-[61px]" : "top-0"
+          } z-40`}
+        >
+          <RuntimeNavigation
+            {...runtimeNavigationProps}
+            selectedSubjectId={params.subjectId}
+            selectedRuntimeTab={resolvedRuntimeTabKey}
+          />
+        </div>
 
         <section className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">
