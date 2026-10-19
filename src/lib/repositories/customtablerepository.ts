@@ -142,7 +142,14 @@ function mapDefinition(
     description: record.description,
     runtimeTabKey: record.runtime_tab_key,
     isEnabled: record.is_enabled,
-    persistenceMode: record.persistence_mode ?? "monthly",
+    persistenceMode:
+      record.persistence_mode === "current_state" ||
+      persistenceModeForTableKey(
+        record.table_key,
+        record.runtime_tab_key
+      ) === "current_state"
+        ? "current_state"
+        : "monthly",
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };
@@ -339,28 +346,36 @@ export async function findCustomTableDefinitionByKey(
 }
 
 /**
- * Resolve persistence from the trusted stable table key.
+ * Resolve persistence from the trusted stable table key or
+ * its assigned Runtime tab key.
  *
  * The persistence mode is platform-defined, not user-configurable.
  * Runtime operational tables keep current-state data, while
  * Recruitment and other custom tables retain monthly behavior.
  */
 function persistenceModeForTableKey(
-  tableKey: string
+  tableKey: string,
+  runtimeTabKey?: string | null
 ): CustomTablePersistenceMode {
-  const normalizedKey = tableKey.trim().toLowerCase();
+  const normalizedTableKey = tableKey.trim().toLowerCase();
+  const normalizedRuntimeTabKey =
+    runtimeTabKey?.trim().toLowerCase() ?? "";
 
-  switch (normalizedKey) {
-    case "va-list":
-    case "va-roster":
-    case "agenda":
-    case "client-performance":
-      return "current_state";
+  const currentStateKeys = new Set([
+    "va-list",
+    "va-roster",
+    "agenda",
+    "client-performance",
+  ]);
 
-    case "recruitment":
-    default:
-      return "monthly";
+  if (
+    currentStateKeys.has(normalizedTableKey) ||
+    currentStateKeys.has(normalizedRuntimeTabKey)
+  ) {
+    return "current_state";
   }
+
+  return "monthly";
 }
 
 /**
@@ -369,14 +384,17 @@ function persistenceModeForTableKey(
  * Permission checks must be performed by the calling
  * service before this operation is exposed to a user.
  *
- * Persistence mode is derived from the stable table key and
- * is never accepted as a client-supplied setting.
+ * Persistence mode is derived from the table key and assigned
+ * Runtime tab key, never from a client-supplied setting.
  */
 export async function createCustomTableDefinition(
   input: CreateCustomTableDefinitionInput
 ): Promise<CustomTableDefinition> {
   const supabase = supabaseAdmin;
-  const persistenceMode = persistenceModeForTableKey(input.tableKey);
+  const persistenceMode = persistenceModeForTableKey(
+    input.tableKey,
+    input.runtimeTabKey
+  );
 
   const { data, error } = await supabase
     .from("custom_table_definitions")
@@ -403,7 +421,7 @@ export async function createCustomTableDefinition(
 
 /**
  * Update a definition without changing its stable table key
- * or persistence mode.
+ * or stored persistence mode.
  */
 export async function updateCustomTableDefinition(
   organizationId: string,

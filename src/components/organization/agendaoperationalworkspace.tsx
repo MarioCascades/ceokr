@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import {
@@ -81,11 +81,13 @@ function createId(prefix: string, index: number): string {
 
 function createEmptyBoard(): AgendaBoard {
   return {
-    wins: Array.from({ length: 12 }, (_, index) => ({
-      id: `win-default-${index + 1}`,
-      win: "",
-      assignedTo: "",
-    })),
+    wins: [
+      {
+        id: "win-default-1",
+        win: "",
+        assignedTo: "",
+      },
+    ],
     announcements: "",
     rocks: [],
     help: [],
@@ -109,26 +111,28 @@ function parseBoard(value: unknown): AgendaBoard | null {
   const wins = Array.isArray(value.wins) ? value.wins : [];
   const rocks = Array.isArray(value.rocks) ? value.rocks : [];
   const help = Array.isArray(value.help) ? value.help : [];
-  const carryOver = Array.isArray(value.carryOver) ? value.carryOver : [];
+  const carryOver = Array.isArray(value.carryOver)
+    ? value.carryOver
+    : [];
 
+  // Remove the old default blank rows from the display.
+  // Preserve every Win row that contains a Win or an assignee.
   const normalizedWins: AgendaWin[] = wins
     .filter(isObject)
     .map((item, index) => ({
       id: asText(item.id) || `win-loaded-${index + 1}`,
       win: asText(item.win),
       assignedTo: asText(item.assignedTo),
-    }));
+    }))
+    .filter(
+      (item) =>
+        item.win.trim() !== "" || item.assignedTo.trim() !== ""
+    );
 
-  while (normalizedWins.length < 12) {
-    const index = normalizedWins.length + 1;
-    let id = `win-padding-${index}`;
-
-    while (normalizedWins.some((win) => win.id === id)) {
-      id = `win-padding-${index}-${normalizedWins.length + 1}`;
-    }
-
+  // Always display one blank row when there are no actual Wins.
+  if (normalizedWins.length === 0) {
     normalizedWins.push({
-      id,
+      id: "win-default-1",
       win: "",
       assignedTo: "",
     });
@@ -202,7 +206,7 @@ function SectionHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-3 border-b border-[#B4C2D1]/60 bg-[#F7F9FB] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2 border-b border-[#B4C2D1]/60 bg-[#F7F9FB] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h3 className="text-sm font-black uppercase tracking-wide text-[#082550]">
           {title}
@@ -218,14 +222,6 @@ function SectionHeader({
   );
 }
 
-function FieldLabel({ children }: { children: ReactNode }) {
-  return (
-    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#082550]/75">
-      {children}
-    </label>
-  );
-}
-
 export default function AgendaOperationalWorkspace({
   organizationId,
   tableDefinitionId,
@@ -238,16 +234,30 @@ export default function AgendaOperationalWorkspace({
     [initialRows]
   );
 
-  const [board, setBoard] = useState<AgendaBoard>(() =>
-    getBoardFromRow(savedRecord)
-  );
-  const [savedRow, setSavedRow] = useState<OperationalRow | undefined>(
-    savedRecord
-  );
+  const initialBoard = getBoardFromRow(savedRecord);
+  const [board, setBoard] = useState<AgendaBoard>(initialBoard);
+  const boardRef = useRef<AgendaBoard>(initialBoard);
+  boardRef.current = board;
+
+  const savedRowRef = useRef<OperationalRow | undefined>(savedRecord);
+  const persistedBoardRef = useRef<string>(JSON.stringify(initialBoard));
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const pendingSnapshotRef = useRef<{
+    board: AgendaBoard;
+    json: string;
+  } | null>(null);
+
+  const mountedRef = useRef(false);
+
   const [lastUpdated, setLastUpdated] = useState<string | null>(
     savedRecord?.updatedAt ?? null
   );
-  const [busy, setBusy] = useState(false);
+  const [reloading, setReloading] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "pending" | "saving" | "saved" | "error"
+  >(savedRecord ? "saved" : "idle");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -311,30 +321,40 @@ export default function AgendaOperationalWorkspace({
     );
   }
 
-  async function handleSave() {
-    if (!canEditRows || busy) {
+  async function persistBoardSnapshot(
+    snapshotBoard: AgendaBoard,
+    snapshotJson: string
+  ) {
+    if (snapshotJson === persistedBoardRef.current) {
+      if (
+        mountedRef.current &&
+        JSON.stringify(boardRef.current) === snapshotJson
+      ) {
+        setSaveStatus("saved");
+      }
       return;
     }
 
-    setBusy(true);
-    setError("");
-    setNotice("");
+    if (mountedRef.current) {
+      setSaveStatus("saving");
+      setError("");
+    }
 
     try {
       const rowData: Record<string, unknown> = {
         [BOARD_KEY]: true,
-        board,
+        board: snapshotBoard,
       };
 
       let result: OperationalRow;
+      const currentSavedRow = savedRowRef.current;
 
-      if (savedRow) {
+      if (currentSavedRow) {
         const input: EditRowInput = { rowData };
-
         result = await editCustomTableOperationalRowAction(
           organizationId,
           tableDefinitionId,
-          savedRow.id,
+          currentSavedRow.id,
           input
         );
       } else {
@@ -346,30 +366,118 @@ export default function AgendaOperationalWorkspace({
           isHidden: false,
           position: initialRows.length,
         };
-
         result = await addCustomTableOperationalRowAction(input);
       }
 
-      setSavedRow(result);
-      setLastUpdated(result.updatedAt);
-      setNotice("Agenda saved successfully.");
+      savedRowRef.current = result;
+      persistedBoardRef.current = snapshotJson;
+
+      if (mountedRef.current) {
+        setLastUpdated(result.updatedAt);
+
+        const latestBoardJson = JSON.stringify(boardRef.current);
+
+        if (latestBoardJson === snapshotJson) {
+          setSaveStatus("saved");
+          setNotice("All Agenda changes are saved.");
+        } else {
+          setSaveStatus("pending");
+          setNotice("");
+        }
+      }
     } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Agenda could not be saved."
-      );
-    } finally {
-      setBusy(false);
+      if (mountedRef.current) {
+        setSaveStatus("error");
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Agenda could not be saved. Your latest changes remain on screen."
+        );
+        setNotice("");
+      }
     }
   }
 
-  async function handleRefresh() {
-    if (busy) {
+  function queueBoardSave(snapshotBoard: AgendaBoard) {
+    const snapshotJson = JSON.stringify(snapshotBoard);
+
+    saveQueueRef.current = saveQueueRef.current.then(async () => {
+      await persistBoardSnapshot(snapshotBoard, snapshotJson);
+    });
+  }
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+
+      const pendingSnapshot = pendingSnapshotRef.current;
+      pendingSnapshotRef.current = null;
+
+      if (pendingSnapshot && canEditRows) {
+        queueBoardSave(pendingSnapshot.board);
+      }
+    };
+  }, [canEditRows]);
+
+  useEffect(() => {
+    if (!canEditRows || reloading) {
+      pendingSnapshotRef.current = null;
       return;
     }
 
-    setBusy(true);
+    const snapshotBoard = board;
+    const snapshotJson = JSON.stringify(snapshotBoard);
+
+    if (snapshotJson === persistedBoardRef.current) {
+      pendingSnapshotRef.current = null;
+      return;
+    }
+
+    pendingSnapshotRef.current = {
+      board: snapshotBoard,
+      json: snapshotJson,
+    };
+
+    setSaveStatus("pending");
+    setError("");
+    setNotice("");
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = setTimeout(() => {
+      const pendingSnapshot = pendingSnapshotRef.current;
+      saveTimerRef.current = null;
+
+      if (pendingSnapshot?.json === snapshotJson) {
+        pendingSnapshotRef.current = null;
+      }
+
+      queueBoardSave(snapshotBoard);
+    }, 700);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
+  }, [board, canEditRows, reloading]);
+
+  async function handleRefresh() {
+    if (
+      reloading ||
+      saveStatus === "pending" ||
+      saveStatus === "saving" ||
+      saveStatus === "error"
+    ) {
+      return;
+    }
+
+    setReloading(true);
     setError("");
     setNotice("");
 
@@ -379,10 +487,13 @@ export default function AgendaOperationalWorkspace({
         tableDefinitionId
       );
       const record = findSavedBoard(rows);
+      const nextBoard = getBoardFromRow(record);
 
-      setSavedRow(record);
-      setBoard(getBoardFromRow(record));
+      savedRowRef.current = record;
+      persistedBoardRef.current = JSON.stringify(nextBoard);
+      setBoard(nextBoard);
       setLastUpdated(record?.updatedAt ?? null);
+      setSaveStatus(record ? "saved" : "idle");
       setNotice("Agenda reloaded from saved data.");
     } catch (caughtError) {
       setError(
@@ -391,8 +502,26 @@ export default function AgendaOperationalWorkspace({
           : "Agenda could not be reloaded."
       );
     } finally {
-      setBusy(false);
+      setReloading(false);
     }
+  }
+
+  function retrySave() {
+    if (!canEditRows || saveStatus === "saving" || reloading) {
+      return;
+    }
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+
+    pendingSnapshotRef.current = null;
+
+    setError("");
+    setNotice("");
+    setSaveStatus("pending");
+    queueBoardSave(boardRef.current);
   }
 
   function addWin() {
@@ -445,56 +574,84 @@ export default function AgendaOperationalWorkspace({
   const addButton = (label: string, onClick: () => void) => (
     <button
       type="button"
-      disabled={!canEditRows || busy}
+      disabled={!canEditRows || reloading}
       onClick={onClick}
-      className="inline-flex items-center justify-center rounded-lg border border-[#082550] bg-white px-3 py-2 text-xs font-semibold text-[#082550] transition hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-40"
+      className="inline-flex items-center justify-center rounded-lg border border-[#082550] bg-white px-3 py-1.5 text-xs font-semibold text-[#082550] transition hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-40"
     >
       + {label}
     </button>
   );
 
   return (
-    <section className="space-y-5 text-[#272D2C]">
+    <section className="space-y-3 text-[#272D2C]">
       <div className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
         <div className="h-1.5 bg-[#082550]" />
 
-        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E26D5C]">
               Persistent Operational Workspace
             </p>
-            <h2 className="mt-2 text-xl font-black uppercase tracking-tight text-[#082550] sm:text-2xl">
+            <h2 className="mt-1 text-xl font-black uppercase tracking-tight text-[#082550] sm:text-2xl">
               {tableName || "Agenda"}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-gray-600">
+            <p className="mt-1 text-sm leading-5 text-gray-600">
               One shared Agenda board. Changes are saved to the current board
               and are not tied to a performance month.
             </p>
-            <p className="mt-3 text-xs text-gray-600">
+            <p className="mt-2 text-xs text-gray-600">
               <span className="font-bold text-[#082550]">Last Updated:</span>{" "}
               {formatDateTime(lastUpdated)}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`text-xs font-semibold ${
+                saveStatus === "error"
+                  ? "text-red-700"
+                  : saveStatus === "saved"
+                    ? "text-emerald-700"
+                    : "text-[#082550]"
+              }`}
+              role="status"
+              aria-live="polite"
+            >
+              {saveStatus === "pending"
+                ? "Changes pending..."
+                : saveStatus === "saving"
+                  ? "Saving changes..."
+                  : saveStatus === "saved"
+                    ? "All changes saved"
+                    : saveStatus === "error"
+                      ? "Save failed"
+                      : "Changes save automatically"}
+            </span>
+
+            {saveStatus === "error" && canEditRows && (
+              <button
+                type="button"
+                disabled={reloading}
+                onClick={retrySave}
+                className="inline-flex items-center justify-center rounded-lg border border-[#E26D5C] bg-white px-3 py-1.5 text-xs font-semibold text-[#082550] transition hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Retry Save
+              </button>
+            )}
+
             <button
               type="button"
-              disabled={busy}
+              disabled={
+                reloading ||
+                saveStatus === "pending" ||
+                saveStatus === "saving" ||
+                saveStatus === "error"
+              }
               onClick={() => void handleRefresh()}
               className={`${BUTTON_CLASS} border-[#B4C2D1] bg-white text-[#082550]`}
             >
-              Reload Saved Board
+              {reloading ? "Reloading..." : "Reload Saved Board"}
             </button>
-            {canEditRows && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void handleSave()}
-                className="inline-flex items-center justify-center rounded-lg border border-[#082550] bg-[#082550] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#12396C] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {busy ? "Saving..." : "Save Agenda"}
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -502,7 +659,7 @@ export default function AgendaOperationalWorkspace({
       {error && (
         <div
           role="alert"
-          className="rounded-xl border border-red-200 bg-red-50 p-4"
+          className="rounded-xl border border-red-200 bg-red-50 p-3"
         >
           <p className="text-sm font-bold text-red-800">
             The operation could not be completed
@@ -514,14 +671,14 @@ export default function AgendaOperationalWorkspace({
       {notice && !error && (
         <div
           role="status"
-          className="rounded-xl border border-[#B4C2D1] bg-[#E9F4F8] px-4 py-3"
+          className="rounded-xl border border-[#B4C2D1] bg-[#E9F4F8] px-3 py-2"
         >
           <p className="text-sm font-medium text-[#082550]">{notice}</p>
         </div>
       )}
 
       {!canEditRows && (
-        <p className="rounded-xl border border-[#B4C2D1]/70 bg-white p-4 text-sm text-gray-600">
+        <p className="rounded-xl border border-[#B4C2D1]/70 bg-white p-3 text-sm text-gray-600">
           You have read-only access to this Agenda.
         </p>
       )}
@@ -532,45 +689,50 @@ export default function AgendaOperationalWorkspace({
           description="Record wins and assign ownership."
           action={addButton("Add Win", addWin)}
         />
+
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-left text-sm">
             <thead className="bg-[#082550] text-white">
               <tr>
-                <th className="w-14 px-4 py-3 text-xs">#</th>
-                <th className="px-4 py-3 text-xs">Wins</th>
-                <th className="w-64 px-4 py-3 text-xs">Assigned To</th>
+                <th className="w-12 px-3 py-2 text-xs">#</th>
+                <th className="px-3 py-2 text-xs">Wins</th>
+                <th className="w-64 px-3 py-2 text-xs">Assigned To</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-[#B4C2D1]/50">
               {board.wins.map((row, index) => (
                 <tr
                   key={row.id}
                   className={index % 2 ? "bg-[#F7F9FB]" : ""}
                 >
-                  <td className="px-4 py-2 text-xs text-gray-500">
+                  <td className="px-3 py-1.5 text-xs text-gray-500">
                     {index + 1}
                   </td>
-                  <td className="px-3 py-2">
-                    <textarea
+
+                  <td className="px-2 py-1.5">
+                    <input
                       aria-label={`Win ${index + 1}`}
-                      rows={1}
-                      disabled={!canEditRows || busy}
+                      type="text"
+                      disabled={!canEditRows || reloading}
                       value={row.win}
                       onChange={(event) =>
                         updateWin(row.id, "win", event.target.value)
                       }
-                      className={`${INPUT_CLASS} min-h-10 resize-y`}
+                      className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
-                  <td className="px-3 py-2">
+
+                  <td className="px-2 py-1.5">
                     <input
                       aria-label={`Assigned to for win ${index + 1}`}
-                      disabled={!canEditRows || busy}
+                      type="text"
+                      disabled={!canEditRows || reloading}
                       value={row.assignedTo}
                       onChange={(event) =>
                         updateWin(row.id, "assignedTo", event.target.value)
                       }
-                      className={INPUT_CLASS}
+                      className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
                 </tr>
@@ -585,17 +747,18 @@ export default function AgendaOperationalWorkspace({
           title="Announcements"
           description="Free-type shared announcements and important updates."
         />
-        <div className="p-5">
+
+        <div className="p-3 sm:p-4">
           <textarea
             aria-label="Announcements"
-            rows={5}
-            disabled={!canEditRows || busy}
+            rows={4}
+            disabled={!canEditRows || reloading}
             value={board.announcements}
             onChange={(event) =>
               updateBoard("announcements", event.target.value)
             }
             placeholder="Enter announcements here..."
-            className={`${INPUT_CLASS} min-h-32 resize-y`}
+            className={`${INPUT_CLASS} min-h-24 resize-y`}
           />
         </div>
       </section>
@@ -606,74 +769,80 @@ export default function AgendaOperationalWorkspace({
           description="Track each Rock against its target, current status, and date."
           action={addButton("Add Rock", addRock)}
         />
+
         <div className="overflow-x-auto">
           <table className="w-full min-w-[850px] border-collapse text-left text-sm">
             <thead className="bg-[#082550] text-white">
               <tr>
-                <th className="px-4 py-3 text-xs">Rocks</th>
-                <th className="px-4 py-3 text-xs">Target</th>
-                <th className="px-4 py-3 text-xs">Current</th>
-                <th className="w-44 px-4 py-3 text-xs">Date</th>
+                <th className="px-3 py-2 text-xs">Rocks</th>
+                <th className="px-3 py-2 text-xs">Target</th>
+                <th className="px-3 py-2 text-xs">Current</th>
+                <th className="w-44 px-3 py-2 text-xs">Date</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-[#B4C2D1]/50">
               {board.rocks.map((row) => (
                 <tr key={row.id}>
-                  <td className="px-3 py-2">
-                    <textarea
+                  <td className="px-2 py-1.5">
+                    <input
                       aria-label="Rock"
-                      rows={1}
-                      disabled={!canEditRows || busy}
+                      type="text"
+                      disabled={!canEditRows || reloading}
                       value={row.rock}
                       onChange={(event) =>
                         updateRock(row.id, "rock", event.target.value)
                       }
-                      className={`${INPUT_CLASS} min-h-10 resize-y`}
+                      className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
-                  <td className="px-3 py-2">
-                    <textarea
+
+                  <td className="px-2 py-1.5">
+                    <input
                       aria-label="Rock target"
-                      rows={1}
-                      disabled={!canEditRows || busy}
+                      type="text"
+                      disabled={!canEditRows || reloading}
                       value={row.target}
                       onChange={(event) =>
                         updateRock(row.id, "target", event.target.value)
                       }
-                      className={`${INPUT_CLASS} min-h-10 resize-y`}
+                      className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
-                  <td className="px-3 py-2">
-                    <textarea
+
+                  <td className="px-2 py-1.5">
+                    <input
                       aria-label="Rock current status"
-                      rows={1}
-                      disabled={!canEditRows || busy}
+                      type="text"
+                      disabled={!canEditRows || reloading}
                       value={row.current}
                       onChange={(event) =>
                         updateRock(row.id, "current", event.target.value)
                       }
-                      className={`${INPUT_CLASS} min-h-10 resize-y`}
+                      className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
-                  <td className="px-3 py-2">
+
+                  <td className="px-2 py-1.5">
                     <input
                       aria-label="Rock date"
                       type="date"
-                      disabled={!canEditRows || busy}
+                      disabled={!canEditRows || reloading}
                       value={row.date}
                       onChange={(event) =>
                         updateRock(row.id, "date", event.target.value)
                       }
-                      className={INPUT_CLASS}
+                      className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
                 </tr>
               ))}
+
               {board.rocks.length === 0 && (
                 <tr>
                   <td
                     colSpan={4}
-                    className="px-4 py-8 text-center text-sm text-gray-500"
+                    className="px-4 py-5 text-center text-sm text-gray-500"
                   >
                     No Rocks added yet.
                   </td>
@@ -690,60 +859,66 @@ export default function AgendaOperationalWorkspace({
           description="Capture requests for help and supporting remarks."
           action={addButton("Add Help Item", addHelp)}
         />
+
         <div className="overflow-x-auto">
           <table className="w-full min-w-[850px] border-collapse text-left text-sm">
             <thead className="bg-[#082550] text-white">
               <tr>
-                <th className="w-56 px-4 py-3 text-xs">Name</th>
-                <th className="px-4 py-3 text-xs">Where I Need Help</th>
-                <th className="px-4 py-3 text-xs">Remarks</th>
+                <th className="w-56 px-3 py-2 text-xs">Name</th>
+                <th className="px-3 py-2 text-xs">Where I Need Help</th>
+                <th className="px-3 py-2 text-xs">Remarks</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-[#B4C2D1]/50">
               {board.help.map((row) => (
                 <tr key={row.id}>
-                  <td className="px-3 py-2">
+                  <td className="px-2 py-1.5">
                     <input
                       aria-label="Name"
-                      disabled={!canEditRows || busy}
+                      type="text"
+                      disabled={!canEditRows || reloading}
                       value={row.name}
                       onChange={(event) =>
                         updateHelp(row.id, "name", event.target.value)
                       }
-                      className={INPUT_CLASS}
+                      className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
-                  <td className="px-3 py-2">
-                    <textarea
+
+                  <td className="px-2 py-1.5">
+                    <input
                       aria-label="Where I Need Help"
-                      rows={1}
-                      disabled={!canEditRows || busy}
+                      type="text"
+                      disabled={!canEditRows || reloading}
                       value={row.help}
                       onChange={(event) =>
                         updateHelp(row.id, "help", event.target.value)
                       }
-                      className={`${INPUT_CLASS} min-h-10 resize-y`}
+                      className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
-                  <td className="px-3 py-2">
-                    <textarea
+
+                  <td className="px-2 py-1.5">
+                    <input
                       aria-label="Help remarks"
-                      rows={1}
-                      disabled={!canEditRows || busy}
+                      type="text"
+                      disabled={!canEditRows || reloading}
                       value={row.remarks}
                       onChange={(event) =>
                         updateHelp(row.id, "remarks", event.target.value)
                       }
-                      className={`${INPUT_CLASS} min-h-10 resize-y`}
+                      className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
                 </tr>
               ))}
+
               {board.help.length === 0 && (
                 <tr>
                   <td
                     colSpan={3}
-                    className="px-4 py-8 text-center text-sm text-gray-500"
+                    className="px-4 py-5 text-center text-sm text-gray-500"
                   >
                     No help items added yet.
                   </td>
@@ -760,48 +935,52 @@ export default function AgendaOperationalWorkspace({
           description="Keep outstanding items visible until they are addressed."
           action={addButton("Add Carried-Over Item", addCarryOver)}
         />
+
         <div className="overflow-x-auto">
           <table className="w-full min-w-[650px] border-collapse text-left text-sm">
             <thead className="bg-[#082550] text-white">
               <tr>
-                <th className="px-4 py-3 text-xs">Item</th>
-                <th className="px-4 py-3 text-xs">Remarks</th>
+                <th className="px-3 py-2 text-xs">Item</th>
+                <th className="px-3 py-2 text-xs">Remarks</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-[#B4C2D1]/50">
               {board.carryOver.map((row) => (
                 <tr key={row.id}>
-                  <td className="px-3 py-2">
-                    <textarea
+                  <td className="px-2 py-1.5">
+                    <input
                       aria-label="Carried-over item"
-                      rows={1}
-                      disabled={!canEditRows || busy}
+                      type="text"
+                      disabled={!canEditRows || reloading}
                       value={row.item}
                       onChange={(event) =>
                         updateCarryOver(row.id, "item", event.target.value)
                       }
-                      className={`${INPUT_CLASS} min-h-10 resize-y`}
+                      className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
-                  <td className="px-3 py-2">
-                    <textarea
+
+                  <td className="px-2 py-1.5">
+                    <input
                       aria-label="Carried-over remarks"
-                      rows={1}
-                      disabled={!canEditRows || busy}
+                      type="text"
+                      disabled={!canEditRows || reloading}
                       value={row.remarks}
                       onChange={(event) =>
                         updateCarryOver(row.id, "remarks", event.target.value)
                       }
-                      className={`${INPUT_CLASS} min-h-10 resize-y`}
+                      className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
                 </tr>
               ))}
+
               {board.carryOver.length === 0 && (
                 <tr>
                   <td
                     colSpan={2}
-                    className="px-4 py-8 text-center text-sm text-gray-500"
+                    className="px-4 py-5 text-center text-sm text-gray-500"
                   >
                     No carried-over items added yet.
                   </td>
@@ -812,7 +991,7 @@ export default function AgendaOperationalWorkspace({
         </div>
       </section>
 
-      <div className="flex flex-col gap-2 border-t border-[#B4C2D1]/60 px-1 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 border-t border-[#B4C2D1]/60 px-1 py-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[11px] text-gray-500">
           CascadEffects Operations Project Management
         </p>
