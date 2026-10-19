@@ -324,12 +324,30 @@ function calculateElapsedMonthPercentage(
    Parse Numeric Value
 ========================================================== */
 
+/**
+ * Converts plain numbers and common formatted values into
+ * numbers suitable for scoring.
+ *
+ * Supported examples:
+ *
+ *     "85"       -> 85
+ *     "85%"      -> 85
+ *     "$30,581"  -> 30581
+ *     "14,250"   -> 14250
+ *     "$1,234.50" -> 1234.5
+ *
+ * Percent signs are removed without dividing by 100,
+ * because percentage targets and current values use the
+ * same displayed scale in Runtime.
+ *
+ * Invalid or ambiguous values return null rather than
+ * silently producing a score from malformed input.
+ */
 function parseNumericValue(
   value: number | string
 ): number | null {
   if (
-    typeof value ===
-    "number"
+    typeof value === "number"
   ) {
     if (
       !Number.isFinite(
@@ -349,9 +367,32 @@ function parseNumericValue(
     return null;
   }
 
+  /*
+   * Remove common display formatting:
+   * currency symbols, grouping commas, and percentage signs.
+   * Preserve digits, decimal points, and a leading minus sign.
+   */
+  const numericString =
+    normalized.replace(
+      /[$,\s%]/g,
+      ""
+    );
+
+  /*
+   * Reject malformed strings instead of relying on permissive
+   * parsing that could accept only part of an input.
+   */
+  if (
+    !/^-?(?:\d+\.?\d*|\.\d+)$/.test(
+      numericString
+    )
+  ) {
+    return null;
+  }
+
   const parsed =
     Number(
-      normalized
+      numericString
     );
 
   if (
