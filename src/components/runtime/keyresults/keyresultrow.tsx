@@ -316,6 +316,46 @@ export default function KeyResultRow({
 
   }
 
+
+  function formatFinancialTargetValue(
+
+    value: string | number
+
+  ): string {
+
+    const text = String(value).trim();
+
+    if (!text) {
+
+      return "";
+
+    }
+
+    // This changes display formatting only. The saved target and score
+    // calculation continue to use the original target value.
+    const numericValue = Number(
+
+      text.replace(/\$/g, "").replace(/,/g, "").trim()
+
+    );
+
+    if (!Number.isFinite(numericValue)) {
+
+      return text.startsWith("$") ? text : `$${text}`;
+
+    }
+
+    return `$${numericValue.toLocaleString("en-US", {
+
+      minimumFractionDigits: 2,
+
+      maximumFractionDigits: 2,
+
+    })}`;
+
+  }
+
+
   function normalizeFinancialInput(
 
     value: string
@@ -330,24 +370,17 @@ export default function KeyResultRow({
 
   }
 
+  // Some legacy financial Key Results are configured as "numeric" but
+  // store their targets with a dollar sign. Format those currency targets
+  // to two decimal places too, without changing the stored target value.
+  const targetText = String(targetValue ?? "").trim();
+  const targetLooksFinancial = targetText.startsWith("$");
+
   const displayTargetValue =
-
     isPercentage
-
-      ? formatPercentageValue(
-
-          targetValue
-
-        )
-
-      : isFinancial
-
-        ? formatFinancialValue(
-
-            targetValue
-
-          )
-
+      ? formatPercentageValue(targetValue)
+      : isFinancial || targetLooksFinancial
+        ? formatFinancialTargetValue(targetValue)
         : targetValue;
 
   const displayCurrentValue =

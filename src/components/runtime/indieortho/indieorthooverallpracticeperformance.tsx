@@ -171,11 +171,10 @@ export default function IndieOrthoOverallPracticePerformance({
       </header>
 
       <main className="mx-auto w-full max-w-[1800px] px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-5">
           <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-black/70">
             Practice Metrics
           </h2>
-          <p className="text-sm text-black/65">{monthLabel(performanceMonth)}</p>
         </div>
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">

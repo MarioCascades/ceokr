@@ -130,7 +130,11 @@ function formatPracticeMetricValue(
     return "";
   }
 
-  if (measurementType === "financial") {
+  // Indie Ortho's existing financial Key Results are currently tagged as
+  // "numeric" in some records, even when the saved value is currency text
+  // such as "$49,536". Detect those currency values by their stored prefix
+  // as well as by measurementType so the dashboard consistently shows cents.
+  if (measurementType === "financial" || text.startsWith("$")) {
     const numericText = text.replace(/^\$/, "").replace(/,/g, "").trim();
     const numericValue = Number(numericText);
     if (Number.isFinite(numericValue)) {
