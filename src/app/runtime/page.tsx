@@ -1,6 +1,9 @@
 import type { CSSProperties } from "react";
 
 import PerformanceSheet from "@/components/runtime/performancesheet/performancesheet";
+import IndieOrthoOverallPracticePerformance, {
+  type PracticePerformanceMetric,
+} from "@/components/runtime/indieortho/indieorthooverallpracticeperformance";
 import CustomTableMonthlyWorkspace from "@/components/organization/customtablemonthlyworkspace";
 import CustomTableOperationalWorkspace from "@/components/organization/customtableoperationalworkspace";
 import AgendaOperationalWorkspace from "@/components/organization/agendaoperationalworkspace";
@@ -107,6 +110,67 @@ function isAgendaTable(tableKey: string): boolean {
     normalizedKey === "agenda" ||
     normalizedKey === "meeting-agenda"
   );
+}
+
+function isIndieOrthoOrganization(companyName: string): boolean {
+  return companyName.trim().toLowerCase() === "indie ortho";
+}
+
+function formatPracticeMetricValue(
+  value: unknown,
+  measurementType: string | undefined
+): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  const text = String(value).trim();
+
+  if (!text) {
+    return "";
+  }
+
+  if (measurementType === "financial") {
+    const numericText = text.replace(/^\$/, "").replace(/,/g, "").trim();
+    const numericValue = Number(numericText);
+    if (Number.isFinite(numericValue)) {
+      return `$${numericValue.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    }
+    return text.startsWith("$") ? text : `$${text}`;
+  }
+
+  if (measurementType === "percentage") {
+    return text.endsWith("%") ? text : `${text}%`;
+  }
+
+  return text;
+}
+
+function getPracticeMetricKey(
+  title: string
+): PracticePerformanceMetric["key"] | null {
+  const normalizedTitle = title.trim().toLowerCase();
+
+  if (normalizedTitle === "total net production") {
+    return "production";
+  }
+
+  if (normalizedTitle === "total net collections") {
+    return "collections";
+  }
+
+  if (normalizedTitle === "# of starts") {
+    return "starts";
+  }
+
+  if (normalizedTitle === "# of same day starts") {
+    return "same-day-starts";
+  }
+
+  return null;
 }
 
 async function loadOperationalTableResult(
@@ -278,10 +342,6 @@ export default async function RuntimePage({
 
   /* ========================================================
      Performance Month
-
-     Monthly execution remains available for Member Runtime
-     and monthly operational tables. Persistent operational
-     tables do not use this value for storage.
   ======================================================== */
 
   const performanceMonth =
@@ -364,12 +424,6 @@ export default async function RuntimePage({
 
   /* ========================================================
      Operational Custom Table Workspace
-
-     Tables sharing a Runtime tab key are rendered together.
-     Monthly tables retain their monthly workspace.
-     Agenda uses its dedicated persistent operational board.
-     All other current-state tables retain the generic
-     persistent operational workspace.
   ======================================================== */
 
   if (params.runtimeTab) {
@@ -393,6 +447,168 @@ export default async function RuntimePage({
             resolvedRuntimeTabKey
         )
       : [];
+
+    /* ========================================================
+       Indie Ortho Overall Practice
+
+       This tenant-specific view is enabled only through the
+       organization's enabled Custom Table configuration.
+       It reads Amy's existing monthly Runtime Key Results.
+    ======================================================== */
+
+    if (
+      isIndieOrthoOrganization(organization.company_name) &&
+      requestedRuntimeTab === "overall-practice-performance" &&
+      canViewCustomTables &&
+      selectedTables.length > 0
+    ) {
+      const amyRecord = activeMembers.find((record) => {
+        const displayName =
+          record.user.display_name?.trim().toLowerCase();
+
+        const fullName =
+          `${record.user.first_name} ${record.user.last_name}`
+            .trim()
+            .toLowerCase();
+
+        return (
+          displayName === "amy" ||
+          fullName === "amy" ||
+          displayName?.startsWith("amy ") === true ||
+          fullName.startsWith("amy ")
+        );
+      });
+
+      const amyExecution = amyRecord
+        ? await loadRuntimeExecution(
+            organization.id,
+            amyRecord.user.id,
+            performanceMonth
+          )
+        : null;
+
+      const desiredKeys = new Set<
+        PracticePerformanceMetric["key"]
+      >([
+        "production",
+        "collections",
+        "starts",
+        "same-day-starts",
+      ]);
+
+      const metrics: PracticePerformanceMetric[] = [];
+      const matchedKeys = new Set<
+        PracticePerformanceMetric["key"]
+      >();
+
+      if (amyExecution) {
+        for (const objective of amyExecution.objectives) {
+          for (const keyResult of objective.keyResults) {
+            const metricKey = getPracticeMetricKey(
+              keyResult.title
+            );
+
+            if (
+              !metricKey ||
+              !desiredKeys.has(metricKey) ||
+              matchedKeys.has(metricKey)
+            ) {
+              continue;
+            }
+
+            const progress =
+              amyExecution.keyResultProgress.find(
+                (item) =>
+                  item.performanceInstanceKeyResultId ===
+                  keyResult.id
+              );
+
+            const previousValue = keyResult.sourceKeyResultId
+              ? amyExecution.previousKeyResultValues[
+                  keyResult.sourceKeyResultId
+                ]
+              : undefined;
+
+            metrics.push({
+              key: metricKey,
+              title: keyResult.title,
+              lastMonth: formatPracticeMetricValue(
+                previousValue,
+                keyResult.measurementType
+              ),
+              target: formatPracticeMetricValue(
+                keyResult.target,
+                keyResult.measurementType
+              ),
+              thisMonth: formatPracticeMetricValue(
+                progress?.currentValue,
+                keyResult.measurementType
+              ),
+              score: progress?.score ?? null,
+            });
+
+            matchedKeys.add(metricKey);
+          }
+        }
+      }
+
+      const metricOrder: PracticePerformanceMetric["key"][] = [
+        "production",
+        "collections",
+        "starts",
+        "same-day-starts",
+      ];
+
+      const orderedMetrics = metricOrder.map((key) =>
+        metrics.find((metric) => metric.key === key) ?? {
+          key,
+          title: {
+            production: "TOTAL NET PRODUCTION",
+            collections: "TOTAL NET COLLECTIONS",
+            starts: "# OF STARTS",
+            "same-day-starts": "# OF SAME DAY STARTS",
+          }[key],
+          lastMonth: "",
+          target: "",
+          thisMonth: "",
+          score: null,
+        }
+      );
+
+      /*
+       * Keep the existing admin-return permission check and
+       * RuntimeNavigation. The special dashboard is rendered
+       * only for the enabled Indie Ortho Custom Table.
+       */
+      return (
+        <main
+          style={runtimeBrandStyle}
+          className="ce-runtime-theme min-h-screen w-full bg-[#E3E5E8]"
+        >
+          <div className="relative z-50">
+            <OrgAdminReturnBar
+              organizationId={organization.id}
+              visible={canReturnToOrgAdmin}
+            />
+          </div>
+
+          <div className="relative z-30 border-b border-black/10 bg-white shadow-sm">
+            <RuntimeNavigation
+              {...runtimeNavigationProps}
+              selectedSubjectId={params.subjectId}
+              selectedRuntimeTab={resolvedRuntimeTabKey}
+            />
+          </div>
+
+          <IndieOrthoOverallPracticePerformance
+            organizationId={organization.id}
+            performanceMonth={performanceMonth}
+            indieOrthoLogoUrl={organization.logo_url}
+            metrics={orderedMetrics}
+          />
+        </main>
+      );
+    }
 
     let workspaceMessage = "";
     let tableResults: OperationalTableResult[] = [];
@@ -593,10 +809,6 @@ export default async function RuntimePage({
 
   /* ========================================================
      Organization Dashboard
-
-     The Dashboard remains available before a member is
-     selected. Operational tabs are supplied to the same
-     Runtime navigation component.
   ======================================================== */
 
   if (!params.subjectId) {
@@ -630,10 +842,6 @@ export default async function RuntimePage({
 
   /* ========================================================
      Selected Member Runtime
-
-     Runtime Execution remains the source of truth for the
-     member Performance Sheet. The legacy Member OKR page is
-     intentionally not used as a fallback.
   ======================================================== */
 
   const runtimeExecution = await loadRuntimeExecution(
@@ -706,8 +914,7 @@ export default async function RuntimePage({
   /* ========================================================
      Member Performance Sheet
 
-     PerformanceSheet currently owns its Runtime navigation.
-     Keep the existing single-navigation behavior here.
+     PerformanceSheet owns its existing Runtime navigation.
   ======================================================== */
 
   return (
