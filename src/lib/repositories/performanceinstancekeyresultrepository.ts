@@ -27,6 +27,8 @@ interface PerformanceInstanceKeyResultRecord {
 
   scoring_method: string | null;
 
+  scoring_direction: string | null;
+
   position: number;
 
   created_at: string;
@@ -78,6 +80,13 @@ function mapRecordToPerformanceInstanceKeyResult(
             "scoringMethod"
           ]
         | undefined,
+
+    scoringDirection:
+      (record.scoring_direction as
+        | PerformanceInstanceKeyResult[
+            "scoringDirection"
+          ]
+        | null) ?? undefined,
 
     position:
       record.position,
@@ -136,6 +145,10 @@ export async function createPerformanceInstanceKeyResult(
           keyResult.scoringMethod ??
           null,
 
+        scoring_direction:
+          keyResult.scoringDirection ??
+          "higher_is_better",
+
         position:
           keyResult.position,
       })
@@ -176,6 +189,11 @@ export interface UpdatePerformanceInstanceKeyResultInput {
       "scoringMethod"
     ];
 
+  scoringDirection?:
+    PerformanceInstanceKeyResult[
+      "scoringDirection"
+    ];
+
   weight?: number;
 }
 
@@ -210,6 +228,13 @@ export async function updatePerformanceInstanceKeyResult(
         scoring_method:
           input.scoringMethod ??
           null,
+
+        ...(input.scoringDirection !== undefined
+          ? {
+              scoring_direction:
+                input.scoringDirection,
+            }
+          : {}),
 
         weight:
           input.weight ??

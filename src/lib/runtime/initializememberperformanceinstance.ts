@@ -162,6 +162,8 @@ export async function initializeMemberPerformanceInstance(
               keyResult.measurementType,
             scoringMethod:
               keyResult.scoringMethod,
+            scoringDirection:
+              keyResult.scoringDirection,
             position:
               keyResultPosition,
           });
@@ -181,7 +183,9 @@ export async function initializeMemberPerformanceInstance(
           instanceKeyResult.measurementType !==
             keyResult.measurementType ||
           instanceKeyResult.scoringMethod !==
-            keyResult.scoringMethod;
+            keyResult.scoringMethod ||
+          instanceKeyResult.scoringDirection !==
+            keyResult.scoringDirection;
 
         if (configurationChanged) {
           instanceKeyResult =
@@ -200,6 +204,8 @@ export async function initializeMemberPerformanceInstance(
                 keyResult.measurementType,
               scoringMethod:
                 keyResult.scoringMethod,
+              scoringDirection:
+                keyResult.scoringDirection,
             });
 
           keyResultBySourceId.set(

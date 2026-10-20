@@ -16,6 +16,7 @@ import type {
   UpdateMemberInitiativeInput,
   MemberKeyResultMeasurementType,
   MemberKeyResultScoringMethod,
+  MemberKeyResultScoringDirection,
   MemberKeyResultStatus,
 } from "@/lib/domain/memberokr";
 
@@ -71,6 +72,10 @@ interface MemberKeyResultRecord {
 
   scoring_method:
     | MemberKeyResultScoringMethod
+    | null;
+
+  scoring_direction:
+    | MemberKeyResultScoringDirection
     | null;
 
   status: MemberKeyResultStatus;
@@ -415,6 +420,15 @@ function mapKeyResult(
     scoringMethod:
       record.scoring_method ??
       undefined,
+
+
+    /*
+     * Existing Key Results default to higher-is-better
+     * unless a direction has been explicitly saved.
+     */
+    scoringDirection:
+      record.scoring_direction ??
+      "higher_is_better",
 
 
     status:
@@ -1254,6 +1268,15 @@ export async function createMemberKeyResult(
           null,
 
 
+        /*
+         * Higher-is-better remains the default for new
+         * Key Results unless the caller specifies otherwise.
+         */
+        scoring_direction:
+          input.scoringDirection ??
+          "higher_is_better",
+
+
         status:
           input.status ??
           "active",
@@ -1374,6 +1397,22 @@ export async function updateMemberKeyResult(
       new Date().toISOString(),
 
   };
+
+
+  /*
+   * Only update scoring direction when the caller supplies it.
+   * This protects the saved direction when older callers have
+   * not yet been updated to pass the new field.
+   */
+  if (
+    input.scoringDirection !==
+    undefined
+  ) {
+
+    update.scoring_direction =
+      input.scoringDirection;
+
+  }
 
 
   if (

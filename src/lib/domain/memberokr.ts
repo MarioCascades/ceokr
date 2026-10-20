@@ -1,3 +1,4 @@
+
 /**
  * ==========================================================
  * CascadEffects Performance Platform
@@ -83,6 +84,10 @@ export type MemberKeyResultScoringMethod =
   | "percentage_of_target"
   | "display_only";
 
+export type MemberKeyResultScoringDirection =
+  | "higher_is_better"
+  | "lower_is_better";
+
 export type MemberKeyResultStatus =
   | "active"
   | "completed"
@@ -104,6 +109,14 @@ export interface MemberKeyResult {
   measurementType?: MemberKeyResultMeasurementType;
 
   scoringMethod?: MemberKeyResultScoringMethod;
+
+  /**
+   * Controls the scoring direction for this individual KR.
+   *
+   * Undefined preserves the existing higher-is-better
+   * behavior for backward compatibility.
+   */
+  scoringDirection?: MemberKeyResultScoringDirection;
 
   status: MemberKeyResultStatus;
 
@@ -199,6 +212,9 @@ export interface CreateMemberKeyResultInput {
   scoringMethod?:
     | MemberKeyResultScoringMethod;
 
+  scoringDirection?:
+    | MemberKeyResultScoringDirection;
+
   status?: MemberKeyResultStatus;
 
   position?: number;
@@ -223,6 +239,9 @@ export interface UpdateMemberKeyResultInput {
     | MemberKeyResultMeasurementType;
 
   scoringMethod?: MemberKeyResultScoringMethod;
+
+  scoringDirection?:
+    | MemberKeyResultScoringDirection;
 
   status?: MemberKeyResultStatus;
 

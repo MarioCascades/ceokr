@@ -27,6 +27,7 @@ import InitiativeEditor from "@/components/runtime/initiatives/initiativeeditor"
 
 import type {
   MemberObjective,
+  MemberKeyResultScoringDirection,
 } from "@/lib/domain/memberokr";
 
 
@@ -636,6 +637,7 @@ export default function MemberOKRWorkspace({
         | "percent_into_period"
         | "percentage_of_target"
         | "display_only";
+      scoringDirection: MemberKeyResultScoringDirection;
       weight?: number;
     }
   ) {
@@ -677,6 +679,9 @@ export default function MemberOKRWorkspace({
 
             scoringMethod:
               values.scoringMethod,
+
+            scoringDirection:
+              values.scoringDirection,
 
             weight:
               values.weight,
@@ -729,6 +734,9 @@ export default function MemberOKRWorkspace({
 
             scoringMethod:
               values.scoringMethod,
+
+            scoringDirection:
+              values.scoringDirection,
 
             weight:
               values.weight,
@@ -957,6 +965,10 @@ export default function MemberOKRWorkspace({
 
                   scoringMethod:
                     keyResult.scoringMethod,
+
+                  scoringDirection:
+                    keyResult.scoringDirection ??
+                    "higher_is_better",
 
                   weight:
                     keyResult.weight,
@@ -2047,6 +2059,15 @@ export default function MemberOKRWorkspace({
                                           Scoring:{" "}
                                           {keyResult.scoringMethod ??
                                             "percent_into_period"}
+                                        </span>
+
+                                        <span>
+                                          Direction:{" "}
+                                          {(keyResult.scoringDirection ??
+                                            "higher_is_better") ===
+                                          "lower_is_better"
+                                            ? "Lower is Better"
+                                            : "Higher is Better"}
                                         </span>
                                       </div>
                                     </div>

@@ -16,6 +16,11 @@
  *
  *     actual progress / expected progress * 100
  *
+ * Supported scoring directions:
+ *
+ *     higher_is_better
+ *     lower_is_better
+ *
  * Runtime scores are stored as numeric values from 0 - 100.
  * The UI may display the value as a percentage.
  *
@@ -34,53 +39,60 @@ export type RuntimeScoringMethod =
   | "percentage_of_target"
   | "display_only";
 
+export type RuntimeScoringDirection =
+  | "higher_is_better"
+  | "lower_is_better";
 
 /* ==========================================================
    Calculate Percentage of Target
 ========================================================== */
 
 /**
- * Calculates:
+ * Calculates the Percentage of Target score.
+ *
+ * Higher is better:
  *
  *     current / target * 100
  *
- * Example:
+ * Lower is better:
  *
- *     Current = 50
- *     Target  = 100
+ *     Current <= target -> 100
+ *     Current > target  -> target / current * 100
  *
- *     Score = 50
+ * Scores are clamped to 0 - 100.
  */
 export function calculatePercentageOfTarget(
   currentValue: number | string,
-  targetValue: number | string
+  targetValue: number | string,
+  scoringDirection: RuntimeScoringDirection = "higher_is_better"
 ): number {
-  const current =
-    parseNumericValue(
-      currentValue
-    );
+  const current = parseNumericValue(currentValue);
+  const target = parseNumericValue(targetValue);
 
-  const target =
-    parseNumericValue(
-      targetValue
-    );
-
-  if (
-    current === null ||
-    target === null ||
-    target === 0
-  ) {
+  if (current === null || target === null) {
     return 0;
   }
 
-  const score =
-    (current / target) * 100;
+  if (scoringDirection === "lower_is_better") {
+    if (current <= target) {
+      return 100;
+    }
 
-  return clampScore(
-    score
-  );
+    if (target <= 0) {
+      return 0;
+    }
+
+    return clampScore((target / current) * 100);
+  }
+
+  if (target === 0) {
+    return 0;
+  }
+
+  const score = (current / target) * 100;
+
+  return clampScore(score);
 }
-
 
 /* ==========================================================
    Calculate Percent Into Period
@@ -90,114 +102,106 @@ export function calculatePercentageOfTarget(
  * Calculates Runtime performance against the amount of
  * the month that has elapsed.
  *
- * Example:
+ * Higher is better:
  *
- *     Target = 100
- *     Current = 55
+ *     Score = actual progress / expected progress * 100
  *
- *     30-day month
- *     Day 15
+ * Lower is better:
  *
- *     Expected progress = 50%
- *
- *     Actual progress =
- *       55 / 100 * 100
- *       = 55%
- *
- *     Score =
- *       55 / 50 * 100
- *       = 110%
+ *     A current value at or below the prorated target
+ *     receives 100. A value above the prorated target
+ *     receives a proportionally lower score.
  *
  * Runtime scores are stored on a 0 - 100 scale, so the
- * final stored score is clamped to 100.
+ * final score is clamped to 100.
  */
 export function calculatePercentIntoPeriod(
   currentValue: number | string,
   targetValue: number | string,
-  performanceMonth: string
+  performanceMonth: string,
+  scoringDirection: RuntimeScoringDirection = "higher_is_better"
 ): number {
-  const current =
-    parseNumericValue(
-      currentValue
-    );
+  const current = parseNumericValue(currentValue);
+  const target = parseNumericValue(targetValue);
 
-  const target =
-    parseNumericValue(
-      targetValue
-    );
-
-  if (
-    current === null ||
-    target === null ||
-    target === 0
-  ) {
+  if (current === null || target === null) {
     return 0;
   }
 
   const elapsedPercent =
-    calculateElapsedMonthPercentage(
-      performanceMonth
-    );
+    calculateElapsedMonthPercentage(performanceMonth);
 
   /*
    * If no meaningful portion of the month has elapsed,
    * there is no expected progress against which to score.
    */
-  if (
-    elapsedPercent <= 0
-  ) {
+  if (elapsedPercent <= 0) {
     return 0;
   }
 
-  const actualPercent =
-    (current / target) * 100;
+  /*
+   * The prorated target represents the expected value
+   * at this point in the selected performance month.
+   */
+  const proratedTarget =
+    target * (elapsedPercent / 100);
 
-  const score =
-    (actualPercent / elapsedPercent) * 100;
+  if (scoringDirection === "lower_is_better") {
+    if (current <= proratedTarget) {
+      return 100;
+    }
 
-  return clampScore(
-    score
-  );
+    if (proratedTarget <= 0) {
+      return 0;
+    }
+
+    return clampScore(
+      (proratedTarget / current) * 100
+    );
+  }
+
+  if (target === 0) {
+    return 0;
+  }
+
+  const actualPercent = (current / target) * 100;
+  const score = (actualPercent / elapsedPercent) * 100;
+
+  return clampScore(score);
 }
-
 
 /* ==========================================================
    Calculate Runtime Key Result Score
 ========================================================== */
 
 /**
- * Routes the Key Result to its configured scoring method.
+ * Routes the Key Result to its configured scoring method
+ * and scoring direction.
  *
- * This keeps scoring selection centralized instead of
- * allowing UI components to implement different formulas.
+ * Scoring direction defaults to higher_is_better to preserve
+ * existing behavior for Key Results without a saved direction.
  */
 export function calculateRuntimeKeyResultScore(
   currentValue: number | string,
   targetValue: number | string,
-  scoringMethod:
-    | RuntimeScoringMethod
-    | undefined,
-  performanceMonth: string
+  scoringMethod: RuntimeScoringMethod | undefined,
+  performanceMonth: string,
+  scoringDirection: RuntimeScoringDirection = "higher_is_better"
 ): number {
   /*
    * Display Only Key Results are reference values.
    * They must never receive a calculated score.
    */
-  if (
-    scoringMethod ===
-    "display_only"
-  ) {
+  if (scoringMethod === "display_only") {
     return 0;
   }
 
-  if (
-    scoringMethod ===
-    "percent_into_period"
-  ) {
+  if (scoringMethod === "percent_into_period") {
     return calculatePercentIntoPeriod(
       currentValue,
       targetValue,
-      performanceMonth
+      performanceMonth,
+      scoringDirection
     );
   }
 
@@ -207,10 +211,10 @@ export function calculateRuntimeKeyResultScore(
    */
   return calculatePercentageOfTarget(
     currentValue,
-    targetValue
+    targetValue,
+    scoringDirection
   );
 }
-
 
 /* ==========================================================
    Calculate Elapsed Month Percentage
@@ -222,9 +226,9 @@ export function calculateRuntimeKeyResultScore(
  *
  * Rules:
  *
- *     Before month starts → 0%
- *     During month       → current day / days in month
- *     After month ends   → 100%
+ *     Before month starts -> 0%
+ *     During month        -> current day / days in month
+ *     After month ends    -> 100%
  *
  * The selected Performance Month is therefore also usable
  * for historical Runtime Performance Instances.
@@ -232,24 +236,14 @@ export function calculateRuntimeKeyResultScore(
 function calculateElapsedMonthPercentage(
   performanceMonth: string
 ): number {
-  const match =
-    /^(\d{4})-(\d{2})$/.exec(
-      performanceMonth
-    );
+  const match = /^(\d{4})-(\d{2})$/.exec(performanceMonth);
 
   if (!match) {
     return 0;
   }
 
-  const year =
-    Number(
-      match[1]
-    );
-
-  const month =
-    Number(
-      match[2]
-    );
+  const year = Number(match[1]);
+  const month = Number(match[2]);
 
   if (
     !Number.isInteger(year) ||
@@ -265,60 +259,30 @@ function calculateElapsedMonthPercentage(
    * UTC timestamps so the calculation follows the calendar
    * month represented by the Performance Instance.
    */
-  const monthStart =
-    new Date(
-      year,
-      month - 1,
-      1
-    );
+  const monthStart = new Date(year, month - 1, 1);
+  const nextMonthStart = new Date(year, month, 1);
 
-  const nextMonthStart =
-    new Date(
-      year,
-      month,
-      1
-    );
+  const today = new Date();
 
-  const today =
-    new Date();
+  const currentDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
 
-  const currentDay =
-    new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-
-  if (
-    currentDay <
-    monthStart
-  ) {
+  if (currentDay < monthStart) {
     return 0;
   }
 
-  if (
-    currentDay >=
-    nextMonthStart
-  ) {
+  if (currentDay >= nextMonthStart) {
     return 100;
   }
 
-  const daysInMonth =
-    new Date(
-      year,
-      month,
-      0
-    ).getDate();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const dayOfMonth = currentDay.getDate();
 
-  const dayOfMonth =
-    currentDay.getDate();
-
-  return (
-    dayOfMonth /
-    daysInMonth
-  ) * 100;
+  return (dayOfMonth / daysInMonth) * 100;
 }
-
 
 /* ==========================================================
    Parse Numeric Value
@@ -330,10 +294,10 @@ function calculateElapsedMonthPercentage(
  *
  * Supported examples:
  *
- *     "85"       -> 85
- *     "85%"      -> 85
- *     "$30,581"  -> 30581
- *     "14,250"   -> 14250
+ *     "85"        -> 85
+ *     "85%"       -> 85
+ *     "$30,581"   -> 30581
+ *     "14,250"    -> 14250
  *     "$1,234.50" -> 1234.5
  *
  * Percent signs are removed without dividing by 100,
@@ -346,22 +310,15 @@ function calculateElapsedMonthPercentage(
 function parseNumericValue(
   value: number | string
 ): number | null {
-  if (
-    typeof value === "number"
-  ) {
-    if (
-      !Number.isFinite(
-        value
-      )
-    ) {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
       return null;
     }
 
     return value;
   }
 
-  const normalized =
-    value.trim();
+  const normalized = value.trim();
 
   if (!normalized) {
     return null;
@@ -372,53 +329,29 @@ function parseNumericValue(
    * currency symbols, grouping commas, and percentage signs.
    * Preserve digits, decimal points, and a leading minus sign.
    */
-  const numericString =
-    normalized.replace(
-      /[$,\s%]/g,
-      ""
-    );
+  const numericString = normalized.replace(/[$,\s%]/g, "");
 
   /*
    * Reject malformed strings instead of relying on permissive
    * parsing that could accept only part of an input.
    */
-  if (
-    !/^-?(?:\d+\.?\d*|\.\d+)$/.test(
-      numericString
-    )
-  ) {
+  if (!/^-?(?:\d+\.?\d*|\.\d+)$/.test(numericString)) {
     return null;
   }
 
-  const parsed =
-    Number(
-      numericString
-    );
+  const parsed = Number(numericString);
 
-  if (
-    !Number.isFinite(
-      parsed
-    )
-  ) {
+  if (!Number.isFinite(parsed)) {
     return null;
   }
 
   return parsed;
 }
 
-
 /* ==========================================================
    Clamp Score
 ========================================================== */
 
-function clampScore(
-  score: number
-): number {
-  return Math.min(
-    Math.max(
-      score,
-      0
-    ),
-    100
-  );
+function clampScore(score: number): number {
+  return Math.min(Math.max(score, 0), 100);
 }

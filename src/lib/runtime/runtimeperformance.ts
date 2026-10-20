@@ -1,9 +1,11 @@
+
 import type {
   PerformanceInstanceObjective,
 } from "@/lib/domain/performanceinstanceobjective";
 
 import type {
   PerformanceInstanceKeyResult,
+  PerformanceInstanceKeyResultScoringDirection,
 } from "@/lib/domain/performanceinstancekeyresult";
 
 import type {
@@ -40,6 +42,9 @@ export interface RuntimePerformanceKeyResult {
     | "percent_into_period"
     | "percentage_of_target"
     | "display_only";
+
+  scoringDirection?:
+    | PerformanceInstanceKeyResultScoringDirection;
 
   position: number;
 
@@ -136,6 +141,9 @@ export function buildRuntimePerformanceObjectives(
 
         scoringMethod:
           keyResult.scoringMethod,
+
+        scoringDirection:
+          keyResult.scoringDirection,
 
         position:
           keyResult.position,

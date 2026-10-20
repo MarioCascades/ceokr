@@ -9,6 +9,10 @@ export type PerformanceInstanceKeyResultScoringMethod =
   | "percentage_of_target"
   | "display_only";
 
+export type PerformanceInstanceKeyResultScoringDirection =
+  | "higher_is_better"
+  | "lower_is_better";
+
 export interface PerformanceInstanceKeyResult {
   id: string;
 
@@ -36,6 +40,16 @@ export interface PerformanceInstanceKeyResult {
 
   scoringMethod?:
     | PerformanceInstanceKeyResultScoringMethod;
+
+  /**
+   * Determines whether higher or lower actual values
+   * represent better performance for this Key Result.
+   *
+   * Undefined preserves the existing higher-is-better
+   * behavior for backward compatibility.
+   */
+  scoringDirection?:
+    | PerformanceInstanceKeyResultScoringDirection;
 
   position: number;
 

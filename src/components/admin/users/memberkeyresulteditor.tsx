@@ -7,6 +7,7 @@ import {
 import type {
   MemberKeyResult,
   MemberKeyResultScoringMethod,
+  MemberKeyResultScoringDirection,
 } from "@/lib/domain/memberokr";
 
 interface MemberKeyResultEditorProps {
@@ -26,6 +27,7 @@ interface MemberKeyResultEditorProps {
         | "percent_into_period"
         | "percentage_of_target"
         | "display_only";
+      scoringDirection: MemberKeyResultScoringDirection;
       weight?: number;
     }
   ) => Promise<void>;
@@ -74,6 +76,14 @@ export default function MemberKeyResultEditor({
   ] = useState<MemberKeyResultScoringMethod>(
     keyResult?.scoringMethod ??
       "percentage_of_target"
+  );
+
+  const [
+    scoringDirection,
+    setScoringDirection,
+  ] = useState<MemberKeyResultScoringDirection>(
+    keyResult?.scoringDirection ??
+      "higher_is_better"
   );
 
   const [
@@ -178,6 +188,8 @@ export default function MemberKeyResultEditor({
         measurementType,
 
         scoringMethod,
+
+        scoringDirection,
 
         weight:
           parsedWeight,
@@ -325,6 +337,43 @@ export default function MemberKeyResultEditor({
               Display Only - No Calculation
             </option>
           </select>
+        </div>
+
+        {/* ====================================================
+            Scoring Direction
+        ==================================================== */}
+
+        <div>
+          <label
+            htmlFor="member-key-result-scoring-direction"
+            className="block text-sm font-medium"
+          >
+            Scoring Direction
+          </label>
+
+          <select
+            id="member-key-result-scoring-direction"
+            value={scoringDirection}
+            onChange={(event) =>
+              setScoringDirection(
+                event.target.value as MemberKeyResultScoringDirection
+              )
+            }
+            disabled={saving}
+            className="mt-1 w-full rounded-md border px-3 py-2"
+          >
+            <option value="higher_is_better">
+              Higher is Better
+            </option>
+
+            <option value="lower_is_better">
+              Lower is Better
+            </option>
+          </select>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            Choose whether increasing or decreasing the actual value represents better performance.
+          </p>
         </div>
 
         {/* ====================================================
