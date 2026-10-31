@@ -638,8 +638,8 @@ export default function ClientPerformanceWorkspace({
       <div className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
         <div className="h-1.5 bg-[#082550]" />
 
-        <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0 flex-1">
+        <div className="grid grid-cols-1 items-center gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)_minmax(0,1fr)]">
+          <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E26D5C]">
               CascadEffects Operations Project Management
             </p>
@@ -653,47 +653,45 @@ export default function ClientPerformanceWorkspace({
             </p>
           </div>
 
-          <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto lg:min-w-[440px]">
-            <div>
-              <label
-                htmlFor="client-performance-client"
-                className="mb-1.5 block text-xs font-bold text-[#082550]"
-              >
-                Select Client
-              </label>
+          <div className="flex w-full flex-col items-center gap-1.5 text-center lg:col-start-2">
+            <label
+              htmlFor="client-performance-client"
+              className="text-sm font-extrabold uppercase tracking-[0.14em] text-[#082550]"
+            >
+              Select Client
+            </label>
 
-              <select
-                id="client-performance-client"
-                value={workspace.client.id}
-                disabled={busy}
-                onChange={(event) =>
-                  handleClientChange(event.target.value)
-                }
-                className={INPUT_CLASS}
-              >
-                {clients
-                  .filter((client) => client.isEnabled)
-                  .map((client) => (
-                    <option
-                      key={client.id}
-                      value={client.id}
-                    >
-                      {client.displayName}
-                    </option>
-                  ))}
-              </select>
-            </div>
+            <select
+              id="client-performance-client"
+              value={workspace.client.id}
+              disabled={busy}
+              onChange={(event) =>
+                handleClientChange(event.target.value)
+              }
+              className="w-full cursor-pointer rounded-lg border border-[#082550]/35 bg-[#E9F4F8] px-4 py-3 text-center text-lg font-bold text-[#082550] shadow-sm outline-none transition hover:border-[#082550] focus:border-[#082550] focus:ring-2 focus:ring-[#082550]/15 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {clients
+                .filter((client) => client.isEnabled)
+                .map((client) => (
+                  <option
+                    key={client.id}
+                    value={client.id}
+                  >
+                    {client.displayName}
+                  </option>
+                ))}
+            </select>
+          </div>
 
-            <div>
-              <p className="mb-1.5 text-xs font-bold text-[#082550]">
-                Last Updated
+          <div className="flex flex-col items-center gap-1 lg:col-start-3 lg:items-end">
+            <p className="text-xs font-bold text-[#082550]">
+              Last Updated
+            </p>
+
+            <div className="rounded-lg border border-[#B4C2D1]/70 bg-[#E9F4F8]/60 px-3 py-2">
+              <p className="text-sm font-semibold tabular-nums text-[#082550]">
+                {formatDateTime(workspace.client.lastUpdatedAt)}
               </p>
-
-              <div className="rounded-lg border border-[#B4C2D1]/70 bg-[#E9F4F8]/60 px-3 py-2">
-                <p className="text-sm font-semibold tabular-nums text-[#082550]">
-                  {formatDateTime(workspace.client.lastUpdatedAt)}
-                </p>
-              </div>
             </div>
           </div>
         </div>
