@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-10-15
+**Last Updated:** 2026-10-30
 
 This document tracks intentionally deferred architecture, product
 capabilities, migration work, and future platform work.
@@ -1417,11 +1417,22 @@ Required behavior:
 
 ### Client Performance
 
-**Status: REQUIREMENTS AGREED / IMPLEMENTATION NOT VERIFIED**
+**Status: DESIGN CONFIRMED / ARCHITECTURE VERIFICATION PENDING / IMPLEMENTATION NOT STARTED**
 
-- One Runtime tab may contain multiple independently named tables.
-- Persistent current-state data; no monthly snapshots, month selector, or copy-forward.
-- Save edits to existing records and reload the latest saved state.
+The requirements in Waypoint 34 supersede the older Client Performance direction recorded in Waypoint 33 and earlier backlog text. Client Performance is a persistent spreadsheet-style workspace, not a monthly snapshot selector.
+
+- One Client Performance Runtime entry, available only in the CascadEffects tenant.
+- A client selector switches the complete workspace, including the current performance snapshot, monthly metrics, and Key Initiatives Tracker.
+- Each client has independent saved data and a client-specific column configuration. The screenshots show Kirkland & Richmond with additional monthly metrics columns, including Days Worked and Avg Prod per Day; other clients use a simpler layout. Do not force identical columns on every client.
+- The workspace preserves monthly rows continuously across years. It does not use a month selector, per-month snapshots, or copy-forward.
+- Initially show two years: 2025 and 2026. Provide controls to hide a year, restore a hidden year, and add another year. Hiding a year affects visibility only and must not delete or alter its records. Adding a year appends January through December for the next year without overwriting prior years.
+- Each client has a current performance snapshot and a Key Initiatives Tracker. Preserve existing values, notes, and initiative records when other fields are edited.
+- Add, enable, and disable clients through an Organization Admin management experience (dedicated card/page or appropriate Custom Tables settings, based on the source review). Disabled clients are hidden from the normal Runtime client selector but retain all data.
+- Adding a client creates the standard workspace structure and default columns, while allowing a client-specific column configuration. Do not create a separate database table per client.
+- Only Organization Admins and Superadmins may edit/save performance data and manage clients. Enforce authorization server-side and at the database/RLS boundary, not only by hiding controls.
+- Last Updated is maintained per client and changes only after a successful save. Failed saves must not advance the timestamp.
+- Integrate with the existing Custom Tables registration/Runtime navigation where appropriate; do not build a separate application or disrupt other tenants or Custom Tables workflows.
+- Exact snapshot columns, monthly columns, initiative columns, and per-client differences must be verified against the supplied source spreadsheets/screenshots and current implementation before finalizing the schema. Do not invent fields where the source is unclear.
 
 ## Shared Implementation Guardrails
 
@@ -1433,15 +1444,19 @@ Required behavior:
 
 ## Next Work Sequence
 
-Use the latest Waypoint 33 as the resume point.
+Use Waypoint 34 as the current Client Performance design checkpoint. Agenda requirements remain in Waypoint 33 and prior documentation; verify the current implementation status from source and tests rather than assuming completion from documentation alone.
 
-1. Inspect the current Agenda Runtime route/component, current Custom Tables services/schema, and any existing Agenda operational component. Request and review the actual current full file before proposing changes.
-2. Implement the five-section Agenda exactly as specified above, including Supabase persistence for all sections and a Last Updated timestamp that advances only after a successful save.
-3. Verify Agenda persistence and organization isolation across save, refresh, navigation away/back, and sign-in. Do not claim success until tested.
-4. Inspect Client Performance's current configuration/data model and Runtime integration. Implement multiple independently named tables with persistent current-state data and no monthly selector/history/copy-forward.
-5. Continue the VA Roster requirements from Waypoint 32, including summary metrics, sort/filter, row ordering, and hide/restore behavior. Do not hard-code the adjusted VA formula until the source spreadsheet formula is confirmed.
-6. Verify Recruitment's monthly behavior and Cancelled status without regressing row editing, ordering, hidden rows, history, or carry-forward.
-7. Verify tenant boundaries and production authorization/RLS; do not infer security completion from UI success.
-8. Build and run focused functional tests, then commit the coherent milestone and update documentation.
+1. Review the Product North Star, Waypoint 34, Platform Decisions, this Backlog, and Engineering Process.
+2. Inspect the current Runtime navigation/registration and Custom Tables definitions, persistence services/repositories, migrations, and authorization/RLS patterns. Inspect the supplied current source rather than reconstructing files from memory.
+3. Confirm how CascadEffects tenant identity is established and how the existing Runtime Custom Tables entry is provisioned. Determine the safest way to register Client Performance without exposing it to other tenants.
+4. Finalize the data model for client records, per-client column configuration, current snapshot, persistent monthly rows, initiatives, year visibility, client enabled/disabled state, and per-client Last Updated. Reuse existing infrastructure where appropriate; only introduce narrowly scoped persistence structures where the generic model does not safely meet requirements.
+5. Present the architecture, affected files, migration plan, authorization/RLS approach, and implementation sequence for approval before changing code.
+6. After approval, implement one file at a time: inspect the current full file, return the complete replacement and exact path, and wait for the user to apply/test it before proceeding.
+7. Verify add/enable/disable client workflows, client-specific columns, cell/row persistence, adding/hiding/restoring years, and preservation of all historical data.
+8. Verify per-client Last Updated changes only after successful saves, and test permissions for Org Admin, Superadmin, and unauthorized users at both server and database/RLS boundaries.
+9. Run build and focused functional/database tests. Regression-test existing Custom Tables, Agenda, VA Roster, and Recruitment behavior, including Recruitment's monthly history/carry-forward and Cancelled status.
+10. Commit only after the coherent milestone is verified, then update the documentation and create the next completion Waypoint.
+
+Keep the one-file-at-a-time workflow. Recruitment remains a monthly workflow. Client Performance is a continuous persistent spreadsheet containing monthly rows across years; it does not switch between monthly snapshots. Agenda remains governed by its separate current-state requirements.
 
 Keep the established one-file-at-a-time workflow: inspect the current full file, return the exact path and complete replacement, and only then move to the next file. Recruitment remains monthly; Agenda and Client Performance are current-state experiences.

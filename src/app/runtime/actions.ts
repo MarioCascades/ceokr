@@ -1,3 +1,4 @@
+
 "use server";
 
 import {
@@ -38,6 +39,14 @@ import {
   deleteRuntimePerformanceInstanceInitiative,
 } from "@/lib/runtime/manageperformanceinstanceinitiatives";
 
+import {
+  saveClientPerformanceWorkspace,
+  addClientPerformanceYear,
+  hideClientPerformanceYear,
+  restoreClientPerformanceYear,
+  addClientPerformanceInitiative,
+} from "@/services/clientperformanceservice";
+
 import type {
   PerformanceInstanceTransition,
 } from "@/lib/runtime/transitionperformanceinstance";
@@ -66,12 +75,15 @@ import type {
   PerformanceInstanceInitiative,
 } from "@/lib/domain/performanceinstanceinitiative";
 
+import type {
+  SaveClientPerformanceWorkspaceInput,
+} from "@/lib/types/domain/clientperformance";
 
 /* ==========================================================
    Runtime Performance Sheet Save
 ========================================================== */
 
-/*
+/**
  * This is the single server action used by the global
  * Runtime Performance Sheet Save button.
  *
@@ -431,5 +443,138 @@ export async function transitionPerformanceInstanceAction(
     input.performanceInstanceId,
 
     input.transition
+  );
+}
+
+
+/* ==========================================================
+   Client Performance Workspace Save
+========================================================== */
+
+/**
+ * Saves the Client Performance workspace.
+ *
+ * Authorization, organization validation, workspace
+ * ownership validation, and persistence are handled
+ * by the Client Performance service.
+ */
+export interface SaveClientPerformanceWorkspaceActionInput {
+  organizationId: string;
+
+  workspace: SaveClientPerformanceWorkspaceInput;
+}
+
+
+export async function saveClientPerformanceWorkspaceAction(
+  input: SaveClientPerformanceWorkspaceActionInput
+): Promise<string> {
+  return saveClientPerformanceWorkspace(
+    input.organizationId,
+    input.workspace
+  );
+}
+
+
+/* ==========================================================
+   Client Performance Initiative Creation
+========================================================== */
+
+/**
+ * Creates a blank initiative tracker row.
+ *
+ * Authorization, organization validation, and client
+ * ownership validation are handled by the service.
+ */
+export interface AddClientPerformanceInitiativeActionInput {
+  organizationId: string;
+
+  clientId: string;
+}
+
+
+export async function addClientPerformanceInitiativeAction(
+  input: AddClientPerformanceInitiativeActionInput
+): Promise<string> {
+  return addClientPerformanceInitiative(
+    input.organizationId,
+    input.clientId
+  );
+}
+
+
+/* ==========================================================
+   Client Performance Year Management
+========================================================== */
+
+/**
+ * Adds the next available performance year to a
+ * Client Performance workspace.
+ *
+ * Authorization and organization validation are handled
+ * by the Client Performance service.
+ */
+export interface AddClientPerformanceYearActionInput {
+  organizationId: string;
+
+  clientId: string;
+}
+
+
+export async function addClientPerformanceYearAction(
+  input: AddClientPerformanceYearActionInput
+): Promise<number> {
+  return addClientPerformanceYear(
+    input.organizationId,
+    input.clientId
+  );
+}
+
+
+/**
+ * Hides a performance year for all organization users.
+ *
+ * Existing monthly records are retained.
+ */
+export interface HideClientPerformanceYearActionInput {
+  organizationId: string;
+
+  clientId: string;
+
+  performanceYear: number;
+}
+
+
+export async function hideClientPerformanceYearAction(
+  input: HideClientPerformanceYearActionInput
+): Promise<string> {
+  return hideClientPerformanceYear(
+    input.organizationId,
+    input.clientId,
+    input.performanceYear
+  );
+}
+
+
+/**
+ * Restores a previously hidden performance year.
+ *
+ * Existing monthly records are retained.
+ */
+export interface RestoreClientPerformanceYearActionInput {
+  organizationId: string;
+
+  clientId: string;
+
+  performanceYear: number;
+}
+
+
+export async function restoreClientPerformanceYearAction(
+  input: RestoreClientPerformanceYearActionInput
+): Promise<string> {
+  return restoreClientPerformanceYear(
+    input.organizationId,
+    input.clientId,
+    input.performanceYear
   );
 }

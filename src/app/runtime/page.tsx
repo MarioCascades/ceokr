@@ -7,6 +7,7 @@ import IndieOrthoOverallPracticePerformance, {
 import CustomTableMonthlyWorkspace from "@/components/organization/customtablemonthlyworkspace";
 import CustomTableOperationalWorkspace from "@/components/organization/customtableoperationalworkspace";
 import AgendaOperationalWorkspace from "@/components/organization/agendaoperationalworkspace";
+import ClientPerformanceWorkspace from "@/components/organization/clientperformanceworkspace";
 import RuntimeNavigation from "@/components/runtime/shared/runtimenavigation";
 import RuntimeOverview from "@/components/runtime/shared/runtimeoverview";
 
@@ -15,6 +16,10 @@ import { loadRuntimeExecution } from "@/lib/runtime/runtimeexecution";
 import { getOrganization } from "@/services/organization.service";
 import { listUserManagementRecords } from "@/services/user.service";
 import { loadDashboard } from "@/services/dashboard.service";
+import {
+  listClientPerformanceClients,
+  getClientPerformanceWorkspace,
+} from "@/services/clientperformanceservice";
 
 import {
   listCustomTables,
@@ -53,6 +58,7 @@ interface RuntimePageProps {
     subjectId?: string;
     performanceMonth?: string;
     runtimeTab?: string;
+    clientPerformanceClientId?: string;
   }>;
 }
 
@@ -453,6 +459,184 @@ export default async function RuntimePage({
       : [];
 
     /* ========================================================
+       CascadEffects Client Performance Workspace
+
+       This is a dedicated domain workspace. It must never
+       fall through to generic Custom Table row rendering.
+       The service independently enforces the CascadEffects
+       tenant boundary and Runtime view permission.
+    ======================================================== */
+
+    const isClientPerformanceTab =
+      organization.id === "e571cd65-b7f8-4669-bb41-370806097792" &&
+      requestedRuntimeTab === "client-performance" &&
+      selectedTables.some(
+        (table) => table.tableKey === "client-performance"
+      );
+
+    if (isClientPerformanceTab) {
+      let clientPerformanceClients: Awaited<
+        ReturnType<typeof listClientPerformanceClients>
+      > = [];
+      let clientPerformanceWorkspace: Awaited<
+        ReturnType<typeof getClientPerformanceWorkspace>
+      > | null = null;
+      let clientPerformanceError = "";
+      let canManageClientPerformance = false;
+
+      try {
+        [clientPerformanceClients, canManageClientPerformance] =
+          await Promise.all([
+            listClientPerformanceClients(organization.id),
+            hasPermission(
+              organization.id,
+              "custom_tables.manage"
+            ),
+          ]);
+
+        const requestedClientId =
+          params.clientPerformanceClientId?.trim();
+
+        const selectedClient =
+          clientPerformanceClients.find(
+            (client) => client.id === requestedClientId
+          ) ?? clientPerformanceClients[0];
+
+        if (!selectedClient) {
+          clientPerformanceError =
+            "No enabled Client Performance workspaces are available.";
+        } else {
+          clientPerformanceWorkspace =
+            await getClientPerformanceWorkspace(
+              organization.id,
+              { clientId: selectedClient.id }
+            );
+        }
+      } catch (error) {
+        clientPerformanceError =
+          error instanceof Error
+            ? error.message
+            : "The Client Performance workspace could not be loaded.";
+      }
+
+      return (
+        <main
+          style={runtimeBrandStyle}
+          className="
+            ce-runtime-theme
+            mx-auto
+            min-h-screen
+            w-full
+            max-w-none
+            space-y-8
+            px-4
+            py-6
+            sm:px-6
+            lg:px-8
+            xl:px-10
+          "
+        >
+          <OrgAdminReturnBar
+            organizationId={organization.id}
+            visible={canReturnToOrgAdmin}
+          />
+
+          <div
+            className={`sticky ${
+              canReturnToOrgAdmin ? "top-[61px]" : "top-0"
+            } z-40`}
+          >
+            <RuntimeNavigation
+              {...runtimeNavigationProps}
+              selectedSubjectId={params.subjectId}
+              selectedRuntimeTab={resolvedRuntimeTabKey}
+            />
+          </div>
+
+          {/* Match the standard CascadEffects individual Performance Sheet header. */}
+          <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+            <div className="relative overflow-hidden bg-[#082550] px-3 py-3 text-white sm:px-4">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-12 -top-16 h-32 w-32 rounded-full bg-white/10 blur-2xl"
+              />
+
+              <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-center gap-2">
+                    {organization.logo_url ? (
+                      <div className="flex h-8 max-w-[140px] shrink-0 items-center overflow-hidden rounded-md border border-white/15 bg-white/10 px-2">
+                        <img
+                          src={organization.logo_url}
+                          alt={`${organization.company_name} logo`}
+                          className="block max-h-6 max-w-[120px] w-auto object-contain object-left"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-8 shrink-0 items-center rounded-md border border-white/10 bg-white/5 px-2">
+                        <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/60">
+                          Organization
+                        </span>
+                      </div>
+                    )}
+
+                    <p className="min-w-0 truncate text-[9px] font-bold uppercase tracking-[0.16em] text-[#B4C2D1]">
+                      {organization.company_name}
+                    </p>
+                  </div>
+
+                  <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <h1 className="text-xl font-black leading-none tracking-tight sm:text-2xl">
+                      Client Performance
+                    </h1>
+                    <p className="text-xs font-semibold text-[#E26D5C] sm:text-sm">
+                      Organization Performance
+                    </p>
+                  </div>
+                </div>
+
+                <div className="ml-1 flex h-[52px] min-w-[80px] shrink-0 items-center justify-end overflow-hidden px-0 py-0">
+                  <img
+                    src="/logos/CECleanlogo.png"
+                    alt="CascadEffects"
+                    className="block h-[50px] w-auto max-w-[100px] object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border/70 bg-card px-3 py-1.5 sm:px-4">
+              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#082550]">
+                Organization Performance
+              </p>
+            </div>
+          </section>
+
+                    {clientPerformanceError ? (
+            <section
+              role="status"
+              className="rounded-xl border border-gray-200 bg-white p-6"
+            >
+              <h1 className="text-xl font-semibold text-[#082550]">
+                Client Performance unavailable
+              </h1>
+              <p className="mt-2 text-sm text-gray-600">
+                {clientPerformanceError}
+              </p>
+            </section>
+          ) : clientPerformanceWorkspace ? (
+            <ClientPerformanceWorkspace
+              organizationId={organization.id}
+              clients={clientPerformanceClients}
+              initialWorkspace={clientPerformanceWorkspace}
+              canManage={canManageClientPerformance}
+            />
+          ) : null}
+        </main>
+      );
+    }
+
+    /* ========================================================
        Indie Ortho Overall Practice
 
        This tenant-specific view is enabled only through the
@@ -679,32 +863,114 @@ export default async function RuntimePage({
           />
         </div>
 
-        <section className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">
-            Operational Workspace
-          </p>
+        {organization.id === "e571cd65-b7f8-4669-bb41-370806097792" && (
+          <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+            <div className="relative overflow-hidden bg-[#082550] px-3 py-3 text-white sm:px-4">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-12 -top-16 h-32 w-32 rounded-full bg-white/10 blur-2xl"
+              />
 
-          <h1 className="text-3xl font-semibold tracking-tight">
-            {selectedTables.length > 1
-              ? resolvedRuntimeTabKey
-              : selectedTable?.name ?? "Custom Table"}
-          </h1>
+              <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-center gap-2">
+                    {organization.logo_url ? (
+                      <div className="flex h-8 max-w-[140px] shrink-0 items-center overflow-hidden rounded-md border border-white/15 bg-white/10 px-2">
+                        <img
+                          src={organization.logo_url}
+                          alt={`${organization.company_name} logo`}
+                          className="block max-h-6 max-w-[120px] w-auto object-contain object-left"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-8 shrink-0 items-center rounded-md border border-white/10 bg-white/5 px-2">
+                        <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/60">
+                          Organization
+                        </span>
+                      </div>
+                    )}
 
-          {selectedTables.length === 1 &&
-            selectedTables[0].description && (
-              <p className="max-w-3xl text-sm text-muted-foreground">
-                {selectedTables[0].description}
+                    <p className="min-w-0 truncate text-[9px] font-bold uppercase tracking-[0.16em] text-[#B4C2D1]">
+                      {organization.company_name}
+                    </p>
+                  </div>
+
+                  <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <h1 className="text-xl font-black leading-none tracking-tight sm:text-2xl">
+                      {selectedTables.length > 1
+                        ? resolvedRuntimeTabKey
+                        : selectedTable?.name ?? "Custom Table"}
+                    </h1>
+                    <p className="text-xs font-semibold text-[#E26D5C] sm:text-sm">
+                      Organization Performance
+                    </p>
+                  </div>
+                </div>
+
+                <div className="ml-1 flex h-[52px] min-w-[80px] shrink-0 items-center justify-end overflow-hidden px-0 py-0">
+                  <img
+                    src="/logos/CECleanlogo.png"
+                    alt="CascadEffects"
+                    className="block h-[50px] w-auto max-w-[100px] object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border/70 bg-card px-3 py-1.5 sm:px-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#082550]">
+                  Organization Performance
+                </p>
+
+                {selectedTables.some(
+                  (table) => table.persistenceMode === "monthly"
+                ) && (
+                  <p className="text-[10px] font-medium text-muted-foreground">
+                    Performance month: {performanceMonth}
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {organization.id !== "e571cd65-b7f8-4669-bb41-370806097792" && (
+          <section className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              Operational Workspace
+            </p>
+
+            <h1 className="text-3xl font-semibold tracking-tight">
+              {selectedTables.length > 1
+                ? resolvedRuntimeTabKey
+                : selectedTable?.name ?? "Custom Table"}
+            </h1>
+
+            {selectedTables.length === 1 &&
+              selectedTables[0].description && (
+                <p className="max-w-3xl text-sm text-muted-foreground">
+                  {selectedTables[0].description}
+                </p>
+              )}
+
+            {selectedTables.some(
+              (table) => table.persistenceMode === "monthly"
+            ) && (
+              <p className="text-sm text-muted-foreground">
+                Performance month: {performanceMonth}
               </p>
             )}
+          </section>
+        )}
 
-          {selectedTables.some(
-            (table) => table.persistenceMode === "monthly"
-          ) && (
-            <p className="text-sm text-muted-foreground">
-              Performance month: {performanceMonth}
+        {organization.id === "e571cd65-b7f8-4669-bb41-370806097792" &&
+          selectedTables.length === 1 &&
+          selectedTables[0].description && (
+            <p className="max-w-3xl text-sm text-muted-foreground">
+              {selectedTables[0].description}
             </p>
           )}
-        </section>
 
         {workspaceMessage ? (
           <section

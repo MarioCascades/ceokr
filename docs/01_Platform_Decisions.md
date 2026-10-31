@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-10-15
+**Last Updated:** 2026-10-30
 
 This document records architectural decisions that have been intentionally
 adopted for the CascadEffects Performance Platform.
@@ -1252,3 +1252,46 @@ These decisions do not change Member OKR ownership, Builder composition, Runtime
 ## Scope Guardrail
 
 These decisions do not change Member OKR ownership, Builder composition, Runtime performance-history architecture, tenant boundaries, or the requirement for production authorization/RLS verification. They define the persistence and interaction behavior of these operational lists only.
+
+
+# 31. Client Performance Workspace Clarification (2026-10-30)
+
+**Status: PRODUCT BEHAVIOR CONFIRMED; TECHNICAL MODEL PENDING SOURCE REVIEW**
+
+This section supersedes earlier Client Performance statements in this document that prohibited monthly history or described the feature only as a set of independently named current-state tables. Those earlier statements are retained as historical context but are no longer the current product requirement.
+
+## Runtime and tenant scope
+
+- Client Performance is one Runtime entry available only within the CascadEffects tenant. It is not a customer-facing dashboard exposed to other tenants.
+- The workspace contains a client selector. Selecting a client switches the entire workspace, including its current performance snapshot, monthly metrics, and Key Initiatives Tracker.
+- Integrate with the existing Custom Tables registration and Runtime navigation where appropriate. Do not build a separate application or disrupt the generic Custom Tables system.
+
+## Persistent spreadsheet behavior
+
+- Each client has one continuously maintained spreadsheet-style workspace. Monthly rows for different years coexist in the same table; users do not select a month or load monthly snapshots.
+- The initial visible years are 2025 and 2026 (two years by default).
+- Provide Hide Year, Restore/Show Hidden Year, and Add Another Year controls. Hiding a year changes visibility only and never deletes or changes the saved data. Adding a year appends January through December for the next year and does not overwrite historical rows.
+- All existing values remain persisted until deliberately changed. Saving a change must not reset unrelated cells, rows, years, or initiatives.
+- Each client has its own current performance snapshot, monthly metrics, Key Initiatives Tracker, and Last Updated timestamp.
+
+## Client-specific layouts
+
+- Support client-specific column configurations. The supplied spreadsheet screenshots show Kirkland & Richmond with more monthly metric columns, including Days Worked and Avg Prod per Day, while other clients use a simpler column set. Do not force all clients into identical columns.
+- Adding a client should create a standard workspace structure and default column set, with the ability to configure columns for that client. Do not create a separate database table per client.
+- Preserve client-specific presentation differences when supported by the source. Verify exact columns and sections against the source spreadsheets/screenshots and current code before finalizing schema; do not infer unclear fields.
+
+## Client administration and access
+
+- Provide an Organization Admin management experience to add clients and enable/disable existing clients. Placement may be a dedicated Org Admin card/page or the existing Custom Tables settings, based on source review.
+- Disabled clients are hidden from the normal Runtime client selector, but their saved data and configuration remain intact and can be restored by enabling the client.
+- Only Organization Admins and Superadmins can edit/save performance data and manage clients. Enforce this at server-side actions and the database/RLS boundary; UI hiding alone is insufficient.
+- Last Updated is per client and advances only after a successful persisted save. A failed save must not advance the timestamp.
+
+## Architecture guardrails and open work
+
+- Reuse the existing Custom Tables registration, tenant identity, authorization patterns, and persistence infrastructure where suitable. Decide whether dedicated structured persistence is needed only after inspecting current definitions, repositories/services, migrations, and RLS.
+- Preserve organization isolation. Client Performance must not appear for other tenants.
+- This is a product behavior decision, not confirmation that implementation, database schema, RLS, or tests already exist.
+- Before coding, present the proposed data model, migrations, affected files, authorization/RLS strategy, and implementation sequence for approval.
+- Follow the one-file-at-a-time workflow. After implementation, test persistence, client and year visibility, role enforcement, tenant isolation, and regressions in existing Custom Tables, Agenda, VA Roster, and Recruitment.
+
