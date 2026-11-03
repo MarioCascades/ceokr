@@ -195,6 +195,8 @@ export interface UpdatePerformanceInstanceKeyResultInput {
     ];
 
   weight?: number;
+
+  position: number;
 }
 
 export async function updatePerformanceInstanceKeyResult(
@@ -239,6 +241,9 @@ export async function updatePerformanceInstanceKeyResult(
         weight:
           input.weight ??
           null,
+
+        position:
+          input.position,
       })
       .eq(
         "id",

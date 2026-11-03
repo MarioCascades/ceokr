@@ -185,7 +185,9 @@ export async function initializeMemberPerformanceInstance(
           instanceKeyResult.scoringMethod !==
             keyResult.scoringMethod ||
           instanceKeyResult.scoringDirection !==
-            keyResult.scoringDirection;
+            keyResult.scoringDirection ||
+          instanceKeyResult.position !==
+            keyResultPosition;
 
         if (configurationChanged) {
           instanceKeyResult =
@@ -206,6 +208,8 @@ export async function initializeMemberPerformanceInstance(
                 keyResult.scoringMethod,
               scoringDirection:
                 keyResult.scoringDirection,
+              position:
+                keyResultPosition,
             });
 
           keyResultBySourceId.set(

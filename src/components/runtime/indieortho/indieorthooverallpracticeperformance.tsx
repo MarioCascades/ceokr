@@ -71,6 +71,42 @@ export default function IndieOrthoOverallPracticePerformance({
   indieOrthoLogoUrl,
   metrics,
 }: IndieOrthoOverallPracticePerformanceProps) {
+  const firstAvailableMonth = "2026-10";
+
+  const selectedMonth = performanceMonth.slice(0, 7);
+
+  const currentDate = new Date();
+  const currentCalendarMonth =
+    `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}`;
+
+  const latestAvailableMonth =
+    selectedMonth > currentCalendarMonth
+      ? selectedMonth
+      : currentCalendarMonth;
+
+  const availableMonths: string[] = [];
+  {
+    const [latestYear, latestMonth] =
+      latestAvailableMonth.split("-").map(Number);
+    const [firstYear, firstMonth] =
+      firstAvailableMonth.split("-").map(Number);
+
+    const latestIndex = latestYear * 12 + latestMonth - 1;
+    const firstIndex = firstYear * 12 + firstMonth - 1;
+
+    for (
+      let monthIndex = latestIndex;
+      monthIndex >= firstIndex;
+      monthIndex--
+    ) {
+      const year = Math.floor(monthIndex / 12);
+      const month = (monthIndex % 12) + 1;
+      availableMonths.push(
+        `${year}-${String(month).padStart(2, "0")}`
+      );
+    }
+  }
+
   function renderValueBox(
     value: string,
     variant: "lastMonth" | "target" | "thisMonth"
@@ -141,18 +177,17 @@ export default function IndieOrthoOverallPracticePerformance({
               </label>
               <select
                 id="practice-performance-month"
-                value={performanceMonth}
+                value={selectedMonth}
                 onChange={(event) => {
                   window.location.href = monthHref(organizationId, event.target.value);
                 }}
                 className="max-w-[175px] rounded-md border border-white/20 bg-[#202020] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#E17E2D]"
               >
-                {Array.from({ length: 13 }, (_, index) => {
-                  const [year, month] = performanceMonth.split("-").map(Number);
-                  const date = new Date(Date.UTC(year, month - 1 - index, 1));
-                  const value = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-                  return <option key={value} value={value}>{monthLabel(value)}</option>;
-                })}
+                {availableMonths.map((value) => (
+                  <option key={value} value={value}>
+                    {monthLabel(value)}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

@@ -236,7 +236,7 @@ export function calculateRuntimeKeyResultScore(
 function calculateElapsedMonthPercentage(
   performanceMonth: string
 ): number {
-  const match = /^(\d{4})-(\d{2})$/.exec(performanceMonth);
+  const match = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(performanceMonth);
 
   if (!match) {
     return 0;

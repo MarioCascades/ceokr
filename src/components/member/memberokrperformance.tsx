@@ -75,16 +75,8 @@ function formatWeight(
   weight: number | undefined
 ): string {
 
-  if (
-    weight === undefined
-  ) {
-    return "Display Only";
-  }
-
-  if (
-    weight === 0
-  ) {
-    return "Display Only";
+  if (weight === undefined || weight === null) {
+    return "Not set";
   }
 
   return `${weight}%`;
@@ -99,19 +91,16 @@ function calculateScore(
     | "percentage_of_target"
     | "display_only"
     | undefined,
-  performanceMonth: string,
-  weight: number | undefined
+  performanceMonth: string
 ): number | null {
 
   /*
-   * A zero-weight Key Result is explicitly
-   * display-only and therefore has no score.
+   * Display Only is determined exclusively by the
+   * scoring method. Weight affects aggregation only;
+   * it does not disable an individual Key Result score.
    */
 
-  if (
-    weight === 0 ||
-    scoringMethod === "display_only"
-  ) {
+  if (scoringMethod === "display_only") {
     return null;
   }
 
@@ -457,8 +446,7 @@ export default function MemberOKRPerformance({
                                   keyResult.currentValue,
                                   keyResult.target,
                                   keyResult.scoringMethod,
-                                  performanceMonth,
-                                  keyResult.weight
+                                  performanceMonth
                                 );
 
 
@@ -571,9 +559,11 @@ export default function MemberOKRPerformance({
                                         <p className="mt-1 font-medium">
 
                                           {
-                                            score === null
+                                            keyResult.scoringMethod === "display_only"
                                               ? "Display Only"
-                                              : `${score.toFixed(1)}%`
+                                              : score === null
+                                                ? "Awaiting values"
+                                                : `${score.toFixed(1)}%`
                                           }
 
                                         </p>
