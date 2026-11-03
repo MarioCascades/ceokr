@@ -554,10 +554,7 @@ export default function KeyResultRow({
    */
 
   const isDisplayOnly =
-
-  currentKeyResult.scoringMethod === "display_only" ||
-
-  currentKeyResult.weight === 0;
+  currentKeyResult.scoringMethod === "display_only";
 
   /*
 
