@@ -35,7 +35,6 @@ import type {
   ClientPerformanceClient,
   ClientPerformanceInitiative,
   ClientPerformanceMonthlyMetric,
-  ClientPerformanceSnapshotField,
   ClientPerformanceWorkspace,
   SaveClientPerformanceWorkspaceInput,
 } from "@/lib/types/domain/clientperformance";
@@ -146,26 +145,68 @@ function parseNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function getSnapshotInputType(
-  field: ClientPerformanceSnapshotField
-): string {
-  switch (field.dataType) {
-    case "number":
-      return "number";
-    case "date":
-      return "date";
-    default:
-      return "text";
-  }
+function getSnapshotText(snapshotData: Record<string, unknown>, key: string): string {
+  const value = snapshotData[key];
+  return value === null || value === undefined ? "" : String(value);
 }
 
-function getSnapshotValue(
-  workspace: ClientPerformanceWorkspace,
-  field: ClientPerformanceSnapshotField
+function getSnapshotDateInputValue(snapshotData: Record<string, unknown>): string {
+  const value = getSnapshotText(snapshotData, "start");
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const usDate = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (usDate) return `${usDate[3]}-${usDate[1].padStart(2, "0")}-${usDate[2].padStart(2, "0")}`;
+  return "";
+}
+
+function getSnapshotDateDisplay(snapshotData: Record<string, unknown>): string {
+  const value = getSnapshotText(snapshotData, "start");
+  if (!value) return "Not entered";
+  const parsed = new Date(`${value}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? value : new Intl.DateTimeFormat("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }).format(parsed);
+}
+
+function getSnapshotCurrentValue(
+  snapshotData: Record<string, unknown>,
+  metric: "production" | "collection" | "starts"
 ): string {
-  return displayValue(
-    workspace.snapshot.snapshotData[field.columnKey]
-  );
+  const currentKey = `current_${metric}`;
+  const value = Object.prototype.hasOwnProperty.call(snapshotData, currentKey)
+    ? snapshotData[currentKey]
+    : snapshotData[metric];
+  return value === null || value === undefined ? "" : String(value);
+}
+
+function formatSnapshotMetric(
+  metric: "production" | "collection" | "starts",
+  value: unknown
+): string {
+  if (value === null || value === undefined || value === "") return "—";
+  const numeric = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numeric)) return String(value);
+  if (metric === "production" || metric === "collection") return formatCurrency(numeric);
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(numeric);
+}
+
+function formatGrowth(
+  metric: "production" | "collection" | "starts",
+  baseValue: unknown,
+  currentValue: unknown
+): string {
+  if (baseValue === null || baseValue === undefined || baseValue === "" || currentValue === null || currentValue === undefined || currentValue === "") return "—";
+  const base = Number(baseValue);
+  const current = Number(currentValue);
+  if (!Number.isFinite(base) || !Number.isFinite(current)) return "—";
+  const difference = current - base;
+  const percentage = base === 0 ? null : (difference / Math.abs(base)) * 100;
+  const amount = metric === "production" || metric === "collection"
+    ? formatCurrency(Math.abs(difference))
+    : new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(Math.abs(difference));
+  const signedAmount = difference > 0 ? `+${amount}` : difference < 0 ? `-${amount}` : amount;
+  const signedPercentage = percentage === null
+    ? "(N/A)"
+    : `(${percentage > 0 ? "+" : ""}${percentage.toFixed(1)}%)`;
+  return `${signedAmount} ${signedPercentage}`;
 }
 
 function getYearVisibility(
@@ -254,14 +295,6 @@ export default function ClientPerformanceWorkspace({
 
   const [editingAdditionalData, setEditingAdditionalData] =
     useState<Record<string, string>>({});
-
-  const snapshotFields = useMemo(
-    () =>
-      [...workspace.client.snapshotFields]
-        .filter((field) => field.isVisible)
-        .sort((a, b) => a.position - b.position),
-    [workspace.client.snapshotFields]
-  );
 
   const monthlyYears = useMemo(() => {
     const years = [
@@ -369,13 +402,21 @@ export default function ClientPerformanceWorkspace({
     }
 
     const snapshotChanges: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(workspace.snapshot.snapshotData)) {
+    const snapshotKeys = new Set([
+      ...Object.keys(workspace.snapshot.snapshotData),
+      ...Object.keys(savedWorkspace.snapshot.snapshotData),
+    ]);
+    for (const key of snapshotKeys) {
+      const value = workspace.snapshot.snapshotData[key];
       if (JSON.stringify(value) !== JSON.stringify(savedWorkspace.snapshot.snapshotData[key])) {
-        const field = workspace.client.snapshotFields.find((item) => item.columnKey === key);
         let parsedValue: unknown = value;
-        if (field?.dataType === "number" && typeof value === "string") parsedValue = parseNumber(value);
-        else if (field?.dataType === "boolean" && typeof value === "string") parsedValue = value === "true";
-        else if (typeof value === "string" && value.trim() === "") parsedValue = null;
+        if (key === "start" && typeof value === "string" && value.trim() === "") {
+          parsedValue = null;
+        } else if (/^(base|current)_(production|collection|starts)$/.test(key) && typeof value === "string") {
+          parsedValue = parseNumber(value);
+        } else if (key.endsWith("_notes") && typeof value === "string" && value.trim() === "") {
+          parsedValue = null;
+        }
         snapshotChanges[key] = parsedValue;
       }
     }
@@ -743,67 +784,91 @@ export default function ClientPerformanceWorkspace({
           <SectionHeader
             eyebrow="Section 1"
             title="Current Performance Snapshot"
-            description="Current client performance overview. Use Edit to make changes, then save the workspace together."
+            description="Compare the client's baseline performance before CascadEffects with current performance. Growth is calculated automatically."
           />
 
-          {snapshotFields.length > 0 ? (
-            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {snapshotFields.map((field) => {
-                const value = getSnapshotValue(
-                  workspace,
-                  field
-                );
+          <div className="mt-5 rounded-xl border border-[#B4C2D1]/60 bg-[#F7F9FB] p-4 sm:max-w-sm">
+            <label htmlFor="snapshot-start-date" className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">
+              Start Date
+            </label>
+            {canManage && isEditing ? (
+              <input
+                id="snapshot-start-date"
+                type="date"
+                value={getSnapshotDateInputValue(workspace.snapshot.snapshotData)}
+                disabled={busy}
+                onChange={(event) => updateSnapshotLocal("start", event.target.value)}
+                className="w-full border-0 border-b border-[#B4C2D1] bg-transparent px-0 py-2 text-lg font-bold text-[#082550] outline-none focus:border-[#E26D5C] disabled:opacity-60"
+              />
+            ) : (
+              <p className="py-2 text-lg font-bold text-[#082550]">
+                {getSnapshotDateDisplay(workspace.snapshot.snapshotData)}
+              </p>
+            )}
+          </div>
 
-                return (
-                  <div
-                    key={field.id}
-                    className="min-w-0 rounded-xl border border-[#B4C2D1]/60 bg-[#F7F9FB] p-4"
-                  >
-                    <label
-                      htmlFor={`snapshot-${field.columnKey}`}
-                      className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500"
-                    >
-                      {field.label}
-                      {field.isRequired && (
-                        <span className="ml-1 text-[#E26D5C]">
-                          *
-                        </span>
-                      )}
-                    </label>
-
-                    {canManage && field.isEditable && isEditing ? (
-                      <input
-                        id={`snapshot-${field.columnKey}`}
-                        type={getSnapshotInputType(field)}
-                        step={
-                          field.dataType === "number"
-                            ? "any"
-                            : undefined
-                        }
-                        value={value}
-                        disabled={busy}
-                        onChange={(event) =>
-                          updateSnapshotLocal(
-                            field.columnKey,
-                            event.target.value
-                          )
-                        }
-                        className="w-full border-0 border-b border-[#B4C2D1] bg-transparent px-0 py-2 text-xl font-black tabular-nums text-[#082550] outline-none focus:border-[#E26D5C] disabled:opacity-60"
-                      />
+          <div className="mt-5 overflow-x-auto rounded-xl border border-[#B4C2D1]/70">
+            <table className="w-full min-w-[850px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="bg-[#082550] text-white">
+                  <th className="w-44 px-4 py-3 text-[10px] font-bold uppercase tracking-wider">Performance Metric</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">Base (Before CE)</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">Current (With CE)</th>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">Growth</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#B4C2D1]/60">
+                {(["production", "collection", "starts"] as const).map((metric, index) => {
+                  const baseKey = `base_${metric}`;
+                  const currentKey = `current_${metric}`;
+                  const baseValue = getSnapshotText(workspace.snapshot.snapshotData, baseKey);
+                  const currentValue = getSnapshotCurrentValue(workspace.snapshot.snapshotData, metric);
+                  const savedCurrentValue = workspace.snapshot.snapshotData[currentKey] ?? workspace.snapshot.snapshotData[metric];
+                  return (
+                    <tr key={metric} className={index % 2 === 0 ? "bg-white" : "bg-[#F7F9FB]"}>
+                      <th className="px-4 py-3 font-bold text-[#082550]">{metric === "starts" ? "Starts" : metric[0].toUpperCase() + metric.slice(1)}</th>
+                      <td className="min-w-52 px-3 py-2">
+                        {canManage && isEditing ? (
+                          <input type="number" step="any" value={baseValue} disabled={busy} aria-label={`Base ${metric}`} onChange={(event) => updateSnapshotLocal(baseKey, event.target.value)} className={CELL_INPUT_CLASS} />
+                        ) : (
+                          <span className="px-2.5 py-2 tabular-nums">{formatSnapshotMetric(metric, workspace.snapshot.snapshotData[baseKey])}</span>
+                        )}
+                      </td>
+                      <td className="min-w-52 px-3 py-2">
+                        {canManage && isEditing ? (
+                          <input type="number" step="any" value={currentValue} disabled={busy} aria-label={`Current ${metric}`} onChange={(event) => updateSnapshotLocal(currentKey, event.target.value)} className={CELL_INPUT_CLASS} />
+                        ) : (
+                          <span className="px-2.5 py-2 tabular-nums">{formatSnapshotMetric(metric, savedCurrentValue)}</span>
+                        )}
+                      </td>
+                      <td className="min-w-52 px-4 py-3 font-bold tabular-nums text-[#082550]">
+                        {formatGrowth(metric, workspace.snapshot.snapshotData[baseKey], savedCurrentValue)}
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr className="bg-white">
+                  <th className="px-4 py-3 font-bold text-[#082550]">Notes</th>
+                  <td className="min-w-52 px-3 py-2">
+                    {canManage && isEditing ? (
+                      <textarea rows={3} value={getSnapshotText(workspace.snapshot.snapshotData, "base_notes")} disabled={busy} aria-label="Base notes" onChange={(event) => updateSnapshotLocal("base_notes", event.target.value)} className={`${CELL_INPUT_CLASS} resize-y`} />
                     ) : (
-                      <p className="min-h-9 break-words py-2 text-xl font-black tabular-nums text-[#082550]">
-                        {value || "Not entered"}
-                      </p>
+                      <p className="whitespace-pre-wrap px-2.5 py-2">{getSnapshotText(workspace.snapshot.snapshotData, "base_notes") || "—"}</p>
                     )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="mt-5 rounded-xl bg-[#F7F9FB] p-5 text-sm text-gray-500">
-              No visible snapshot fields are configured for this client.
-            </p>
-          )}
+                  </td>
+                  <td className="min-w-52 px-3 py-2">
+                    {canManage && isEditing ? (
+                      <textarea rows={3} value={workspace.snapshot.snapshotData.current_notes !== undefined ? getSnapshotText(workspace.snapshot.snapshotData, "current_notes") : getSnapshotText(workspace.snapshot.snapshotData, "notes")} disabled={busy} aria-label="Current notes" onChange={(event) => updateSnapshotLocal("current_notes", event.target.value)} className={`${CELL_INPUT_CLASS} resize-y`} />
+                    ) : (
+                      <p className="whitespace-pre-wrap px-2.5 py-2">{(workspace.snapshot.snapshotData.current_notes !== undefined ? getSnapshotText(workspace.snapshot.snapshotData, "current_notes") : getSnapshotText(workspace.snapshot.snapshotData, "notes")) || "—"}</p>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-gray-400">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-gray-500">Growth is calculated as Current minus Base. Percentage growth is measured against the Base value; when Base is zero, the percentage is shown as N/A.</p>
         </div>
       </section>
 

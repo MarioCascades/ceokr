@@ -349,6 +349,36 @@ function validateSnapshotChanges(
   );
 
   for (const [key, value] of Object.entries(snapshotData)) {
+    // The comparison snapshot uses a small, fixed set of
+    // Base/Current keys shared by every client. These values
+    // live in the existing JSONB snapshot_data column, so no
+    // database schema change is required.
+    const comparisonMetric = key.match(
+      /^(base|current)_(production|collection|starts)$/
+    );
+    const comparisonNotes =
+      key === "base_notes" || key === "current_notes";
+
+    if (comparisonMetric) {
+      if (value === null || value === undefined) continue;
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new Error(
+          `Snapshot field "${key}" must contain a valid number.`
+        );
+      }
+      continue;
+    }
+
+    if (comparisonNotes) {
+      if (value === null || value === undefined) continue;
+      if (typeof value !== "string") {
+        throw new Error(
+          `Snapshot field "${key}" must contain text.`
+        );
+      }
+      continue;
+    }
+
     const field = fieldMap.get(key);
 
     if (!field) {
