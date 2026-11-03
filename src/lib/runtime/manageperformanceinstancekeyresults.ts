@@ -1,3 +1,4 @@
+
 import {
   findPerformanceInstancesByOrganization,
 } from "@/lib/repositories/performanceinstancerepository";
@@ -245,6 +246,27 @@ export async function updateRuntimePerformanceInstanceKeyResult(
     );
   }
 
+  /*
+   * Retrieve the existing Key Result so its position
+   * remains unchanged during an ordinary content update.
+   */
+  const existingKeyResults =
+    await findPerformanceInstanceKeyResults(
+      input.performanceInstanceId
+    );
+
+  const existingKeyResult =
+    existingKeyResults.find(
+      (keyResult) =>
+        keyResult.id === input.keyResultId
+    );
+
+  if (!existingKeyResult) {
+    throw new Error(
+      "Key Result does not belong to the requested Performance Instance."
+    );
+  }
+
   return updatePerformanceInstanceKeyResult({
     performanceInstanceId:
       input.performanceInstanceId,
@@ -266,6 +288,9 @@ export async function updateRuntimePerformanceInstanceKeyResult(
 
     weight:
       input.weight,
+
+    position:
+      existingKeyResult.position,
   });
 }
 

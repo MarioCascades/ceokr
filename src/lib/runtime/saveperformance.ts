@@ -1,3 +1,4 @@
+
 import type {
   PerformanceInstance,
 } from "@/lib/domain/performanceinstance";
@@ -345,6 +346,13 @@ export async function saveRuntimePerformanceSheet(
 
       weight:
         keyResult.weight,
+
+      /*
+       * Preserve the existing Key Result ordering.
+       * Saving a target must not reposition the Key Result.
+       */
+      position:
+        keyResult.position,
     });
 
 

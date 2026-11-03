@@ -37,6 +37,7 @@ import type {
   ClientPerformanceMonthlyMetric,
   ClientPerformanceSnapshotField,
   ClientPerformanceWorkspace,
+  SaveClientPerformanceWorkspaceInput,
 } from "@/lib/types/domain/clientperformance";
 
 /* ==========================================================
@@ -54,7 +55,8 @@ type MetricField =
   | "production"
   | "collection"
   | "starts"
-  | "daysWorked";
+  | "daysWorked"
+  | "avgProdPerDay";
 
 type InitiativeField =
   | "title"
@@ -62,11 +64,6 @@ type InitiativeField =
   | "completionMonth"
   | "notes";
 
-type SaveHandler = (
-  operation: () => Promise<unknown>,
-  successMessage: string,
-  resultIsTimestamp?: boolean
-) => Promise<void>;
 
 /* ==========================================================
    Styling
@@ -106,6 +103,16 @@ function formatDateTime(value: string | null): string {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+}
+
+function formatCurrency(value: number | null): string {
+  if (value === null || value === undefined) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 function formatMonth(month: number): string {
@@ -230,9 +237,15 @@ export default function ClientPerformanceWorkspace({
 
   const [workspace, setWorkspace] =
     useState<ClientPerformanceWorkspace>(initialWorkspace);
+  const [savedWorkspace, setSavedWorkspace] =
+    useState<ClientPerformanceWorkspace>(initialWorkspace);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     setWorkspace(initialWorkspace);
+    setSavedWorkspace(initialWorkspace);
+    setIsEditing(false);
+    setEditingAdditionalData({});
   }, [initialWorkspace]);
 
   const [busy, setBusy] = useState(false);
@@ -286,11 +299,11 @@ export default function ClientPerformanceWorkspace({
     [workspace.initiatives]
   );
 
-  const runSave: SaveHandler = async (
-    operation,
-    successMessage,
+  async function runSave(
+    operation: () => Promise<unknown>,
+    successMessage: string,
     resultIsTimestamp = true
-  ) => {
+  ): Promise<void> {
     setBusy(true);
     setError("");
     setNotice("");
@@ -323,7 +336,112 @@ export default function ClientPerformanceWorkspace({
     } finally {
       setBusy(false);
     }
-  };
+  }
+
+  const hasUnsavedChanges = useMemo(
+    () => JSON.stringify(workspace) !== JSON.stringify(savedWorkspace),
+    [workspace, savedWorkspace]
+  );
+
+  function beginEditing() {
+    setError("");
+    setNotice("");
+    setIsEditing(true);
+  }
+
+  function cancelEditing() {
+    setWorkspace(savedWorkspace);
+    setEditingAdditionalData({});
+    setIsEditing(false);
+    setError("");
+    setNotice("Unsaved changes were discarded.");
+  }
+
+  async function saveWorkspaceEdits() {
+    for (const [initiativeId, rawValue] of Object.entries(editingAdditionalData)) {
+      try {
+        const parsed: unknown = JSON.parse(rawValue);
+        if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") throw new Error();
+      } catch {
+        setError(`The additional data for initiative ${initiativeId} must be a valid JSON object.`);
+        return;
+      }
+    }
+
+    const snapshotChanges: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(workspace.snapshot.snapshotData)) {
+      if (JSON.stringify(value) !== JSON.stringify(savedWorkspace.snapshot.snapshotData[key])) {
+        const field = workspace.client.snapshotFields.find((item) => item.columnKey === key);
+        let parsedValue: unknown = value;
+        if (field?.dataType === "number" && typeof value === "string") parsedValue = parseNumber(value);
+        else if (field?.dataType === "boolean" && typeof value === "string") parsedValue = value === "true";
+        else if (typeof value === "string" && value.trim() === "") parsedValue = null;
+        snapshotChanges[key] = parsedValue;
+      }
+    }
+
+    const metricFields: MetricField[] = ["production", "collection", "starts", "daysWorked", "avgProdPerDay"];
+    const monthlyChanges = workspace.monthlyMetrics.flatMap((metric) => {
+      const original = savedWorkspace.monthlyMetrics.find((item) => item.id === metric.id);
+      if (!original) return [];
+      const changes: Record<string, number | null> = {};
+      for (const field of metricFields) {
+        let value = metric[field];
+        if (field === "starts" && value !== null) value = Math.trunc(value);
+        if (value !== original[field]) changes[field] = value;
+      }
+      return Object.keys(changes).length ? [{ id: metric.id, changes }] : [];
+    });
+
+    const initiativeChanges = workspace.initiatives.flatMap((initiative) => {
+      const original = savedWorkspace.initiatives.find((item) => item.id === initiative.id);
+      if (!original) return [];
+      const changes: Record<string, unknown> = {};
+      for (const field of ["title", "description", "completionMonth", "notes"] as const) {
+        if (initiative[field] !== original[field]) changes[field] = initiative[field];
+      }
+      if (JSON.stringify(initiative.additionalData ?? {}) !== JSON.stringify(original.additionalData ?? {})) {
+        changes.additionalData = initiative.additionalData ?? {};
+      }
+      return Object.keys(changes).length ? [{ id: initiative.id, changes }] : [];
+    });
+
+    const hasSnapshot = Object.keys(snapshotChanges).length > 0;
+    if (!hasSnapshot && monthlyChanges.length === 0 && initiativeChanges.length === 0) {
+      setIsEditing(false);
+      setNotice("There are no changes to save.");
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const saveInput: SaveClientPerformanceWorkspaceInput = {
+        clientId: workspace.client.id,
+        ...(hasSnapshot ? { snapshot: { snapshotData: snapshotChanges } } : {}),
+        ...(monthlyChanges.length ? { monthlyMetrics: monthlyChanges as NonNullable<SaveClientPerformanceWorkspaceInput["monthlyMetrics"]> } : {}),
+        ...(initiativeChanges.length ? { initiatives: initiativeChanges as NonNullable<SaveClientPerformanceWorkspaceInput["initiatives"]> } : {}),
+      };
+      const result = await saveClientPerformanceWorkspaceAction({
+        organizationId,
+        workspace: saveInput,
+      });
+
+      const timestamp = typeof result === "string" && result ? result : new Date().toISOString();
+      const saved = { ...workspace, client: { ...workspace.client, lastUpdatedAt: timestamp } };
+      setWorkspace(saved);
+      setSavedWorkspace(saved);
+      setIsEditing(false);
+      setEditingAdditionalData({});
+      setNotice("Client Performance workspace saved successfully.");
+      router.refresh();
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "The workspace could not be saved.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
     /* ========================================================
      Client Selection
@@ -332,6 +450,11 @@ export default function ClientPerformanceWorkspace({
   function handleClientChange(clientId: string) {
     if (!clientId || clientId === workspace.client.id) {
       return;
+    }
+
+    if (isEditing && hasUnsavedChanges) {
+      const confirmed = window.confirm("You have unsaved changes. Discard them and switch clients?");
+      if (!confirmed) return;
     }
 
     const nextParams = new URLSearchParams(
@@ -363,45 +486,6 @@ export default function ClientPerformanceWorkspace({
     }));
   }
 
-  async function saveSnapshotField(
-    field: ClientPerformanceSnapshotField,
-    rawValue: string
-  ) {
-    let value: unknown = rawValue;
-
-    if (field.dataType === "number") {
-      value = parseNumber(rawValue);
-    } else if (field.dataType === "boolean") {
-      value = rawValue === "true";
-    } else if (rawValue.trim() === "") {
-      value = null;
-    }
-
-    if (
-      displayValue(
-        workspace.snapshot.snapshotData[field.columnKey]
-      ) === displayValue(value)
-    ) {
-      return;
-    }
-
-    await runSave(
-      () =>
-        saveClientPerformanceWorkspaceAction({
-          organizationId,
-          workspace: {
-            clientId: workspace.client.id,
-            snapshot: {
-              snapshotData: {
-                [field.columnKey]: value,
-              },
-            },
-          },
-        }),
-      "Snapshot changes saved."
-    );
-  }
-
   /* ========================================================
      Monthly Metrics
   ======================================================== */
@@ -422,44 +506,6 @@ export default function ClientPerformanceWorkspace({
           : metric
       ),
     }));
-  }
-
-  async function saveMetricField(
-    metric: ClientPerformanceMonthlyMetric,
-    field: MetricField,
-    rawValue: string
-  ) {
-    const value =
-      field === "starts"
-        ? parseNumber(rawValue) === null
-          ? null
-          : Math.trunc(parseNumber(rawValue) as number)
-        : parseNumber(rawValue);
-
-    if (metric[field] === value) {
-      return;
-    }
-
-    updateMetricLocal(metric.id, field, value);
-
-    await runSave(
-      () =>
-        saveClientPerformanceWorkspaceAction({
-          organizationId,
-          workspace: {
-            clientId: workspace.client.id,
-            monthlyMetrics: [
-              {
-                id: metric.id,
-                changes: {
-                  [field]: value,
-                },
-              },
-            ],
-          },
-        }),
-      `${formatMonth(metric.performanceMonth)} ${metric.performanceYear} metrics saved.`
-    );
   }
 
   function getMetricsForYear(
@@ -532,86 +578,23 @@ export default function ClientPerformanceWorkspace({
     }));
   }
 
-  async function saveInitiativeField(
-    initiative: ClientPerformanceInitiative,
-    field: InitiativeField,
-    value: string
-  ) {
-    if (initiative[field] === value) {
-      return;
-    }
-
-    updateInitiativeLocal(
-      initiative.id,
-      field,
-      value
-    );
-
-    await runSave(
-      () =>
-        saveClientPerformanceWorkspaceAction({
-          organizationId,
-          workspace: {
-            clientId: workspace.client.id,
-            initiatives: [
-              {
-                id: initiative.id,
-                changes: {
-                  [field]: value,
-                },
-              },
-            ],
-          },
-        }),
-      "Initiative changes saved."
-    );
-  }
-
-  async function saveAdditionalData(
-    initiative: ClientPerformanceInitiative,
-    rawValue: string
-  ) {
-    let parsedValue: Record<string, unknown>;
-
+  function updateAdditionalDataLocal(initiativeId: string, rawValue: string) {
+    setEditingAdditionalData((current) => ({ ...current, [initiativeId]: rawValue }));
     try {
       const parsed: unknown = JSON.parse(rawValue);
-
-      if (
-        parsed === null ||
-        Array.isArray(parsed) ||
-        typeof parsed !== "object"
-      ) {
-        throw new Error(
-          "The additional data must be a JSON object."
-        );
+      if (parsed && !Array.isArray(parsed) && typeof parsed === "object") {
+        setWorkspace((current) => ({
+          ...current,
+          initiatives: current.initiatives.map((item) =>
+            item.id === initiativeId
+              ? { ...item, additionalData: parsed as Record<string, unknown> }
+              : item
+          ),
+        }));
       }
-
-      parsedValue = parsed as Record<string, unknown>;
     } catch {
-      setError(
-        "The unlabeled initiative column must contain a valid JSON object."
-      );
-      return;
+      // Keep the draft text visible; Save will require valid JSON.
     }
-
-    await runSave(
-      () =>
-        saveClientPerformanceWorkspaceAction({
-          organizationId,
-          workspace: {
-            clientId: workspace.client.id,
-            initiatives: [
-              {
-                id: initiative.id,
-                changes: {
-                  additionalData: parsedValue,
-                },
-              },
-            ],
-          },
-        }),
-      "Initiative additional data saved."
-    );
   }
 
   async function handleAddInitiative() {
@@ -683,7 +666,19 @@ export default function ClientPerformanceWorkspace({
             </select>
           </div>
 
-          <div className="flex flex-col items-center gap-1 lg:col-start-3 lg:items-end">
+          <div className="flex flex-col items-center gap-2 lg:col-start-3 lg:items-end">
+            {canManage && (
+              <div className="flex gap-2">
+                {isEditing ? (
+                  <>
+                    <button type="button" disabled={busy} onClick={() => void saveWorkspaceEdits()} className={PRIMARY_BUTTON_CLASS}>Save Changes</button>
+                    <button type="button" disabled={busy} onClick={cancelEditing} className={BUTTON_CLASS}>Cancel</button>
+                  </>
+                ) : (
+                  <button type="button" disabled={busy} onClick={beginEditing} className={PRIMARY_BUTTON_CLASS}>Edit</button>
+                )}
+              </div>
+            )}
             <p className="text-xs font-bold text-[#082550]">
               Last Updated
             </p>
@@ -748,7 +743,7 @@ export default function ClientPerformanceWorkspace({
           <SectionHeader
             eyebrow="Section 1"
             title="Current Performance Snapshot"
-            description="Current client performance overview. Changes are saved when you leave an edited field."
+            description="Current client performance overview. Use Edit to make changes, then save the workspace together."
           />
 
           {snapshotFields.length > 0 ? (
@@ -776,7 +771,7 @@ export default function ClientPerformanceWorkspace({
                       )}
                     </label>
 
-                    {canManage && field.isEditable ? (
+                    {canManage && field.isEditable && isEditing ? (
                       <input
                         id={`snapshot-${field.columnKey}`}
                         type={getSnapshotInputType(field)}
@@ -791,12 +786,6 @@ export default function ClientPerformanceWorkspace({
                           updateSnapshotLocal(
                             field.columnKey,
                             event.target.value
-                          )
-                        }
-                        onBlur={(event) =>
-                          void saveSnapshotField(
-                            field,
-                            event.currentTarget.value
                           )
                         }
                         className="w-full border-0 border-b border-[#B4C2D1] bg-transparent px-0 py-2 text-xl font-black tabular-nums text-[#082550] outline-none focus:border-[#E26D5C] disabled:opacity-60"
@@ -827,12 +816,12 @@ export default function ClientPerformanceWorkspace({
           <SectionHeader
             eyebrow="Section 2"
             title="Monthly Metrics"
-            description="Monthly production, collection, starts, and days worked. Each year is maintained independently."
+            description="Monthly production, collection, starts, and days worked. Kirkland & Richmond also includes average production per day."
             action={
               canManage ? (
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || isEditing}
                   onClick={() => void handleAddYear()}
                   className={PRIMARY_BUTTON_CLASS}
                 >
@@ -860,7 +849,7 @@ export default function ClientPerformanceWorkspace({
                       {canManage && (
                         <button
                           type="button"
-                          disabled={busy}
+                          disabled={busy || isEditing}
                           onClick={() =>
                             void handleYearVisibility(year, false)
                           }
@@ -872,7 +861,7 @@ export default function ClientPerformanceWorkspace({
                     </div>
 
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+                      <table className="w-full min-w-[900px] border-collapse text-left text-sm">
                         <thead>
                           <tr className="bg-[#E9F4F8] text-[#082550]">
                             <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">
@@ -890,6 +879,9 @@ export default function ClientPerformanceWorkspace({
                             <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">
                               Days Worked
                             </th>
+                            {workspace.client.clientKey === "kirkland-richmond" && (
+                              <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">Avg Prod per Day</th>
+                            )}
                           </tr>
                         </thead>
 
@@ -915,6 +907,7 @@ export default function ClientPerformanceWorkspace({
                                 key: "daysWorked",
                                 value: metric.daysWorked,
                               },
+                              ...(workspace.client.clientKey === "kirkland-richmond" ? [{ key: "avgProdPerDay" as const, value: metric.avgProdPerDay }] : []),
                             ];
 
                             return (
@@ -935,20 +928,13 @@ export default function ClientPerformanceWorkspace({
                                     key={field.key}
                                     className="min-w-36 px-3 py-2"
                                   >
-                                    {canManage ? (
+                                    {canManage && isEditing ? (
                                       <input
                                         type="number"
                                         step="any"
                                         value={field.value ?? ""}
                                         disabled={busy}
                                         aria-label={`${formatMonth(metric.performanceMonth)} ${year} ${field.key}`}
-                                        onBlur={(event) =>
-                                          void saveMetricField(
-                                            metric,
-                                            field.key,
-                                            event.currentTarget.value
-                                          )
-                                        }
                                         onChange={(event) => {
                                           const value =
                                             parseNumber(
@@ -965,7 +951,7 @@ export default function ClientPerformanceWorkspace({
                                       />
                                     ) : (
                                       <span className="px-2.5 py-2 text-sm tabular-nums text-[#272D2C]">
-                                        {field.value ?? "—"}
+                                        {field.key === "production" || field.key === "collection" || field.key === "avgProdPerDay" ? formatCurrency(field.value) : field.value ?? "—"}
                                       </span>
                                     )}
                                   </td>
@@ -1005,7 +991,7 @@ export default function ClientPerformanceWorkspace({
                       <button
                         key={year}
                         type="button"
-                        disabled={busy}
+                        disabled={busy || isEditing}
                         onClick={() =>
                           void handleYearVisibility(year, true)
                         }
@@ -1042,7 +1028,7 @@ export default function ClientPerformanceWorkspace({
               canManage ? (
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || isEditing}
                   onClick={() => void handleAddInitiative()}
                   className={PRIMARY_BUTTON_CLASS}
                 >
@@ -1099,19 +1085,12 @@ export default function ClientPerformanceWorkspace({
                       </td>
 
                       <td className="px-3 py-2 align-top">
-                        {canManage ? (
+                        {canManage && isEditing ? (
                           <textarea
-                            key={`${initiative.id}-title-${initiative.title}`}
-                            defaultValue={initiative.title}
+                            value={initiative.title}
+                            onChange={(event) => updateInitiativeLocal(initiative.id, "title", event.target.value)}
                             rows={2}
                             disabled={busy}
-                            onBlur={(event) =>
-                              void saveInitiativeField(
-                                initiative,
-                                "title",
-                                event.currentTarget.value
-                              )
-                            }
                             className={`${CELL_INPUT_CLASS} resize-y`}
                           />
                         ) : (
@@ -1122,19 +1101,12 @@ export default function ClientPerformanceWorkspace({
                       </td>
 
                       <td className="px-3 py-2 align-top">
-                        {canManage ? (
+                        {canManage && isEditing ? (
                           <textarea
-                            key={`${initiative.id}-description-${initiative.description}`}
-                            defaultValue={initiative.description}
+                            value={initiative.description}
+                            onChange={(event) => updateInitiativeLocal(initiative.id, "description", event.target.value)}
                             rows={2}
                             disabled={busy}
-                            onBlur={(event) =>
-                              void saveInitiativeField(
-                                initiative,
-                                "description",
-                                event.currentTarget.value
-                              )
-                            }
                             className={`${CELL_INPUT_CLASS} resize-y`}
                           />
                         ) : (
@@ -1147,18 +1119,11 @@ export default function ClientPerformanceWorkspace({
                       <td className="px-3 py-2 align-top">
                         {canManage ? (
                           <input
-                            key={`${initiative.id}-month-${initiative.completionMonth ?? ""}`}
                             type="text"
-                            defaultValue={initiative.completionMonth ?? ""}
+                            value={initiative.completionMonth ?? ""}
+                            onChange={(event) => updateInitiativeLocal(initiative.id, "completionMonth", event.target.value) }
                             placeholder="Month"
                             disabled={busy}
-                            onBlur={(event) =>
-                              void saveInitiativeField(
-                                initiative,
-                                "completionMonth",
-                                event.currentTarget.value
-                              )
-                            }
                             className={CELL_INPUT_CLASS}
                           />
                         ) : (
@@ -1169,7 +1134,7 @@ export default function ClientPerformanceWorkspace({
                       </td>
 
                       <td className="px-3 py-2 align-top">
-                        {canManage ? (
+                        {canManage && isEditing ? (
                           <textarea
                             value={
                               editingAdditionalData[initiative.id] ??
@@ -1179,18 +1144,7 @@ export default function ClientPerformanceWorkspace({
                             }
                             rows={2}
                             disabled={busy}
-                            onChange={(event) =>
-                              setEditingAdditionalData((current) => ({
-                                ...current,
-                                [initiative.id]: event.target.value,
-                              }))
-                            }
-                            onBlur={(event) =>
-                              void saveAdditionalData(
-                                initiative,
-                                event.currentTarget.value
-                              )
-                            }
+                            onChange={(event) => updateAdditionalDataLocal(initiative.id, event.target.value)}
                             aria-label={`Unlabeled additional data for initiative ${index + 1}`}
                             className={`${CELL_INPUT_CLASS} resize-y font-mono text-xs`}
                           />
@@ -1206,19 +1160,12 @@ export default function ClientPerformanceWorkspace({
                       </td>
 
                       <td className="px-3 py-2 align-top">
-                        {canManage ? (
+                        {canManage && isEditing ? (
                           <textarea
-                            key={`${initiative.id}-notes-${initiative.notes}`}
-                            defaultValue={initiative.notes}
+                            value={initiative.notes}
+                            onChange={(event) => updateInitiativeLocal(initiative.id, "notes", event.target.value)}
                             rows={2}
                             disabled={busy}
-                            onBlur={(event) =>
-                              void saveInitiativeField(
-                                initiative,
-                                "notes",
-                                event.currentTarget.value
-                              )
-                            }
                             className={`${CELL_INPUT_CLASS} resize-y`}
                           />
                         ) : (
@@ -1258,7 +1205,7 @@ export default function ClientPerformanceWorkspace({
                     >
                       <button
                         type="button"
-                        disabled={busy}
+                        disabled={busy || isEditing}
                         onClick={() => void handleAddInitiative()}
                         className="inline-flex items-center gap-2 rounded-lg border border-dashed border-[#B4C2D1] bg-white px-3.5 py-2.5 text-sm font-semibold text-[#082550] transition hover:border-[#E26D5C] disabled:opacity-40"
                       >

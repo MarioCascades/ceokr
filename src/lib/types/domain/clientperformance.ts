@@ -200,6 +200,8 @@ export interface ClientPerformanceMonthlyMetric {
 
   daysWorked: number | null;
 
+  avgProdPerDay: number | null;
+
   createdAt: string;
 
   updatedAt: string;
@@ -227,6 +229,8 @@ export interface CreateClientPerformanceMonthlyMetricInput {
   starts?: number | null;
 
   daysWorked?: number | null;
+
+  avgProdPerDay?: number | null;
 }
 
 /**
@@ -241,6 +245,8 @@ export interface UpdateClientPerformanceMonthlyMetricInput {
   starts?: number | null;
 
   daysWorked?: number | null;
+
+  avgProdPerDay?: number | null;
 }
 
 /* ==========================================================

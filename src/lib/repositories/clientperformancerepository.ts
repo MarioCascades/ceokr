@@ -70,6 +70,7 @@ interface ClientPerformanceMonthlyMetricRecord {
   collection: number | string | null;
   starts: number | null;
   days_worked: number | string | null;
+  avg_prod_per_day: number | string | null;
   created_at: string;
   updated_at: string;
 }
@@ -154,6 +155,10 @@ function mapMonthlyMetric(
       record.days_worked === null
         ? null
         : Number(record.days_worked),
+    avgProdPerDay:
+      record.avg_prod_per_day === null
+        ? null
+        : Number(record.avg_prod_per_day),
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };
