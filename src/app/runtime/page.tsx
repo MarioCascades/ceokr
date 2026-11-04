@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { redirect } from "next/navigation";
 
 import PerformanceSheet from "@/components/runtime/performancesheet/performancesheet";
 import IndieOrthoOverallPracticePerformance, {
@@ -16,6 +17,7 @@ import { loadRuntimeExecution } from "@/lib/runtime/runtimeexecution";
 import { getOrganization } from "@/services/organization.service";
 import { listUserManagementRecords } from "@/services/user.service";
 import { loadDashboard } from "@/services/dashboard.service";
+import { loadRuntimeNavigationTabs } from "@/services/runtimenavigation.service";
 import {
   listClientPerformanceClients,
   getClientPerformanceWorkspace,
@@ -431,6 +433,129 @@ export default async function RuntimePage({
     performanceMonths: [performanceMonth],
     operationalTables,
   };
+
+  /*
+   * Resolve the initial Runtime landing tab on the server.
+   *
+   * This runs before the Dashboard fallback is rendered, so a
+   * hidden Dashboard is never sent to the browser as an
+   * intermediate page. Explicit member and operational-tab
+   * URLs are left untouched.
+   */
+  if (!params.subjectId && !params.runtimeTab) {
+    let savedNavigationTabs: Awaited<
+      ReturnType<typeof loadRuntimeNavigationTabs>
+    > = [];
+
+    if (canViewCustomTables) {
+      try {
+        savedNavigationTabs = await loadRuntimeNavigationTabs(
+          organization.id
+        );
+      } catch (error) {
+        console.error(
+          "Unable to resolve the initial Runtime navigation tab:",
+          error
+        );
+      }
+    }
+
+    const hasSavedNavigationConfiguration =
+      savedNavigationTabs.length > 0;
+
+    const configuredActiveTabKeys = savedNavigationTabs
+      .filter((tab) => !tab.isHidden)
+      .sort((first, second) => first.position - second.position)
+      .map((tab) => tab.tabKey);
+
+    const configuredTabKeys = new Set(
+      savedNavigationTabs.map((tab) => tab.tabKey)
+    );
+
+    const hiddenTabKeys = new Set(
+      savedNavigationTabs
+        .filter((tab) => tab.isHidden)
+        .map((tab) => tab.tabKey)
+    );
+
+    const availableTabKeys = [
+      ...(
+        !hasSavedNavigationConfiguration ||
+        configuredActiveTabKeys.includes("dashboard")
+          ? ["dashboard"]
+          : []
+      ),
+      ...activeMembers.map(
+        (member) => `member:${member.user.id}`
+      ),
+      ...operationalTables.map(
+        (table) => table.runtimeTabKey || table.tableKey
+      ),
+    ].filter((tabKey) => !hiddenTabKeys.has(tabKey));
+
+    const orderedActiveTabKeys = [
+      ...configuredActiveTabKeys,
+      ...availableTabKeys.filter(
+        (tabKey) => !configuredTabKeys.has(tabKey)
+      ),
+    ].filter(
+      (tabKey, index, all) =>
+        availableTabKeys.includes(tabKey) &&
+        all.indexOf(tabKey) === index
+    );
+
+    const firstActiveTabKey = orderedActiveTabKeys[0];
+
+    if (firstActiveTabKey?.startsWith("member:")) {
+      const firstMemberId = firstActiveTabKey.slice(
+        "member:".length
+      );
+
+      const query = new URLSearchParams({
+        organizationId: organization.id,
+        subjectId: firstMemberId,
+        performanceMonth,
+      });
+
+      redirect(`/runtime?${query.toString()}`);
+    }
+
+    if (
+      firstActiveTabKey &&
+      firstActiveTabKey !== "dashboard"
+    ) {
+      const query = new URLSearchParams({
+        organizationId: organization.id,
+        runtimeTab: firstActiveTabKey,
+        performanceMonth,
+      });
+
+      redirect(`/runtime?${query.toString()}`);
+    }
+
+    if (!firstActiveTabKey) {
+      return (
+        <main
+          style={runtimeBrandStyle}
+          className="ce-runtime-theme mx-auto min-h-screen w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8"
+        >
+          <OrgAdminReturnBar
+            organizationId={organization.id}
+            visible={canReturnToOrgAdmin}
+          />
+          <section className="rounded-xl border border-border/80 bg-card p-6 shadow-sm">
+            <h1 className="text-xl font-semibold text-foreground">
+              No active Runtime tabs
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              There are currently no active tabs available for this organization.
+              Please ask an Organization Admin to activate a Runtime tab.
+            </p>
+          </section>
+        </main>
+      );
+    }
+  }
 
   /* ========================================================
      Operational Custom Table Workspace

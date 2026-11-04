@@ -4,7 +4,6 @@ import {
   useEffect,
   useState,
 } from "react";
-
 import type {
   UserManagementRecord,
 } from "@/lib/types/domain/usermanagement";
@@ -325,6 +324,7 @@ export default function RuntimeNavigation({
         setConfiguredTabOrder(
           tabOrder ?? []
         );
+
       } catch (error) {
         /*
          * Navigation configuration should never prevent
@@ -345,6 +345,7 @@ export default function RuntimeNavigation({
           setConfiguredTabOrder(
             tabOrder ?? []
           );
+
         }
       }
     }

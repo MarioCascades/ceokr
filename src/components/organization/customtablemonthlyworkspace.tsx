@@ -405,9 +405,23 @@ export default function CustomTableMonthlyWorkspace({
     );
 
     if (result) {
-      setNotice(
-        `Carry-forward completed for ${targetMonth.slice(0, 7)}.`
+      const targetMonthInput = targetMonth.slice(0, 7);
+      const refreshed = await runAction(() =>
+        loadCustomTableWorkspaceAction(
+          organizationId,
+          tableDefinitionId,
+          targetMonth
+        )
       );
+
+      if (refreshed) {
+        setWorkspace(refreshed);
+        setSelectedMonth(targetMonthInput);
+        setShowHidden(false);
+        setNotice(
+          `Carry-forward completed. You are now viewing ${targetMonthInput}.`
+        );
+      }
     }
   }
 
@@ -467,7 +481,7 @@ export default function CustomTableMonthlyWorkspace({
                 onClick={() => void handleCarryForward()}
                 className={`${buttonBase} border-[#082550] bg-[#082550] text-white hover:bg-[#12396C]`}
               >
-                Carry Forward
+                {busy ? "Carrying Forward..." : "Carry Forward"}
               </button>
             )}
           </div>
