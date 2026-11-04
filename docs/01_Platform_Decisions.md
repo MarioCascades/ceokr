@@ -1276,7 +1276,7 @@ This section supersedes earlier Client Performance statements in this document t
 
 ## Client-specific layouts
 
-- Support client-specific column configurations. The supplied spreadsheet screenshots show Kirkland & Richmond with more monthly metric columns, including Days Worked and Avg Prod per Day, while other clients use a simpler column set. Do not force all clients into identical columns.
+- Support client-specific column configurations. The supplied spreadsheet screenshots show Kirkland & Redmond with more monthly metric columns, including Days Worked and Avg Prod per Day, while other clients use a simpler column set. Do not force all clients into identical columns.
 - Adding a client should create a standard workspace structure and default column set, with the ability to configure columns for that client. Do not create a separate database table per client.
 - Preserve client-specific presentation differences when supported by the source. Verify exact columns and sections against the source spreadsheets/screenshots and current code before finalizing schema; do not infer unclear fields.
 

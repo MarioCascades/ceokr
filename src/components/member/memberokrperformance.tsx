@@ -1,6 +1,12 @@
+
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+
+import {
+  updateOwnMemberKeyResultValues,
+} from "@/app/member/actions";
 
 import {
   calculateRuntimeKeyResultScore,
@@ -17,59 +23,18 @@ import type {
 
 interface MemberPerformanceTab {
   id: string;
-
   label: string;
 }
 
-
 interface MemberOKRPerformanceProps {
-  performance:
-    MemberOKRPerformance;
-
-  memberTabs?:
-    MemberPerformanceTab[];
+  performance: MemberOKRPerformance;
+  memberTabs?: MemberPerformanceTab[];
 }
 
 
 /* ==========================================================
    Helpers
 ========================================================== */
-
-function formatValue(
-  value: unknown
-): string {
-
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return "—";
-  }
-
-  if (
-    typeof value === "object"
-  ) {
-
-    try {
-
-      return JSON.stringify(
-        value
-      );
-
-    } catch {
-
-      return "—";
-
-    }
-
-  }
-
-  return String(
-    value
-  );
-}
-
 
 function formatWeight(
   weight: number | undefined
@@ -146,18 +111,216 @@ export default function MemberOKRPerformance({
     objectives,
     performanceSheet,
     performanceMonth,
-  } =
-    performance;
+  } = performance;
 
 
   const document =
     performanceSheet?.document;
 
 
+  /* ========================================================
+     Editable Key Result Values
+  ======================================================== */
+
+  const [editedValues, setEditedValues] = useState<
+    Record<
+      string,
+      {
+        target: string;
+        currentValue: string;
+      }
+    >
+  >({});
+
+
+  const [savingKeyResult, setSavingKeyResult] =
+    useState<string | null>(null);
+
+
+  const [saveMessages, setSaveMessages] = useState<
+    Record<
+      string,
+      {
+        type: "success" | "error";
+        message: string;
+      }
+    >
+  >({});
+
+
+  /* ========================================================
+     Get Editable Values
+  ======================================================== */
+
+  function getEditableValues(keyResult: {
+    id: string;
+    target: unknown;
+    currentValue: unknown;
+  }) {
+
+    const existing =
+      editedValues[keyResult.id];
+
+    return existing ?? {
+      target:
+        keyResult.target === null ||
+        keyResult.target === undefined
+          ? ""
+          : String(keyResult.target),
+
+      currentValue:
+        keyResult.currentValue === null ||
+        keyResult.currentValue === undefined
+          ? ""
+          : String(keyResult.currentValue),
+    };
+
+  }
+
+
+  /* ========================================================
+     Handle Value Changes
+  ======================================================== */
+
+  function handleValueChange(
+    keyResult: {
+      id: string;
+      target: unknown;
+      currentValue: unknown;
+    },
+    field: "target" | "currentValue",
+    value: string
+  ) {
+
+    const existing =
+      getEditableValues(keyResult);
+
+    setEditedValues((previous) => ({
+      ...previous,
+
+      [keyResult.id]: {
+        ...existing,
+        [field]: value,
+      },
+    }));
+
+
+    setSaveMessages((previous) => ({
+      ...previous,
+
+      [keyResult.id]: {
+        type: "success",
+        message: "",
+      },
+    }));
+
+  }
+
+
+  /* ========================================================
+     Save Key Result Values
+  ======================================================== */
+
+  async function handleSave(keyResult: {
+    id: string;
+    target: unknown;
+    currentValue: unknown;
+  }) {
+
+    const values =
+      getEditableValues(keyResult);
+
+
+    setSavingKeyResult(
+      keyResult.id
+    );
+
+
+    setSaveMessages((previous) => ({
+      ...previous,
+
+      [keyResult.id]: {
+        type: "success",
+        message: "",
+      },
+    }));
+
+
+    try {
+
+      const result =
+        await updateOwnMemberKeyResultValues(
+          performance.organizationId,
+          keyResult.id,
+          {
+            target: values.target,
+            currentValue: values.currentValue,
+          }
+        );
+
+
+      setEditedValues((previous) => ({
+        ...previous,
+
+        [keyResult.id]: {
+          target:
+            result.target === null ||
+            result.target === undefined
+              ? ""
+              : String(result.target),
+
+          currentValue:
+            result.currentValue === null ||
+            result.currentValue === undefined
+              ? ""
+              : String(result.currentValue),
+        },
+      }));
+
+
+      setSaveMessages((previous) => ({
+        ...previous,
+
+        [keyResult.id]: {
+          type: "success",
+          message: "Changes saved successfully.",
+        },
+      }));
+
+    } catch (error) {
+
+      setSaveMessages((previous) => ({
+        ...previous,
+
+        [keyResult.id]: {
+          type: "error",
+
+          message:
+            error instanceof Error
+              ? error.message
+              : "Unable to save changes.",
+        },
+      }));
+
+    } finally {
+
+      setSavingKeyResult(null);
+
+    }
+
+  }
+
+
+  /* ==========================================================
+     Render
+  ========================================================== */
+
   return (
+
     <main className="min-h-screen bg-background">
 
       {memberTabs && memberTabs.length > 0 && (
+
         <section className="border-b bg-white">
 
           <div className="mx-auto max-w-7xl px-4 py-3">
@@ -441,10 +604,14 @@ export default function MemberOKRPerformance({
                               keyResultIndex
                             ) => {
 
+                              const editableValues =
+                                getEditableValues(keyResult);
+
+
                               const score =
                                 calculateScore(
-                                  keyResult.currentValue,
-                                  keyResult.target,
+                                  editableValues.currentValue,
+                                  editableValues.target,
                                   keyResult.scoringMethod,
                                   performanceMonth
                                 );
@@ -512,43 +679,67 @@ export default function MemberOKRPerformance({
 
                                     <div className="grid gap-4 md:grid-cols-4">
 
+                                      {/* Target */}
+
                                       <div className="rounded-lg border p-4">
 
-                                        <p className="text-xs text-muted-foreground">
+                                        <label
+                                          htmlFor={`target-${keyResult.id}`}
+                                          className="text-xs text-muted-foreground"
+                                        >
                                           Target
-                                        </p>
+                                        </label>
 
-                                        <p className="mt-1 font-medium">
-
-                                          {
-                                            formatValue(
-                                              keyResult.target
+                                        <input
+                                          id={`target-${keyResult.id}`}
+                                          type="text"
+                                          inputMode="decimal"
+                                          value={editableValues.target}
+                                          onChange={(event) =>
+                                            handleValueChange(
+                                              keyResult,
+                                              "target",
+                                              event.target.value
                                             )
                                           }
-
-                                        </p>
+                                          className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 font-medium outline-none focus:ring-2 focus:ring-primary"
+                                          aria-label={`Target for ${keyResult.title}`}
+                                        />
 
                                       </div>
 
+
+                                      {/* Current */}
 
                                       <div className="rounded-lg border p-4">
 
-                                        <p className="text-xs text-muted-foreground">
+                                        <label
+                                          htmlFor={`current-${keyResult.id}`}
+                                          className="text-xs text-muted-foreground"
+                                        >
                                           Current
-                                        </p>
+                                        </label>
 
-                                        <p className="mt-1 font-medium">
-
-                                          {
-                                            formatValue(
-                                              keyResult.currentValue
+                                        <input
+                                          id={`current-${keyResult.id}`}
+                                          type="text"
+                                          inputMode="decimal"
+                                          value={editableValues.currentValue}
+                                          onChange={(event) =>
+                                            handleValueChange(
+                                              keyResult,
+                                              "currentValue",
+                                              event.target.value
                                             )
                                           }
-
-                                        </p>
+                                          className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 font-medium outline-none focus:ring-2 focus:ring-primary"
+                                          aria-label={`Current value for ${keyResult.title}`}
+                                        />
 
                                       </div>
 
+
+                                      {/* Score */}
 
                                       <div className="rounded-lg border p-4">
 
@@ -571,6 +762,8 @@ export default function MemberOKRPerformance({
                                       </div>
 
 
+                                      {/* Measurement */}
+
                                       <div className="rounded-lg border p-4">
 
                                         <p className="text-xs text-muted-foreground">
@@ -591,6 +784,58 @@ export default function MemberOKRPerformance({
                                         </p>
 
                                       </div>
+
+                                    </div>
+
+
+                                    {/* ==================================
+                                        Save Changes
+                                    ================================== */}
+
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+
+                                      <div
+                                        aria-live="polite"
+                                        className="text-sm"
+                                      >
+
+                                        {
+                                          saveMessages[keyResult.id]?.message && (
+
+                                            <p
+                                              className={
+                                                saveMessages[keyResult.id].type === "error"
+                                                  ? "text-destructive"
+                                                  : "text-green-700"
+                                              }
+                                            >
+                                              {
+                                                saveMessages[keyResult.id].message
+                                              }
+                                            </p>
+
+                                          )
+                                        }
+
+                                      </div>
+
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSave(keyResult)}
+                                        disabled={
+                                          savingKeyResult === keyResult.id
+                                        }
+                                        className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                                      >
+
+                                        {
+                                          savingKeyResult === keyResult.id
+                                            ? "Saving..."
+                                            : "Save Changes"
+                                        }
+
+                                      </button>
 
                                     </div>
 

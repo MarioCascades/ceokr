@@ -260,6 +260,22 @@ export default function RuntimeNavigation({
     tabOrder ?? []
   );
 
+  /*
+   * Tracks whether the organization has a saved navigation
+   * configuration.
+   *
+   * When a saved configuration exists, Dashboard must only
+   * appear if it is explicitly included in the active tabs.
+   *
+   * When no configuration exists, retain the original
+   * default behavior and expose Dashboard.
+   */
+
+  const [
+    hasSavedNavigationConfiguration,
+    setHasSavedNavigationConfiguration,
+  ] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -273,6 +289,10 @@ export default function RuntimeNavigation({
         if (cancelled) {
           return;
         }
+
+        setHasSavedNavigationConfiguration(
+          configuredTabs.length > 0
+        );
 
         if (
           configuredTabs.length > 0
@@ -320,6 +340,8 @@ export default function RuntimeNavigation({
         );
 
         if (!cancelled) {
+          setHasSavedNavigationConfiguration(false);
+
           setConfiguredTabOrder(
             tabOrder ?? []
           );
@@ -513,8 +535,26 @@ export default function RuntimeNavigation({
         table.tableKey
     );
 
+  /*
+   * IMPORTANT:
+   *
+   * Dashboard is no longer added unconditionally.
+   *
+   * If an organization has a saved navigation configuration,
+   * Dashboard is included only when it exists in the active
+   * configured tab order.
+   *
+   * This prevents a hidden Dashboard tab from being appended
+   * again as a missing default tab.
+   */
+
   const currentTabKeys = [
-    "dashboard",
+    ...(
+      !hasSavedNavigationConfiguration ||
+      configuredTabOrder.includes("dashboard")
+        ? ["dashboard"]
+        : []
+    ),
 
     ...members.map(
       (member) =>

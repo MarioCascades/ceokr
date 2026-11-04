@@ -377,31 +377,44 @@ export default function KeyResultRow({
   const targetLooksFinancial = targetText.startsWith("$");
 
   const displayTargetValue =
-    isPercentage
-      ? formatPercentageValue(targetValue)
-      : isFinancial || targetLooksFinancial
-        ? formatFinancialTargetValue(targetValue)
-        : targetValue;
+
+    globalEditing
+
+      ? targetValue
+
+      : isPercentage
+
+        ? formatPercentageValue(targetValue)
+
+        : isFinancial || targetLooksFinancial
+
+          ? formatFinancialTargetValue(targetValue)
+
+          : targetValue;
 
   const displayCurrentValue =
 
-    isPercentage
+    globalEditing
 
-      ? formatPercentageValue(
+      ? currentValue
 
-          currentValue
+      : isPercentage
 
-        )
-
-      : isFinancial
-
-        ? formatFinancialValue(
+        ? formatPercentageValue(
 
             currentValue
 
           )
 
-        : currentValue;
+        : isFinancial
+
+          ? formatFinancialValue(
+
+              currentValue
+
+            )
+
+          : currentValue;
 
   /* ========================================================
 
@@ -881,7 +894,7 @@ export default function KeyResultRow({
 
           )
 
-        : isFinancial
+        : isFinancial || targetLooksFinancial
 
           ? normalizeFinancialInput(
 

@@ -8,7 +8,7 @@ Migration: 20261031
 
 Creates the six initial client workspaces:
 
-1. Kirkland & Richmond
+1. Kirkland & Redmond
 2. Desman
 3. Burns
 4. Mint
@@ -82,14 +82,14 @@ INSERT INTO public.client_performance_clients (
 VALUES
 
 /* ----------------------------------------------------------
-   Kirkland & Richmond
+   Kirkland & Redmond
 ---------------------------------------------------------- */
 
 (
     'e571cd65-b7f8-4669-bb41-370806097792',
     '3d49013b-7682-4d37-9cba-6229d3cf15ec',
-    'kirkland-richmond',
-    'Kirkland & Richmond',
+    'kirkland-redmond',
+    'Kirkland & Redmond',
     1,
     true,
     jsonb_build_array(
@@ -566,7 +566,7 @@ WHERE client.organization_id =
   AND client.custom_table_definition_id =
     '3d49013b-7682-4d37-9cba-6229d3cf15ec'
   AND client.client_key IN (
-      'kirkland-richmond',
+      'kirkland-redmond',
       'desman',
       'burns',
       'mint',
@@ -613,7 +613,7 @@ WHERE client.organization_id =
   AND client.custom_table_definition_id =
     '3d49013b-7682-4d37-9cba-6229d3cf15ec'
   AND client.client_key IN (
-      'kirkland-richmond',
+      'kirkland-redmond',
       'desman',
       'burns',
       'mint',
@@ -654,7 +654,7 @@ WHERE client.organization_id =
   AND client.custom_table_definition_id =
     '3d49013b-7682-4d37-9cba-6229d3cf15ec'
   AND client.client_key IN (
-      'kirkland-richmond',
+      'kirkland-redmond',
       'desman',
       'burns',
       'mint',
@@ -689,7 +689,7 @@ BEGIN
       AND custom_table_definition_id =
         '3d49013b-7682-4d37-9cba-6229d3cf15ec'
       AND client_key IN (
-          'kirkland-richmond',
+          'kirkland-redmond',
           'desman',
           'burns',
           'mint',
@@ -707,7 +707,7 @@ BEGIN
       AND client.custom_table_definition_id =
         '3d49013b-7682-4d37-9cba-6229d3cf15ec'
       AND client.client_key IN (
-          'kirkland-richmond',
+          'kirkland-redmond',
           'desman',
           'burns',
           'mint',
@@ -725,7 +725,7 @@ BEGIN
       AND client.custom_table_definition_id =
         '3d49013b-7682-4d37-9cba-6229d3cf15ec'
       AND client.client_key IN (
-          'kirkland-richmond',
+          'kirkland-redmond',
           'desman',
           'burns',
           'mint',
@@ -744,7 +744,7 @@ BEGIN
       AND client.custom_table_definition_id =
         '3d49013b-7682-4d37-9cba-6229d3cf15ec'
       AND client.client_key IN (
-          'kirkland-richmond',
+          'kirkland-redmond',
           'desman',
           'burns',
           'mint',
