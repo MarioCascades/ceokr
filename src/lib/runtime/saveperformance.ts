@@ -452,30 +452,64 @@ export async function saveRuntimePerformanceSheet(
      Calculate Overall Score
   ======================================================== */
 
-  let overallScore = 0;
+  /*
+   * Overall Score is a weighted average of eligible Runtime Key Results.
+   *
+   * Exclude Display Only KRs, zero/missing weights, and KRs without an
+   * entered actual value. A numeric zero is a valid entered value.
+   */
+  let weightedScoreTotal = 0;
+  let includedWeightTotal = 0;
 
+  for (const progress of finalProgress) {
+    const keyResult = keyResultMap.get(
+      progress.performanceInstanceKeyResultId
+    );
 
-  if (
-    finalProgress.length > 0
-  ) {
+    if (!keyResult) {
+      continue;
+    }
 
-    const totalScore =
-      finalProgress.reduce(
-        (
-          total,
-          progress
-        ) =>
-          total +
-          progress.score,
-        0
-      );
+    if (keyResult.scoringMethod === "display_only") {
+      continue;
+    }
 
+    const weight = keyResult.weight;
 
-    overallScore =
-      totalScore /
-      finalProgress.length;
+    if (
+      typeof weight !== "number" ||
+      !Number.isFinite(weight) ||
+      weight <= 0
+    ) {
+      continue;
+    }
 
+    const currentValue = progress.currentValue;
+    const hasActualValue =
+      typeof currentValue === "number"
+        ? Number.isFinite(currentValue)
+        : typeof currentValue === "string" &&
+          currentValue.trim().length > 0;
+
+    if (!hasActualValue) {
+      continue;
+    }
+
+    if (!Number.isFinite(progress.score)) {
+      continue;
+    }
+
+    weightedScoreTotal += progress.score * weight;
+    includedWeightTotal += weight;
   }
+
+  // overallScore remains numeric for existing domain/database compatibility.
+  // A zero-weight/empty result is represented as 0 until the display layer
+  // can render N/A without changing the persisted numeric contract.
+  const overallScore =
+  includedWeightTotal > 0
+    ? weightedScoreTotal / includedWeightTotal
+    : 100;
 
 
   /* ========================================================

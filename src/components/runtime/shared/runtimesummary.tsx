@@ -1,3 +1,4 @@
+
 import type {
   PerformanceInstance,
 } from "@/lib/domain/performanceinstance";
@@ -16,23 +17,6 @@ function formatScore(
   score: number
 ) {
   return `${Math.round(score)}%`;
-}
-
-
-function formatProgress(
-  progress: number
-) {
-  return `${Math.round(progress)}%`;
-}
-
-
-function formatStatus(
-  status: PerformanceInstance["status"]
-) {
-  return status.replaceAll(
-    "_",
-    " "
-  );
 }
 
 
@@ -137,13 +121,6 @@ export default function RuntimeSummary({
     performanceInstance.overallScore ??
     0;
 
-  const progress =
-    performanceInstance.progress ??
-    0;
-
-  const status =
-    performanceInstance.status;
-
   const percentIntoPeriod =
     getPercentIntoPeriod(
       performanceInstance.performanceMonth
@@ -216,115 +193,6 @@ export default function RuntimeSummary({
             {
               formatScore(
                 score
-              )
-            }
-          </span>
-
-        </div>
-
-
-        {/* Progress */}
-
-        <div
-          className="
-            flex
-            min-w-[170px]
-            flex-1
-            items-center
-            gap-2
-          "
-        >
-
-          <span
-            className="
-              shrink-0
-              text-[10px]
-              text-muted-foreground
-            "
-          >
-            Progress
-          </span>
-
-          <span
-            className="
-              shrink-0
-              text-[10px]
-              font-bold
-              text-foreground
-            "
-          >
-            {
-              formatProgress(
-                progress
-              )
-            }
-          </span>
-
-          <div
-            className="
-              h-1.5
-              min-w-16
-              flex-1
-              overflow-hidden
-              rounded-full
-              bg-muted
-            "
-          >
-
-            <div
-              className="
-                h-full
-                rounded-full
-                bg-primary
-                transition-all
-              "
-              style={{
-                width:
-                  `${Math.min(
-                    Math.max(
-                      progress,
-                      0
-                    ),
-                    100
-                  )}%`,
-              }}
-            />
-
-          </div>
-
-        </div>
-
-
-        {/* Status */}
-
-        <div
-          className="
-            flex
-            items-center
-            gap-1.5
-          "
-        >
-
-          <span
-            className="
-              text-[10px]
-              text-muted-foreground
-            "
-          >
-            Status
-          </span>
-
-          <span
-            className="
-              text-xs
-              font-bold
-              capitalize
-              text-foreground
-            "
-          >
-            {
-              formatStatus(
-                status
               )
             }
           </span>

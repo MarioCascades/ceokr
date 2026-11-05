@@ -225,6 +225,8 @@ interface PerformanceSheetProps {
 
   memberMode?: boolean;
 
+  stickyReturnBarVisible?: boolean;
+
 }
 
 /* ==========================================================
@@ -264,6 +266,8 @@ export default function PerformanceSheet({
 
   memberMode = false,
 
+  stickyReturnBarVisible = false,
+
 }: PerformanceSheetProps) {
 
   /* ========================================================
@@ -292,6 +296,18 @@ export default function PerformanceSheet({
   ] = useState(
 
     performanceInstance.updatedAt
+
+  );
+
+  const [
+
+    currentOverallScore,
+
+    setCurrentOverallScore,
+
+  ] = useState(
+
+    performanceInstance.overallScore
 
   );
 
@@ -715,6 +731,12 @@ export default function PerformanceSheet({
 
       );
 
+      setCurrentOverallScore(
+
+        updated.performanceInstance.overallScore
+
+      );
+
       setEditing(
 
         false
@@ -875,6 +897,8 @@ export default function PerformanceSheet({
 
         currentStatus,
 
+      overallScore: currentOverallScore,
+
       updatedAt: currentUpdatedAt,
 
       employeeComments:
@@ -926,11 +950,11 @@ export default function PerformanceSheet({
 
       <div
 
-        className="
+        className={`
 
           sticky
 
-          top-0
+          ${stickyReturnBarVisible ? "top-[61px]" : "top-0"}
 
           z-40
 
@@ -950,7 +974,7 @@ export default function PerformanceSheet({
 
           lg:px-4
 
-        "
+        `}
 
       >
 

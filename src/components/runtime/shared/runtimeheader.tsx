@@ -1,3 +1,4 @@
+
 import type {
   BuilderDocument,
 } from "@/lib/types/builderdocument";
@@ -9,7 +10,6 @@ import type {
 import type {
   RuntimeSubject,
 } from "@/lib/runtime/runtimeexecution";
-
 
 interface RuntimeOrganization {
   id: string;
@@ -23,7 +23,6 @@ interface RuntimeHeaderProps {
   performanceInstance: PerformanceInstance;
   subject: RuntimeSubject | null;
 }
-
 
 function formatPerformanceMonth(
   performanceMonth: string
@@ -50,7 +49,6 @@ function formatPerformanceMonth(
   ).format(date);
 }
 
-
 function formatStatus(
   status: PerformanceInstance["status"]
 ): string {
@@ -59,7 +57,6 @@ function formatStatus(
     " "
   );
 }
-
 
 function getStatusClasses(
   status: PerformanceInstance["status"]
@@ -81,16 +78,12 @@ function getStatusClasses(
   }
 }
 
-
 export default function RuntimeHeader({
   document,
   organization,
   performanceInstance,
   subject,
 }: RuntimeHeaderProps) {
-
-  const isOrganizationRuntime =
-    subject === null;
 
   const displayName =
     subject?.displayName ??
@@ -103,9 +96,7 @@ export default function RuntimeHeader({
         document.performanceHeader.subtitle
       : "Organization Performance";
 
-
   return (
-
     <section
       className="
         overflow-hidden
@@ -116,7 +107,6 @@ export default function RuntimeHeader({
         shadow-sm
       "
     >
-
       <div
         className="
           relative
@@ -128,7 +118,6 @@ export default function RuntimeHeader({
           sm:px-4
         "
       >
-
         <div
           aria-hidden="true"
           className="
@@ -144,7 +133,6 @@ export default function RuntimeHeader({
           "
         />
 
-
         <div
           className="
             relative
@@ -156,14 +144,12 @@ export default function RuntimeHeader({
             lg:justify-between
           "
         >
-
           <div
             className="
               min-w-0
               flex-1
             "
           >
-
             <div
               className="
                 flex
@@ -172,9 +158,7 @@ export default function RuntimeHeader({
                 gap-2
               "
             >
-
               {organization.logo_url ? (
-
                 <div
                   className="
                     flex
@@ -190,7 +174,6 @@ export default function RuntimeHeader({
                     px-2
                   "
                 >
-
                   <img
                     src={organization.logo_url}
                     alt={`${organization.company_name} logo`}
@@ -203,11 +186,8 @@ export default function RuntimeHeader({
                       object-left
                     "
                   />
-
                 </div>
-
               ) : (
-
                 <div
                   className="
                     flex
@@ -221,7 +201,6 @@ export default function RuntimeHeader({
                     px-2
                   "
                 >
-
                   <span
                     className="
                       text-[8px]
@@ -233,11 +212,8 @@ export default function RuntimeHeader({
                   >
                     Organization
                   </span>
-
                 </div>
-
               )}
-
 
               <p
                 className="
@@ -250,13 +226,9 @@ export default function RuntimeHeader({
                   text-secondary
                 "
               >
-                {
-                  organization.company_name
-                }
+                {organization.company_name}
               </p>
-
             </div>
-
 
             <div
               className="
@@ -268,7 +240,6 @@ export default function RuntimeHeader({
                 gap-y-0.5
               "
             >
-
               <h1
                 className="
                   text-xl
@@ -278,14 +249,10 @@ export default function RuntimeHeader({
                   sm:text-2xl
                 "
               >
-                {
-                  displayName
-                }
+                {displayName}
               </h1>
 
-
               {role && (
-
                 <p
                   className="
                     text-xs
@@ -296,13 +263,9 @@ export default function RuntimeHeader({
                 >
                   {role}
                 </p>
-
               )}
-
             </div>
-
           </div>
-
 
           <div
             className="
@@ -312,7 +275,6 @@ export default function RuntimeHeader({
               gap-1.5
             "
           >
-
             <div
               className="
                 rounded-md
@@ -323,7 +285,6 @@ export default function RuntimeHeader({
                 py-1
               "
             >
-
               <p
                 className="
                   text-[9px]
@@ -345,15 +306,11 @@ export default function RuntimeHeader({
                   sm:text-sm
                 "
               >
-                {
-                  formatPerformanceMonth(
-                    performanceInstance.performanceMonth
-                  )
-                }
+                {formatPerformanceMonth(
+                  performanceInstance.performanceMonth
+                )}
               </p>
-
             </div>
-
 
             <div
               className="
@@ -365,7 +322,6 @@ export default function RuntimeHeader({
                 py-1
               "
             >
-
               <p
                 className="
                   text-[9px]
@@ -383,7 +339,6 @@ export default function RuntimeHeader({
                   mt-0.5
                 "
               >
-
                 <span
                   className={`
                     inline-flex
@@ -401,25 +356,14 @@ export default function RuntimeHeader({
                     )}
                   `}
                 >
-                  {
-                    formatStatus(
-                      performanceInstance.status
-                    )
-                  }
+                  {formatStatus(
+                    performanceInstance.status
+                  )}
                 </span>
-
               </div>
-
             </div>
 
-
-            {/* =====================================================
-                CascadEffects Platform Branding
-                -----------------------------------------------------
-                This logo is always shown regardless of tenant.
-                It uses the existing CECleanlogo.png asset.
-               ===================================================== */}
-
+            {/* CascadEffects Platform Branding */}
             <div
               className="
                 ml-1
@@ -434,7 +378,6 @@ export default function RuntimeHeader({
                 py-0
               "
             >
-
               <img
                 src="/logos/CECleanlogo.png"
                 alt="CascadEffects"
@@ -446,146 +389,10 @@ export default function RuntimeHeader({
                   object-contain
                 "
               />
-
             </div>
-
           </div>
-
         </div>
-
       </div>
-
-
-      <div
-        className="
-          border-t
-          border-border/70
-          bg-card
-          px-3
-          py-1.5
-          sm:px-4
-        "
-      >
-
-        <div
-          className="
-            flex
-            min-w-0
-            items-center
-            gap-4
-          "
-        >
-
-          <p
-            className="
-              shrink-0
-              text-[9px]
-              font-bold
-              uppercase
-              tracking-[0.14em]
-              text-primary
-            "
-          >
-            {
-              isOrganizationRuntime
-                ? "Organization Performance"
-                : "Performance Context"
-            }
-          </p>
-
-
-          {!isOrganizationRuntime &&
-            (
-              subject?.roleDescription ||
-              document.performanceHeader.description
-            ) && (
-
-            <p
-              className="
-                min-w-0
-                truncate
-                text-xs
-                text-muted-foreground
-              "
-            >
-              {
-                subject?.roleDescription ||
-                document.performanceHeader.description
-              }
-            </p>
-
-          )}
-
-
-          {!isOrganizationRuntime &&
-            document.performanceHeader.metrics.length > 0 && (
-
-            <div
-              className="
-                ml-auto
-                hidden
-                shrink-0
-                items-center
-                gap-5
-                lg:flex
-              "
-            >
-
-              {document.performanceHeader.metrics.map(
-                (metric) => (
-
-                  <div
-                    key={
-                      metric.id
-                    }
-                    className="
-                      flex
-                      items-center
-                      gap-1.5
-                    "
-                  >
-
-                    <span
-                      className="
-                        text-[9px]
-                        font-bold
-                        uppercase
-                        tracking-[0.1em]
-                        text-muted-foreground
-                      "
-                    >
-                      {
-                        metric.title
-                      }
-                    </span>
-
-                    <span
-                      className="
-                        text-xs
-                        font-bold
-                        text-primary
-                      "
-                    >
-                      {
-                        metric.value
-                      }
-                    </span>
-
-                  </div>
-
-                )
-              )}
-
-            </div>
-
-          )}
-
-        </div>
-
-      </div>
-
     </section>
-
   );
-
 }

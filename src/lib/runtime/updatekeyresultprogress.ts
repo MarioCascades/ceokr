@@ -12,6 +12,10 @@ import {
   updatePerformanceInstance,
 } from "@/lib/repositories/performanceinstancerepository";
 
+import {
+  findPerformanceInstanceKeyResults,
+} from "@/lib/repositories/performanceinstancekeyresultrepository";
+
 export interface UpdateKeyResultProgressInput {
   organizationId: string;
   performanceInstanceId: string;
@@ -54,7 +58,7 @@ export async function updateRuntimeKeyResultProgress(
     );
   }
 
-  if (input.score < 0 || input.score > 100) {
+  if (!Number.isFinite(input.score) || input.score < 0 || input.score > 100) {
     throw new Error("Score must be between 0 and 100.");
   }
 
@@ -69,32 +73,60 @@ export async function updateRuntimeKeyResultProgress(
   });
 
   /*
-   * Keep the existing aggregate calculations for callers that still use
-   * this service directly.
-   *
-   * IMPORTANT:
-   * Performance Instance status is intentionally NOT recalculated here.
-   *
-   * The Runtime Performance Sheet global Save is now the single owner of
-   * the Performance Instance lifecycle status. A successful global Save
-   * sets the Performance Instance to "completed", while keeping the sheet
-   * fully editable afterward.
+   * Recalculate Overall Score using only eligible weighted Runtime KRs.
+   * Display Only KRs, zero/missing weights, and blank actual values are
+   * excluded. An entered numeric zero remains a valid actual value.
    */
-  const progressRecords =
-    await findKeyResultProgressByPerformanceInstance(
-      performanceInstance.id
+  const [progressRecords, keyResults] = await Promise.all([
+    findKeyResultProgressByPerformanceInstance(performanceInstance.id),
+    findPerformanceInstanceKeyResults(performanceInstance.id),
+  ]);
+
+  const keyResultMap = new Map(
+    keyResults.map((keyResult) => [keyResult.id, keyResult])
+  );
+
+  let weightedScoreTotal = 0;
+  let includedWeightTotal = 0;
+
+  for (const progress of progressRecords) {
+    const keyResult = keyResultMap.get(
+      progress.performanceInstanceKeyResultId
     );
 
-  let overallScore = 0;
+    if (!keyResult || keyResult.scoringMethod === "display_only") {
+      continue;
+    }
 
-  if (progressRecords.length > 0) {
-    const totalScore = progressRecords.reduce(
-      (total, progress) => total + progress.score,
-      0
-    );
+    const weight = keyResult.weight;
 
-    overallScore = totalScore / progressRecords.length;
+    if (
+      typeof weight !== "number" ||
+      !Number.isFinite(weight) ||
+      weight <= 0
+    ) {
+      continue;
+    }
+
+    const currentValue = progress.currentValue;
+    const hasActualValue =
+      typeof currentValue === "number"
+        ? Number.isFinite(currentValue)
+        : typeof currentValue === "string" && currentValue.trim().length > 0;
+
+    if (!hasActualValue || !Number.isFinite(progress.score)) {
+      continue;
+    }
+
+    weightedScoreTotal += progress.score * weight;
+    includedWeightTotal += weight;
   }
+
+  // Keep the existing required numeric domain/database contract.
+  const overallScore =
+  includedWeightTotal > 0
+    ? weightedScoreTotal / includedWeightTotal
+    : 100;
 
   let progressPercentage = 0;
 
@@ -109,9 +141,8 @@ export async function updateRuntimeKeyResultProgress(
 
   /*
    * Preserve the current Performance Instance status.
-   *
-   * This prevents an individual Key Result save from changing a
-   * Performance Instance from "completed" back to "in_progress".
+   * An individual Key Result save must not change a completed instance
+   * back to in_progress or otherwise alter its lifecycle state.
    */
   const updatedPerformanceInstance = await updatePerformanceInstance({
     ...performanceInstance,
