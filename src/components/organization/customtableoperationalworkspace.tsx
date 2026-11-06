@@ -695,14 +695,7 @@ export default function CustomTableOperationalWorkspace({
               Roster Summary
             </p>
 
-            <h2 className="mt-1 text-xl font-black uppercase tracking-tight text-[#082550]">
-              VA Roster
-            </h2>
 
-            <p className="mt-1 text-xs text-gray-500">
-              Summary metrics use active roster rows and do not change
-              when you search, filter, or sort the table.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">

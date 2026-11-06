@@ -17,6 +17,9 @@ import type {
 
 import KeyResultRow from "../keyresults/keyresultrow";
 import ObjectiveEditor from "./objectiveeditor";
+import {
+  deleteRuntimePerformanceInstanceObjectiveAction,
+} from "@/app/runtime/actions";
 
 /* ==========================================================
    Props
@@ -155,34 +158,11 @@ export default function ObjectiveCard({
 
     try {
 
-      const response =
-        await fetch(
-          "/api/runtime/objectives",
-          {
-            method: "DELETE",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              organizationId,
-
-              performanceInstanceId,
-
-              objectiveId:
-                objective.id,
-            }),
-          }
-        );
-
-      if (!response.ok) {
-
-        throw new Error(
-          "Failed to delete objective."
-        );
-      }
+      await deleteRuntimePerformanceInstanceObjectiveAction(
+        organizationId,
+        performanceInstanceId,
+        objective.id
+      );
 
       onDeleted(
         objective.id

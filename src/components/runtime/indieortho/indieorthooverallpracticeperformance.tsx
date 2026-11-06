@@ -150,7 +150,7 @@ export default function IndieOrthoOverallPracticePerformance({
 
   return (
     <div className="min-h-screen bg-[#E3E5E8] text-[#080808]">
-      <header className="sticky top-0 z-40 border-b border-white/15 bg-[#080808] text-white shadow-md">
+      <header className="sticky top-[36px] z-30 border-b border-white/15 bg-[#080808] text-white shadow-md">
         <div className="mx-auto flex min-h-[100px] w-full max-w-[1800px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex min-w-0 flex-1 items-center">
             {indieOrthoLogoUrl ? (

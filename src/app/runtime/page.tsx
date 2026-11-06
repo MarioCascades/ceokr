@@ -1347,123 +1347,6 @@ export default async function RuntimePage({
 
 
 
-          {/* Match the standard CascadEffects individual Performance Sheet header. */}
-
-          <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
-
-            <div className="relative overflow-hidden bg-[#082550] px-3 py-3 text-white sm:px-4">
-
-              <div
-
-                aria-hidden="true"
-
-                className="pointer-events-none absolute -right-12 -top-16 h-32 w-32 rounded-full bg-white/10 blur-2xl"
-
-              />
-
-
-
-              <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-
-                <div className="min-w-0 flex-1">
-
-                  <div className="flex min-w-0 items-center gap-2">
-
-                    {organization.logo_url ? (
-
-                      <div className="flex h-8 max-w-[140px] shrink-0 items-center overflow-hidden rounded-md border border-white/15 bg-white/10 px-2">
-
-                        <img
-
-                          src={organization.logo_url}
-
-                          alt={`${organization.company_name} logo`}
-
-                          className="block max-h-6 max-w-[120px] w-auto object-contain object-left"
-
-                        />
-
-                      </div>
-
-                    ) : (
-
-                      <div className="flex h-8 shrink-0 items-center rounded-md border border-white/10 bg-white/5 px-2">
-
-                        <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/60">
-
-                          Organization
-
-                        </span>
-
-                      </div>
-
-                    )}
-
-
-
-                    <p className="min-w-0 truncate text-[9px] font-bold uppercase tracking-[0.16em] text-[#B4C2D1]">
-
-                      {organization.company_name}
-
-                    </p>
-
-                  </div>
-
-
-
-                  <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-
-                    <h1 className="text-xl font-black leading-none tracking-tight sm:text-2xl">
-
-                      Client Performance
-
-                    </h1>
-
-                    <p className="text-xs font-semibold text-[#E26D5C] sm:text-sm">
-
-                      Organization Performance
-
-                    </p>
-
-                  </div>
-
-                </div>
-
-
-
-                <div className="ml-1 flex h-[52px] min-w-[80px] shrink-0 items-center justify-end overflow-hidden px-0 py-0">
-
-                  <img
-
-                    src="/logos/CECleanlogo.png"
-
-                    alt="CascadEffects"
-
-                    className="block h-[50px] w-auto max-w-[100px] object-contain"
-
-                  />
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-
-            <div className="border-t border-border/70 bg-card px-3 py-1.5 sm:px-4">
-
-              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#082550]">
-
-                Organization Performance
-
-              </p>
-
-            </div>
-
-          </section>
-
-
 
                     {clientPerformanceError ? (
 
@@ -1500,6 +1383,10 @@ export default async function RuntimePage({
               initialWorkspace={clientPerformanceWorkspace}
 
               canManage={canManageClientPerformance}
+
+              organizationName={organization.company_name}
+
+              organizationLogoUrl={organization.logo_url}
 
             />
 
@@ -1802,7 +1689,7 @@ export default async function RuntimePage({
 
 
 
-          <div className="relative z-30 border-b border-black/10 bg-white shadow-sm">
+          <div className="sticky top-0 z-40 border-b border-black/10 bg-white shadow-sm">
 
             <RuntimeNavigation
 
@@ -1969,9 +1856,10 @@ export default async function RuntimePage({
 
 
 
-        {organization.id === "e571cd65-b7f8-4669-bb41-370806097792" && (
+        {organization.id === "e571cd65-b7f8-4669-bb41-370806097792" &&
+          !selectedTables.some((table) => isAgendaTable(table.tableKey)) && (
 
-          <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+          <section className="sticky top-[170px] z-30 overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm md:top-[116px]">
 
             <div className="relative overflow-hidden bg-[#082550] px-3 py-3 text-white sm:px-4">
 
@@ -2045,11 +1933,12 @@ export default async function RuntimePage({
 
                     </h1>
 
-                    <p className="text-xs font-semibold text-[#E26D5C] sm:text-sm">
-
-                      Organization Performance
-
-                    </p>
+                    {selectedTables.length === 1 &&
+                      !(["VA Roster", "VA List"].includes(selectedTables[0].name)) && (
+                        <p className="text-xs font-semibold text-[#E26D5C] sm:text-sm">
+                          Organization Performance
+                        </p>
+                      )}
 
                   </div>
 
@@ -2172,6 +2061,8 @@ export default async function RuntimePage({
 
 
         {organization.id === "e571cd65-b7f8-4669-bb41-370806097792" &&
+
+          !selectedTables.some((table) => isAgendaTable(table.tableKey)) &&
 
           selectedTables.length === 1 &&
 
@@ -2338,6 +2229,10 @@ export default async function RuntimePage({
                       tableDefinitionId={result.tableId}
 
                       tableName={result.tableName}
+
+                      organizationName={organization.company_name}
+
+                      organizationLogoUrl={organization.logo_url}
 
                       initialRows={result.persistentRows}
 

@@ -967,10 +967,10 @@ async function buildRuntimeExecution(
         getCurrentPerformanceMonth()
     );
 
-  const hiddenObjectiveIds =
+  const activeSourceObjectiveIds =
     new Set<string>();
 
-  const hiddenKeyResultIds =
+  const activeSourceKeyResultIds =
     new Set<string>();
 
   let memberVisibilityLoaded =
@@ -1003,8 +1003,8 @@ async function buildRuntimeExecution(
           memberObjectives
       ) {
 
-        if (memberObjective.isHidden) {
-          hiddenObjectiveIds.add(
+        if (!memberObjective.isHidden) {
+          activeSourceObjectiveIds.add(
             memberObjective.id
           );
         }
@@ -1014,8 +1014,8 @@ async function buildRuntimeExecution(
             memberObjective.keyResults
         ) {
 
-          if (memberKeyResult.isHidden) {
-            hiddenKeyResultIds.add(
+          if (!memberObjective.isHidden && !memberKeyResult.isHidden) {
+            activeSourceKeyResultIds.add(
               memberKeyResult.id
             );
           }
@@ -1029,7 +1029,7 @@ async function buildRuntimeExecution(
           .filter(
             (objective) =>
               !objective.sourceObjectiveId ||
-              !hiddenObjectiveIds.has(
+              activeSourceObjectiveIds.has(
                 objective.sourceObjectiveId
               )
           )
@@ -1041,7 +1041,7 @@ async function buildRuntimeExecution(
                 objective.keyResults.filter(
                   (keyResult) =>
                     !keyResult.sourceKeyResultId ||
-                    !hiddenKeyResultIds.has(
+                    activeSourceKeyResultIds.has(
                       keyResult.sourceKeyResultId
                     )
                 ),

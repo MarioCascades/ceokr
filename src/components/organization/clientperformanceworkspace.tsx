@@ -20,7 +20,7 @@
  * ==========================================================
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -49,6 +49,8 @@ type ClientPerformanceWorkspaceProps = {
   clients: ClientPerformanceClient[];
   initialWorkspace: ClientPerformanceWorkspace;
   canManage: boolean;
+  organizationName: string;
+  organizationLogoUrl?: string | null;
 };
 
 type MetricField =
@@ -230,10 +232,46 @@ export default function ClientPerformanceWorkspace({
   clients,
   initialWorkspace,
   canManage,
+  organizationName,
+  organizationLogoUrl,
 }: ClientPerformanceWorkspaceProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  // Keep the workspace controls visible directly below Runtime Navigation.
+  // The navigation's actual bottom edge changes depending on whether the
+  // organization return bar is present and as the page scrolls.
+  const workspaceHeaderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateStickyOffset = () => {
+      const navigation = document.querySelector<HTMLElement>(
+        'nav[aria-label="Performance navigation"]'
+      );
+
+      if (!navigation) return;
+
+      const nextTop = Math.max(
+        0,
+        Math.ceil(navigation.getBoundingClientRect().bottom + 12)
+      );
+
+      if (workspaceHeaderRef.current) {
+        workspaceHeaderRef.current.style.top = `${nextTop}px`;
+      }
+    };
+
+    updateStickyOffset();
+
+    window.addEventListener("scroll", updateStickyOffset, { passive: true });
+    window.addEventListener("resize", updateStickyOffset);
+
+    return () => {
+      window.removeEventListener("scroll", updateStickyOffset);
+      window.removeEventListener("resize", updateStickyOffset);
+    };
+  }, []);
 
   const [workspace, setWorkspace] =
     useState<ClientPerformanceWorkspace>(initialWorkspace);
@@ -616,59 +654,57 @@ export default function ClientPerformanceWorkspace({
   return (
     <section className="space-y-6 text-[#272D2C]">
 
-      {/* Workspace Header */}
-
-      <div className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
-        <div className="h-1.5 bg-[#082550]" />
-
-        <div className="grid grid-cols-1 items-center gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)_minmax(0,1fr)]">
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E26D5C]">
-              CascadEffects Operations Project Management
-            </p>
-
-            <h2 className="mt-2 text-2xl font-black uppercase tracking-tight text-[#082550]">
-              Client Performance
-            </h2>
-
-            <p className="mt-1 text-sm text-gray-600">
-              Persistent client performance records and monthly history.
-            </p>
+      {/* Unified Branded Workspace Header */}
+      <div
+        ref={workspaceHeaderRef}
+        className="sticky top-0 z-30 overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm"
+      >
+        <div className="relative overflow-hidden bg-[#082550] px-4 py-3 text-white sm:px-5">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-16 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+          <div className="relative flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2">
+                {organizationLogoUrl ? (
+                  <div className="flex h-7 max-w-[120px] shrink-0 items-center overflow-hidden rounded-md border border-white/15 bg-white/10 px-2">
+                    <img src={organizationLogoUrl} alt={`${organizationName} logo`} className="block max-h-5 max-w-[104px] w-auto object-contain object-left" />
+                  </div>
+                ) : (
+                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#B4C2D1]">{organizationName}</span>
+                )}
+                {organizationLogoUrl && <p className="min-w-0 truncate text-[9px] font-bold uppercase tracking-[0.16em] text-[#B4C2D1]">{organizationName}</p>}
+              </div>
+              <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <h2 className="text-xl font-black uppercase leading-none tracking-tight sm:text-2xl">Client Performance</h2>
+                <p className="text-xs font-semibold text-[#E26D5C] sm:text-sm">Organization Performance</p>
+              </div>
+            </div>
+            <div className="flex h-10 shrink-0 items-center justify-end overflow-hidden">
+              <img src="/logos/CECleanlogo.png" alt="CascadEffects" className="block h-10 w-auto max-w-[88px] object-contain" />
+            </div>
           </div>
+        </div>
 
-          <div className="flex w-full flex-col items-center gap-1.5 text-center lg:col-start-2">
-            <label
-              htmlFor="client-performance-client"
-              className="text-sm font-extrabold uppercase tracking-[0.14em] text-[#082550]"
-            >
-              Select Client
-            </label>
-
+        <div className="grid grid-cols-1 items-center gap-3 border-t border-[#B4C2D1]/50 bg-white p-4 sm:grid-cols-[minmax(0,1fr)_minmax(280px,420px)_minmax(0,1fr)] sm:gap-4 sm:px-5">
+          <div className="hidden min-w-0 sm:block">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#E26D5C]">CascadEffects Operations Project Management</p>
+          </div>
+          <div className="flex w-full flex-col items-center gap-1.5 text-center sm:col-start-2">
+            <label htmlFor="client-performance-client" className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#082550]">Select Client</label>
             <select
               id="client-performance-client"
               value={workspace.client.id}
               disabled={busy}
-              onChange={(event) =>
-                handleClientChange(event.target.value)
-              }
-              className="w-full cursor-pointer rounded-lg border border-[#082550]/35 bg-[#E9F4F8] px-4 py-3 text-center text-lg font-bold text-[#082550] shadow-sm outline-none transition hover:border-[#082550] focus:border-[#082550] focus:ring-2 focus:ring-[#082550]/15 disabled:cursor-not-allowed disabled:opacity-60"
+              onChange={(event) => handleClientChange(event.target.value)}
+              className="w-full cursor-pointer rounded-lg border border-[#082550]/35 bg-[#E9F4F8] px-4 py-2.5 text-center text-base font-bold text-[#082550] shadow-sm outline-none transition hover:border-[#082550] focus:border-[#082550] focus:ring-2 focus:ring-[#082550]/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {clients
-                .filter((client) => client.isEnabled)
-                .map((client) => (
-                  <option
-                    key={client.id}
-                    value={client.id}
-                  >
-                    {client.displayName}
-                  </option>
-                ))}
+              {clients.filter((client) => client.isEnabled).map((client) => (
+                <option key={client.id} value={client.id}>{client.displayName}</option>
+              ))}
             </select>
           </div>
-
-          <div className="flex flex-col items-center gap-2 lg:col-start-3 lg:items-end">
+          <div className="flex flex-col items-center gap-2 sm:col-start-3 sm:items-end">
             {canManage && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap justify-center gap-2 sm:justify-end">
                 {isEditing ? (
                   <>
                     <button type="button" disabled={busy} onClick={() => void saveWorkspaceEdits()} className={PRIMARY_BUTTON_CLASS}>Save Changes</button>
@@ -679,14 +715,9 @@ export default function ClientPerformanceWorkspace({
                 )}
               </div>
             )}
-            <p className="text-xs font-bold text-[#082550]">
-              Last Updated
-            </p>
-
+            <p className="text-xs font-bold text-[#082550]">Last Updated</p>
             <div className="rounded-lg border border-[#B4C2D1]/70 bg-[#E9F4F8]/60 px-3 py-2">
-              <p className="text-sm font-semibold tabular-nums text-[#082550]">
-                {formatDateTime(workspace.client.lastUpdatedAt)}
-              </p>
+              <p className="text-xs font-semibold tabular-nums text-[#082550]">{formatDateTime(workspace.client.lastUpdatedAt)}</p>
             </div>
           </div>
         </div>

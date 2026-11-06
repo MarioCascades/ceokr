@@ -61,6 +61,8 @@ type AgendaOperationalWorkspaceProps = {
   organizationId: string;
   tableDefinitionId: string;
   tableName: string;
+  organizationName: string;
+  organizationLogoUrl: string | null;
   initialRows: OperationalRow[];
   canEditRows: boolean;
 };
@@ -226,6 +228,8 @@ export default function AgendaOperationalWorkspace({
   organizationId,
   tableDefinitionId,
   tableName,
+  organizationName,
+  organizationLogoUrl,
   initialRows,
   canEditRows,
 }: AgendaOperationalWorkspaceProps) {
@@ -584,74 +588,113 @@ export default function AgendaOperationalWorkspace({
 
   return (
     <section className="space-y-3 text-[#272D2C]">
-      <div className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
-        <div className="h-1.5 bg-[#082550]" />
-
-        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E26D5C]">
-              Persistent Operational Workspace
-            </p>
-            <h2 className="mt-1 text-xl font-black uppercase tracking-tight text-[#082550] sm:text-2xl">
-              {tableName || "Agenda"}
-            </h2>
-            <p className="mt-1 text-sm leading-5 text-gray-600">
-              One shared Agenda board. Changes are saved to the current board
-              and are not tied to a performance month.
-            </p>
-            <p className="mt-2 text-xs text-gray-600">
-              <span className="font-bold text-[#082550]">Last Updated:</span>{" "}
-              {formatDateTime(lastUpdated)}
-            </p>
+      <div className="sticky top-[170px] z-30 overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm md:top-[116px]">
+        <div className="relative overflow-hidden bg-[#082550] px-3 py-3 text-white sm:px-4">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-12 -top-16 h-32 w-32 rounded-full bg-white/10 blur-2xl"
+          />
+          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2">
+                {organizationLogoUrl ? (
+                  <div className="flex h-8 max-w-[140px] shrink-0 items-center overflow-hidden rounded-md border border-white/15 bg-white/10 px-2">
+                    <img
+                      src={organizationLogoUrl}
+                      alt={`${organizationName} logo`}
+                      className="block max-h-6 max-w-[120px] w-auto object-contain object-left"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-8 shrink-0 items-center rounded-md border border-white/10 bg-white/5 px-2">
+                    <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/60">
+                      Organization
+                    </span>
+                  </div>
+                )}
+                <p className="min-w-0 truncate text-[9px] font-bold uppercase tracking-[0.16em] text-[#B4C2D1]">
+                  {organizationName}
+                </p>
+              </div>
+              <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <h1 className="text-xl font-black leading-none tracking-tight sm:text-2xl">
+                  {tableName || "Agenda"}
+                </h1>
+                <p className="text-xs font-semibold text-[#E26D5C] sm:text-sm">
+                  Organization Performance
+                </p>
+              </div>
+            </div>
+            <div className="ml-1 flex h-[52px] min-w-[80px] shrink-0 items-center justify-end overflow-hidden px-0 py-0">
+              <img
+                src="/logos/CECleanlogo.png"
+                alt="CascadEffects"
+                className="block h-[50px] w-auto max-w-[100px] object-contain"
+              />
+            </div>
           </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`text-xs font-semibold ${
-                saveStatus === "error"
-                  ? "text-red-700"
-                  : saveStatus === "saved"
-                    ? "text-emerald-700"
-                    : "text-[#082550]"
-              }`}
-              role="status"
-              aria-live="polite"
-            >
-              {saveStatus === "pending"
-                ? "Changes pending..."
-                : saveStatus === "saving"
-                  ? "Saving changes..."
-                  : saveStatus === "saved"
-                    ? "All changes saved"
-                    : saveStatus === "error"
-                      ? "Save failed"
-                      : "Changes save automatically"}
-            </span>
+        <div className="border-t border-[#B4C2D1]/50 bg-white px-3 py-3 sm:px-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm leading-5 text-gray-600">
+                One shared Agenda board. Changes are saved to the current board
+                and are not tied to a performance month.
+              </p>
+              <p className="mt-2 text-xs text-gray-600">
+                <span className="font-bold text-[#082550]">Last Updated:</span>{" "}
+                {formatDateTime(lastUpdated)}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <span
+                className={`text-xs font-semibold ${
+                  saveStatus === "error"
+                    ? "text-red-700"
+                    : saveStatus === "saved"
+                      ? "text-emerald-700"
+                      : "text-[#082550]"
+                }`}
+                role="status"
+                aria-live="polite"
+              >
+                {saveStatus === "pending"
+                  ? "Changes pending..."
+                  : saveStatus === "saving"
+                    ? "Saving changes..."
+                    : saveStatus === "saved"
+                      ? "All changes saved"
+                      : saveStatus === "error"
+                        ? "Save failed"
+                        : "Changes save automatically"}
+              </span>
 
-            {saveStatus === "error" && canEditRows && (
+              {saveStatus === "error" && canEditRows && (
+                <button
+                  type="button"
+                  disabled={reloading}
+                  onClick={retrySave}
+                  className="inline-flex items-center justify-center rounded-lg border border-[#E26D5C] bg-white px-3 py-1.5 text-xs font-semibold text-[#082550] transition hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Retry Save
+                </button>
+              )}
+
               <button
                 type="button"
-                disabled={reloading}
-                onClick={retrySave}
-                className="inline-flex items-center justify-center rounded-lg border border-[#E26D5C] bg-white px-3 py-1.5 text-xs font-semibold text-[#082550] transition hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={
+                  reloading ||
+                  saveStatus === "pending" ||
+                  saveStatus === "saving" ||
+                  saveStatus === "error"
+                }
+                onClick={() => void handleRefresh()}
+                className={`${BUTTON_CLASS} border-[#B4C2D1] bg-white text-[#082550]`}
               >
-                Retry Save
+                {reloading ? "Reloading..." : "Reload Saved Board"}
               </button>
-            )}
-
-            <button
-              type="button"
-              disabled={
-                reloading ||
-                saveStatus === "pending" ||
-                saveStatus === "saving" ||
-                saveStatus === "error"
-              }
-              onClick={() => void handleRefresh()}
-              className={`${BUTTON_CLASS} border-[#B4C2D1] bg-white text-[#082550]`}
-            >
-              {reloading ? "Reloading..." : "Reload Saved Board"}
-            </button>
+            </div>
           </div>
         </div>
       </div>
