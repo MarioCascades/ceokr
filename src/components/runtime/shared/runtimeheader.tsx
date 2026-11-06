@@ -1,4 +1,3 @@
-
 import type {
   BuilderDocument,
 } from "@/lib/types/builderdocument";
@@ -158,7 +157,7 @@ export default function RuntimeHeader({
                 gap-2
               "
             >
-              {organization.logo_url ? (
+              {organization.logo_url && (
                 <div
                   className="
                     flex
@@ -186,32 +185,6 @@ export default function RuntimeHeader({
                       object-left
                     "
                   />
-                </div>
-              ) : (
-                <div
-                  className="
-                    flex
-                    h-8
-                    shrink-0
-                    items-center
-                    rounded-md
-                    border
-                    border-white/10
-                    bg-white/5
-                    px-2
-                  "
-                >
-                  <span
-                    className="
-                      text-[8px]
-                      font-bold
-                      uppercase
-                      tracking-[0.12em]
-                      text-white/60
-                    "
-                  >
-                    Organization
-                  </span>
                 </div>
               )}
 

@@ -1895,19 +1895,7 @@ export default async function RuntimePage({
 
                       </div>
 
-                    ) : (
-
-                      <div className="flex h-8 shrink-0 items-center rounded-md border border-white/10 bg-white/5 px-2">
-
-                        <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/60">
-
-                          Organization
-
-                        </span>
-
-                      </div>
-
-                    )}
+                    ) : null}
 
 
 

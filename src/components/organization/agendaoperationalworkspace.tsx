@@ -627,13 +627,7 @@ export default function AgendaOperationalWorkspace({
                       className="block max-h-6 max-w-[120px] w-auto object-contain object-left"
                     />
                   </div>
-                ) : (
-                  <div className="flex h-8 shrink-0 items-center rounded-md border border-white/10 bg-white/5 px-2">
-                    <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/60">
-                      Organization
-                    </span>
-                  </div>
-                )}
+                ) : null}
                 <p className="min-w-0 truncate text-[9px] font-bold uppercase tracking-[0.16em] text-[#B4C2D1]">
                   {organizationName}
                 </p>

@@ -43,7 +43,7 @@ type OrganizationSettingsState = {
 
 const defaultSettings: OrganizationSettingsState = {
   organizationName: "Organization",
-  organizationLogo: "",
+  organizationLogo: CASCADEFFECTS_DEFAULT_LOGO,
   primaryColor: "#082550",
   accentColor: "#E26D5C",
   timezone: "America/New_York",
@@ -175,6 +175,10 @@ export default function OrganizationSettingsPage() {
           localSettings = {
             ...defaultSettings,
             ...parsed,
+            // Older settings used an empty value to mean the CascadEffects
+            // fallback. Preserve that behavior when loading legacy settings.
+            organizationLogo:
+              parsed.organizationLogo || CASCADEFFECTS_DEFAULT_LOGO,
           };
 
           setSettings(localSettings);
@@ -252,9 +256,10 @@ export default function OrganizationSettingsPage() {
           {
             company_name:
               settings.organizationName,
+            // An empty string is an intentional "No Logo" selection.
+            // A CascadEffects default selection stores its explicit asset path.
             logo_url:
-              settings.organizationLogo ||
-              null,
+              settings.organizationLogo,
             primary_color:
               settings.primaryColor ||
               null,
@@ -289,13 +294,19 @@ export default function OrganizationSettingsPage() {
   const handleUseCascadEffectsDefault = () => {
     updateSetting(
       "organizationLogo",
+      CASCADEFFECTS_DEFAULT_LOGO,
+    );
+  };
+
+  const handleNoOrganizationLogo = () => {
+    updateSetting(
+      "organizationLogo",
       "",
     );
   };
 
   const displayedLogo =
-    settings.organizationLogo ||
-    CASCADEFFECTS_DEFAULT_LOGO;
+    settings.organizationLogo;
 
   return (
     <div className="min-h-full bg-white">
@@ -498,28 +509,35 @@ export default function OrganizationSettingsPage() {
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_230px]">
                 <div className="rounded-lg border border-[#B4C2D1]/70 bg-[#F7F9FB] p-5">
                   <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#272D2C]/55">
-                    {settings.organizationLogo
-                      ? "Organization Logo"
-                      : "CascadEffects Default"}
+                    {settings.organizationLogo === CASCADEFFECTS_DEFAULT_LOGO
+                      ? "CascadEffects Default"
+                      : settings.organizationLogo
+                        ? "Organization Logo"
+                        : "No Logo"}
                   </p>
 
                   <div className="flex min-h-[150px] items-center justify-center rounded-md border border-[#B4C2D1]/50 bg-white p-6">
-                    <img
-                      src={displayedLogo}
-                      alt={
-                        settings.organizationLogo
-                          ? `${settings.organizationName} logo`
-                          : "CascadEffects default logo"
-                      }
-                      className="max-h-28 max-w-full object-contain"
-                    />
+                    {displayedLogo ? (
+                      <img
+                        src={displayedLogo}
+                        alt={
+                          displayedLogo === CASCADEFFECTS_DEFAULT_LOGO
+                            ? "CascadEffects default logo"
+                            : `${settings.organizationName} logo`
+                        }
+                        className="max-h-28 max-w-full object-contain"
+                      />
+                    ) : (
+                      <p className="text-sm font-medium text-[#272D2C]/45">
+                        No logo selected
+                      </p>
+                    )}
                   </div>
 
-                  {!settings.organizationLogo && (
+                  {settings.organizationLogo === CASCADEFFECTS_DEFAULT_LOGO && (
                     <p className="mt-3 text-xs leading-5 text-[#272D2C]/55">
-                      No organization-specific logo has been configured.
-                      CascadEffects branding is currently being used as the
-                      workspace fallback.
+                      The CascadEffects default logo is being used for this
+                      workspace.
                     </p>
                   )}
                 </div>
@@ -572,12 +590,18 @@ export default function OrganizationSettingsPage() {
 
                   <button
                     type="button"
-                    onClick={
-                      handleUseCascadEffectsDefault
-                    }
+                    onClick={handleUseCascadEffectsDefault}
                     className="inline-flex h-10 items-center justify-center rounded-md border border-[#B4C2D1] bg-white px-4 text-sm font-bold text-[#082550] transition hover:bg-[#F7F9FB] focus:outline-none focus:ring-2 focus:ring-[#E26D5C] focus:ring-offset-2"
                   >
                     Use CascadEffects Default
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleNoOrganizationLogo}
+                    className="inline-flex h-10 items-center justify-center rounded-md border border-[#B4C2D1] bg-white px-4 text-sm font-bold text-[#082550] transition hover:bg-[#F7F9FB] focus:outline-none focus:ring-2 focus:ring-[#E26D5C] focus:ring-offset-2"
+                  >
+                    No Logo
                   </button>
 
                   <p className="text-center text-[11px] leading-4 text-[#272D2C]/50">
@@ -653,11 +677,21 @@ export default function OrganizationSettingsPage() {
                       settings.primaryColor,
                   }}
                 >
-                  <img
-                    src={displayedLogo}
-                    alt={`${settings.organizationName} branding preview`}
-                    className="max-h-10 max-w-[180px] object-contain"
-                  />
+                  {displayedLogo ? (
+                    <img
+                      src={displayedLogo}
+                      alt={
+                        displayedLogo === CASCADEFFECTS_DEFAULT_LOGO
+                          ? "CascadEffects default logo preview"
+                          : `${settings.organizationName} branding preview`
+                      }
+                      className="max-h-10 max-w-[180px] object-contain"
+                    />
+                  ) : (
+                    <span className="text-xs font-medium text-white/65">
+                      No logo
+                    </span>
+                  )}
 
                   <span
                     className="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wide"
