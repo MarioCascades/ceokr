@@ -83,13 +83,7 @@ function createId(prefix: string, index: number): string {
 
 function createEmptyBoard(): AgendaBoard {
   return {
-    wins: [
-      {
-        id: "win-default-1",
-        win: "",
-        assignedTo: "",
-      },
-    ],
+    wins: [],
     announcements: "",
     rocks: [],
     help: [],
@@ -131,14 +125,8 @@ function parseBoard(value: unknown): AgendaBoard | null {
         item.win.trim() !== "" || item.assignedTo.trim() !== ""
     );
 
-  // Always display one blank row when there are no actual Wins.
-  if (normalizedWins.length === 0) {
-    normalizedWins.push({
-      id: "win-default-1",
-      win: "",
-      assignedTo: "",
-    });
-  }
+  // An empty Wins list is valid. This allows the final row to be removed
+  // without recreating a blank row when the board is reloaded.
 
   return {
     wins: normalizedWins,
@@ -539,6 +527,13 @@ export default function AgendaOperationalWorkspace({
     ]);
   }
 
+  function removeWin(id: string) {
+    updateBoard(
+      "wins",
+      board.wins.filter((row) => row.id !== id)
+    );
+  }
+
   function addRock() {
     updateBoard("rocks", [
       ...board.rocks,
@@ -552,6 +547,13 @@ export default function AgendaOperationalWorkspace({
     ]);
   }
 
+  function removeRock(id: string) {
+    updateBoard(
+      "rocks",
+      board.rocks.filter((row) => row.id !== id)
+    );
+  }
+
   function addHelp() {
     updateBoard("help", [
       ...board.help,
@@ -562,6 +564,13 @@ export default function AgendaOperationalWorkspace({
         remarks: "",
       },
     ]);
+  }
+
+  function removeHelp(id: string) {
+    updateBoard(
+      "help",
+      board.help.filter((row) => row.id !== id)
+    );
   }
 
   function addCarryOver() {
@@ -583,6 +592,19 @@ export default function AgendaOperationalWorkspace({
       className="inline-flex items-center justify-center rounded-lg border border-[#082550] bg-white px-3 py-1.5 text-xs font-semibold text-[#082550] transition hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-40"
     >
       + {label}
+    </button>
+  );
+
+  const removeButton = (label: string, onClick: () => void) => (
+    <button
+      type="button"
+      disabled={!canEditRows || reloading}
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="inline-flex items-center justify-center rounded-lg border border-[#E26D5C]/70 bg-white px-2.5 py-1.5 text-xs font-semibold text-[#B94B3D] transition hover:border-[#E26D5C] hover:bg-[#FFF3F1] disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      Remove
     </button>
   );
 
@@ -740,6 +762,7 @@ export default function AgendaOperationalWorkspace({
                 <th className="w-12 px-3 py-2 text-xs">#</th>
                 <th className="px-3 py-2 text-xs">Wins</th>
                 <th className="w-64 px-3 py-2 text-xs">Assigned To</th>
+                <th className="w-24 px-3 py-2 text-right text-xs">Action</th>
               </tr>
             </thead>
 
@@ -778,8 +801,23 @@ export default function AgendaOperationalWorkspace({
                       className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
+                  <td className="px-2 py-1.5 text-right">
+                    {removeButton(`Remove win ${index + 1}`, () =>
+                      removeWin(row.id)
+                    )}
+                  </td>
                 </tr>
               ))}
+              {board.wins.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-4 py-5 text-center text-sm text-gray-500"
+                  >
+                    No Wins added yet. Use Add Win to create a row.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -821,6 +859,7 @@ export default function AgendaOperationalWorkspace({
                 <th className="px-3 py-2 text-xs">Target</th>
                 <th className="px-3 py-2 text-xs">Current</th>
                 <th className="w-44 px-3 py-2 text-xs">Date</th>
+                <th className="w-24 px-3 py-2 text-right text-xs">Action</th>
               </tr>
             </thead>
 
@@ -878,13 +917,16 @@ export default function AgendaOperationalWorkspace({
                       className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
+                  <td className="px-2 py-1.5 text-right">
+                    {removeButton("Remove Rock", () => removeRock(row.id))}
+                  </td>
                 </tr>
               ))}
 
               {board.rocks.length === 0 && (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-4 py-5 text-center text-sm text-gray-500"
                   >
                     No Rocks added yet.
@@ -910,6 +952,7 @@ export default function AgendaOperationalWorkspace({
                 <th className="w-56 px-3 py-2 text-xs">Name</th>
                 <th className="px-3 py-2 text-xs">Where I Need Help</th>
                 <th className="px-3 py-2 text-xs">Remarks</th>
+                <th className="w-24 px-3 py-2 text-right text-xs">Action</th>
               </tr>
             </thead>
 
@@ -954,13 +997,18 @@ export default function AgendaOperationalWorkspace({
                       className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
+                  <td className="px-2 py-1.5 text-right">
+                    {removeButton("Remove help item", () =>
+                      removeHelp(row.id)
+                    )}
+                  </td>
                 </tr>
               ))}
 
               {board.help.length === 0 && (
                 <tr>
                   <td
-                    colSpan={3}
+                    colSpan={4}
                     className="px-4 py-5 text-center text-sm text-gray-500"
                   >
                     No help items added yet.
