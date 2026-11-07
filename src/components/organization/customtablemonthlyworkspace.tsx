@@ -107,6 +107,23 @@ function getCellValue(
   return String(value);
 }
 
+function getRecruitmentColumnWidth(columnKey: string): string {
+  switch (columnKey) {
+    case "role":
+      return "11%";
+    case "role_details":
+      return "17%";
+    case "action_plan":
+      return "16%";
+    case "remarks":
+      return "21%";
+    case "current_state":
+      return "12%";
+    default:
+      return "12%";
+  }
+}
+
 export default function CustomTableMonthlyWorkspace({
   organizationId,
   tableDefinitionId,
@@ -128,7 +145,10 @@ export default function CustomTableMonthlyWorkspace({
   const visibleColumns = useMemo(
     () =>
       [...workspace.columns]
-        .filter((column) => column.isVisible)
+        .filter(
+          (column) =>
+            column.isVisible && column.columnKey !== "future_task"
+        )
         .sort((a, b) => a.position - b.position),
     [workspace.columns]
   );
@@ -599,10 +619,21 @@ export default function CustomTableMonthlyWorkspace({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
+          <table className="w-full min-w-[1400px] table-fixed border-collapse text-left text-sm">
+            <colgroup>
+              <col style={{ width: "6%" }} />
+              {visibleColumns.map((column) => (
+                <col
+                  key={column.id}
+                  style={{ width: getRecruitmentColumnWidth(column.columnKey) }}
+                />
+              ))}
+              <col style={{ width: "11%" }} />
+              <col style={{ width: "6%" }} />
+            </colgroup>
             <thead>
               <tr className="bg-[#082550] text-white">
-                <th className="w-24 border-r border-white/15 px-3 py-4 text-center text-[10px] font-bold uppercase tracking-wider">
+                <th className="border-r border-white/15 px-3 py-4 text-center text-[10px] font-bold uppercase tracking-wider">
                   Order
                 </th>
 
@@ -712,13 +743,19 @@ export default function CustomTableMonthlyWorkspace({
                     {visibleColumns.map((column) => (
                       <td
                         key={column.id}
-                        className="min-w-44 border-r border-[#B4C2D1]/40 px-3 py-3 align-top last:border-r-0"
+                        className="min-w-0 border-r border-[#B4C2D1]/40 px-3 py-3 align-top last:border-r-0"
                       >
                         {canEditRows &&
                         column.isEditable &&
                         !isFinalized ? (
                           <textarea
                             key={`${row.id}-${column.id}-${getCellValue(row, column)}`}
+                            ref={(textarea) => {
+                              if (textarea) {
+                                textarea.style.height = "auto";
+                                textarea.style.height = `${textarea.scrollHeight}px`;
+                              }
+                            }}
                             aria-label={`${column.label}, row ${index + 1}`}
                             defaultValue={getCellValue(row, column)}
                             rows={1}
@@ -749,10 +786,10 @@ export default function CustomTableMonthlyWorkspace({
                                 event.currentTarget.blur();
                               }
                             }}
-                            className="block min-h-9 w-full min-w-32 resize-none overflow-hidden whitespace-pre-wrap break-words rounded-md border border-transparent bg-transparent px-2.5 py-2 text-sm leading-5 text-[#272D2C] outline-none transition placeholder:text-[#B4C2D1] hover:border-[#B4C2D1] focus:border-[#E26D5C] focus:bg-white focus:ring-2 focus:ring-[#E26D5C]/15 disabled:cursor-not-allowed disabled:opacity-65"
+                            className="block min-h-9 w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words rounded-md border border-transparent bg-transparent px-2.5 py-2 text-sm leading-5 text-[#272D2C] outline-none transition placeholder:text-[#B4C2D1] hover:border-[#B4C2D1] focus:border-[#E26D5C] focus:bg-white focus:ring-2 focus:ring-[#E26D5C]/15 disabled:cursor-not-allowed disabled:opacity-65"
                           />
                         ) : (
-                          <div className="min-h-9 whitespace-pre-wrap break-words px-2.5 py-2 text-sm leading-5 text-[#272D2C]/85">
+                          <div className="min-h-9 min-w-0 whitespace-pre-wrap break-words px-2.5 py-2 text-sm leading-5 text-[#272D2C]/85">
                             {getCellValue(row, column) || (
                               <span className="text-[#B4C2D1]">
                                 Not entered

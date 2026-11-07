@@ -28,6 +28,15 @@ type AgendaWin = {
   assignedTo: string;
 };
 
+type AgendaEvent = {
+  id: string;
+  name: string;
+  location: string;
+  attendees: string;
+  startDate: string;
+  endDate: string;
+};
+
 type AgendaRock = {
   id: string;
   rock: string;
@@ -52,6 +61,7 @@ type AgendaCarryOver = {
 type AgendaBoard = {
   wins: AgendaWin[];
   announcements: string;
+  events: AgendaEvent[];
   rocks: AgendaRock[];
   help: AgendaHelp[];
   carryOver: AgendaCarryOver[];
@@ -85,6 +95,7 @@ function createEmptyBoard(): AgendaBoard {
   return {
     wins: [],
     announcements: "",
+    events: [],
     rocks: [],
     help: [],
     carryOver: [],
@@ -105,6 +116,7 @@ function parseBoard(value: unknown): AgendaBoard | null {
   }
 
   const wins = Array.isArray(value.wins) ? value.wins : [];
+  const events = Array.isArray(value.events) ? value.events : [];
   const rocks = Array.isArray(value.rocks) ? value.rocks : [];
   const help = Array.isArray(value.help) ? value.help : [];
   const carryOver = Array.isArray(value.carryOver)
@@ -131,6 +143,14 @@ function parseBoard(value: unknown): AgendaBoard | null {
   return {
     wins: normalizedWins,
     announcements: asText(value.announcements),
+    events: events.filter(isObject).map((item, index) => ({
+      id: asText(item.id) || `event-loaded-${index + 1}`,
+      name: asText(item.name),
+      location: asText(item.location),
+      attendees: asText(item.attendees),
+      startDate: asText(item.startDate),
+      endDate: asText(item.endDate),
+    })),
     rocks: rocks.filter(isObject).map((item, index) => ({
       id: asText(item.id) || `rock-loaded-${index + 1}`,
       rock: asText(item.rock),
@@ -269,6 +289,19 @@ export default function AgendaOperationalWorkspace({
     updateBoard(
       "wins",
       board.wins.map((row) =>
+        row.id === id ? { ...row, [key]: value } : row
+      )
+    );
+  }
+
+  function updateEvent(
+    id: string,
+    key: keyof Omit<AgendaEvent, "id">,
+    value: string
+  ) {
+    updateBoard(
+      "events",
+      board.events.map((row) =>
         row.id === id ? { ...row, [key]: value } : row
       )
     );
@@ -531,6 +564,27 @@ export default function AgendaOperationalWorkspace({
     updateBoard(
       "wins",
       board.wins.filter((row) => row.id !== id)
+    );
+  }
+
+  function addEvent() {
+    updateBoard("events", [
+      ...board.events,
+      {
+        id: createId("event", board.events.length + 1),
+        name: "",
+        location: "",
+        attendees: "",
+        startDate: "",
+        endDate: "",
+      },
+    ]);
+  }
+
+  function removeEvent(id: string) {
+    updateBoard(
+      "events",
+      board.events.filter((row) => row.id !== id)
     );
   }
 
@@ -835,6 +889,115 @@ export default function AgendaOperationalWorkspace({
             placeholder="Enter announcements here..."
             className={`${INPUT_CLASS} min-h-24 resize-y`}
           />
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
+        <SectionHeader
+          title="EVENTs"
+          description="Track upcoming events, their locations, attendees, and dates."
+          action={addButton("Add Event", addEvent)}
+        />
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
+            <thead className="bg-[#082550] text-white">
+              <tr>
+                <th className="px-3 py-2 text-xs">Name of the Event</th>
+                <th className="px-3 py-2 text-xs">Location</th>
+                <th className="px-3 py-2 text-xs">Attendees</th>
+                <th className="w-40 px-3 py-2 text-xs">Start Date</th>
+                <th className="w-40 px-3 py-2 text-xs">End Date</th>
+                <th className="w-24 px-3 py-2 text-right text-xs">Action</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-[#B4C2D1]/50">
+              {board.events.map((row, index) => (
+                <tr
+                  key={row.id}
+                  className={index % 2 ? "bg-[#F7F9FB]" : ""}
+                >
+                  <td className="px-2 py-1.5">
+                    <input
+                      aria-label={`Name of event ${index + 1}`}
+                      type="text"
+                      disabled={!canEditRows || reloading}
+                      value={row.name}
+                      onChange={(event) =>
+                        updateEvent(row.id, "name", event.target.value)
+                      }
+                      className={`${INPUT_CLASS} py-1.5`}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      aria-label={`Location for event ${index + 1}`}
+                      type="text"
+                      disabled={!canEditRows || reloading}
+                      value={row.location}
+                      onChange={(event) =>
+                        updateEvent(row.id, "location", event.target.value)
+                      }
+                      className={`${INPUT_CLASS} py-1.5`}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      aria-label={`Attendees for event ${index + 1}`}
+                      type="text"
+                      disabled={!canEditRows || reloading}
+                      value={row.attendees}
+                      onChange={(event) =>
+                        updateEvent(row.id, "attendees", event.target.value)
+                      }
+                      className={`${INPUT_CLASS} py-1.5`}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      aria-label={`Start date for event ${index + 1}`}
+                      type="date"
+                      disabled={!canEditRows || reloading}
+                      value={row.startDate}
+                      onChange={(event) =>
+                        updateEvent(row.id, "startDate", event.target.value)
+                      }
+                      className={`${INPUT_CLASS} py-1.5`}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      aria-label={`End date for event ${index + 1}`}
+                      type="date"
+                      disabled={!canEditRows || reloading}
+                      value={row.endDate}
+                      onChange={(event) =>
+                        updateEvent(row.id, "endDate", event.target.value)
+                      }
+                      className={`${INPUT_CLASS} py-1.5`}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5 text-right">
+                    {removeButton(`Remove event ${index + 1}`, () =>
+                      removeEvent(row.id)
+                    )}
+                  </td>
+                </tr>
+              ))}
+
+              {board.events.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-5 text-center text-sm text-gray-500"
+                  >
+                    No events added yet. Use Add Event to create a row.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
 
