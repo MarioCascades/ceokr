@@ -4,7 +4,7 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-10-30
+**Last Updated:** 2026-11-07
 
 This document tracks intentionally deferred architecture, product
 capabilities, migration work, and future platform work.
@@ -16,7 +16,44 @@ project state.
 
 ---
 
-# Current Development Phase
+# Current Project Position (2026-11-07)
+
+**CURRENT APPLICATION SCOPE: COMPLETE**
+
+The Product Owner has confirmed that the current CascadEffects Performance Platform application is done for now. The project is moving from the main application-build phase into incremental improvement and maintenance.
+
+This document still contains future product capabilities, deferred architecture ideas, and historical planning notes. Their presence does **not** mean the current application is unfinished or that they should be treated as the next implementation tasks.
+
+## How to interpret this backlog
+
+1. **Completed baseline:** Work already delivered in the current application. Do not re-add it to active work.
+2. **Incremental improvements:** Small refinements or usability changes captured as they are identified. These can be prioritized one at a time.
+3. **Future capabilities:** Larger capabilities intentionally outside the current scope. They remain deferred until Mario explicitly chooses to pursue them.
+4. **Confirmed defects:** Regressions or failures in existing behavior. Track and address these separately from enhancements.
+
+No item in the historical backlog should be started automatically. Before any implementation, confirm with Mario that the item is still wanted and that it is the selected next improvement.
+
+## Completed current baseline
+
+The current baseline includes the existing platform and performance-management application, Runtime operational workspaces, administration experiences, and the completed refinements listed in the latest Platform Decisions and Waypoint 35.
+
+Recent confirmed updates include:
+- Agenda EVENTs card after Announcements and before Rocks, with event details, add/remove behavior, and persistence.
+- Recruitment Updates no longer displays Future Task; existing Future Task data remains retained.
+- Recruitment long text wraps and cells expand vertically; column widths for Role Details, Action Plan, and Remarks have been adjusted.
+- Previously completed Overall Score calculation, Performance Summary Date Updated, VA Exits Replaced display, Indie Ortho dashboard metrics, custom-table headers, and sticky-header behavior remain complete.
+
+Recruitment remains a monthly workflow. Agenda remains a shared current-state workspace. Client Performance remains a continuous client-specific spreadsheet workspace with monthly rows across years. Do not conflate their different persistence models.
+
+## Active work
+
+**No active core application-development milestone is currently open.**
+
+The next work item will be an improvement explicitly selected by Mario. Until then, the project is in a stable completion/maintenance state.
+
+---
+
+# Historical Development Backlog and Deferred Capabilities
 
 ## Runtime Operational Tabs and Tenant-Specific Custom Tables
 
@@ -1359,15 +1396,11 @@ PRESENTATION MOCK-UPS / LIVE FUTURE
 
 ---
 
-# Next Development Session
+# Historical Next-Session Instructions (Superseded 2026-11-07)
 
-Resume from the latest Waypoint 33. Review Product North Star, Waypoint 33,
-Platform Decisions, Platform Backlog, and Engineering Process before coding.
+This October 2026 instruction is retained for historical context only and is superseded by Waypoint 35 and the Current Project Position at the beginning of this document.
 
-The current implementation order is recorded in the latest update below.
-Do not treat SQL migrations being applied as proof that the feature is complete.
-Do not delete Reports functionality, automatically provision tables for all
-tenants, or expose table-definition creation to Organization Admins.
+Do not resume from Waypoint 33 or Waypoint 34 as the current work checkpoint. Do not automatically restart the old Runtime Operational Tabs / Custom Tables implementation sequence. The current application scope is complete; select a specific improvement with Mario before implementation.
 
 ---
 
@@ -1460,3 +1493,17 @@ Use Waypoint 34 as the current Client Performance design checkpoint. Agenda requ
 Keep the one-file-at-a-time workflow. Recruitment remains a monthly workflow. Client Performance is a continuous persistent spreadsheet containing monthly rows across years; it does not switch between monthly snapshots. Agenda remains governed by its separate current-state requirements.
 
 Keep the established one-file-at-a-time workflow: inspect the current full file, return the exact path and complete replacement, and only then move to the next file. Recruitment remains monthly; Agenda and Client Performance are current-state experiences.
+
+
+---
+
+# 2026-11-07 Improvement Intake Rule
+
+When Mario identifies a refinement:
+1. Record the requested behavior and the affected area in this backlog.
+2. Classify it as an improvement or a confirmed defect.
+3. Preserve the existing working behavior and data unless Mario explicitly approves a change.
+4. Implement only the selected improvement, using the current full source file and the established one-file-at-a-time workflow.
+5. After the change, update the relevant status and Waypoint if the change materially alters the application baseline.
+
+Do not treat every improvement idea as a prerequisite to application completion. Do not reopen completed items simply because an older section below contains stale status wording. The current baseline and latest Waypoint take precedence over historical planning snapshots.

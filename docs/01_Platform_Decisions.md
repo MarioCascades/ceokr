@@ -4,13 +4,46 @@
 
 **Document Status:** CURRENT
 
-**Last Updated:** 2026-10-30
+**Last Updated:** 2026-11-07
 
 This document records architectural decisions that have been intentionally
 adopted for the CascadEffects Performance Platform.
 
 These decisions are the current architectural source of truth unless
 superseded by a later decision or explicitly updated after a milestone.
+
+---
+
+## Current Platform Baseline (2026-11-07)
+
+**Status: CURRENT APPLICATION SCOPE COMPLETE / IMPROVEMENTS CAPTURED IN BACKLOG**
+
+The current CascadEffects Performance Platform application is considered complete for its present intended scope. The Product Owner has confirmed that the app is done for now. This is a completion baseline, not a declaration that the product will never change.
+
+The following are part of the current completed baseline:
+- Core platform and performance-management application experience.
+- Runtime operational workspaces, including Agenda, VA Roster, Recruitment, and Client Performance.
+- Current platform-level and organization-level administration and navigation experiences.
+- The previously completed performance calculations, summary date behavior, VA Exits Replaced display, Indie Ortho dashboard metrics, custom-table headers, and sticky-header behavior.
+- Agenda EVENTs card, placed after Announcements and before Rocks, with event name, location, attendees, start date, end date, add/remove behavior, and existing persistence.
+- Recruitment Updates presentation update: Future Task is no longer displayed, while its saved values are retained; Role Details, Action Plan, and Remarks have adjusted widths; text wraps and cells expand vertically to display their contents.
+
+These items are recorded as completed based on the Product Owner's confirmation and the working application updates discussed through 2026-11-07. Do not reopen them as pending merely because older Waypoints or backlog entries still describe implementation work.
+
+### Improvement handling
+
+Small refinements, usability improvements, visual adjustments, and newly discovered opportunities may continue to be captured incrementally. Unless explicitly identified as a defect that blocks an agreed workflow, these are improvements to a completed current-scope application, not evidence that the main application remains unfinished.
+
+The Platform Backlog is the single place for these future improvements and deferred capabilities. The latest Waypoint establishes the current completed baseline and the next-session starting point.
+
+### Status interpretation
+
+- **Complete:** Included in the current application baseline.
+- **Improvement:** A refinement to an already working experience; may be prioritized and implemented incrementally.
+- **Future capability:** A deliberately deferred product capability outside the current scope.
+- **Defect:** A confirmed regression or failure in existing behavior; address according to impact.
+
+This baseline does not claim that an independent production security audit, external penetration test, deployment review, or other verification not specifically performed has occurred. Do not invent test evidence or treat historical verification requirements as proof of a current defect.
 
 ---
 
@@ -1295,3 +1328,54 @@ This section supersedes earlier Client Performance statements in this document t
 - Before coding, present the proposed data model, migrations, affected files, authorization/RLS strategy, and implementation sequence for approval.
 - Follow the one-file-at-a-time workflow. After implementation, test persistence, client and year visibility, role enforcement, tenant isolation, and regressions in existing Custom Tables, Agenda, VA Roster, and Recruitment.
 
+
+
+---
+
+# 32. Runtime Operational Workspaces and Current UI Baseline (2026-11-07)
+
+**Status: CURRENT-SCOPE IMPLEMENTATION COMPLETE / INCREMENTAL IMPROVEMENTS ONLY**
+
+This section records the confirmed current state of the operational workspaces and supersedes older status labels in this document that describe these items as not started, in progress, or awaiting initial implementation.
+
+## Agenda
+
+Agenda is the shared, organization-level persistent workspace. Its current section order includes Wins, Announcements, EVENTs, Rocks, Where I Need Help, and Items Carried Over from Last Week.
+
+The EVENTs section appears immediately after Announcements and before Rocks. It supports:
+- Name of Event
+- Location
+- Attendees
+- Start Date
+- End Date
+- Adding an event and removing an event
+- Persistence through the existing Agenda save mechanism
+
+The EVENTs implementation is part of the current baseline. Do not describe it as pending.
+
+## Recruitment
+
+Recruitment remains a monthly operational workflow with its existing history and carry-forward behavior. Its standardized Workflow Status remains separate from the freeform Current State field.
+
+The Recruitment Updates presentation baseline:
+- Does not display the Future Task column.
+- Retains existing Future Task values in saved row data; hiding the column must not delete the data.
+- Uses adjusted widths for Role Details, Action Plan, and Remarks.
+- Wraps long text and expands row height so cell content remains visible.
+- Preserves the existing editing, saving, ordering, hidden/active listings, monthly history, and carry-forward behavior.
+
+Do not restore Future Task to the visible table unless explicitly requested. Do not remove its stored values as part of a display-only change.
+
+## Other confirmed completed application refinements
+
+The following are completed and must not be reopened as pending work:
+- Overall Score calculation.
+- Performance Summary Date Updated behavior.
+- VA Exits Replaced display.
+- Indie Ortho dashboard metrics.
+- Custom-table header updates.
+- Sticky-header fix.
+
+## Future changes
+
+Any additional refinements should be recorded as incremental improvements in Platform Backlog. A confirmed regression in one of these completed behaviors should be tracked as a defect, not used to relabel the entire application as incomplete.

@@ -1,0 +1,186 @@
+# CascadEffects Performance Platform
+
+# Waypoint 35: Current Application Completion and Improvement Baseline
+
+**Date:** 2026-11-07  
+**Status:** CURRENT APPLICATION SCOPE COMPLETE / INCREMENTAL IMPROVEMENTS ONLY  
+**Previous Waypoint:** Waypoint 34: Client Performance Persistent Spreadsheet Design
+
+---
+
+# 1. Purpose
+
+This Waypoint establishes the current project checkpoint after completion of the current intended CascadEffects Performance Platform application scope.
+
+Mario has confirmed that the application is done for now. Work may continue gradually as small improvements, refinements, and newly identified needs are captured. Those improvements do not mean that the main application is still under initial development.
+
+This Waypoint supersedes the old resume instructions and implementation status snapshots in Waypoints 33 and 34, and the older active-phase descriptions in Platform Backlog, for purposes of determining what work is currently open.
+
+Historical Waypoints remain unchanged as records of the state at the time they were written.
+
+---
+
+# 2. Current Project Status
+
+**The current application scope is complete. No active core application-development milestone is open.**
+
+The project is now in a completion, maintenance, and incremental-improvement phase.
+
+The backlog may contain deferred capabilities, future product ideas, and historical implementation plans. These must not be interpreted as unfinished requirements for the current application. Mario must explicitly select the next improvement before implementation begins.
+
+---
+
+# 3. Completed Application Baseline
+
+The current baseline includes the existing CascadEffects Performance Platform application and its established performance-management, administration, and Runtime experiences.
+
+The following refinements are specifically confirmed complete:
+
+- Overall Score calculation.
+- Performance Summary Date Updated behavior.
+- VA Exits Replaced display.
+- Indie Ortho dashboard metrics.
+- Custom-table header updates.
+- Sticky-header fix.
+
+These items must not be reopened as pending work unless Mario reports a regression or requests a change.
+
+---
+
+# 4. Recent Operational Workspace Updates
+
+## 4.1 Agenda EVENTs
+
+The Agenda workspace now includes an EVENTs section positioned:
+1. After Announcements.
+2. Before Rocks.
+
+The EVENTs section contains:
+- Name of Event
+- Location
+- Attendees
+- Start Date
+- End Date
+
+Users can add and remove events. The section uses the existing Agenda persistence behavior.
+
+This implementation was confirmed by Mario as working. It is part of the completed application baseline.
+
+## 4.2 Recruitment Updates
+
+The Recruitment Updates workspace has the following presentation behavior:
+
+- Future Task is removed from the visible table.
+- Existing Future Task values are retained in the underlying saved data. This is a display change, not a data deletion.
+- Role Details, Action Plan, and Remarks have adjusted column widths.
+- Long text wraps.
+- Cells expand vertically so their content remains visible.
+- Row height accommodates the tallest cell in the row.
+- Cell content is top-aligned.
+- Existing editing, saving, ordering, hidden/active listings, monthly history, and carry-forward behavior are preserved.
+
+Mario confirmed that this update appears to be working.
+
+Recruitment remains a monthly workflow. Do not convert it to the current-state persistence model used by Agenda.
+
+---
+
+# 5. Persistence Model Distinctions to Preserve
+
+The operational workspaces do not all use the same time model:
+
+- **Agenda:** One shared organization-level current-state workspace. No month selector, monthly snapshots, or copy-forward.
+- **VA Roster:** Persistent current-state roster. Row visibility is distinct from Runtime tab visibility.
+- **Recruitment:** Monthly operational workflow with historical records and carry-forward behavior.
+- **Client Performance:** Continuous client-specific spreadsheet workspace with monthly rows across years. It is not a month-selected snapshot workflow.
+
+Do not apply one workspace's persistence behavior to another merely to simplify implementation.
+
+---
+
+# 6. Improvement and Defect Management
+
+The next phase is incremental improvement, not completion of a list of old implementation tasks.
+
+Classify future work as follows:
+
+| Classification | Meaning |
+|---|---|
+| Completed baseline | Already delivered and working in the current application |
+| Improvement | A refinement to an existing working experience |
+| Future capability | A deliberately deferred product capability outside the current scope |
+| Defect | A confirmed regression or failure in existing behavior |
+
+Rules:
+1. Capture newly identified improvements in Platform Backlog.
+2. Do not automatically begin every item in the backlog.
+3. Mario selects the next improvement before implementation.
+4. Preserve existing behavior and saved data unless the requested change explicitly requires otherwise.
+5. Treat a confirmed regression as a defect, not as evidence that the entire application is unfinished.
+6. Do not reopen completed work because an older Waypoint or historical backlog section has stale status wording.
+
+---
+
+# 7. Documentation Authority and Resume Instructions
+
+The documentation hierarchy remains:
+
+1. Latest Waypoint.
+2. Platform Decisions.
+3. Platform Backlog.
+4. Historical Waypoints and development summaries.
+
+At the beginning of a future session:
+
+1. Read Product North Star.
+2. Read this Waypoint 35.
+3. Read Platform Decisions.
+4. Read Platform Backlog.
+5. Confirm whether Mario has selected a specific improvement.
+6. If no improvement has been selected, ask what he wants to work on. Do not assume an old backlog item is the next task.
+7. Inspect the latest relevant source file before changing code.
+
+**Do not resume Waypoint 34's Client Performance architecture-verification sequence as an open milestone.** Waypoint 34 remains a historical design checkpoint. The current application baseline and Mario's latest direction take precedence.
+
+The established engineering workflow remains in effect when a specific improvement is selected:
+- Work from the exact current full source file.
+- Make one file change at a time.
+- Return a complete replacement file and exact destination path.
+- Preserve unrelated behavior.
+- Let Mario apply the file and run the project build before proceeding to another file.
+- Update documentation when the change materially affects the current baseline.
+
+---
+
+# 8. Documentation Updated
+
+This completion checkpoint is accompanied by:
+
+- `01_Platform_Decisions_New.md`
+- `02_Platform_Backlog_New.md`
+
+Product North Star remains unchanged because the current application completion does not alter the product's core direction or domain boundaries.
+
+Engineering Process remains unchanged because the established one-file-at-a-time development and documentation workflow still applies.
+
+Waypoint 34 remains historical and is not rewritten.
+
+---
+
+# 9. Verification and Repository Notes
+
+The Agenda EVENTs and Recruitment Updates changes were confirmed by Mario as working in the application.
+
+This Waypoint records the current product/application baseline and the user's confirmation. It does not independently assert a new Git commit, GitHub push, deployment, security audit, penetration test, or database/RLS test beyond what has been explicitly confirmed.
+
+Continue to report verification accurately when future changes are made. Do not invent test results or repository actions.
+
+---
+
+# 10. Next Session
+
+**No implementation task is automatically queued.**
+
+Resume from Waypoint 35. Ask Mario which incremental improvement he wants to address next, unless he has already identified it in the conversation.
+
+The current application is complete for now. Future work should be deliberate, incremental, and documented without treating the platform as an unfinished initial build.
