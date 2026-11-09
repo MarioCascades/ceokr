@@ -56,7 +56,11 @@ function calculateScore(
     | "percentage_of_target"
     | "display_only"
     | undefined,
-  performanceMonth: string
+  performanceMonth: string,
+  scoringDirection:
+    | "higher_is_better"
+    | "lower_is_better"
+    | undefined
 ): number | null {
 
   /*
@@ -92,7 +96,8 @@ function calculateScore(
     current,
     targetValue,
     scoringMethod,
-    performanceMonth
+    performanceMonth,
+    scoringDirection
   );
 }
 
@@ -613,7 +618,8 @@ export default function MemberOKRPerformance({
                                   editableValues.currentValue,
                                   editableValues.target,
                                   keyResult.scoringMethod,
-                                  performanceMonth
+                                  performanceMonth,
+                                  keyResult.scoringDirection
                                 );
 
 

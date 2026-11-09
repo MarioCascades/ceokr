@@ -323,7 +323,8 @@ function KeyResultEditor({
           currentValue,
           target,
           scoringMethod,
-          normalizedPerformanceMonth
+          normalizedPerformanceMonth,
+          keyResult?.scoringDirection ?? "higher_is_better"
         );
 
   const [
@@ -1126,7 +1127,9 @@ function KeyResultCard({
                               : "percentage_of_target",
                             performanceMonth.length >= 7
                               ? performanceMonth.slice(0, 7)
-                              : performanceMonth
+                              : performanceMonth,
+                            keyResult.scoringDirection ??
+                              "higher_is_better"
                           )
                         : "—"}
                   </p>
