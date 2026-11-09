@@ -349,32 +349,65 @@ function validateSnapshotChanges(
   );
 
   for (const [key, value] of Object.entries(snapshotData)) {
-    // The comparison snapshot uses a small, fixed set of
-    // Base/Current keys shared by every client. These values
-    // live in the existing JSONB snapshot_data column, so no
-    // database schema change is required.
-    const comparisonMetric = key.match(
-      /^(base|current)_(production|collection|starts)$/
-    );
-    const comparisonNotes =
-      key === "base_notes" || key === "current_notes";
+    // Base/Current comparison values use the same configured
+    // snapshot fields as the selected client. The comparison
+    // prefix is stored in the existing snapshot_data JSONB
+    // column, so no database schema change is required.
+    const comparisonMatch = key.match(/^(base|current)_(.+)$/);
+    const comparisonField = comparisonMatch
+      ? fields.find(
+          (field) =>
+            field.columnKey.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`) ===
+            comparisonMatch[2]
+        )
+      : undefined;
 
-    if (comparisonMetric) {
-      if (value === null || value === undefined) continue;
-      if (typeof value !== "number" || !Number.isFinite(value)) {
+    if (comparisonMatch) {
+      if (!comparisonField || comparisonField.dataType === "date") {
         throw new Error(
-          `Snapshot field "${key}" must contain a valid number.`
+          `Comparison snapshot field "${key}" is not configured for this client.`
         );
       }
-      continue;
-    }
 
-    if (comparisonNotes) {
-      if (value === null || value === undefined) continue;
-      if (typeof value !== "string") {
+      if (!comparisonField.isEditable) {
         throw new Error(
-          `Snapshot field "${key}" must contain text.`
+          `Snapshot field "${comparisonField.label}" is not editable.`
         );
+      }
+
+      if (value === null || value === undefined) continue;
+
+      switch (comparisonField.dataType) {
+        case "text":
+        case "status":
+        case "select":
+          if (typeof value !== "string") {
+            throw new Error(
+              `Snapshot field "${key}" must contain text.`
+            );
+          }
+          break;
+
+        case "number":
+          if (typeof value !== "number" || !Number.isFinite(value)) {
+            throw new Error(
+              `Snapshot field "${key}" must contain a valid number.`
+            );
+          }
+          break;
+
+        case "boolean":
+          if (typeof value !== "boolean") {
+            throw new Error(
+              `Snapshot field "${key}" must contain a boolean value.`
+            );
+          }
+          break;
+
+        default:
+          throw new Error(
+            `Snapshot field "${comparisonField.label}" uses an unsupported comparison data type.`
+          );
       }
       continue;
     }

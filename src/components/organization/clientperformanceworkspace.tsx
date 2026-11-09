@@ -170,6 +170,43 @@ function getSnapshotValue(
   );
 }
 
+function toSnapshotKeySuffix(columnKey: string): string {
+  return columnKey.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+
+function getComparisonSnapshotKey(
+  row: "base" | "current",
+  field: ClientPerformanceSnapshotField
+): string {
+  return `${row}_${toSnapshotKeySuffix(field.columnKey)}`;
+}
+
+function isStartDateField(field: ClientPerformanceSnapshotField): boolean {
+  return (
+    field.dataType === "date" ||
+    field.columnKey.toLowerCase() === "start" ||
+    field.columnKey.toLowerCase() === "startdate" ||
+    field.label.trim().toLowerCase() === "start"
+  );
+}
+
+function formatSnapshotMetric(
+  field: ClientPerformanceSnapshotField,
+  value: string
+): string {
+  if (!value) return "Not entered";
+  const key = field.columnKey.toLowerCase();
+  if (
+    key === "production" ||
+    key === "collection" ||
+    key === "avgprodperday"
+  ) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? formatCurrency(parsed) : value;
+  }
+  return value;
+}
+
 function getYearVisibility(
   workspace: ClientPerformanceWorkspace,
   year: number
@@ -410,10 +447,23 @@ export default function ClientPerformanceWorkspace({
     for (const [key, value] of Object.entries(workspace.snapshot.snapshotData)) {
       if (JSON.stringify(value) !== JSON.stringify(savedWorkspace.snapshot.snapshotData[key])) {
         const field = workspace.client.snapshotFields.find((item) => item.columnKey === key);
+        const comparisonMatch = key.match(/^(base|current)_(.+)$/);
+        const comparisonField = comparisonMatch
+          ? workspace.client.snapshotFields.find(
+              (item) => toSnapshotKeySuffix(item.columnKey) === comparisonMatch[2]
+            )
+          : undefined;
         let parsedValue: unknown = value;
-        if (field?.dataType === "number" && typeof value === "string") parsedValue = parseNumber(value);
-        else if (field?.dataType === "boolean" && typeof value === "string") parsedValue = value === "true";
-        else if (typeof value === "string" && value.trim() === "") parsedValue = null;
+        if (
+          (field?.dataType === "number" || comparisonField?.dataType === "number") &&
+          typeof value === "string"
+        ) {
+          parsedValue = parseNumber(value);
+        } else if (field?.dataType === "boolean" && typeof value === "string") {
+          parsedValue = value === "true";
+        } else if (typeof value === "string" && value.trim() === "") {
+          parsedValue = null;
+        }
         snapshotChanges[key] = parsedValue;
       }
     }
@@ -778,17 +828,14 @@ export default function ClientPerformanceWorkspace({
           />
 
           {snapshotFields.length > 0 ? (
-            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {snapshotFields.map((field) => {
-                const value = getSnapshotValue(
-                  workspace,
-                  field
-                );
+            <>
+              {snapshotFields.filter(isStartDateField).map((field) => {
+                const value = getSnapshotValue(workspace, field);
 
                 return (
                   <div
                     key={field.id}
-                    className="min-w-0 rounded-xl border border-[#B4C2D1]/60 bg-[#F7F9FB] p-4"
+                    className="mt-5 max-w-sm rounded-xl border border-[#B4C2D1]/60 bg-[#F7F9FB] p-4"
                   >
                     <label
                       htmlFor={`snapshot-${field.columnKey}`}
@@ -796,28 +843,17 @@ export default function ClientPerformanceWorkspace({
                     >
                       {field.label}
                       {field.isRequired && (
-                        <span className="ml-1 text-[#E26D5C]">
-                          *
-                        </span>
+                        <span className="ml-1 text-[#E26D5C]">*</span>
                       )}
                     </label>
-
                     {canManage && field.isEditable && isEditing ? (
                       <input
                         id={`snapshot-${field.columnKey}`}
                         type={getSnapshotInputType(field)}
-                        step={
-                          field.dataType === "number"
-                            ? "any"
-                            : undefined
-                        }
                         value={value}
                         disabled={busy}
                         onChange={(event) =>
-                          updateSnapshotLocal(
-                            field.columnKey,
-                            event.target.value
-                          )
+                          updateSnapshotLocal(field.columnKey, event.target.value)
                         }
                         className="w-full border-0 border-b border-[#B4C2D1] bg-transparent px-0 py-2 text-xl font-black tabular-nums text-[#082550] outline-none focus:border-[#E26D5C] disabled:opacity-60"
                       />
@@ -829,7 +865,93 @@ export default function ClientPerformanceWorkspace({
                   </div>
                 );
               })}
-            </div>
+
+              {snapshotFields.filter((field) => !isStartDateField(field)).length > 0 ? (
+                <div className="mt-5 overflow-x-auto rounded-xl border border-[#B4C2D1]/70">
+                  <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+                    <thead>
+                      <tr className="bg-[#E9F4F8] text-[#082550]">
+                        <th className="w-44 px-4 py-3 text-[10px] font-bold uppercase tracking-wider">
+                          Performance
+                        </th>
+                        {snapshotFields
+                          .filter((field) => !isStartDateField(field))
+                          .map((field) => (
+                            <th
+                              key={field.id}
+                              className="min-w-36 px-4 py-3 text-[10px] font-bold uppercase tracking-wider"
+                            >
+                              {field.label}
+                            </th>
+                          ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#B4C2D1]/50">
+                      {(["base", "current"] as const).map((row) => (
+                        <tr
+                          key={row}
+                          className={row === "base" ? "bg-white" : "bg-[#F7F9FB]"}
+                        >
+                          <th className="whitespace-nowrap px-4 py-3 text-xs font-black uppercase tracking-wide text-[#082550]">
+                            {row === "base" ? "Base (before CE)" : "Current (with CE)"}
+                          </th>
+                          {snapshotFields
+                            .filter((field) => !isStartDateField(field))
+                            .map((field) => {
+                              const comparisonKey = getComparisonSnapshotKey(row, field);
+                              const legacyCurrentValue =
+                                row === "current"
+                                  ? workspace.snapshot.snapshotData[field.columnKey]
+                                  : undefined;
+                              const rawValue =
+                                workspace.snapshot.snapshotData[comparisonKey] ??
+                                legacyCurrentValue;
+                              const value = displayValue(rawValue);
+                              const editable =
+                                canManage && field.isEditable && isEditing;
+
+                              return (
+                                <td key={field.id} className="min-w-36 px-3 py-2">
+                                  {editable ? (
+                                    field.dataType === "text" && field.columnKey.toLowerCase() === "notes" ? (
+                                      <textarea
+                                        value={value}
+                                        rows={2}
+                                        disabled={busy}
+                                        aria-label={`${row} ${field.label}`}
+                                        onChange={(event) =>
+                                          updateSnapshotLocal(comparisonKey, event.target.value)
+                                        }
+                                        className={`${CELL_INPUT_CLASS} resize-y`}
+                                      />
+                                    ) : (
+                                      <input
+                                        type={field.dataType === "number" ? "number" : "text"}
+                                        step={field.dataType === "number" ? "any" : undefined}
+                                        value={value}
+                                        disabled={busy}
+                                        aria-label={`${row} ${field.label}`}
+                                        onChange={(event) =>
+                                          updateSnapshotLocal(comparisonKey, event.target.value)
+                                        }
+                                        className={CELL_INPUT_CLASS}
+                                      />
+                                    )
+                                  ) : (
+                                    <span className="px-2.5 py-2 text-sm tabular-nums text-[#272D2C]">
+                                      {formatSnapshotMetric(field, value)}
+                                    </span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </>
           ) : (
             <p className="mt-5 rounded-xl bg-[#F7F9FB] p-5 text-sm text-gray-500">
               No visible snapshot fields are configured for this client.
