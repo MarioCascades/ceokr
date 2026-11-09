@@ -1060,7 +1060,7 @@ export default function ClientPerformanceWorkspace({
                                 key: "daysWorked",
                                 value: metric.daysWorked,
                               },
-                              ...(workspace.client.clientKey === "kirkland-richmond" ? [{ key: "avgProdPerDay" as const, value: metric.avgProdPerDay }] : []),
+                              ...(workspace.client.clientKey === "kirkland-redmond" ? [{ key: "avgProdPerDay" as const, value: metric.avgProdPerDay }] : []),
                             ];
 
                             return (
