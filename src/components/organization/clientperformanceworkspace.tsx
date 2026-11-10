@@ -66,6 +66,62 @@ type InitiativeField =
   | "completionMonth"
   | "notes";
 
+const ADDITIONAL_DATA_NOTES_START = "[Preserved Additional Data]";
+const ADDITIONAL_DATA_NOTES_END = "[End Preserved Additional Data]";
+
+function mergeAdditionalDataIntoNotes(
+  notes: string | null | undefined,
+  additionalData: Record<string, unknown> | null | undefined
+): string {
+  const currentNotes = notes ?? "";
+  const hasAdditionalData =
+    additionalData !== null &&
+    additionalData !== undefined &&
+    Object.keys(additionalData).length > 0;
+  const startIndex = currentNotes.indexOf(ADDITIONAL_DATA_NOTES_START);
+  const endIndex =
+    startIndex >= 0
+      ? currentNotes.indexOf(ADDITIONAL_DATA_NOTES_END, startIndex)
+      : -1;
+
+  if (!hasAdditionalData) {
+    if (startIndex >= 0 && endIndex >= 0) {
+      return `${currentNotes.slice(0, startIndex).trimEnd()}${currentNotes
+        .slice(endIndex + ADDITIONAL_DATA_NOTES_END.length)
+        .trimStart()}`.trim();
+    }
+    return currentNotes;
+  }
+
+  const preservedBlock = `${ADDITIONAL_DATA_NOTES_START}\n${JSON.stringify(
+    additionalData,
+    null,
+    2
+  )}\n${ADDITIONAL_DATA_NOTES_END}`;
+
+  if (startIndex >= 0 && endIndex >= 0) {
+    return `${currentNotes.slice(0, startIndex)}${preservedBlock}${currentNotes.slice(
+      endIndex + ADDITIONAL_DATA_NOTES_END.length
+    )}`;
+  }
+
+  return `${currentNotes.trimEnd()}${currentNotes.trim() ? "\n\n" : ""}${preservedBlock}`;
+}
+
+function normalizeWorkspaceInitiativeNotes(
+  workspace: ClientPerformanceWorkspace
+): ClientPerformanceWorkspace {
+  return {
+    ...workspace,
+    initiatives: workspace.initiatives.map((initiative) => ({
+      ...initiative,
+      notes: mergeAdditionalDataIntoNotes(
+        initiative.notes,
+        initiative.additionalData
+      ),
+    })),
+  };
+}
 
 /* ==========================================================
    Styling
@@ -310,25 +366,22 @@ export default function ClientPerformanceWorkspace({
     };
   }, []);
 
-  const [workspace, setWorkspace] =
-    useState<ClientPerformanceWorkspace>(initialWorkspace);
+  const [workspace, setWorkspace] = useState<ClientPerformanceWorkspace>(() =>
+    normalizeWorkspaceInitiativeNotes(initialWorkspace)
+  );
   const [savedWorkspace, setSavedWorkspace] =
     useState<ClientPerformanceWorkspace>(initialWorkspace);
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    setWorkspace(initialWorkspace);
+    setWorkspace(normalizeWorkspaceInitiativeNotes(initialWorkspace));
     setSavedWorkspace(initialWorkspace);
     setIsEditing(false);
-    setEditingAdditionalData({});
   }, [initialWorkspace]);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-
-  const [editingAdditionalData, setEditingAdditionalData] =
-    useState<Record<string, string>>({});
 
   const snapshotFields = useMemo(
     () =>
@@ -425,24 +478,13 @@ export default function ClientPerformanceWorkspace({
   }
 
   function cancelEditing() {
-    setWorkspace(savedWorkspace);
-    setEditingAdditionalData({});
+    setWorkspace(normalizeWorkspaceInitiativeNotes(savedWorkspace));
     setIsEditing(false);
     setError("");
     setNotice("Unsaved changes were discarded.");
   }
 
   async function saveWorkspaceEdits() {
-    for (const [initiativeId, rawValue] of Object.entries(editingAdditionalData)) {
-      try {
-        const parsed: unknown = JSON.parse(rawValue);
-        if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") throw new Error();
-      } catch {
-        setError(`The additional data for initiative ${initiativeId} must be a valid JSON object.`);
-        return;
-      }
-    }
-
     const snapshotChanges: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(workspace.snapshot.snapshotData)) {
       if (JSON.stringify(value) !== JSON.stringify(savedWorkspace.snapshot.snapshotData[key])) {
@@ -488,9 +530,6 @@ export default function ClientPerformanceWorkspace({
       for (const field of ["title", "description", "completionMonth", "notes"] as const) {
         if (initiative[field] !== original[field]) changes[field] = initiative[field];
       }
-      if (JSON.stringify(initiative.additionalData ?? {}) !== JSON.stringify(original.additionalData ?? {})) {
-        changes.additionalData = initiative.additionalData ?? {};
-      }
       return Object.keys(changes).length ? [{ id: initiative.id, changes }] : [];
     });
 
@@ -521,7 +560,6 @@ export default function ClientPerformanceWorkspace({
       setWorkspace(saved);
       setSavedWorkspace(saved);
       setIsEditing(false);
-      setEditingAdditionalData({});
       setNotice("Client Performance workspace saved successfully.");
       router.refresh();
     } catch (caughtError) {
@@ -664,25 +702,6 @@ export default function ClientPerformanceWorkspace({
           : initiative
       ),
     }));
-  }
-
-  function updateAdditionalDataLocal(initiativeId: string, rawValue: string) {
-    setEditingAdditionalData((current) => ({ ...current, [initiativeId]: rawValue }));
-    try {
-      const parsed: unknown = JSON.parse(rawValue);
-      if (parsed && !Array.isArray(parsed) && typeof parsed === "object") {
-        setWorkspace((current) => ({
-          ...current,
-          initiatives: current.initiatives.map((item) =>
-            item.id === initiativeId
-              ? { ...item, additionalData: parsed as Record<string, unknown> }
-              : item
-          ),
-        }));
-      }
-    } catch {
-      // Keep the draft text visible; Save will require valid JSON.
-    }
   }
 
   async function handleAddInitiative() {
@@ -1176,7 +1195,7 @@ export default function ClientPerformanceWorkspace({
           <SectionHeader
             eyebrow="Section 3"
             title="Key Initiatives Tracker"
-            description="Track key initiatives, completed work, completion month, the preserved additional field, and notes."
+            description="Track key initiatives, completed work, completion month, and notes."
             action={
               canManage ? (
                 <button
@@ -1192,7 +1211,7 @@ export default function ClientPerformanceWorkspace({
           />
 
           <div className="mt-5 overflow-x-auto rounded-xl border border-[#B4C2D1]/70">
-            <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[1000px] border-collapse text-left text-sm">
               <thead>
                 <tr className="bg-[#082550] text-white">
                   <th className="w-12 px-3 py-4 text-center text-[10px] font-bold uppercase tracking-wider">
@@ -1211,12 +1230,7 @@ export default function ClientPerformanceWorkspace({
                     Month Completed
                   </th>
 
-                  <th
-                    aria-label="Additional data"
-                    className="min-w-48 px-4 py-4"
-                  />
-
-                  <th className="min-w-56 px-4 py-4 text-[10px] font-bold uppercase tracking-wider">
+                  <th className="min-w-[28rem] px-4 py-4 text-[10px] font-bold uppercase tracking-wider">
                     Notes
                   </th>
                 </tr>
@@ -1289,32 +1303,6 @@ export default function ClientPerformanceWorkspace({
                       <td className="px-3 py-2 align-top">
                         {canManage && isEditing ? (
                           <textarea
-                            value={
-                              editingAdditionalData[initiative.id] ??
-                              JSON.stringify(
-                                initiative.additionalData ?? {}
-                              )
-                            }
-                            rows={2}
-                            disabled={busy}
-                            onChange={(event) => updateAdditionalDataLocal(initiative.id, event.target.value)}
-                            aria-label={`Unlabeled additional data for initiative ${index + 1}`}
-                            className={`${CELL_INPUT_CLASS} resize-y font-mono text-xs`}
-                          />
-                        ) : (
-                          <pre className="whitespace-pre-wrap break-words px-2.5 py-2 text-xs">
-                            {JSON.stringify(
-                              initiative.additionalData ?? {},
-                              null,
-                              2
-                            )}
-                          </pre>
-                        )}
-                      </td>
-
-                      <td className="px-3 py-2 align-top">
-                        {canManage && isEditing ? (
-                          <textarea
                             value={initiative.notes}
                             onChange={(event) => updateInitiativeLocal(initiative.id, "notes", event.target.value)}
                             rows={2}
@@ -1332,7 +1320,7 @@ export default function ClientPerformanceWorkspace({
                 ) : (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={5}
                       className="px-6 py-14 text-center"
                     >
                       <p className="text-sm font-bold text-[#082550]">
@@ -1353,7 +1341,7 @@ export default function ClientPerformanceWorkspace({
                 <tfoot>
                   <tr className="bg-[#E9F4F8]/55">
                     <td
-                      colSpan={6}
+                      colSpan={5}
                       className="border-t border-[#B4C2D1]/60 px-4 py-3"
                     >
                       <button
