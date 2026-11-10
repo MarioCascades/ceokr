@@ -65,6 +65,30 @@ function displayScore(score: number | null | undefined): string | null {
   return `${Math.round(score)}%`;
 }
 
+function formatFinancialValue(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "—";
+
+  const isParenthesizedNegative = /^\(.*\)$/.test(trimmed);
+  const normalized = trimmed.replace(/[,$\s()]/g, "");
+  const numericValue = Number(normalized);
+
+  if (!Number.isFinite(numericValue)) {
+    return trimmed;
+  }
+
+  const amount = isParenthesizedNegative
+    ? -Math.abs(numericValue)
+    : numericValue;
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
 export default function IndieOrthoOverallPracticePerformance({
   organizationId,
   performanceMonth,
@@ -109,8 +133,13 @@ export default function IndieOrthoOverallPracticePerformance({
 
   function renderValueBox(
     value: string,
-    variant: "lastMonth" | "target" | "thisMonth"
+    variant: "lastMonth" | "target" | "thisMonth",
+    metricKey: PracticePerformanceMetric["key"]
   ) {
+    const displayValue =
+      metricKey === "production" || metricKey === "collections"
+        ? formatFinancialValue(value)
+        : value || "—";
     const baseClass =
       "flex min-h-[58px] items-center justify-center break-words rounded-md border-2 px-2 py-3 text-center tabular-nums";
     const variantClass = {
@@ -121,7 +150,7 @@ export default function IndieOrthoOverallPracticePerformance({
 
     return (
       <dd className={`${baseClass} ${variantClass}`}>
-        <span className="text-sm sm:text-base">{value || "—"}</span>
+        <span className="text-sm sm:text-base">{displayValue}</span>
       </dd>
     );
   }
@@ -229,19 +258,19 @@ export default function IndieOrthoOverallPracticePerformance({
                     <dt className="mb-2 text-center text-xs font-semibold text-black/75 sm:text-sm">
                       Last Month
                     </dt>
-                    {renderValueBox(metric.lastMonth, "lastMonth")}
+                    {renderValueBox(metric.lastMonth, "lastMonth", metric.key)}
                   </div>
                   <div className="min-w-0">
                     <dt className="mb-2 text-center text-xs font-semibold text-black/75 sm:text-sm">
                       Target
                     </dt>
-                    {renderValueBox(metric.target, "target")}
+                    {renderValueBox(metric.target, "target", metric.key)}
                   </div>
                   <div className="min-w-0">
                     <dt className="mb-2 text-center text-xs font-semibold text-black/75 sm:text-sm">
                       This Month
                     </dt>
-                    {renderValueBox(metric.thisMonth, "thisMonth")}
+                    {renderValueBox(metric.thisMonth, "thisMonth", metric.key)}
                   </div>
                   <div className="min-w-0">
                     <dt className="mb-2 text-center text-xs font-semibold text-black/75 sm:text-sm">

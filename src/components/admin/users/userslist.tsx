@@ -134,6 +134,9 @@ export default function UsersList({
               user.display_name ||
               `${user.first_name} ${user.last_name}`;
 
+            const isPerformanceParticipant =
+              record.membership?.is_performance_participant !== false;
+
 
             return (
               <div
@@ -201,7 +204,8 @@ export default function UsersList({
                   ========================================= */}
 
                   {
-                    user.is_active && (
+                    user.is_active &&
+                    isPerformanceParticipant && (
                       <button
                         type="button"
                         className="rounded-md border px-3 py-1.5 text-sm"

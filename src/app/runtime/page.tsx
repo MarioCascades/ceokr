@@ -731,9 +731,18 @@ export default async function RuntimePage({
 
 
 
+  // Account access and individual Performance participation are separate.
+  // Keep active accounts available for organization-level data lookups, but
+  // expose only opted-in memberships as individual Runtime Performance tabs.
   const activeMembers = members.filter(
 
     (record) => record.user.is_active !== false
+
+  );
+
+  const performanceMembers = activeMembers.filter(
+
+    (record) => record.membership?.is_performance_participant !== false
 
   );
 
@@ -845,7 +854,7 @@ export default async function RuntimePage({
 
     organizationId: organization.id,
 
-    members: activeMembers,
+    members: performanceMembers,
 
     performanceMonth,
 
@@ -2355,6 +2364,75 @@ export default async function RuntimePage({
 
 
 
+  const selectedMemberRecord = members.find(
+
+    (record) => record.user.id === params.subjectId
+
+  );
+
+  if (
+
+    !selectedMemberRecord ||
+
+    selectedMemberRecord.user.is_active === false ||
+
+    selectedMemberRecord.membership?.is_performance_participant === false
+
+  ) {
+
+    return (
+
+      <main
+
+        style={runtimeBrandStyle}
+
+        className="ce-runtime-theme min-h-screen bg-background"
+
+      >
+
+        <OrgAdminReturnBar
+
+          organizationId={organization.id}
+
+          visible={canReturnToOrgAdmin}
+
+          showSuperAdmin={isPlatformSuperAdmin}
+
+        />
+
+        <RuntimeNavigation
+
+          {...runtimeNavigationProps}
+
+          selectedSubjectId={undefined}
+
+        />
+
+        <section className="mx-auto max-w-5xl p-8">
+
+          <h1 className="text-2xl font-semibold">
+
+            Individual Performance Unavailable
+
+          </h1>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+
+            Individual Performance is not enabled for this organization membership.
+
+            The user can still access the organization and its available OKR features.
+
+          </p>
+
+        </section>
+
+      </main>
+
+    );
+
+  }
+
+
   const runtimeExecution = await loadRuntimeExecution(
 
     organization.id,
@@ -2545,7 +2623,7 @@ export default async function RuntimePage({
 
         subject={runtimeExecution.subject}
 
-        members={activeMembers}
+        members={performanceMembers}
 
         dashboard={dashboard}
 

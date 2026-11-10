@@ -495,6 +495,9 @@ export async function createOrganizationMembership(
 
       team_id:
         input.team_id ?? null,
+
+      is_performance_participant:
+        input.is_performance_participant ?? true,
     })
     .select("*")
     .single();

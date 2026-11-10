@@ -34,6 +34,8 @@ export interface UserFormValues {
   role_description: string;
 
   is_active: boolean;
+
+  is_performance_participant?: boolean;
 }
 
 /* ==========================================================
@@ -146,6 +148,13 @@ export default function UserForm({
       initialValues?.is_active ?? true
     );
 
+  const [
+    isPerformanceParticipant,
+    setIsPerformanceParticipant,
+  ] = useState(
+    initialValues?.is_performance_participant ?? true
+  );
+
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
 
@@ -190,6 +199,10 @@ export default function UserForm({
 
     setIsActive(
       initialValues?.is_active ?? true
+    );
+
+    setIsPerformanceParticipant(
+      initialValues?.is_performance_participant ?? true
     );
 
     setErrorMessage(null);
@@ -417,6 +430,9 @@ export default function UserForm({
 
         is_active:
           isActive,
+
+        is_performance_participant:
+          isPerformanceParticipant,
       });
     } catch (error) {
       console.error(
@@ -678,6 +694,35 @@ export default function UserForm({
           </div>
         </>
       )}
+
+      {/* Performance Participation */}
+
+      <div className="rounded-lg border p-4">
+        <label className="flex items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            checked={isPerformanceParticipant}
+            onChange={(event) =>
+              setIsPerformanceParticipant(
+                event.target.checked
+              )
+            }
+            disabled={isSaving}
+            className="mt-0.5"
+          />
+
+          <span>
+            <span className="block font-medium">
+              Include in Performance
+            </span>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              When enabled, this user participates in the organization&apos;s
+              individual performance experience. Disabling this does not
+              deactivate the account or remove organization access.
+            </span>
+          </span>
+        </label>
+      </div>
 
       {/* Active */}
 

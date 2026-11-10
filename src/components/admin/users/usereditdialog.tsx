@@ -83,6 +83,9 @@ export default function UserEditDialog({
 
     is_active:
       user.is_active,
+
+    is_performance_participant:
+      membership?.is_performance_participant ?? true,
   };
 
   async function handleSubmit(

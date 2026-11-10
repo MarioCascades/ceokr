@@ -300,6 +300,9 @@ export default function UsersPage() {
               is_active:
                 values.is_active,
 
+              is_performance_participant:
+                values.is_performance_participant ?? true,
+
             }),
           }
         );
@@ -422,6 +425,9 @@ export default function UsersPage() {
 
               is_active:
                 values.is_active,
+
+              is_performance_participant:
+                values.is_performance_participant ?? true,
 
             }),
           }
@@ -591,6 +597,9 @@ export default function UsersPage() {
 
               is_active:
                 values.is_active,
+
+              is_performance_participant:
+                values.is_performance_participant ?? true,
 
             }),
           }

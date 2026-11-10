@@ -298,9 +298,7 @@ export default function KeyResultRow({
 
   ): string {
 
-    const text =
-
-      String(value).trim();
+    const text = String(value).trim();
 
     if (!text) {
 
@@ -308,11 +306,23 @@ export default function KeyResultRow({
 
     }
 
-    return text.startsWith("$")
+    const numericValue = Number(
+      text.replace(/\$/g, "").replace(/,/g, "").trim()
+    );
 
-      ? text
+    if (!Number.isFinite(numericValue)) {
 
-      : `$${text}`;
+      return text.startsWith("$") ? text : `$${text}`;
+
+    }
+
+    return `$${numericValue.toLocaleString("en-US", {
+
+      minimumFractionDigits: 2,
+
+      maximumFractionDigits: 2,
+
+    })}`;
 
   }
 
@@ -406,7 +416,7 @@ export default function KeyResultRow({
 
           )
 
-        : isFinancial
+        : isFinancial || targetLooksFinancial
 
           ? formatFinancialValue(
 
@@ -530,7 +540,7 @@ export default function KeyResultRow({
 
         )
 
-      : isFinancial &&
+      : (isFinancial || targetLooksFinancial) &&
 
         previousValue !== undefined
 

@@ -85,6 +85,8 @@ interface UserRequest {
   team_id?: string;
 
   is_active?: boolean;
+
+  is_performance_participant?: boolean;
 }
 
 
@@ -113,6 +115,8 @@ interface UserUpdateRequest {
   role_description?: string | null;
 
   is_active?: boolean;
+
+  is_performance_participant?: boolean;
 }
 
 
@@ -726,6 +730,9 @@ export async function POST(
 
         team_id:
           teamId,
+
+        is_performance_participant:
+          input.is_performance_participant ?? true,
       })
       .select("*")
       .single();
@@ -931,6 +938,9 @@ export async function PATCH(
 
   const isActive =
     input.is_active ?? true;
+
+  const isPerformanceParticipant =
+    input.is_performance_participant ?? true;
 
 
   /* ========================================================
@@ -1334,6 +1344,9 @@ export async function PATCH(
 
         role_description:
           roleDescription,
+
+        is_performance_participant:
+          isPerformanceParticipant,
 
         updated_at:
           new Date().toISOString(),
