@@ -1,3 +1,4 @@
+
 import Image from "next/image";
 
 import {
@@ -98,7 +99,7 @@ export default async function LoginPage({
       >
 
         {/* ==================================================
-            Brand
+            Headwaters Brand
         ================================================== */}
 
         <div
@@ -110,14 +111,15 @@ export default async function LoginPage({
         >
 
           <Image
-            src="/logos/CECleanlogo.png"
-            alt="CascadEffects"
-            width={180}
-            height={141}
+            src="/logos/headwaters.png"
+            alt="Headwaters by CascadEffects"
+            width={1200}
+            height={400}
             priority
             className="
               h-auto
-              w-[180px]
+              w-full
+              max-w-[420px]
               object-contain
             "
           />
@@ -147,7 +149,7 @@ export default async function LoginPage({
                 text-primary
               "
             >
-              Headwaters - CascadEffects Performance Platform
+              CascadEffects Performance Platform
             </p>
 
 
