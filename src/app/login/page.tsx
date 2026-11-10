@@ -147,7 +147,7 @@ export default async function LoginPage({
                 text-primary
               "
             >
-              Performance Platform
+              Headwaters - CascadEffects Performance Platform
             </p>
 
 
@@ -171,7 +171,7 @@ export default async function LoginPage({
               "
             >
               Sign in to continue to
-              CascadEffects.
+              Headwaters.
             </p>
 
           </div>
@@ -382,7 +382,7 @@ export default async function LoginPage({
             text-muted-foreground
           "
         >
-          CascadEffects Performance Platform
+          Headwaters - CascadEffects Performance Platform
         </p>
 
       </div>
