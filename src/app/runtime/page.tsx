@@ -357,6 +357,14 @@ function getPracticeMetricKey(
 
 
 
+  if (normalizedTitle === "# of new patients scheduled") {
+
+    return "new-patients-scheduled";
+
+  }
+
+
+
   return null;
 
 }
@@ -1487,6 +1495,56 @@ export default async function RuntimePage({
 
 
 
+      const melissaRecord = activeMembers.find((record) => {
+
+        const displayName =
+
+          record.user.display_name?.trim().toLowerCase();
+
+
+
+        const fullName =
+
+          `${record.user.first_name} ${record.user.last_name}`
+
+            .trim()
+
+            .toLowerCase();
+
+
+
+        return (
+
+          displayName === "melissa" ||
+
+          fullName === "melissa" ||
+
+          displayName?.startsWith("melissa ") === true ||
+
+          fullName.startsWith("melissa ")
+
+        );
+
+      });
+
+
+
+      const melissaExecution = melissaRecord
+
+        ? await loadRuntimeExecution(
+
+            organization.id,
+
+            melissaRecord.user.id,
+
+            performanceMonth
+
+          )
+
+        : null;
+
+
+
       const desiredKeys = new Set<
 
         PracticePerformanceMetric["key"]
@@ -1617,6 +1675,106 @@ export default async function RuntimePage({
 
 
 
+      if (melissaExecution) {
+
+        for (const objective of melissaExecution.objectives) {
+
+          for (const keyResult of objective.keyResults) {
+
+            const metricKey = getPracticeMetricKey(
+
+              keyResult.title
+
+            );
+
+
+
+            if (
+
+              metricKey !== "new-patients-scheduled" ||
+
+              matchedKeys.has(metricKey)
+
+            ) {
+
+              continue;
+
+            }
+
+
+
+            const progress =
+
+              melissaExecution.keyResultProgress.find(
+
+                (item) =>
+
+                  item.performanceInstanceKeyResultId ===
+
+                  keyResult.id
+
+              );
+
+
+
+            const previousValue = keyResult.sourceKeyResultId
+
+              ? melissaExecution.previousKeyResultValues[
+
+                  keyResult.sourceKeyResultId
+
+                ]
+
+              : undefined;
+
+
+
+            metrics.push({
+
+              key: metricKey,
+
+              title: keyResult.title,
+
+              lastMonth: formatPracticeMetricValue(
+
+                previousValue,
+
+                keyResult.measurementType
+
+              ),
+
+              target: formatPracticeMetricValue(
+
+                keyResult.target,
+
+                keyResult.measurementType
+
+              ),
+
+              thisMonth: formatPracticeMetricValue(
+
+                progress?.currentValue,
+
+                keyResult.measurementType
+
+              ),
+
+              score: progress?.score ?? null,
+
+            });
+
+
+
+            matchedKeys.add(metricKey);
+
+          }
+
+        }
+
+      }
+
+
+
       const metricOrder: PracticePerformanceMetric["key"][] = [
 
         "production",
@@ -1626,6 +1784,8 @@ export default async function RuntimePage({
         "starts",
 
         "same-day-starts",
+
+        "new-patients-scheduled",
 
       ];
 
@@ -1646,6 +1806,8 @@ export default async function RuntimePage({
             starts: "# OF STARTS",
 
             "same-day-starts": "# OF SAME DAY STARTS",
+
+            "new-patients-scheduled": "# OF NEW PATIENTS SCHEDULED",
 
           }[key],
 

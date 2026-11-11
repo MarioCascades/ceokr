@@ -3,7 +3,7 @@
 import Image from "next/image";
 
 export interface PracticePerformanceMetric {
-  key: "production" | "collections" | "starts" | "same-day-starts";
+  key: "production" | "collections" | "starts" | "same-day-starts" | "new-patients-scheduled";
   title: string;
   lastMonth: string;
   target: string;
@@ -245,7 +245,11 @@ export default function IndieOrthoOverallPracticePerformance({
           {metrics.map((metric) => (
             <section
               key={metric.key}
-              className="overflow-hidden rounded-xl border border-black/15 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-shadow hover:shadow-[0_7px_18px_rgba(0,0,0,0.16)]"
+              className={`overflow-hidden rounded-xl border border-black/15 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-shadow hover:shadow-[0_7px_18px_rgba(0,0,0,0.16)] ${
+                metric.key === "new-patients-scheduled"
+                  ? "lg:col-span-2 lg:mx-auto lg:w-1/2"
+                  : ""
+              }`}
             >
               <div className="h-1.5 bg-[#E17E2D]" />
               <div className="p-4 sm:p-5">
