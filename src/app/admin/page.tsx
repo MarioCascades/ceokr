@@ -7,6 +7,8 @@ import AdminOrganizationSelector from "@/components/admin/shared/adminorganizati
 
 import { getOrganization } from "@/services/organization.service";
 
+import { requirePlatformSuperAdmin } from "@/lib/auth/authorization";
+
 export default async function AdminPage({
   searchParams,
 }: {
@@ -21,6 +23,15 @@ export default async function AdminPage({
     ? await getOrganization(organizationId)
     : null;
 
+  let isPlatformSuperAdmin = false;
+
+  try {
+    await requirePlatformSuperAdmin();
+    isPlatformSuperAdmin = true;
+  } catch {
+    isPlatformSuperAdmin = false;
+  }
+
   function adminHref(path: string) {
     if (!organizationId || !organization) {
       return "/admin?error=missing_organization_id";
@@ -34,10 +45,7 @@ export default async function AdminPage({
   return (
     <main className="min-h-screen bg-gray-200 px-6 py-8 lg:px-8 lg:py-10">
       <div className="mx-auto max-w-7xl space-y-8">
-        {/* ==================================================
-            Page Header
-        ================================================== */}
-
+        {/* Page Header */}
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-gray-950">
             Administration
@@ -49,10 +57,7 @@ export default async function AdminPage({
           </p>
         </div>
 
-        {/* ==================================================
-            Current Organization Context
-        ================================================== */}
-
+        {/* Current Organization Context */}
         <section className="rounded-2xl border border-gray-300 bg-white p-6 shadow-sm lg:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -102,10 +107,7 @@ export default async function AdminPage({
           )}
         </section>
 
-        {/* ==================================================
-            Organization
-        ================================================== */}
-
+        {/* Organization */}
         <AdminSection
           title="Organization"
           description="Manage your organization, people, structure and access."
@@ -141,10 +143,7 @@ export default async function AdminPage({
           />
         </AdminSection>
 
-        {/* ==================================================
-            Performance
-        ================================================== */}
-
+        {/* Performance */}
         <AdminSection
           title="Performance"
           description="Configure performance sheets and reusable OKR templates."
@@ -162,10 +161,7 @@ export default async function AdminPage({
           />
         </AdminSection>
 
-        {/* ==================================================
-            Analytics
-        ================================================== */}
-
+        {/* Analytics */}
         <AdminSection
           title="Analytics"
           description="Understand organizational performance through dashboards and reports."
@@ -183,13 +179,10 @@ export default async function AdminPage({
           />
         </AdminSection>
 
-        {/* ==================================================
-            Configuration
-        ================================================== */}
-
+        {/* Configuration */}
         <AdminSection
           title="Configuration"
-          description="Configure organization-level capabilities and services."
+          description="Configure platform and organization-level capabilities and services."
         >
           <AdminCard
             title="⚙️ Settings"
@@ -202,16 +195,21 @@ export default async function AdminPage({
             description="Configure AI assistants and automation."
             href={adminHref("/admin/ai")}
           />
+
+          {isPlatformSuperAdmin && (
+            <AdminCard
+              title="🔑 Password Management"
+              description="Search platform users and securely reset account passwords."
+              href="/admin/passwordmanagement"
+            />
+          )}
         </AdminSection>
       </div>
     </main>
   );
 }
 
-/* ==========================================================
-   Administration Section
-========================================================== */
-
+/* Administration Section */
 function AdminSection({
   title,
   description,
@@ -240,10 +238,7 @@ function AdminSection({
   );
 }
 
-/* ==========================================================
-   Admin Card
-========================================================== */
-
+/* Admin Card */
 function AdminCard({
   title,
   description,

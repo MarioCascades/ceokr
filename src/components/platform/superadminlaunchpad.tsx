@@ -39,13 +39,12 @@ export default function SuperAdminLaunchpad({
 }: SuperAdminLaunchpadProps) {
   const router = useRouter();
 
-  // Do not automatically select the first organization.
-  // The platform super admin must explicitly choose one.
   const [selectedOrganizationId, setSelectedOrganizationId] =
     useState("");
 
   const selectedOrganizationExists = organizations.some(
-    (organization) => organization.id === selectedOrganizationId
+    (organization) =>
+      organization.id === selectedOrganizationId
   );
 
   function openPerformance() {
@@ -74,7 +73,7 @@ export default function SuperAdminLaunchpad({
       <div
         className="
           mx-auto
-          max-w-5xl
+          max-w-6xl
         "
       >
         {/* Brand */}
@@ -199,12 +198,7 @@ export default function SuperAdminLaunchpad({
               configuration.
             </p>
 
-            <div
-              className="
-                mt-auto
-                pt-7
-              "
-            >
+            <div className="mt-auto pt-7">
               <Button
                 size="lg"
                 className="
@@ -267,13 +261,7 @@ export default function SuperAdminLaunchpad({
               its live performance experience.
             </p>
 
-            {/* Organization Selector */}
-            <div
-              className="
-                mt-5
-                space-y-2
-              "
-            >
+            <div className="mt-5 space-y-2">
               <label
                 htmlFor="organization"
                 className="
@@ -291,7 +279,9 @@ export default function SuperAdminLaunchpad({
                 id="organization"
                 value={selectedOrganizationId}
                 onChange={(event) =>
-                  setSelectedOrganizationId(event.target.value)
+                  setSelectedOrganizationId(
+                    event.target.value
+                  )
                 }
                 disabled={organizations.length === 0}
                 className="
@@ -328,13 +318,7 @@ export default function SuperAdminLaunchpad({
               </select>
             </div>
 
-            <div
-              className="
-                mt-auto
-                space-y-3
-                pt-5
-              "
-            >
+            <div className="mt-auto space-y-3 pt-5">
               <Button
                 size="lg"
                 className="
