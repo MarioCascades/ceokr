@@ -18,7 +18,6 @@ import CustomTableOperationalWorkspace from "@/components/organization/customtab
 
 import AgendaOperationalWorkspace from "@/components/organization/agendaoperationalworkspace";
 
-import IndieOrthoAgenda from "@/components/organization/indieorthoagenda";
 
 import ClientPerformanceWorkspace from "@/components/organization/clientperformanceworkspace";
 
@@ -2383,47 +2382,25 @@ export default async function RuntimePage({
 
                   {isAgendaTable(result.tableKey) ? (
 
-                    isIndieOrthoOrganization(organization.id) ? (
+                    <AgendaOperationalWorkspace
 
-                      <IndieOrthoAgenda
+                      organizationId={organization.id}
 
-                        organizationId={organization.id}
+                      tableDefinitionId={result.tableId}
 
-                        tableDefinitionId={result.tableId}
+                      tableName={result.tableName}
 
-                        tableName={result.tableName}
+                      organizationName={organization.company_name}
 
-                        organizationName={organization.company_name}
+                      organizationLogoUrl={organization.logo_url}
 
-                        organizationLogoUrl={organization.logo_url}
+                      initialRows={result.persistentRows}
 
-                        initialRows={result.persistentRows}
+                      canEditRows={canEditCustomTableRows}
 
-                        canEditRows={canEditCustomTableRows}
+                      includeEvents={!isIndieOrthoOrganization(organization.id)}
 
-                      />
-
-                    ) : (
-
-                      <AgendaOperationalWorkspace
-
-                        organizationId={organization.id}
-
-                        tableDefinitionId={result.tableId}
-
-                        tableName={result.tableName}
-
-                        organizationName={organization.company_name}
-
-                        organizationLogoUrl={organization.logo_url}
-
-                        initialRows={result.persistentRows}
-
-                        canEditRows={canEditCustomTableRows}
-
-                      />
-
-                    )
+                    />
 
                   ) : (
 

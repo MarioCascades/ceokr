@@ -86,9 +86,11 @@ type AgendaOperationalWorkspaceProps = {
   organizationLogoUrl: string | null;
   initialRows: OperationalRow[];
   canEditRows: boolean;
+  includeEvents?: boolean;
 };
 
 const BOARD_KEY = "_agendaBoardRecord";
+const LEGACY_INDIE_ORTHO_BOARD_KEY = "_indieOrthoAgendaBoardRecord";
 
 const INPUT_CLASS =
   "w-full rounded-lg border border-[#B4C2D1]/80 bg-white px-3 py-2 text-sm text-[#272D2C] outline-none transition focus:border-[#E26D5C] focus:ring-1 focus:ring-[#E26D5C]/20 disabled:cursor-not-allowed disabled:opacity-60";
@@ -197,7 +199,11 @@ function parseBoard(value: unknown): AgendaBoard | null {
 function findSavedBoard(
   rows: OperationalRow[]
 ): OperationalRow | undefined {
-  return rows.find((row) => row.rowData[BOARD_KEY] === true);
+  return rows.find(
+    (row) =>
+      row.rowData[BOARD_KEY] === true ||
+      row.rowData[LEGACY_INDIE_ORTHO_BOARD_KEY] === true
+  );
 }
 
 function getBoardFromRow(row: OperationalRow | undefined): AgendaBoard {
@@ -262,6 +268,7 @@ export default function AgendaOperationalWorkspace({
   organizationLogoUrl,
   initialRows,
   canEditRows,
+  includeEvents = true,
 }: AgendaOperationalWorkspaceProps) {
   const savedRecord = useMemo(
     () => findSavedBoard(initialRows),
@@ -390,6 +397,12 @@ export default function AgendaOperationalWorkspace({
     try {
       const rowData: Record<string, unknown> = {
         [BOARD_KEY]: true,
+        // Keep the legacy marker during the shared-workspace transition so
+        // older Indie Ortho records remain discoverable if an older client
+        // version is briefly in use.
+        ...(organizationId === "c15618e5-10d4-4909-976b-84d855d847b0"
+          ? { [LEGACY_INDIE_ORTHO_BOARD_KEY]: true }
+          : {}),
         board: snapshotBoard,
       };
 
@@ -953,6 +966,7 @@ export default function AgendaOperationalWorkspace({
         </div>
       </section>
 
+{includeEvents && (
       <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
         <SectionHeader
           title="Events"
@@ -1065,6 +1079,8 @@ export default function AgendaOperationalWorkspace({
           </table>
         </div>
       </section>
+      )}
+
 
       <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
         <SectionHeader
