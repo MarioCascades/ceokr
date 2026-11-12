@@ -731,20 +731,9 @@ export default function AgendaOperationalWorkspace({
           />
           <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-center gap-2">
-                {organizationLogoUrl ? (
-                  <div className="flex h-8 max-w-[140px] shrink-0 items-center overflow-hidden rounded-md border border-white/15 bg-white/10 px-2">
-                    <img
-                      src={organizationLogoUrl}
-                      alt={`${organizationName} logo`}
-                      className="block max-h-6 max-w-[120px] w-auto object-contain object-left"
-                    />
-                  </div>
-                ) : null}
-                <p className="min-w-0 truncate text-[9px] font-bold uppercase tracking-[0.16em] text-[#B4C2D1]">
-                  {organizationName}
-                </p>
-              </div>
+              <p className="min-w-0 truncate text-[9px] font-bold uppercase tracking-[0.16em] text-[#B4C2D1]">
+                {organizationName}
+              </p>
               <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                 <h1 className="text-xl font-black leading-none tracking-tight sm:text-2xl">
                   {tableName || "Agenda"}
@@ -755,6 +744,25 @@ export default function AgendaOperationalWorkspace({
               </div>
             </div>
 
+            {(
+              organizationLogoUrl ||
+              (organizationName.trim().toLowerCase() === "cascadeffects"
+                ? "/logos/CECleanlogo.png"
+                : null)
+            ) ? (
+              <div className="relative flex h-10 w-[112px] shrink-0 items-center justify-end sm:h-12 sm:w-[132px]">
+                <img
+                  src={
+                    organizationLogoUrl ||
+                    (organizationName.trim().toLowerCase() === "cascadeffects"
+                      ? "/logos/CECleanlogo.png"
+                      : "")
+                  }
+                  alt={`${organizationName} logo`}
+                  className="block max-h-10 max-w-full w-auto object-contain object-right sm:max-h-12"
+                />
+              </div>
+            ) : null}
           </div>
         </div>
 
