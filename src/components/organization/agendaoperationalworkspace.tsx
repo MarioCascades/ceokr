@@ -93,10 +93,13 @@ const BOARD_KEY = "_agendaBoardRecord";
 const LEGACY_INDIE_ORTHO_BOARD_KEY = "_indieOrthoAgendaBoardRecord";
 
 const INPUT_CLASS =
-  "w-full rounded-lg border border-[#B4C2D1]/80 bg-white px-3 py-2 text-sm text-[#272D2C] outline-none transition focus:border-[#E26D5C] focus:ring-1 focus:ring-[#E26D5C]/20 disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full min-h-9 rounded-md border border-[#B4C2D1]/80 bg-white px-3 py-2 text-sm leading-5 text-[#272D2C] outline-none transition-colors focus:border-[#082550] focus:ring-2 focus:ring-[#082550]/10 disabled:cursor-not-allowed disabled:opacity-60";
 
 const BUTTON_CLASS =
-  "inline-flex items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold transition hover:border-[#082550] hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex min-h-9 items-center justify-center rounded-md border px-3.5 py-2 text-xs font-semibold leading-none transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#082550]/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45";
+
+const PRIMARY_ACTION_CLASS =
+  `${BUTTON_CLASS} border-[#082550] bg-[#082550] text-white shadow-sm hover:border-[#164477] hover:bg-[#164477] active:bg-[#061C3D]`;
 
 function createId(prefix: string, index: number): string {
   return `${prefix}-${index}-${Date.now()}-${Math.random()
@@ -234,6 +237,45 @@ function formatDateTime(value: string | null | undefined): string {
   }).format(date);
 }
 
+
+function AgendaTextArea({
+  ariaLabel,
+  disabled,
+  value,
+  onChange,
+}: {
+  ariaLabel: string;
+  disabled: boolean;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      aria-label={ariaLabel}
+      rows={1}
+      disabled={disabled}
+      value={value}
+      onChange={(event) => {
+        const textarea = event.currentTarget;
+        textarea.style.height = "auto";
+        textarea.style.height = `${textarea.scrollHeight}px`;
+        onChange(event.target.value);
+      }}
+      className={`${INPUT_CLASS} min-h-[38px] resize-none overflow-hidden whitespace-pre-wrap break-words py-2 leading-5`}
+    />
+  );
+}
+
 function SectionHeader({
   title,
   description,
@@ -244,9 +286,9 @@ function SectionHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2 border-b border-[#B4C2D1]/60 bg-[#F7F9FB] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 border-b border-[#B4C2D1]/60 bg-[#F7F9FB] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h3 className="text-sm font-black uppercase tracking-wide text-[#082550]">
+        <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#082550]">
           {title}
         </h3>
         {description && (
@@ -703,7 +745,11 @@ export default function AgendaOperationalWorkspace({
       disabled={!canEditRows || reloading}
       value={value}
       onChange={(event) => onChange(event.target.value as ProgressCheck)}
-      className={`${INPUT_CLASS} min-w-[145px] py-1.5`}
+      className={`mx-auto h-8 w-[132px] min-w-[132px] max-w-[132px] rounded-md border px-3 py-2 text-center text-xs font-bold outline-none transition focus:ring-2 focus:ring-[#082550]/20 disabled:cursor-not-allowed disabled:opacity-60 ${
+        value === "Completed"
+          ? "border-[#27AE60] bg-[#27AE60] text-[#272D2C]"
+          : "border-[#E26D5C] bg-[#E26D5C] text-[#272D2C]"
+      }`}
     >
       <option value="In Progress">In Progress</option>
       <option value="Completed">Completed</option>
@@ -715,7 +761,7 @@ export default function AgendaOperationalWorkspace({
       type="button"
       disabled={!canEditRows || reloading}
       onClick={onClick}
-      className="inline-flex items-center justify-center rounded-lg border border-[#082550] bg-white px-3 py-1.5 text-xs font-semibold text-[#082550] transition hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-40"
+      className={`${PRIMARY_ACTION_CLASS} min-w-[104px]`}
     >
       + {label}
     </button>
@@ -728,15 +774,15 @@ export default function AgendaOperationalWorkspace({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="inline-flex items-center justify-center rounded-lg border border-[#E26D5C]/70 bg-white px-2.5 py-1.5 text-xs font-semibold text-[#B94B3D] transition hover:border-[#E26D5C] hover:bg-[#FFF3F1] disabled:cursor-not-allowed disabled:opacity-40"
+      className="inline-flex min-h-9 min-w-[76px] items-center justify-center rounded-md border border-[#E26D5C]/70 bg-white px-3 py-2 text-xs font-semibold leading-none text-[#C95748] transition-colors duration-150 hover:border-[#E26D5C] hover:bg-[#FFF4F1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E26D5C]/25 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
     >
       Remove
     </button>
   );
 
   return (
-    <section className="space-y-3 text-[#272D2C]">
-      <div className="sticky top-[170px] z-30 overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm md:top-[116px]">
+    <section className="space-y-4 text-[#272D2C]">
+      <div className="sticky top-[170px] z-30 overflow-hidden rounded-xl border border-[#B4C2D1]/70 bg-white shadow-[0_2px_10px_rgba(8,37,80,0.045)] md:top-[116px]">
         <div className="relative overflow-hidden bg-[#082550] px-3 py-3 text-white sm:px-4">
           <div
             aria-hidden="true"
@@ -870,7 +916,7 @@ export default function AgendaOperationalWorkspace({
         </p>
       )}
 
-      <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-[#B4C2D1]/70 bg-white shadow-[0_2px_10px_rgba(8,37,80,0.045)]">
         <SectionHeader
           title="Wins"
           description="Record wins and assign ownership."
@@ -881,10 +927,10 @@ export default function AgendaOperationalWorkspace({
           <table className="w-full min-w-[560px] border-collapse text-left text-sm">
             <thead className="bg-[#082550] text-white">
               <tr>
-                <th className="w-12 px-3 py-2 text-xs">#</th>
-                <th className="px-3 py-2 text-xs">Wins</th>
-                <th className="w-64 px-3 py-2 text-xs">Assigned To</th>
-                <th className="w-24 px-3 py-2 text-right text-xs">Action</th>
+                <th className="w-12 px-3 py-2 text-xs text-center">#</th>
+                <th className="px-3 py-2 text-xs text-center">Wins</th>
+                <th className="w-64 px-3 py-2 text-xs text-center">Assigned To</th>
+                <th className="w-24 px-3 py-2  text-xs text-center">Action</th>
               </tr>
             </thead>
 
@@ -899,28 +945,20 @@ export default function AgendaOperationalWorkspace({
                   </td>
 
                   <td className="px-2 py-1.5">
-                    <input
-                      aria-label={`Win ${index + 1}`}
-                      type="text"
+                    <AgendaTextArea
+                      ariaLabel={`Win ${index + 1}`}
                       disabled={!canEditRows || reloading}
                       value={row.win}
-                      onChange={(event) =>
-                        updateWin(row.id, "win", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
+                      onChange={(value) => updateWin(row.id, "win", value)}
                     />
                   </td>
 
                   <td className="px-2 py-1.5">
-                    <input
-                      aria-label={`Assigned to for win ${index + 1}`}
-                      type="text"
+                    <AgendaTextArea
+                      ariaLabel={`Assigned to for win ${index + 1}`}
                       disabled={!canEditRows || reloading}
                       value={row.assignedTo}
-                      onChange={(event) =>
-                        updateWin(row.id, "assignedTo", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
+                      onChange={(value) => updateWin(row.id, "assignedTo", value)}
                     />
                   </td>
                   <td className="px-2 py-1.5 text-right">
@@ -945,7 +983,7 @@ export default function AgendaOperationalWorkspace({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-[#B4C2D1]/70 bg-white shadow-[0_2px_10px_rgba(8,37,80,0.045)]">
         <SectionHeader
           title="Announcements"
           description="Free-type shared announcements and important updates."
@@ -967,7 +1005,7 @@ export default function AgendaOperationalWorkspace({
       </section>
 
 {includeEvents && (
-      <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-[#B4C2D1]/70 bg-white shadow-[0_2px_10px_rgba(8,37,80,0.045)]">
         <SectionHeader
           title="Events"
           description="Track upcoming events, their locations, attendees, and dates."
@@ -978,13 +1016,13 @@ export default function AgendaOperationalWorkspace({
           <table className="w-full min-w-[1200px] border-collapse text-left text-sm">
             <thead className="bg-[#082550] text-white">
               <tr>
-                <th className="px-3 py-2 text-xs">Name of the Event</th>
-                <th className="px-3 py-2 text-xs">Location</th>
-                <th className="px-3 py-2 text-xs">Attendees</th>
-                <th className="w-40 px-3 py-2 text-xs">Start Date</th>
-                <th className="w-40 px-3 py-2 text-xs">End Date</th>
-                <th className="w-44 px-3 py-2 text-xs">Progress Check</th>
-                <th className="w-24 px-3 py-2 text-right text-xs">Action</th>
+                <th className="px-3 py-2 text-xs text-center">Name of the Event</th>
+                <th className="px-3 py-2 text-xs text-center">Location</th>
+                <th className="px-3 py-2 text-xs text-center">Attendees</th>
+                <th className="w-40 px-3 py-2 text-xs text-center">Start Date</th>
+                <th className="w-40 px-3 py-2 text-xs text-center">End Date</th>
+                <th className="w-44 px-3 py-2 text-xs text-center">Progress Check</th>
+                <th className="w-24 px-3 py-2  text-xs text-center">Action</th>
               </tr>
             </thead>
 
@@ -995,39 +1033,27 @@ export default function AgendaOperationalWorkspace({
                   className={index % 2 ? "bg-[#F7F9FB]" : ""}
                 >
                   <td className="px-2 py-1.5">
-                    <input
-                      aria-label={`Name of event ${index + 1}`}
-                      type="text"
+                    <AgendaTextArea
+                      ariaLabel={`Name of event ${index + 1}`}
                       disabled={!canEditRows || reloading}
                       value={row.name}
-                      onChange={(event) =>
-                        updateEvent(row.id, "name", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
+                      onChange={(value) => updateEvent(row.id, "name", value)}
                     />
                   </td>
                   <td className="px-2 py-1.5">
-                    <input
-                      aria-label={`Location for event ${index + 1}`}
-                      type="text"
+                    <AgendaTextArea
+                      ariaLabel={`Location for event ${index + 1}`}
                       disabled={!canEditRows || reloading}
                       value={row.location}
-                      onChange={(event) =>
-                        updateEvent(row.id, "location", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
+                      onChange={(value) => updateEvent(row.id, "location", value)}
                     />
                   </td>
                   <td className="px-2 py-1.5">
-                    <input
-                      aria-label={`Attendees for event ${index + 1}`}
-                      type="text"
+                    <AgendaTextArea
+                      ariaLabel={`Attendees for event ${index + 1}`}
                       disabled={!canEditRows || reloading}
                       value={row.attendees}
-                      onChange={(event) =>
-                        updateEvent(row.id, "attendees", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
+                      onChange={(value) => updateEvent(row.id, "attendees", value)}
                     />
                   </td>
                   <td className="px-2 py-1.5">
@@ -1054,7 +1080,7 @@ export default function AgendaOperationalWorkspace({
                       className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
-                  <td className="px-2 py-1.5">
+                  <td className="px-2 py-1.5 text-center">
                     {progressSelect(row.progress, (value) => updateEvent(row.id, "progress", value), `Event ${index + 1} progress`)}
                   </td>
                   <td className="px-2 py-1.5 text-right">
@@ -1082,7 +1108,7 @@ export default function AgendaOperationalWorkspace({
       )}
 
 
-      <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-[#B4C2D1]/70 bg-white shadow-[0_2px_10px_rgba(8,37,80,0.045)]">
         <SectionHeader
           title="Rocks"
           description="Track each Rock against its target, current status, and date."
@@ -1093,12 +1119,12 @@ export default function AgendaOperationalWorkspace({
           <table className="w-full min-w-[1000px] border-collapse text-left text-sm">
             <thead className="bg-[#082550] text-white">
               <tr>
-                <th className="px-3 py-2 text-xs">Rocks</th>
-                <th className="px-3 py-2 text-xs">Target</th>
-                <th className="px-3 py-2 text-xs">Current</th>
-                <th className="w-44 px-3 py-2 text-xs">Date</th>
-                <th className="w-44 px-3 py-2 text-xs">Progress Check</th>
-                <th className="w-24 px-3 py-2 text-right text-xs">Action</th>
+                <th className="px-3 py-2 text-xs text-center">Rocks</th>
+                <th className="px-3 py-2 text-xs text-center">Target</th>
+                <th className="px-3 py-2 text-xs text-center">Current</th>
+                <th className="w-44 px-3 py-2 text-xs text-center">Date</th>
+                <th className="w-44 px-3 py-2 text-xs text-center">Progress Check</th>
+                <th className="w-24 px-3 py-2  text-xs text-center">Action</th>
               </tr>
             </thead>
 
@@ -1106,41 +1132,29 @@ export default function AgendaOperationalWorkspace({
               {board.rocks.map((row) => (
                 <tr key={row.id}>
                   <td className="px-2 py-1.5">
-                    <input
-                      aria-label="Rock"
-                      type="text"
+                    <AgendaTextArea
+                      ariaLabel="Rock"
                       disabled={!canEditRows || reloading}
                       value={row.rock}
-                      onChange={(event) =>
-                        updateRock(row.id, "rock", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
+                      onChange={(value) => updateRock(row.id, "rock", value)}
                     />
                   </td>
 
                   <td className="px-2 py-1.5">
-                    <input
-                      aria-label="Rock target"
-                      type="text"
+                    <AgendaTextArea
+                      ariaLabel="Rock target"
                       disabled={!canEditRows || reloading}
                       value={row.target}
-                      onChange={(event) =>
-                        updateRock(row.id, "target", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
+                      onChange={(value) => updateRock(row.id, "target", value)}
                     />
                   </td>
 
                   <td className="px-2 py-1.5">
-                    <input
-                      aria-label="Rock current status"
-                      type="text"
+                    <AgendaTextArea
+                      ariaLabel="Rock current status"
                       disabled={!canEditRows || reloading}
                       value={row.current}
-                      onChange={(event) =>
-                        updateRock(row.id, "current", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
+                      onChange={(value) => updateRock(row.id, "current", value)}
                     />
                   </td>
 
@@ -1156,7 +1170,7 @@ export default function AgendaOperationalWorkspace({
                       className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
-                  <td className="px-2 py-1.5">
+                  <td className="px-2 py-1.5 text-center">
                     {progressSelect(row.progress, (value) => updateRock(row.id, "progress", value), `Rock ${row.id} progress`)}
                   </td>
                   <td className="px-2 py-1.5 text-right">
@@ -1180,7 +1194,7 @@ export default function AgendaOperationalWorkspace({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-[#B4C2D1]/70 bg-white shadow-[0_2px_10px_rgba(8,37,80,0.045)]">
         <SectionHeader
           title="Where I Need Help"
           description="Capture requests, ownership, and follow-up status."
@@ -1188,27 +1202,109 @@ export default function AgendaOperationalWorkspace({
         />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1450px] border-collapse text-left text-sm">
-            <thead className="bg-[#082550] text-white"><tr>
-              <th className="px-3 py-2 text-xs">Requestor</th><th className="px-3 py-2 text-xs">Assignee</th><th className="px-3 py-2 text-xs">Item</th><th className="px-3 py-2 text-xs">Remarks</th><th className="w-40 px-3 py-2 text-xs">Date Requested</th><th className="w-44 px-3 py-2 text-xs">Progress Check</th><th className="px-3 py-2 text-xs">Carry Over</th><th className="w-24 px-3 py-2 text-right text-xs">Action</th>
-            </tr></thead>
+            <thead className="bg-[#082550] text-white">
+              <tr>
+                <th className="px-2 py-2 text-center text-xs">Requestor</th>
+                <th className="px-2 py-2 text-center text-xs">Assignee</th>
+                <th className="px-2 py-2 text-center text-xs">Item</th>
+                <th className="px-2 py-2 text-center text-xs">Remarks</th>
+                <th className="w-40 whitespace-nowrap px-3 py-2 text-center text-xs">Date Requested</th>
+                <th className="w-44 whitespace-nowrap px-3 py-2 text-center text-xs">Progress Check</th>
+                <th className="w-44 whitespace-nowrap px-3 py-2 text-center text-xs">Carry Over</th>
+                <th className="w-24 px-3 py-2 text-xs text-center">Action</th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-[#B4C2D1]/50">
-              {board.help.map((row, index) => <tr key={row.id} className={index % 2 ? "bg-[#F7F9FB]" : ""}>
-                <td className="px-2 py-1.5"><input aria-label="Requestor" type="text" disabled={!canEditRows || reloading} value={row.requestor} onChange={(event) => updateHelp(row.id, "requestor", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
-                <td className="px-2 py-1.5"><input aria-label="Assignee" type="text" disabled={!canEditRows || reloading} value={row.assignee} onChange={(event) => updateHelp(row.id, "assignee", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
-                <td className="px-2 py-1.5"><input aria-label="Help item" type="text" disabled={!canEditRows || reloading} value={row.item} onChange={(event) => updateHelp(row.id, "item", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
-                <td className="px-2 py-1.5"><input aria-label="Help remarks" type="text" disabled={!canEditRows || reloading} value={row.remarks} onChange={(event) => updateHelp(row.id, "remarks", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
-                <td className="px-2 py-1.5"><input aria-label="Date requested" type="date" disabled={!canEditRows || reloading} value={row.dateRequested} onChange={(event) => updateHelp(row.id, "dateRequested", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
-                <td className="px-2 py-1.5">{progressSelect(row.progress, (value) => updateHelp(row.id, "progress", value), `Help item ${index + 1} progress`)}</td>
-                <td className="px-2 py-1.5"><button type="button" disabled={!canEditRows || reloading} onClick={() => carryHelpItemToNextWeek(row.id)} className={`${BUTTON_CLASS} border-[#082550] bg-white text-[#082550]`}>Carry Over Next Week</button></td>
-                <td className="px-2 py-1.5 text-right">{removeButton("Remove help item", () => removeHelp(row.id))}</td>
-              </tr>)}
-              {board.help.length === 0 && <tr><td colSpan={8} className="px-4 py-5 text-center text-sm text-gray-500">No help items added yet.</td></tr>}
+              {board.help.map((row, index) => (
+                <tr key={row.id} className={index % 2 ? "bg-[#F7F9FB]" : ""}>
+                  <td className="px-2 py-1.5">
+                    <AgendaTextArea
+                      ariaLabel="Requestor"
+                      disabled={!canEditRows || reloading}
+                      value={row.requestor}
+                      onChange={(value) => updateHelp(row.id, "requestor", value)}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <AgendaTextArea
+                      ariaLabel="Assignee"
+                      disabled={!canEditRows || reloading}
+                      value={row.assignee}
+                      onChange={(value) => updateHelp(row.id, "assignee", value)}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <AgendaTextArea
+                      ariaLabel="Help item"
+                      disabled={!canEditRows || reloading}
+                      value={row.item}
+                      onChange={(value) => updateHelp(row.id, "item", value)}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <AgendaTextArea
+                      ariaLabel="Help remarks"
+                      disabled={!canEditRows || reloading}
+                      value={row.remarks}
+                      onChange={(value) => updateHelp(row.id, "remarks", value)}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      aria-label="Date requested"
+                      type="date"
+                      disabled={!canEditRows || reloading}
+                      value={row.dateRequested}
+                      onChange={(event) => updateHelp(row.id, "dateRequested", event.target.value)}
+                      className={`${INPUT_CLASS} py-1.5`}
+                    />
+                  </td>
+                  <td className="px-3 py-1.5 text-center align-middle">
+                    <div className="flex w-full items-center justify-center">
+                      {progressSelect(row.progress, (value) => updateHelp(row.id, "progress", value), `Help item ${index + 1} progress`)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-1.5 text-center align-middle">
+                    <div className="flex w-full items-center justify-center">
+                      <button
+                        type="button"
+                        disabled={!canEditRows || reloading}
+                        onClick={() => carryHelpItemToNextWeek(row.id)}
+                        style={{
+                          boxSizing: "border-box",
+                          display: "inline-flex",
+                          width: "132px",
+                          minWidth: "132px",
+                          maxWidth: "132px",
+                          height: "32px",
+                          minHeight: "32px",
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                        className={`${PRIMARY_ACTION_CLASS} !h-8 !min-h-8 !w-[132px] !min-w-[132px] !max-w-[132px] whitespace-nowrap !px-1 !py-0 text-[9px]`}
+                      >
+                        Carry Over Next Week
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-2 py-1.5 text-right">
+                    {removeButton("Remove help item", () => removeHelp(row.id))}
+                  </td>
+                </tr>
+              ))}
+              {board.help.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-4 py-5 text-center text-sm text-gray-500">
+                    No help items added yet.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-[#B4C2D1]/70 bg-white shadow-[0_2px_10px_rgba(8,37,80,0.045)]">
         <SectionHeader
           title="Items Carried Over from Last Week"
           description="Outstanding items remain here until explicitly removed, including completed items."
@@ -1217,16 +1313,36 @@ export default function AgendaOperationalWorkspace({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1250px] border-collapse text-left text-sm">
             <thead className="bg-[#082550] text-white"><tr>
-              <th className="px-3 py-2 text-xs">Requestor</th><th className="px-3 py-2 text-xs">Assignee</th><th className="px-3 py-2 text-xs">Item</th><th className="px-3 py-2 text-xs">Remarks</th><th className="w-40 px-3 py-2 text-xs">Date Requested</th><th className="w-44 px-3 py-2 text-xs">Progress Check</th><th className="w-24 px-3 py-2 text-right text-xs">Action</th>
+              <th className="px-3 py-2 text-xs text-center">Requestor</th><th className="px-3 py-2 text-xs text-center">Assignee</th><th className="px-3 py-2 text-xs text-center">Item</th><th className="px-3 py-2 text-xs text-center">Remarks</th><th className="w-40 px-3 py-2 text-xs text-center">Date Requested</th><th className="w-44 px-3 py-2 text-xs text-center">Progress Check</th><th className="w-24 px-3 py-2  text-xs text-center">Action</th>
             </tr></thead>
             <tbody className="divide-y divide-[#B4C2D1]/50">
               {board.carryOver.map((row, index) => <tr key={row.id} className={index % 2 ? "bg-[#F7F9FB]" : ""}>
-                <td className="px-2 py-1.5"><input aria-label="Carried-over requestor" type="text" disabled={!canEditRows || reloading} value={row.requestor} onChange={(event) => updateCarryOver(row.id, "requestor", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
-                <td className="px-2 py-1.5"><input aria-label="Carried-over assignee" type="text" disabled={!canEditRows || reloading} value={row.assignee} onChange={(event) => updateCarryOver(row.id, "assignee", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
-                <td className="px-2 py-1.5"><input aria-label="Carried-over item" type="text" disabled={!canEditRows || reloading} value={row.item} onChange={(event) => updateCarryOver(row.id, "item", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
-                <td className="px-2 py-1.5"><input aria-label="Carried-over remarks" type="text" disabled={!canEditRows || reloading} value={row.remarks} onChange={(event) => updateCarryOver(row.id, "remarks", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
+                <td className="px-2 py-1.5"><AgendaTextArea
+                      ariaLabel="Carried-over requestor"
+                      disabled={!canEditRows || reloading}
+                      value={row.requestor}
+                      onChange={(value) => updateCarryOver(row.id, "requestor", value)}
+                    /></td>
+                <td className="px-2 py-1.5"><AgendaTextArea
+                      ariaLabel="Carried-over assignee"
+                      disabled={!canEditRows || reloading}
+                      value={row.assignee}
+                      onChange={(value) => updateCarryOver(row.id, "assignee", value)}
+                    /></td>
+                <td className="px-2 py-1.5"><AgendaTextArea
+                      ariaLabel="Carried-over item"
+                      disabled={!canEditRows || reloading}
+                      value={row.item}
+                      onChange={(value) => updateCarryOver(row.id, "item", value)}
+                    /></td>
+                <td className="px-2 py-1.5"><AgendaTextArea
+                      ariaLabel="Carried-over remarks"
+                      disabled={!canEditRows || reloading}
+                      value={row.remarks}
+                      onChange={(value) => updateCarryOver(row.id, "remarks", value)}
+                    /></td>
                 <td className="px-2 py-1.5"><input aria-label="Carried-over date requested" type="date" disabled={!canEditRows || reloading} value={row.dateRequested} onChange={(event) => updateCarryOver(row.id, "dateRequested", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
-                <td className="px-2 py-1.5">{progressSelect(row.progress, (value) => updateCarryOver(row.id, "progress", value), `Carried-over item ${index + 1} progress`)}</td>
+                <td className="px-2 py-1.5 text-center">{progressSelect(row.progress, (value) => updateCarryOver(row.id, "progress", value), `Carried-over item ${index + 1} progress`)}</td>
                 <td className="px-2 py-1.5 text-right">{removeButton("Remove carried-over item", () => removeCarryOver(row.id))}</td>
               </tr>)}
               {board.carryOver.length === 0 && <tr><td colSpan={7} className="px-4 py-5 text-center text-sm text-gray-500">No carried-over items added yet.</td></tr>}
