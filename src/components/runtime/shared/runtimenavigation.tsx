@@ -719,7 +719,7 @@ export default function RuntimeNavigation({
           gap-2
           border-b
           border-border/70
-          bg-background
+          bg-card
           px-2
           py-2
           md:flex-row
@@ -742,15 +742,15 @@ export default function RuntimeNavigation({
           "
         >
           <Image
-            src="/logos/headwaters.png"
+            src="/logos/headwaterswhite.png"
             alt="Headwaters"
             width={180}
             height={60}
             priority
             className="
-              h-10
+              h-15
               w-auto
-              max-w-[150px]
+              max-w-[300px]
               object-contain
             "
           />
