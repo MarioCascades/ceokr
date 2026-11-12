@@ -28,6 +28,8 @@ type AgendaWin = {
   assignedTo: string;
 };
 
+type ProgressCheck = "In Progress" | "Completed";
+
 type AgendaEvent = {
   id: string;
   name: string;
@@ -35,6 +37,7 @@ type AgendaEvent = {
   attendees: string;
   startDate: string;
   endDate: string;
+  progress: ProgressCheck;
 };
 
 type AgendaRock = {
@@ -43,19 +46,27 @@ type AgendaRock = {
   target: string;
   current: string;
   date: string;
+  progress: ProgressCheck;
 };
 
 type AgendaHelp = {
   id: string;
-  name: string;
-  help: string;
+  requestor: string;
+  assignee: string;
+  item: string;
   remarks: string;
+  dateRequested: string;
+  progress: ProgressCheck;
 };
 
 type AgendaCarryOver = {
   id: string;
+  requestor: string;
+  assignee: string;
   item: string;
   remarks: string;
+  dateRequested: string;
+  progress: ProgressCheck;
 };
 
 type AgendaBoard = {
@@ -93,7 +104,11 @@ function createId(prefix: string, index: number): string {
 
 function createEmptyBoard(): AgendaBoard {
   return {
-    wins: [],
+    wins: Array.from({ length: 12 }, (_, index) => ({
+      id: `win-default-${index + 1}`,
+      win: "",
+      assignedTo: "",
+    })),
     announcements: "",
     events: [],
     rocks: [],
@@ -110,6 +125,10 @@ function asText(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+function asProgress(value: unknown): ProgressCheck {
+  return value === "Completed" ? "Completed" : "In Progress";
+}
+
 function parseBoard(value: unknown): AgendaBoard | null {
   if (!isObject(value)) {
     return null;
@@ -123,22 +142,16 @@ function parseBoard(value: unknown): AgendaBoard | null {
     ? value.carryOver
     : [];
 
-  // Remove the old default blank rows from the display.
-  // Preserve every Win row that contains a Win or an assignee.
+  // Preserve all Wins rows, including the default blank rows.
   const normalizedWins: AgendaWin[] = wins
     .filter(isObject)
     .map((item, index) => ({
       id: asText(item.id) || `win-loaded-${index + 1}`,
       win: asText(item.win),
       assignedTo: asText(item.assignedTo),
-    }))
-    .filter(
-      (item) =>
-        item.win.trim() !== "" || item.assignedTo.trim() !== ""
-    );
+    }));
 
-  // An empty Wins list is valid. This allows the final row to be removed
-  // without recreating a blank row when the board is reloaded.
+  // Preserve blank default rows as well as intentionally empty Wins lists.
 
   return {
     wins: normalizedWins,
@@ -150,6 +163,7 @@ function parseBoard(value: unknown): AgendaBoard | null {
       attendees: asText(item.attendees),
       startDate: asText(item.startDate),
       endDate: asText(item.endDate),
+      progress: asProgress(item.progress),
     })),
     rocks: rocks.filter(isObject).map((item, index) => ({
       id: asText(item.id) || `rock-loaded-${index + 1}`,
@@ -157,17 +171,25 @@ function parseBoard(value: unknown): AgendaBoard | null {
       target: asText(item.target),
       current: asText(item.current),
       date: asText(item.date),
+      progress: asProgress(item.progress),
     })),
     help: help.filter(isObject).map((item, index) => ({
       id: asText(item.id) || `help-loaded-${index + 1}`,
-      name: asText(item.name),
-      help: asText(item.help),
+      requestor: asText(item.requestor) || asText(item.name),
+      assignee: asText(item.assignee),
+      item: asText(item.item) || asText(item.help),
       remarks: asText(item.remarks),
+      dateRequested: asText(item.dateRequested) || asText(item.date),
+      progress: asProgress(item.progress),
     })),
     carryOver: carryOver.filter(isObject).map((item, index) => ({
       id: asText(item.id) || `carry-loaded-${index + 1}`,
-      item: asText(item.item),
+      requestor: asText(item.requestor) || asText(item.name),
+      assignee: asText(item.assignee),
+      item: asText(item.item) || asText(item.help),
       remarks: asText(item.remarks),
+      dateRequested: asText(item.dateRequested) || asText(item.date),
+      progress: asProgress(item.progress),
     })),
   };
 }
@@ -577,6 +599,7 @@ export default function AgendaOperationalWorkspace({
         attendees: "",
         startDate: "",
         endDate: "",
+        progress: "In Progress",
       },
     ]);
   }
@@ -597,6 +620,7 @@ export default function AgendaOperationalWorkspace({
         target: "",
         current: "",
         date: "",
+        progress: "In Progress",
       },
     ]);
   }
@@ -613,9 +637,12 @@ export default function AgendaOperationalWorkspace({
       ...board.help,
       {
         id: createId("help", board.help.length + 1),
-        name: "",
-        help: "",
+        requestor: "",
+        assignee: "",
+        item: "",
         remarks: "",
+        dateRequested: "",
+        progress: "In Progress",
       },
     ]);
   }
@@ -632,11 +659,43 @@ export default function AgendaOperationalWorkspace({
       ...board.carryOver,
       {
         id: createId("carry", board.carryOver.length + 1),
+        requestor: "",
+        assignee: "",
         item: "",
         remarks: "",
+        dateRequested: "",
+        progress: "In Progress",
       },
     ]);
   }
+
+  function carryHelpItemToNextWeek(id: string) {
+    const item = board.help.find((row) => row.id === id);
+    if (!item) return;
+    updateBoard("help", board.help.filter((row) => row.id !== id));
+    updateBoard("carryOver", [...board.carryOver, { ...item }]);
+  }
+
+  function removeCarryOver(id: string) {
+    updateBoard("carryOver", board.carryOver.filter((row) => row.id !== id));
+  }
+
+  const progressSelect = (
+    value: ProgressCheck,
+    onChange: (value: ProgressCheck) => void,
+    label: string
+  ) => (
+    <select
+      aria-label={label}
+      disabled={!canEditRows || reloading}
+      value={value}
+      onChange={(event) => onChange(event.target.value as ProgressCheck)}
+      className={`${INPUT_CLASS} min-w-[145px] py-1.5`}
+    >
+      <option value="In Progress">In Progress</option>
+      <option value="Completed">Completed</option>
+    </select>
+  );
 
   const addButton = (label: string, onClick: () => void) => (
     <button
@@ -695,13 +754,7 @@ export default function AgendaOperationalWorkspace({
                 </p>
               </div>
             </div>
-            <div className="ml-1 flex h-[52px] min-w-[80px] shrink-0 items-center justify-end overflow-hidden px-0 py-0">
-              <img
-                src="/logos/CECleanlogo.png"
-                alt="CascadEffects"
-                className="block h-[50px] w-auto max-w-[100px] object-contain"
-              />
-            </div>
+
           </div>
         </div>
 
@@ -894,13 +947,13 @@ export default function AgendaOperationalWorkspace({
 
       <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
         <SectionHeader
-          title="EVENTs"
+          title="Events"
           description="Track upcoming events, their locations, attendees, and dates."
           action={addButton("Add Event", addEvent)}
         />
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
+          <table className="w-full min-w-[1200px] border-collapse text-left text-sm">
             <thead className="bg-[#082550] text-white">
               <tr>
                 <th className="px-3 py-2 text-xs">Name of the Event</th>
@@ -908,6 +961,7 @@ export default function AgendaOperationalWorkspace({
                 <th className="px-3 py-2 text-xs">Attendees</th>
                 <th className="w-40 px-3 py-2 text-xs">Start Date</th>
                 <th className="w-40 px-3 py-2 text-xs">End Date</th>
+                <th className="w-44 px-3 py-2 text-xs">Progress Check</th>
                 <th className="w-24 px-3 py-2 text-right text-xs">Action</th>
               </tr>
             </thead>
@@ -978,6 +1032,9 @@ export default function AgendaOperationalWorkspace({
                       className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
+                  <td className="px-2 py-1.5">
+                    {progressSelect(row.progress, (value) => updateEvent(row.id, "progress", value), `Event ${index + 1} progress`)}
+                  </td>
                   <td className="px-2 py-1.5 text-right">
                     {removeButton(`Remove event ${index + 1}`, () =>
                       removeEvent(row.id)
@@ -989,7 +1046,7 @@ export default function AgendaOperationalWorkspace({
               {board.events.length === 0 && (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-5 text-center text-sm text-gray-500"
                   >
                     No events added yet. Use Add Event to create a row.
@@ -1009,13 +1066,14 @@ export default function AgendaOperationalWorkspace({
         />
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[850px] border-collapse text-left text-sm">
+          <table className="w-full min-w-[1000px] border-collapse text-left text-sm">
             <thead className="bg-[#082550] text-white">
               <tr>
                 <th className="px-3 py-2 text-xs">Rocks</th>
                 <th className="px-3 py-2 text-xs">Target</th>
                 <th className="px-3 py-2 text-xs">Current</th>
                 <th className="w-44 px-3 py-2 text-xs">Date</th>
+                <th className="w-44 px-3 py-2 text-xs">Progress Check</th>
                 <th className="w-24 px-3 py-2 text-right text-xs">Action</th>
               </tr>
             </thead>
@@ -1074,6 +1132,9 @@ export default function AgendaOperationalWorkspace({
                       className={`${INPUT_CLASS} py-1.5`}
                     />
                   </td>
+                  <td className="px-2 py-1.5">
+                    {progressSelect(row.progress, (value) => updateRock(row.id, "progress", value), `Rock ${row.id} progress`)}
+                  </td>
                   <td className="px-2 py-1.5 text-right">
                     {removeButton("Remove Rock", () => removeRock(row.id))}
                   </td>
@@ -1083,7 +1144,7 @@ export default function AgendaOperationalWorkspace({
               {board.rocks.length === 0 && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-5 text-center text-sm text-gray-500"
                   >
                     No Rocks added yet.
@@ -1098,80 +1159,26 @@ export default function AgendaOperationalWorkspace({
       <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
         <SectionHeader
           title="Where I Need Help"
-          description="Capture requests for help and supporting remarks."
+          description="Capture requests, ownership, and follow-up status."
           action={addButton("Add Help Item", addHelp)}
         />
-
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[850px] border-collapse text-left text-sm">
-            <thead className="bg-[#082550] text-white">
-              <tr>
-                <th className="w-56 px-3 py-2 text-xs">Name</th>
-                <th className="px-3 py-2 text-xs">Where I Need Help</th>
-                <th className="px-3 py-2 text-xs">Remarks</th>
-                <th className="w-24 px-3 py-2 text-right text-xs">Action</th>
-              </tr>
-            </thead>
-
+          <table className="w-full min-w-[1450px] border-collapse text-left text-sm">
+            <thead className="bg-[#082550] text-white"><tr>
+              <th className="px-3 py-2 text-xs">Requestor</th><th className="px-3 py-2 text-xs">Assignee</th><th className="px-3 py-2 text-xs">Item</th><th className="px-3 py-2 text-xs">Remarks</th><th className="w-40 px-3 py-2 text-xs">Date Requested</th><th className="w-44 px-3 py-2 text-xs">Progress Check</th><th className="px-3 py-2 text-xs">Carry Over</th><th className="w-24 px-3 py-2 text-right text-xs">Action</th>
+            </tr></thead>
             <tbody className="divide-y divide-[#B4C2D1]/50">
-              {board.help.map((row) => (
-                <tr key={row.id}>
-                  <td className="px-2 py-1.5">
-                    <input
-                      aria-label="Name"
-                      type="text"
-                      disabled={!canEditRows || reloading}
-                      value={row.name}
-                      onChange={(event) =>
-                        updateHelp(row.id, "name", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
-                    />
-                  </td>
-
-                  <td className="px-2 py-1.5">
-                    <input
-                      aria-label="Where I Need Help"
-                      type="text"
-                      disabled={!canEditRows || reloading}
-                      value={row.help}
-                      onChange={(event) =>
-                        updateHelp(row.id, "help", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
-                    />
-                  </td>
-
-                  <td className="px-2 py-1.5">
-                    <input
-                      aria-label="Help remarks"
-                      type="text"
-                      disabled={!canEditRows || reloading}
-                      value={row.remarks}
-                      onChange={(event) =>
-                        updateHelp(row.id, "remarks", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
-                    />
-                  </td>
-                  <td className="px-2 py-1.5 text-right">
-                    {removeButton("Remove help item", () =>
-                      removeHelp(row.id)
-                    )}
-                  </td>
-                </tr>
-              ))}
-
-              {board.help.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-4 py-5 text-center text-sm text-gray-500"
-                  >
-                    No help items added yet.
-                  </td>
-                </tr>
-              )}
+              {board.help.map((row, index) => <tr key={row.id} className={index % 2 ? "bg-[#F7F9FB]" : ""}>
+                <td className="px-2 py-1.5"><input aria-label="Requestor" type="text" disabled={!canEditRows || reloading} value={row.requestor} onChange={(event) => updateHelp(row.id, "requestor", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
+                <td className="px-2 py-1.5"><input aria-label="Assignee" type="text" disabled={!canEditRows || reloading} value={row.assignee} onChange={(event) => updateHelp(row.id, "assignee", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
+                <td className="px-2 py-1.5"><input aria-label="Help item" type="text" disabled={!canEditRows || reloading} value={row.item} onChange={(event) => updateHelp(row.id, "item", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
+                <td className="px-2 py-1.5"><input aria-label="Help remarks" type="text" disabled={!canEditRows || reloading} value={row.remarks} onChange={(event) => updateHelp(row.id, "remarks", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
+                <td className="px-2 py-1.5"><input aria-label="Date requested" type="date" disabled={!canEditRows || reloading} value={row.dateRequested} onChange={(event) => updateHelp(row.id, "dateRequested", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
+                <td className="px-2 py-1.5">{progressSelect(row.progress, (value) => updateHelp(row.id, "progress", value), `Help item ${index + 1} progress`)}</td>
+                <td className="px-2 py-1.5"><button type="button" disabled={!canEditRows || reloading} onClick={() => carryHelpItemToNextWeek(row.id)} className={`${BUTTON_CLASS} border-[#082550] bg-white text-[#082550]`}>Carry Over Next Week</button></td>
+                <td className="px-2 py-1.5 text-right">{removeButton("Remove help item", () => removeHelp(row.id))}</td>
+              </tr>)}
+              {board.help.length === 0 && <tr><td colSpan={8} className="px-4 py-5 text-center text-sm text-gray-500">No help items added yet.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -1180,60 +1187,25 @@ export default function AgendaOperationalWorkspace({
       <section className="overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-sm">
         <SectionHeader
           title="Items Carried Over from Last Week"
-          description="Keep outstanding items visible until they are addressed."
+          description="Outstanding items remain here until explicitly removed, including completed items."
           action={addButton("Add Carried-Over Item", addCarryOver)}
         />
-
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[650px] border-collapse text-left text-sm">
-            <thead className="bg-[#082550] text-white">
-              <tr>
-                <th className="px-3 py-2 text-xs">Item</th>
-                <th className="px-3 py-2 text-xs">Remarks</th>
-              </tr>
-            </thead>
-
+          <table className="w-full min-w-[1250px] border-collapse text-left text-sm">
+            <thead className="bg-[#082550] text-white"><tr>
+              <th className="px-3 py-2 text-xs">Requestor</th><th className="px-3 py-2 text-xs">Assignee</th><th className="px-3 py-2 text-xs">Item</th><th className="px-3 py-2 text-xs">Remarks</th><th className="w-40 px-3 py-2 text-xs">Date Requested</th><th className="w-44 px-3 py-2 text-xs">Progress Check</th><th className="w-24 px-3 py-2 text-right text-xs">Action</th>
+            </tr></thead>
             <tbody className="divide-y divide-[#B4C2D1]/50">
-              {board.carryOver.map((row) => (
-                <tr key={row.id}>
-                  <td className="px-2 py-1.5">
-                    <input
-                      aria-label="Carried-over item"
-                      type="text"
-                      disabled={!canEditRows || reloading}
-                      value={row.item}
-                      onChange={(event) =>
-                        updateCarryOver(row.id, "item", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
-                    />
-                  </td>
-
-                  <td className="px-2 py-1.5">
-                    <input
-                      aria-label="Carried-over remarks"
-                      type="text"
-                      disabled={!canEditRows || reloading}
-                      value={row.remarks}
-                      onChange={(event) =>
-                        updateCarryOver(row.id, "remarks", event.target.value)
-                      }
-                      className={`${INPUT_CLASS} py-1.5`}
-                    />
-                  </td>
-                </tr>
-              ))}
-
-              {board.carryOver.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={2}
-                    className="px-4 py-5 text-center text-sm text-gray-500"
-                  >
-                    No carried-over items added yet.
-                  </td>
-                </tr>
-              )}
+              {board.carryOver.map((row, index) => <tr key={row.id} className={index % 2 ? "bg-[#F7F9FB]" : ""}>
+                <td className="px-2 py-1.5"><input aria-label="Carried-over requestor" type="text" disabled={!canEditRows || reloading} value={row.requestor} onChange={(event) => updateCarryOver(row.id, "requestor", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
+                <td className="px-2 py-1.5"><input aria-label="Carried-over assignee" type="text" disabled={!canEditRows || reloading} value={row.assignee} onChange={(event) => updateCarryOver(row.id, "assignee", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
+                <td className="px-2 py-1.5"><input aria-label="Carried-over item" type="text" disabled={!canEditRows || reloading} value={row.item} onChange={(event) => updateCarryOver(row.id, "item", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
+                <td className="px-2 py-1.5"><input aria-label="Carried-over remarks" type="text" disabled={!canEditRows || reloading} value={row.remarks} onChange={(event) => updateCarryOver(row.id, "remarks", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
+                <td className="px-2 py-1.5"><input aria-label="Carried-over date requested" type="date" disabled={!canEditRows || reloading} value={row.dateRequested} onChange={(event) => updateCarryOver(row.id, "dateRequested", event.target.value)} className={`${INPUT_CLASS} py-1.5`} /></td>
+                <td className="px-2 py-1.5">{progressSelect(row.progress, (value) => updateCarryOver(row.id, "progress", value), `Carried-over item ${index + 1} progress`)}</td>
+                <td className="px-2 py-1.5 text-right">{removeButton("Remove carried-over item", () => removeCarryOver(row.id))}</td>
+              </tr>)}
+              {board.carryOver.length === 0 && <tr><td colSpan={7} className="px-4 py-5 text-center text-sm text-gray-500">No carried-over items added yet.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -1241,7 +1213,7 @@ export default function AgendaOperationalWorkspace({
 
       <div className="flex flex-col gap-2 border-t border-[#B4C2D1]/60 px-1 py-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[11px] text-gray-500">
-          CascadEffects Operations Project Management
+          Operations Project Management
         </p>
         <p className="text-[11px] font-medium text-[#082550]/70">
           Last successful save: {formatDateTime(lastUpdated)}

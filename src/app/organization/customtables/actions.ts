@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   createCustomTable,
   editCustomTable,
+  provisionIndieOrthoAgenda,
 } from "@/services/customtableservice";
 import type {
   CreateCustomTableDefinitionInput,
@@ -21,6 +22,16 @@ export type CreateCustomTableActionResult =
     };
 
 export type UpdateCustomTableAvailabilityActionResult =
+  | {
+      success: true;
+      table: CustomTableDefinition;
+    }
+  | {
+      success: false;
+      error: string;
+    };
+
+export type ProvisionIndieOrthoAgendaActionResult =
   | {
       success: true;
       table: CustomTableDefinition;
@@ -238,6 +249,48 @@ export async function updateCustomTableAvailabilityAction(
         error instanceof Error
           ? error.message
           : "Unable to update Custom Table availability. Please try again.",
+    };
+  }
+}
+
+/**
+ * Provisions the specifically approved Indie Ortho Agenda.
+ *
+ * The target organization is intentionally not accepted as an argument.
+ * The service fixes the Indie Ortho organization and enforces
+ * CascadEffects Platform Super Admin authorization.
+ * This action must only be invoked as part of the approved
+ * CascadEffects-side provisioning process, never from tenant UI.
+ */
+export async function provisionIndieOrthoAgendaAction(): Promise<ProvisionIndieOrthoAgendaActionResult> {
+  try {
+    const table = await provisionIndieOrthoAgenda();
+    const organizationId = table.organizationId;
+
+    revalidatePath(
+      `/organization/customtables?organizationId=${encodeURIComponent(
+        organizationId
+      )}`
+    );
+    revalidatePath(
+      `/organization/customtables/${table.id}?organizationId=${encodeURIComponent(
+        organizationId
+      )}`
+    );
+    revalidatePath("/organization/customtables");
+    revalidatePath("/runtime");
+
+    return {
+      success: true,
+      table,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to provision the Indie Ortho Agenda. Please try again.",
     };
   }
 }

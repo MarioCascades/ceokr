@@ -426,6 +426,65 @@ export async function createCustomTable(
   return definition;
 }
 
+/**
+ * Provision the approved Indie Ortho Agenda feature.
+ *
+ * This is deliberately tenant-specific: it does not provision an
+ * Agenda for every organization and does not modify CascadEffects'
+ * existing Agenda. The stable organization/table-key pair makes
+ * repeated approval or provisioning calls safe.
+ */
+export async function provisionIndieOrthoAgenda(): Promise<CustomTableDefinition> {
+  const organizationId = "c15618e5-10d4-4909-976b-84d855d847b0";
+
+  await requireCustomTableProvisioning(organizationId);
+
+  const existing = await findCustomTableDefinitionByKey(
+    organizationId,
+    "agenda"
+  );
+
+  if (existing) {
+    if (existing.persistenceMode !== "current_state") {
+      throw new Error(
+        "The existing Indie Ortho Agenda is not configured for current-state persistence."
+      );
+    }
+
+    return existing;
+  }
+
+  try {
+    return await createCustomTableDefinition({
+      organizationId,
+      tableKey: "agenda",
+      name: "Agenda",
+      description:
+        "Indie Ortho shared operational agenda. Includes Wins, Announcements, Rocks, Where I Need Help, and Items Carried Over From Last Week.",
+      runtimeTabKey: "agenda",
+      isEnabled: true,
+    });
+  } catch (error) {
+    // If two authorized provisioning attempts overlap, return the
+    // definition created by the winning request rather than creating
+    // a duplicate or failing an otherwise successful approval.
+    const createdByConcurrentRequest =
+      await findCustomTableDefinitionByKey(organizationId, "agenda");
+
+    if (createdByConcurrentRequest) {
+      if (createdByConcurrentRequest.persistenceMode !== "current_state") {
+        throw new Error(
+          "The existing Indie Ortho Agenda is not configured for current-state persistence."
+        );
+      }
+
+      return createdByConcurrentRequest;
+    }
+
+    throw error;
+  }
+}
+
 export async function editCustomTable(
   organizationId: string,
   tableDefinitionId: string,

@@ -18,6 +18,8 @@ import CustomTableOperationalWorkspace from "@/components/organization/customtab
 
 import AgendaOperationalWorkspace from "@/components/organization/agendaoperationalworkspace";
 
+import IndieOrthoAgenda from "@/components/organization/indieorthoagenda";
+
 import ClientPerformanceWorkspace from "@/components/organization/clientperformanceworkspace";
 
 import RuntimeNavigation from "@/components/runtime/shared/runtimenavigation";
@@ -233,9 +235,9 @@ function isAgendaTable(tableKey: string): boolean {
 
 
 
-function isIndieOrthoOrganization(companyName: string): boolean {
+function isIndieOrthoOrganization(organizationId: string): boolean {
 
-  return companyName.trim().toLowerCase() === "indie ortho";
+  return organizationId === "c15618e5-10d4-4909-976b-84d855d847b0";
 
 }
 
@@ -1435,7 +1437,7 @@ export default async function RuntimePage({
 
     if (
 
-      isIndieOrthoOrganization(organization.company_name) &&
+      isIndieOrthoOrganization(organization.id) &&
 
       requestedRuntimeTab === "overall-practice-performance" &&
 
@@ -2381,23 +2383,47 @@ export default async function RuntimePage({
 
                   {isAgendaTable(result.tableKey) ? (
 
-                    <AgendaOperationalWorkspace
+                    isIndieOrthoOrganization(organization.id) ? (
 
-                      organizationId={organization.id}
+                      <IndieOrthoAgenda
 
-                      tableDefinitionId={result.tableId}
+                        organizationId={organization.id}
 
-                      tableName={result.tableName}
+                        tableDefinitionId={result.tableId}
 
-                      organizationName={organization.company_name}
+                        tableName={result.tableName}
 
-                      organizationLogoUrl={organization.logo_url}
+                        organizationName={organization.company_name}
 
-                      initialRows={result.persistentRows}
+                        organizationLogoUrl={organization.logo_url}
 
-                      canEditRows={canEditCustomTableRows}
+                        initialRows={result.persistentRows}
 
-                    />
+                        canEditRows={canEditCustomTableRows}
+
+                      />
+
+                    ) : (
+
+                      <AgendaOperationalWorkspace
+
+                        organizationId={organization.id}
+
+                        tableDefinitionId={result.tableId}
+
+                        tableName={result.tableName}
+
+                        organizationName={organization.company_name}
+
+                        organizationLogoUrl={organization.logo_url}
+
+                        initialRows={result.persistentRows}
+
+                        canEditRows={canEditCustomTableRows}
+
+                      />
+
+                    )
 
                   ) : (
 
