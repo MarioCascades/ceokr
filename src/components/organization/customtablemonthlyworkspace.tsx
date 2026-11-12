@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import type {
   CustomTableColumn,
+  CustomTableOperationalStatus,
   CustomTableRow,
   CustomTableWorkspace,
 } from "@/lib/types/domain/customtable";
@@ -25,11 +26,9 @@ type CustomTableMonthlyWorkspaceProps = {
   canEditRows: boolean;
 };
 
-type OperationalStatus =
-  | "in_progress"
-  | "on_hold"
-  | "completed"
-  | "cancelled";
+type OperationalStatus = CustomTableOperationalStatus;
+
+const CASCADEFFECTS_ORGANIZATION_ID = "e571cd65-b7f8-4669-bb41-370806097792";
 
 const BRAND = {
   navy: "#082550",
@@ -67,6 +66,38 @@ const STATUS_OPTIONS: {
   },
 ];
 
+const RECRUITMENT_STATUS_OPTIONS: {
+  value: OperationalStatus;
+  label: string;
+  classes: string;
+}[] = [
+  {
+    value: "in_progress",
+    label: "Recruitment in Progress",
+    classes: "border-[#F97316] bg-[#F97316] text-white",
+  },
+  {
+    value: "pending_on_client",
+    label: "Pending on Client",
+    classes: "border-[#8B5CF6] bg-[#8B5CF6] text-white",
+  },
+  {
+    value: "on_hold",
+    label: "On Hold",
+    classes: "border-[#FACC15] bg-[#FACC15] text-[#272D2C]",
+  },
+  {
+    value: "completed",
+    label: "Completed",
+    classes: "border-[#16A34A] bg-[#16A34A] text-white",
+  },
+  {
+    value: "cancelled",
+    label: "Cancelled",
+    classes: "border-[#DC2626] bg-[#DC2626] text-white",
+  },
+];
+
 function toPerformanceMonth(month: string): string {
   return `${month}-01`;
 }
@@ -75,19 +106,23 @@ function toMonthInputValue(performanceMonth: string): string {
   return performanceMonth.slice(0, 7);
 }
 
-function getStatusClasses(status: string): string {
+function getStatusClasses(
+  status: string,
+  options: { value: OperationalStatus; label: string; classes: string }[] =
+    STATUS_OPTIONS
+): string {
   return (
-    STATUS_OPTIONS.find((option) => option.value === status)
-      ?.classes ??
+    options.find((option) => option.value === status)?.classes ??
     "border-[#B4C2D1] bg-[#F7F9FB] text-[#272D2C]"
   );
 }
 
-function getStatusLabel(status: string): string {
-  return (
-    STATUS_OPTIONS.find((option) => option.value === status)
-      ?.label ?? status
-  );
+function getStatusLabel(
+  status: string,
+  options: { value: OperationalStatus; label: string; classes: string }[] =
+    STATUS_OPTIONS
+): string {
+  return options.find((option) => option.value === status)?.label ?? status;
 }
 
 function getCellValue(
@@ -117,8 +152,6 @@ function getRecruitmentColumnWidth(columnKey: string): string {
       return "16%";
     case "remarks":
       return "21%";
-    case "current_state":
-      return "12%";
     default:
       return "12%";
   }
@@ -132,6 +165,21 @@ export default function CustomTableMonthlyWorkspace({
 }: CustomTableMonthlyWorkspaceProps) {
   const [workspace, setWorkspace] =
     useState<CustomTableWorkspace>(initialWorkspace);
+
+  const recruitmentTableKeys = new Set([
+    "recruitment",
+    "recruitment-updates",
+  ]);
+
+  const isRecruitmentWorkspace =
+    organizationId === CASCADEFFECTS_ORGANIZATION_ID &&
+    recruitmentTableKeys.has(
+      workspace.definition.tableKey.trim().toLowerCase()
+    );
+
+  const statusOptions = isRecruitmentWorkspace
+    ? RECRUITMENT_STATUS_OPTIONS
+    : STATUS_OPTIONS;
 
   const [selectedMonth, setSelectedMonth] = useState(
     toMonthInputValue(initialWorkspace.month.performanceMonth)
@@ -147,10 +195,15 @@ export default function CustomTableMonthlyWorkspace({
       [...workspace.columns]
         .filter(
           (column) =>
-            column.isVisible && column.columnKey !== "future_task"
+            column.isVisible &&
+            column.columnKey !== "future_task" &&
+            !(
+              isRecruitmentWorkspace &&
+              column.columnKey === "current_state"
+            )
         )
         .sort((a, b) => a.position - b.position),
-    [workspace.columns]
+    [workspace.columns, isRecruitmentWorkspace]
   );
 
   const activeRows = useMemo(
@@ -219,6 +272,13 @@ export default function CustomTableMonthlyWorkspace({
     const rowData: Record<string, unknown> = {};
 
     for (const column of workspace.columns) {
+      if (
+        isRecruitmentWorkspace &&
+        column.columnKey === "current_state"
+      ) {
+        continue;
+      }
+
       rowData[column.columnKey] = "";
     }
 
@@ -628,7 +688,7 @@ export default function CustomTableMonthlyWorkspace({
                   style={{ width: getRecruitmentColumnWidth(column.columnKey) }}
                 />
               ))}
-              <col style={{ width: "11%" }} />
+              <col style={{ width: isRecruitmentWorkspace ? "9%" : "11%" }} />
               <col style={{ width: "6%" }} />
             </colgroup>
             <thead>
@@ -649,7 +709,11 @@ export default function CustomTableMonthlyWorkspace({
                   </th>
                 ))}
 
-                <th className="min-w-40 border-r border-white/15 px-4 py-4 text-[10px] font-bold uppercase tracking-wider">
+                <th
+                  className={`border-r border-white/15 px-2 py-4 text-[10px] font-bold uppercase tracking-wider ${
+                    isRecruitmentWorkspace ? "text-center" : ""
+                  }`}
+                >
                   Workflow Status
                 </th>
 
@@ -800,7 +864,11 @@ export default function CustomTableMonthlyWorkspace({
                       </td>
                     ))}
 
-                    <td className="border-r border-[#B4C2D1]/40 px-3 py-3 align-top">
+                    <td
+                      className={`border-r border-[#B4C2D1]/40 px-2 py-3 align-top ${
+                        isRecruitmentWorkspace ? "text-center" : ""
+                      }`}
+                    >
                       {canEditRows && !isFinalized && !row.isHidden ? (
                         <select
                           aria-label={`Workflow status, row ${index + 1}`}
@@ -812,9 +880,13 @@ export default function CustomTableMonthlyWorkspace({
                               event.target.value as OperationalStatus
                             )
                           }
-                          className={`w-full min-w-32 rounded-lg border px-2.5 py-2 text-xs font-semibold outline-none transition focus:border-[#E26D5C] focus:ring-2 focus:ring-[#E26D5C]/15 disabled:cursor-not-allowed disabled:opacity-50 ${getStatusClasses(row.operationalStatus)}`}
+                          className={`w-full rounded-lg border px-2 py-2 text-xs font-semibold outline-none transition focus:border-[#E26D5C] focus:ring-2 focus:ring-[#E26D5C]/15 disabled:cursor-not-allowed disabled:opacity-50 ${
+                            isRecruitmentWorkspace
+                              ? "mx-auto max-w-full text-center"
+                              : "min-w-32"
+                          } ${getStatusClasses(row.operationalStatus, statusOptions)}`}
                         >
-                          {STATUS_OPTIONS.map((option) => (
+                          {statusOptions.map((option) => (
                             <option
                               key={option.value}
                               value={option.value}
@@ -825,9 +897,11 @@ export default function CustomTableMonthlyWorkspace({
                         </select>
                       ) : (
                         <span
-                          className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold ${getStatusClasses(row.operationalStatus)}`}
+                          className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                            getStatusClasses(row.operationalStatus, statusOptions)
+                          }`}
                         >
-                          {getStatusLabel(row.operationalStatus)}
+                          {getStatusLabel(row.operationalStatus, statusOptions)}
                         </span>
                       )}
                     </td>

@@ -1,3 +1,4 @@
+
 /*
  * ==========================================================
  * CascadEffects Performance Platform
@@ -33,10 +34,11 @@
  * Standardized operational status for a table row.
  *
  * This is intentionally separate from free-form column
- * values such as Current State, Remarks, and Action Plan.
+ * values such as Remarks and Action Plan.
  */
 export type CustomTableOperationalStatus =
   | "in_progress"
+  | "pending_on_client"
   | "on_hold"
   | "completed"
   | "cancelled";
@@ -387,8 +389,7 @@ export interface UpdateCustomTableMonthInput {
  *   role_details: "Sales CRM Virtual Assistant",
  *   action_plan: "Endorse candidates",
  *   remarks: "Waiting for client feedback",
- *   future_task: "Follow up Friday",
- *   current_state: "Client interview pending"
+ *   future_task: "Follow up Friday"
  * }
  *
  * The standardized operational status is stored separately
@@ -595,6 +596,10 @@ export interface CustomTableListItem {
  *
  * These keys correspond to row_data properties and must
  * remain consistent across monthly instances.
+ *
+ * Current State has been removed from the Recruitment
+ * default configuration. Existing historical row data
+ * is not deleted by this type change.
  */
 export const RECRUITMENT_COLUMN_KEYS = [
   "role",
@@ -602,7 +607,6 @@ export const RECRUITMENT_COLUMN_KEYS = [
   "action_plan",
   "remarks",
   "future_task",
-  "current_state",
 ] as const;
 
 export type RecruitmentColumnKey =
@@ -691,18 +695,6 @@ export const RECRUITMENT_DEFAULT_COLUMNS: ReadonlyArray<{
       placeholder: "Enter future tasks",
     },
   },
-  {
-    columnKey: "current_state",
-    label: "Current State",
-    dataType: "text",
-    position: 5,
-    isRequired: false,
-    isVisible: true,
-    isEditable: true,
-    settings: {
-      placeholder: "Describe the current state",
-    },
-  },
 ];
 
 /* ==========================================================
@@ -711,12 +703,17 @@ export const RECRUITMENT_DEFAULT_COLUMNS: ReadonlyArray<{
 
 /**
  * Display labels for the standardized operational status.
+ *
+ * Recruitment-specific wording such as "Recruitment in
+ * Progress" should be applied by the Recruitment workspace,
+ * rather than changing the shared label used by other tables.
  */
 export const CUSTOM_TABLE_STATUS_LABELS: Record<
   CustomTableOperationalStatus,
   string
 > = {
   in_progress: "In Progress",
+  pending_on_client: "Pending on Client",
   on_hold: "On Hold",
   completed: "Completed",
   cancelled: "Cancelled",
@@ -732,6 +729,7 @@ export const CUSTOM_TABLE_STATUS_COLORS: Record<
   string
 > = {
   in_progress: "blue",
+  pending_on_client: "amber",
   on_hold: "amber",
   completed: "green",
   cancelled: "red",

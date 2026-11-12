@@ -67,6 +67,41 @@ const STATUS_OPTIONS: {
   },
 ];
 
+const CASCADEFFECTS_ORGANIZATION_ID =
+  "e571cd65-b7f8-4669-bb41-370806097792";
+
+const RECRUITMENT_STATUS_OPTIONS: {
+  value: OperationalStatus;
+  label: string;
+  className: string;
+}[] = [
+  {
+    value: "in_progress" as OperationalStatus,
+    label: "Recruitment in Progress",
+    className: "border-orange-300 bg-orange-50 text-orange-800",
+  },
+  {
+    value: "pending_on_client" as OperationalStatus,
+    label: "Pending on Client",
+    className: "border-violet-300 bg-violet-50 text-violet-800",
+  },
+  {
+    value: "on_hold" as OperationalStatus,
+    label: "On Hold",
+    className: "border-yellow-300 bg-yellow-50 text-yellow-800",
+  },
+  {
+    value: "completed" as OperationalStatus,
+    label: "Completed",
+    className: "border-green-300 bg-green-50 text-green-800",
+  },
+  {
+    value: "cancelled" as OperationalStatus,
+    label: "Cancelled",
+    className: "border-red-300 bg-red-50 text-red-800",
+  },
+];
+
 const BUTTON_CLASS =
   "inline-flex items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold transition hover:border-[#082550] hover:bg-[#E9F4F8] disabled:cursor-not-allowed disabled:opacity-40";
 
@@ -97,16 +132,30 @@ function getCellValue(
   return String(value);
 }
 
-function getStatusLabel(status: string): string {
+function getStatusLabel(
+  status: string,
+  options: {
+    value: OperationalStatus;
+    label: string;
+    className: string;
+  }[] = STATUS_OPTIONS
+): string {
   return (
-    STATUS_OPTIONS.find((option) => option.value === status)?.label ??
+    options.find((option) => option.value === status)?.label ??
     status.replaceAll("_", " ")
   );
 }
 
-function getStatusClass(status: string): string {
+function getStatusClass(
+  status: string,
+  options: {
+    value: OperationalStatus;
+    label: string;
+    className: string;
+  }[] = STATUS_OPTIONS
+): string {
   return (
-    STATUS_OPTIONS.find((option) => option.value === status)?.className ??
+    options.find((option) => option.value === status)?.className ??
     "border-gray-200 bg-gray-50 text-gray-700"
   );
 }
@@ -244,6 +293,14 @@ export default function CustomTableOperationalWorkspace({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  const isRecruitmentWorkspace =
+    organizationId === CASCADEFFECTS_ORGANIZATION_ID &&
+    ["recruitment", "recruitmentupdates"].includes(normalizeText(tableName));
+
+  const statusOptions = isRecruitmentWorkspace
+    ? RECRUITMENT_STATUS_OPTIONS
+    : STATUS_OPTIONS;
+
   const [searchText, setSearchText] = useState("");
   const [sortColumnKey, setSortColumnKey] = useState("__position");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -253,9 +310,16 @@ export default function CustomTableOperationalWorkspace({
   const visibleColumns = useMemo(
     () =>
       [...columns]
-        .filter((column) => column.isVisible)
+        .filter(
+          (column) =>
+            column.isVisible &&
+            !(
+              isRecruitmentWorkspace &&
+              column.columnKey === "current_state"
+            )
+        )
         .sort((a, b) => a.position - b.position),
-    [columns]
+    [columns, isRecruitmentWorkspace]
   );
 
   const activeRows = useMemo(
@@ -487,6 +551,13 @@ export default function CustomTableOperationalWorkspace({
     const rowData: Record<string, unknown> = {};
 
     for (const column of columns) {
+      if (
+        isRecruitmentWorkspace &&
+        column.columnKey === "current_state"
+      ) {
+        continue;
+      }
+
       rowData[column.columnKey] = "";
     }
 
@@ -1198,9 +1269,9 @@ export default function CustomTableOperationalWorkspace({
                                 event.target.value as OperationalStatus
                               )
                             }
-                            className={`w-full min-w-32 rounded-lg border px-2.5 py-2 text-xs font-semibold outline-none disabled:cursor-not-allowed disabled:opacity-50 ${getStatusClass(row.operationalStatus)}`}
+                            className={`w-full min-w-32 rounded-lg border px-2.5 py-2 text-xs font-semibold outline-none disabled:cursor-not-allowed disabled:opacity-50 ${getStatusClass(row.operationalStatus, statusOptions)}`}
                           >
-                            {STATUS_OPTIONS.map((option) => (
+                            {statusOptions.map((option) => (
                               <option
                                 key={option.value}
                                 value={option.value}
@@ -1211,9 +1282,9 @@ export default function CustomTableOperationalWorkspace({
                           </select>
                         ) : (
                           <span
-                            className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold ${getStatusClass(row.operationalStatus)}`}
+                            className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold ${getStatusClass(row.operationalStatus, statusOptions)}`}
                           >
-                            {getStatusLabel(row.operationalStatus)}
+                            {getStatusLabel(row.operationalStatus, statusOptions)}
                           </span>
                         )}
                       </td>
