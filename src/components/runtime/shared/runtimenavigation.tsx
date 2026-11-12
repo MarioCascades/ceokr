@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import Image from "next/image";
 import type {
   UserManagementRecord,
 } from "@/lib/types/domain/usermanagement";
@@ -740,17 +741,19 @@ export default function RuntimeNavigation({
             md:flex
           "
         >
-          <span
+          <Image
+            src="/logos/headwaters.png"
+            alt="Headwaters"
+            width={180}
+            height={60}
+            priority
             className="
-              text-[10px]
-              font-bold
-              uppercase
-              tracking-[0.16em]
-              text-primary
+              h-10
+              w-auto
+              max-w-[150px]
+              object-contain
             "
-          >
-            Headwaters
-          </span>
+          />
         </div>
 
         {/* Unified Runtime Tabs */}
