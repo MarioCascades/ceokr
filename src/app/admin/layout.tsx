@@ -39,7 +39,6 @@ function AdminShell({
   return (
     <>
       <aside className="w-60 shrink-0 border-r bg-white">
-
         <div className="border-b px-6 py-5">
           <h2 className="text-xl font-bold tracking-tight">
             Administration
@@ -50,23 +49,16 @@ function AdminShell({
           </p>
         </div>
 
-
         <nav className="px-3 py-5">
+          {/* Overview */}
+          <div className="pb-3">
+            <AdminNavLink
+              href={adminHref("/admin")}
+              label="Overview"
+            />
+          </div>
 
-          {/* ==================================================
-              Overview
-          ================================================== */}
-
-          <AdminNavLink
-            href={adminHref("/admin")}
-            label="Overview"
-          />
-
-
-          {/* ==================================================
-              Organization
-          ================================================== */}
-
+          {/* Organization */}
           <AdminNavSection title="Organization" />
 
           <AdminNavLink
@@ -94,14 +86,7 @@ function AdminShell({
             label="Roles & Permissions"
           />
 
-
-          {/* ==================================================
-              Performance
-              --------------------------------------------------
-              Member Objectives, Key Results, and Initiatives
-              are now managed through the Member OKR domain.
-          ================================================== */}
-
+          {/* Performance */}
           <AdminNavSection title="Performance" />
 
           <AdminNavLink
@@ -114,11 +99,7 @@ function AdminShell({
             label="OKR Templates"
           />
 
-
-          {/* ==================================================
-              Analytics
-          ================================================== */}
-
+          {/* Analytics */}
           <AdminNavSection title="Analytics" />
 
           <AdminNavLink
@@ -131,11 +112,7 @@ function AdminShell({
             label="Reports"
           />
 
-
-          {/* ==================================================
-              Platform
-          ================================================== */}
-
+          {/* Platform */}
           <AdminNavSection title="Platform" />
 
           <AdminNavLink
@@ -147,11 +124,8 @@ function AdminShell({
             href={adminHref("/admin/ai")}
             label="AI Configuration"
           />
-
         </nav>
-
       </aside>
-
 
       <section className="min-w-0 flex-1 bg-gray-50 p-8 lg:p-10">
         {children}
@@ -159,7 +133,6 @@ function AdminShell({
     </>
   );
 }
-
 
 /* ==========================================================
    Loading Shell
@@ -169,7 +142,6 @@ function AdminShellFallback() {
   return (
     <>
       <aside className="w-60 shrink-0 border-r bg-white">
-
         <div className="border-b px-6 py-5">
           <h2 className="text-xl font-bold tracking-tight">
             Administration
@@ -179,15 +151,12 @@ function AdminShellFallback() {
             Platform management
           </p>
         </div>
-
       </aside>
-
 
       <section className="min-w-0 flex-1 bg-gray-50 p-8 lg:p-10" />
     </>
   );
 }
-
 
 /* ==========================================================
    Navigation Section
@@ -199,16 +168,13 @@ function AdminNavSection({
   title: string;
 }) {
   return (
-    <div className="mb-2 mt-7 px-3">
-
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+    <div className="mb-2 mt-5 border-t border-gray-200 px-3 pt-4 first:mt-0">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
         {title}
       </p>
-
     </div>
   );
 }
-
 
 /* ==========================================================
    Navigation Link
@@ -224,7 +190,7 @@ function AdminNavLink({
   return (
     <Link
       href={href}
-      className="mb-1 block rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-950"
+      className="mb-1 block rounded-md px-3 py-2 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-950"
     >
       {label}
     </Link>

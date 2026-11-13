@@ -45,7 +45,7 @@ function OrganizationNavLink({
     <Link
       href={href}
       className={[
-        "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
+        "flex items-center rounded-md px-3 py-2 text-sm font-bold transition-colors",
         isActive
           ? "bg-primary text-primary-foreground"
           : "text-foreground hover:bg-accent hover:text-accent-foreground",
@@ -64,14 +64,14 @@ function OrganizationNavSection({
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-1">
+    <div className="mt-3 space-y-1 border-t border-border pt-3">
       <div
         className="
           px-3
           pb-1
-          pt-4
+          pt-1
           text-[11px]
-          font-semibold
+          font-bold
           uppercase
           tracking-wider
           text-muted-foreground
