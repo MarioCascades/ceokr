@@ -48,35 +48,6 @@ function formatPerformanceMonth(
   ).format(date);
 }
 
-function formatStatus(
-  status: PerformanceInstance["status"]
-): string {
-  return status.replaceAll(
-    "_",
-    " "
-  );
-}
-
-function getStatusClasses(
-  status: PerformanceInstance["status"]
-): string {
-  switch (status) {
-    case "completed":
-    case "approved":
-      return "bg-accent text-primary ring-border";
-
-    case "submitted":
-      return "bg-destructive/10 text-destructive ring-destructive/20";
-
-    case "in_progress":
-      return "bg-secondary text-primary ring-border";
-
-    case "not_started":
-    default:
-      return "bg-muted text-muted-foreground ring-border";
-  }
-}
-
 export default function RuntimeHeader({
   document,
   organization,
@@ -283,57 +254,6 @@ export default function RuntimeHeader({
                   performanceInstance.performanceMonth
                 )}
               </p>
-            </div>
-
-            <div
-              className="
-                rounded-md
-                border
-                border-white/15
-                bg-white/10
-                px-2.5
-                py-1
-              "
-            >
-              <p
-                className="
-                  text-[9px]
-                  font-bold
-                  uppercase
-                  tracking-[0.12em]
-                  text-secondary
-                "
-              >
-                Status
-              </p>
-
-              <div
-                className="
-                  mt-0.5
-                "
-              >
-                <span
-                  className={`
-                    inline-flex
-                    items-center
-                    rounded-full
-                    px-2
-                    py-0.5
-                    text-[10px]
-                    font-bold
-                    capitalize
-                    ring-1
-                    ring-inset
-                    ${getStatusClasses(
-                      performanceInstance.status
-                    )}
-                  `}
-                >
-                  {formatStatus(
-                    performanceInstance.status
-                  )}
-                </span>
-              </div>
             </div>
 
             {/* CascadEffects Platform Branding */}

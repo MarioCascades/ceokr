@@ -1115,74 +1115,18 @@ export default function PerformanceSheet({
           ====================================================== */}
 
           <RuntimeSummary
-
             performanceInstance={
-
               runtimePerformanceInstance
-
             }
-
+            editing={editing}
+            saving={saving}
+            onEdit={() => {
+              setEditing(true);
+              setSaveSuccessful(false);
+              setSaveError(null);
+            }}
+            onSave={handleSavePerformance}
           />
-
-          <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-3">
-
-            <div className="rounded-lg bg-[#e9f4f8] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
-
-              Monthly Performance
-
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2">
-
-              {!editing && (
-
-                <button
-
-                  type="button"
-
-                  onClick={() => {
-
-                    setEditing(true);
-
-                    setSaveSuccessful(false);
-
-                    setSaveError(null);
-
-                  }}
-
-                  className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md"
-
-                >
-
-                  Edit
-
-                </button>
-
-              )}
-
-              {editing && (
-
-                <button
-
-                  type="button"
-
-                  onClick={handleSavePerformance}
-
-                  disabled={saving}
-
-                  className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-
-                >
-
-                  {saving ? "Saving..." : "Save"}
-
-                </button>
-
-              )}
-
-            </div>
-
-          </div>
 
         </div>
 

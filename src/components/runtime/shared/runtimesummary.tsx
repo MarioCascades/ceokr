@@ -1,4 +1,3 @@
-
 import type {
   PerformanceInstance,
 } from "@/lib/domain/performanceinstance";
@@ -6,19 +5,16 @@ import type {
 
 interface RuntimeSummaryProps {
   performanceInstance: PerformanceInstance;
+  editing: boolean;
+  saving: boolean;
+  onEdit: () => void;
+  onSave: () => void;
 }
 
 
 /* ==========================================================
    Formatting
 ========================================================== */
-
-function formatScore(
-  score: number
-) {
-  return `${Math.round(score)}%`;
-}
-
 
 function formatDateUpdated(
   updatedAt: string
@@ -115,11 +111,11 @@ function getPercentIntoPeriod(
 
 export default function RuntimeSummary({
   performanceInstance,
+  editing,
+  saving,
+  onEdit,
+  onSave,
 }: RuntimeSummaryProps) {
-
-  const score =
-    performanceInstance.overallScore ??
-    0;
 
   const percentIntoPeriod =
     getPercentIntoPeriod(
@@ -139,142 +135,129 @@ export default function RuntimeSummary({
         sm:px-4
       "
     >
-
       <div
         className="
           flex
           flex-wrap
           items-center
-          gap-x-5
-          gap-y-1.5
+          justify-between
+          gap-x-4
+          gap-y-2
         "
       >
-
-        <span
-          className="
-            shrink-0
-            text-[9px]
-            font-bold
-            uppercase
-            tracking-[0.14em]
-            text-muted-foreground
-          "
-        >
-          Performance Summary
-        </span>
-
-
-        {/* Overall Score */}
-
         <div
           className="
             flex
+            min-w-0
+            flex-wrap
             items-center
-            gap-1.5
+            gap-x-5
+            gap-y-1.5
           "
         >
-
           <span
             className="
-              text-[10px]
-              text-muted-foreground
-            "
-          >
-            Overall Score
-          </span>
-
-          <span
-            className="
-              text-sm
-              font-black
-              text-primary
-            "
-          >
-            {
-              formatScore(
-                score
-              )
-            }
-          </span>
-
-        </div>
-
-
-        {/* Date Updated */}
-
-        <div
-          className="
-            flex
-            items-center
-            gap-1.5
-          "
-        >
-
-          <span
-            className="
-              text-[10px]
-              text-muted-foreground
-            "
-          >
-            Date Updated
-          </span>
-
-          <span
-            className="
-              whitespace-nowrap
-              text-xs
+              shrink-0
+              text-[9px]
               font-bold
-              text-foreground
-            "
-          >
-            {
-              formatDateUpdated(
-                performanceInstance.updatedAt
-              )
-            }
-          </span>
-
-        </div>
-
-
-        {/* % Into Period */}
-
-        <div
-          className="
-            flex
-            items-center
-            gap-1.5
-          "
-        >
-
-          <span
-            className="
-              text-[10px]
+              uppercase
+              tracking-[0.14em]
               text-muted-foreground
             "
           >
-            % Into Period
+            Monthly Performance Summary
           </span>
 
-          <span
+          {/* Date Updated */}
+          <div
             className="
-              whitespace-nowrap
-              text-xs
-              font-bold
-              text-foreground
+              flex
+              items-center
+              gap-1.5
             "
           >
-            {
-              Math.round(
-                percentIntoPeriod
-              )
-            }%
-          </span>
+            <span
+              className="
+                text-[10px]
+                text-muted-foreground
+              "
+            >
+              Date Updated
+            </span>
 
+            <span
+              className="
+                whitespace-nowrap
+                text-xs
+                font-bold
+                text-foreground
+              "
+            >
+              {
+                formatDateUpdated(
+                  performanceInstance.updatedAt
+                )
+              }
+            </span>
+          </div>
+
+          {/* % Into Period */}
+          <div
+            className="
+              flex
+              items-center
+              gap-1.5
+            "
+          >
+            <span
+              className="
+                text-[10px]
+                text-muted-foreground
+              "
+            >
+              % Into Period
+            </span>
+
+            <span
+              className="
+                whitespace-nowrap
+                text-xs
+                font-bold
+                text-foreground
+              "
+            >
+              {
+                Math.round(
+                  percentIntoPeriod
+                )
+              }%
+            </span>
+          </div>
         </div>
 
+        <div className="flex shrink-0 items-center gap-2">
+          {!editing && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md"
+            >
+              Edit
+            </button>
+          )}
+
+          {editing && (
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saving}
+              className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save"}
+            </button>
+          )}
+        </div>
       </div>
-
     </section>
   );
 }
