@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type {
   CustomTableColumn,
@@ -29,6 +29,22 @@ type CustomTableMonthlyWorkspaceProps = {
 type OperationalStatus = CustomTableOperationalStatus;
 
 const CASCADEFFECTS_ORGANIZATION_ID = "e571cd65-b7f8-4669-bb41-370806097792";
+
+type RecruitmentWorkspaceController = {
+  tableDefinitionId: string;
+  tableKey: string;
+  refresh: (monthValue: string) => Promise<void>;
+  carryForward: (targetPerformanceMonth: string) => Promise<boolean>;
+};
+
+// Both Recruitment Updates tables are rendered as sibling instances of this
+// component. This small in-module registry lets the existing component
+// coordinate their month selection and carry-forward without changing the
+// Runtime page or introducing another visual wrapper.
+const recruitmentWorkspaceControllers = new Map<
+  string,
+  RecruitmentWorkspaceController
+>();
 
 const BRAND = {
   navy: "#082550",
@@ -169,6 +185,7 @@ export default function CustomTableMonthlyWorkspace({
   const recruitmentTableKeys = new Set([
     "recruitment",
     "recruitment-updates",
+    "us-based-hires",
   ]);
 
   const isRecruitmentWorkspace =
@@ -464,45 +481,133 @@ export default function CustomTableMonthlyWorkspace({
     }
   }
 
-  async function handleCarryForward() {
-    const [yearText, monthText] = selectedMonth.split("-");
-    const year = Number(yearText);
-    const month = Number(monthText);
+  const tableKey = workspace.definition.tableKey.trim().toLowerCase();
+  const isPrimaryRecruitmentWorkspace =
+    isRecruitmentWorkspace && tableKey === "recruitment-updates";
+  const showMonthControls =
+    !isRecruitmentWorkspace || isPrimaryRecruitmentWorkspace;
 
-    const nextDate = new Date(year, month, 1);
+  const carryForwardThisWorkspace = useCallback(
+    async (targetPerformanceMonth: string): Promise<boolean> => {
+      const result = await runAction(() =>
+        copyForwardCustomTableMonthAction({
+          organizationId,
+          tableDefinitionId,
+          sourcePerformanceMonth: workspace.month.performanceMonth,
+          targetPerformanceMonth,
+        })
+      );
 
-    const targetMonth = `${nextDate.getFullYear()}-${String(
-      nextDate.getMonth() + 1
-    ).padStart(2, "0")}-01`;
+      if (!result) {
+        return false;
+      }
 
-    const result = await runAction(() =>
-      copyForwardCustomTableMonthAction({
-        organizationId,
-        tableDefinitionId,
-        sourcePerformanceMonth: workspace.month.performanceMonth,
-        targetPerformanceMonth: targetMonth,
-      })
-    );
-
-    if (result) {
-      const targetMonthInput = targetMonth.slice(0, 7);
       const refreshed = await runAction(() =>
         loadCustomTableWorkspaceAction(
           organizationId,
           tableDefinitionId,
-          targetMonth
+          targetPerformanceMonth
         )
       );
 
-      if (refreshed) {
-        setWorkspace(refreshed);
-        setSelectedMonth(targetMonthInput);
-        setShowHidden(false);
+      if (!refreshed) {
+        return false;
+      }
+
+      setWorkspace(refreshed);
+      setSelectedMonth(targetPerformanceMonth.slice(0, 7));
+      setShowHidden(false);
+      setNotice(`Carry-forward completed. You are now viewing ${targetPerformanceMonth.slice(0, 7)}.`);
+      return true;
+    },
+    [organizationId, tableDefinitionId, workspace.month.performanceMonth, runAction]
+  );
+
+  useEffect(() => {
+    if (!isRecruitmentWorkspace) {
+      return;
+    }
+
+    const controller: RecruitmentWorkspaceController = {
+      tableDefinitionId,
+      tableKey,
+      refresh: refreshWorkspace,
+      carryForward: carryForwardThisWorkspace,
+    };
+
+    recruitmentWorkspaceControllers.set(tableDefinitionId, controller);
+
+    return () => {
+      const current = recruitmentWorkspaceControllers.get(tableDefinitionId);
+      if (current === controller) {
+        recruitmentWorkspaceControllers.delete(tableDefinitionId);
+      }
+    };
+  }, [
+    isRecruitmentWorkspace,
+    tableDefinitionId,
+    tableKey,
+    refreshWorkspace,
+    carryForwardThisWorkspace,
+  ]);
+
+  async function handleRecruitmentMonthChange(monthValue: string) {
+    const controllers = [...recruitmentWorkspaceControllers.values()].filter(
+      (controller) =>
+        controller.tableKey === "recruitment-updates" ||
+        controller.tableKey === "us-based-hires"
+    );
+
+    if (controllers.length !== 2) {
+      setError(
+        "Both Recruitment Updates tables must be loaded before changing the shared month. Please refresh the page and try again."
+      );
+      return;
+    }
+
+    await Promise.all(controllers.map((controller) => controller.refresh(monthValue)));
+    setShowHidden(false);
+  }
+
+  async function handleCarryForward() {
+    const [yearText, monthText] = selectedMonth.split("-");
+    const nextDate = new Date(Number(yearText), Number(monthText), 1);
+    const targetMonth = `${nextDate.getFullYear()}-${String(
+      nextDate.getMonth() + 1
+    ).padStart(2, "0")}-01`;
+
+    if (isRecruitmentWorkspace) {
+      const controllers = [...recruitmentWorkspaceControllers.values()].filter(
+        (controller) =>
+          controller.tableKey === "recruitment-updates" ||
+          controller.tableKey === "us-based-hires"
+      );
+
+      if (controllers.length !== 2) {
+        setError(
+          "Both Recruitment Updates tables must be loaded before carrying forward. Please refresh the page and try again."
+        );
+        return;
+      }
+
+      const results = await Promise.all(
+        controllers.map((controller) => controller.carryForward(targetMonth))
+      );
+
+      if (results.every(Boolean)) {
         setNotice(
-          `Carry-forward completed. You are now viewing ${targetMonthInput}.`
+          `Both Recruitment Updates tables were carried forward. You are now viewing ${targetMonth.slice(0, 7)}.`
+        );
+      } else {
+        setError(
+          "Carry-forward did not complete for both tables. Check the table messages before retrying."
         );
       }
+
+      return;
     }
+
+    await carryForwardThisWorkspace(targetMonth);
   }
 
   const isFinalized = workspace.month.isFinalized;
@@ -512,61 +617,46 @@ export default function CustomTableMonthlyWorkspace({
 
   return (
     <section className="space-y-5 text-[#272D2C]">
-      {/* WORKSPACE HEADER */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#B4C2D1]/70 bg-white shadow-[0_3px_12px_rgba(8,37,80,0.06)]">
-        <div className="h-1.5 bg-[#082550]" />
+      {/* MONTH CONTROLS */}
+      {showMonthControls && (
+      <div className="flex flex-col justify-end gap-3 sm:flex-row sm:items-end">
+        <label className="flex flex-col gap-1.5 text-xs font-semibold text-[#272D2C]">
+          <span className="uppercase tracking-wider text-[#082550]">
+            Performance Month
+          </span>
 
-        <div className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E26D5C]">
-              Operational Workspace
-            </p>
+          <input
+            type="month"
+            value={selectedMonth}
+            disabled={busy}
+            onChange={(event) => {
+              const value = event.target.value;
 
-            <h2 className="mt-2 text-xl font-black uppercase tracking-tight text-[#082550] sm:text-2xl">
-              Monthly Workspace
-            </h2>
+              if (value) {
+                setShowHidden(false);
+                if (isRecruitmentWorkspace) {
+                  void handleRecruitmentMonthChange(value);
+                } else {
+                  void refreshWorkspace(value);
+                }
+              }
+            }}
+            className="min-h-11 rounded-lg border border-[#B4C2D1] bg-white px-3 py-2 text-sm font-medium text-[#082550] outline-none transition hover:border-[#082550] focus:border-[#E26D5C] focus:ring-2 focus:ring-[#E26D5C]/20 disabled:bg-[#F5F7F9]"
+          />
+        </label>
 
-            <p className="mt-2 max-w-xl text-sm leading-6 text-[#272D2C]/70">
-              Manage operational records, update recruitment progress, and review
-              historical performance by month.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <label className="flex flex-col gap-1.5 text-xs font-semibold text-[#272D2C]">
-              <span className="uppercase tracking-wider text-[#082550]">
-                Performance Month
-              </span>
-
-              <input
-                type="month"
-                value={selectedMonth}
-                disabled={busy}
-                onChange={(event) => {
-                  const value = event.target.value;
-
-                  if (value) {
-                    setShowHidden(false);
-                    void refreshWorkspace(value);
-                  }
-                }}
-                className="min-h-11 rounded-lg border border-[#B4C2D1] bg-white px-3 py-2 text-sm font-medium text-[#082550] outline-none transition hover:border-[#082550] focus:border-[#E26D5C] focus:ring-2 focus:ring-[#E26D5C]/20 disabled:bg-[#F5F7F9]"
-              />
-            </label>
-
-            {canEditRows && (
-              <button
-                type="button"
-                disabled={busy || isFinalized}
-                onClick={() => void handleCarryForward()}
-                className={`${buttonBase} border-[#082550] bg-[#082550] text-white hover:bg-[#12396C]`}
-              >
-                {busy ? "Carrying Forward..." : "Carry Forward"}
-              </button>
-            )}
-          </div>
-        </div>
+        {canEditRows && (
+          <button
+            type="button"
+            disabled={busy || isFinalized}
+            onClick={() => void handleCarryForward()}
+            className={`${buttonBase} border-[#082550] bg-[#082550] text-white hover:bg-[#12396C]`}
+          >
+            {busy ? "Carrying Forward..." : "Carry Forward"}
+          </button>
+        )}
       </div>
+      )}
 
       {/* FINALIZED MONTH */}
       {isFinalized && (

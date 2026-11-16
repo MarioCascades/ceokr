@@ -85,8 +85,12 @@ export function calculatePercentageOfTarget(
     return clampScore((target / current) * 100);
   }
 
+  /*
+   * A zero target with higher_is_better is treated as a
+   * threshold metric: any positive result meets the target.
+   */
   if (target === 0) {
-    return 0;
+    return current > 0 ? 100 : 0;
   }
 
   const score = (current / target) * 100;
@@ -126,6 +130,15 @@ export function calculatePercentIntoPeriod(
 
   if (current === null || target === null) {
     return 0;
+  }
+
+  /*
+   * A zero target with higher_is_better is treated as a
+   * threshold metric: any positive result meets the target.
+   * This rule is independent of the elapsed month percentage.
+   */
+  if (scoringDirection === "higher_is_better" && target === 0) {
+    return current > 0 ? 100 : 0;
   }
 
   const elapsedPercent =

@@ -397,7 +397,11 @@ export async function createCustomTable(
 
   const definition = await createCustomTableDefinition(input);
 
-  if (input.tableKey.trim().toLowerCase() === "recruitment") {
+  if (
+    ["recruitment", "recruitment-updates", "us-based-hires"].includes(
+      input.tableKey.trim().toLowerCase()
+    )
+  ) {
     try {
       for (const column of RECRUITMENT_DEFAULT_COLUMNS) {
         await createCustomTableColumn({
@@ -418,7 +422,7 @@ export async function createCustomTable(
         error instanceof Error ? error.message : "Unknown error";
 
       throw new Error(
-        `Recruitment was created, but its default columns could not be initialized: ${message}`
+        `The Recruitment table was created, but its default columns could not be initialized: ${message}`
       );
     }
   }
