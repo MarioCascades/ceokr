@@ -188,6 +188,10 @@ function getOperationalTableDisplayName(
     return "VA Roster";
   }
 
+  if (keys.includes("recruitment-updates")) {
+    return "Recruitment Updates";
+  }
+
   return table.name;
 }
 
