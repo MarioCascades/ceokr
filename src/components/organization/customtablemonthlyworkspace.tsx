@@ -619,7 +619,32 @@ export default function CustomTableMonthlyWorkspace({
     <section className="space-y-5 text-[#272D2C]">
       {/* MONTH CONTROLS */}
       {showMonthControls && (
-      <div className="flex flex-col justify-end gap-3 sm:flex-row sm:items-end">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+        {isPrimaryRecruitmentWorkspace && (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#B4C2D1]/70 bg-white px-3.5 py-2 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-[#082550]" />
+              <span className="text-xs font-semibold text-[#082550]">
+                Active
+              </span>
+              <span className="text-sm font-black tabular-nums text-[#082550]">
+                {activeRows.length}
+              </span>
+            </div>
+
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#B4C2D1]/50 bg-[#E9F4F8] px-3.5 py-2">
+              <span className="h-2 w-2 rounded-full bg-[#B4C2D1]" />
+              <span className="text-xs font-semibold text-[#272D2C]">
+                Hidden
+              </span>
+              <span className="text-sm font-black tabular-nums text-[#272D2C]">
+                {hiddenRows.length}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col justify-end gap-3 sm:flex-row sm:items-end sm:justify-end">
         <label className="flex flex-col gap-1.5 text-xs font-semibold text-[#272D2C]">
           <span className="uppercase tracking-wider text-[#082550]">
             Performance Month
@@ -655,6 +680,20 @@ export default function CustomTableMonthlyWorkspace({
             {busy ? "Carrying Forward..." : "Carry Forward"}
           </button>
         )}
+
+        {isPrimaryRecruitmentWorkspace && (
+          <button
+            type="button"
+            onClick={() => setShowHidden((current) => !current)}
+            className={`${buttonBase} border-[#B4C2D1] bg-white text-[#082550] hover:border-[#082550] hover:bg-[#E9F4F8]`}
+          >
+            {showHidden ? "View Active Listings" : "Show Hidden Listings"}
+            <span className="ml-2 rounded-full bg-[#E9F4F8] px-2 py-0.5 text-xs text-[#082550]">
+              {showHidden ? activeRows.length : hiddenRows.length}
+            </span>
+          </button>
+        )}
+        </div>
       </div>
       )}
 
@@ -700,6 +739,7 @@ export default function CustomTableMonthlyWorkspace({
       )}
 
       {/* LISTING SUMMARY AND CONTROLS */}
+      {!isPrimaryRecruitmentWorkspace && (
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#B4C2D1]/70 bg-white px-3.5 py-2 shadow-sm">
@@ -723,17 +763,20 @@ export default function CustomTableMonthlyWorkspace({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowHidden((current) => !current)}
-          className={`${buttonBase} border-[#B4C2D1] bg-white text-[#082550] hover:border-[#082550] hover:bg-[#E9F4F8]`}
-        >
-          {showHidden ? "View Active Listings" : "Show Hidden Listings"}
-          <span className="ml-2 rounded-full bg-[#E9F4F8] px-2 py-0.5 text-xs text-[#082550]">
-            {showHidden ? activeRows.length : hiddenRows.length}
-          </span>
-        </button>
+        {!isPrimaryRecruitmentWorkspace && (
+          <button
+            type="button"
+            onClick={() => setShowHidden((current) => !current)}
+            className={`${buttonBase} border-[#B4C2D1] bg-white text-[#082550] hover:border-[#082550] hover:bg-[#E9F4F8]`}
+          >
+            {showHidden ? "View Active Listings" : "Show Hidden Listings"}
+            <span className="ml-2 rounded-full bg-[#E9F4F8] px-2 py-0.5 text-xs text-[#082550]">
+              {showHidden ? activeRows.length : hiddenRows.length}
+            </span>
+          </button>
+        )}
       </div>
+      )}
 
       {/* SPREADSHEET */}
       <div className="overflow-hidden rounded-2xl border border-[#B4C2D1]/80 bg-white shadow-[0_4px_18px_rgba(8,37,80,0.07)]">
