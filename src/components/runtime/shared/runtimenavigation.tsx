@@ -1,17 +1,13 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-} from "react";
 import Image from "next/image";
 import type {
   UserManagementRecord,
 } from "@/lib/types/domain/usermanagement";
 
-import {
-  loadRuntimeNavigationTabsAction,
-} from "@/app/organization/settings/actions";
+import type {
+  RuntimeNavigationTab,
+} from "@/lib/types/domain/runtimenavigationtab";
 
 interface RuntimeOperationalTableTab {
   id: string;
@@ -27,6 +23,7 @@ interface RuntimeNavigationProps {
   performanceMonth: string;
   performanceMonths: string[];
   tabOrder?: string[];
+  navigationTabs: RuntimeNavigationTab[];
   operationalTables?: RuntimeOperationalTableTab[];
   selectedRuntimeTab?: string;
 }
@@ -246,124 +243,33 @@ export default function RuntimeNavigation({
   performanceMonth,
   performanceMonths,
   tabOrder,
+  navigationTabs,
   operationalTables = [],
   selectedRuntimeTab,
 }: RuntimeNavigationProps) {
   /*
-   * The existing prop is retained for compatibility with
-   * existing Runtime components.
+   * Navigation configuration is resolved by the Runtime server
+   * page and passed into this component. This avoids a second
+   * client-side request after the page has already loaded.
    *
-   * Organization-level Runtime navigation configuration is
-   * loaded through a server action.
+   * Hidden tabs remain persisted but are excluded from the
+   * active navigation order. An empty configuration retains
+   * the existing default tab-order behavior.
    */
 
-  const [
-    configuredTabOrder,
-    setConfiguredTabOrder,
-  ] = useState<string[]>(
-    tabOrder ?? []
-  );
+  const hasSavedNavigationConfiguration =
+    navigationTabs.length > 0;
 
-  /*
-   * Tracks whether the organization has a saved navigation
-   * configuration.
-   *
-   * When a saved configuration exists, Dashboard must only
-   * appear if it is explicitly included in the active tabs.
-   *
-   * When no configuration exists, retain the original
-   * default behavior and expose Dashboard.
-   */
-
-  const [
-    hasSavedNavigationConfiguration,
-    setHasSavedNavigationConfiguration,
-  ] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadNavigationConfiguration() {
-      try {
-        const configuredTabs =
-          await loadRuntimeNavigationTabsAction(
-            organizationId
-          );
-
-        if (cancelled) {
-          return;
-        }
-
-        setHasSavedNavigationConfiguration(
-          configuredTabs.length > 0
-        );
-
-        if (
-          configuredTabs.length > 0
-        ) {
-          /*
-           * Hidden tabs remain persisted in the database but
-           * must not appear in Runtime.
-           */
-
-          setConfiguredTabOrder(
-            configuredTabs
-              .filter(
-                (tab) =>
-                  !tab.isHidden
-              )
-              .sort(
-                (first, second) =>
-                  first.position -
-                  second.position
-              )
-              .map(
-                (tab) =>
-                  tab.tabKey
-              )
-          );
-
-          return;
-        }
-
-        setConfiguredTabOrder(
-          tabOrder ?? []
-        );
-
-      } catch (error) {
-        /*
-         * Navigation configuration should never prevent
-         * Runtime itself from loading.
-         *
-         * Fall back to the existing navigation order when
-         * configuration cannot be loaded.
-         */
-
-        console.error(
-          "Error loading Runtime navigation configuration:",
-          error
-        );
-
-        if (!cancelled) {
-          setHasSavedNavigationConfiguration(false);
-
-          setConfiguredTabOrder(
-            tabOrder ?? []
-          );
-
-        }
-      }
-    }
-
-    void loadNavigationConfiguration();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    organizationId,
-    tabOrder,
-  ]);
+  const configuredTabOrder =
+    hasSavedNavigationConfiguration
+      ? navigationTabs
+          .filter((tab) => !tab.isHidden)
+          .sort(
+            (first, second) =>
+              first.position - second.position
+          )
+          .map((tab) => tab.tabKey)
+      : tabOrder ?? [];
 
   /*
    * The navigation itself intentionally provides the full

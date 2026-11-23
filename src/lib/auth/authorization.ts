@@ -64,21 +64,18 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getAuthorizationContext,
+  isApplicationUserPlatformSuperAdmin,
   type AuthorizationContext,
 } from "@/lib/auth/authorizationcontext";
+import {
+  getCurrentServerAuth,
+} from "@/lib/auth/currentserveruser";
 
 
 /* ==========================================================
    Permission Result
 ========================================================== */
 
-/**
- * Represents the result of resolving a permission.
- *
- * Keeping this internal allows the public authorization
- * helpers to remain simple while preserving the ability
- * to expand authorization behavior later.
- */
 type PermissionResolution = {
 
   context: AuthorizationContext;
@@ -92,32 +89,6 @@ type PermissionResolution = {
    Resolve Permission
 ========================================================== */
 
-/**
- * Resolves whether the currently authenticated user has a
- * specific permission within the requested Organization.
- *
- * Authorization flow:
- *
- * 1. Resolve Authorization Context.
- *
- * 2. If no context exists:
- *      deny access.
- *
- * 3. If Platform Super Admin:
- *      allow organization-scoped authority.
- *
- * 4. Otherwise resolve Membership Roles.
- *
- * 5. Resolve active Organization Roles.
- *
- * 6. Resolve Role Permissions.
- *
- * 7. Resolve the requested Permission.
- *
- * The Authorization Context is intentionally resolved first
- * so authenticated identity and organization membership are
- * established by one central server-side boundary.
- */
 async function resolvePermission(
   organizationId: string,
   permissionKey: string
@@ -170,17 +141,6 @@ async function resolvePermission(
      Platform Authority
   ======================================================== */
 
-  /*
-   * Platform Super Admin authority exists above the
-   * organization role hierarchy.
-   *
-   * An active Platform Super Admin therefore satisfies
-   * organization-scoped authorization without requiring
-   * an organization membership.
-   *
-   * Resource ownership remains a separate concern.
-   */
-
   if (context.isPlatformSuperAdmin) {
 
     return {
@@ -196,13 +156,6 @@ async function resolvePermission(
   /* ========================================================
      Organization Membership
   ======================================================== */
-
-  /*
-   * The Authorization Context guarantees that a membership
-   * exists for a non-platform user.
-   *
-   * membershipId is therefore required here.
-   */
 
   if (!context.membershipId) {
 
@@ -501,20 +454,6 @@ async function resolvePermission(
    Has Permission
 ========================================================== */
 
-/**
- * Determines whether the currently authenticated user has
- * the requested organization-scoped permission.
- *
- * Returns false when:
- *
- * - the user is not authenticated
- * - the user does not belong to the organization
- * - the user has no active roles
- * - the user has no matching permission
- *
- * Platform Super Admins are authorized through their
- * platform-level authority.
- */
 export async function hasPermission(
   organizationId: string,
   permissionKey: string
@@ -538,21 +477,6 @@ export async function hasPermission(
    Require Permission
 ========================================================== */
 
-/**
- * Requires the currently authenticated user to have the
- * requested organization-scoped permission.
- *
- * Throws when authorization fails.
- *
- * Intended for server-side:
- *
- * - API routes
- * - Server Actions
- * - server services
- * - administrative workflows
- *
- * Resource ownership must still be validated separately.
- */
 export async function requirePermission(
   organizationId: string,
   permissionKey: string
@@ -581,47 +505,20 @@ export async function requirePermission(
  * Requires the authenticated user to have active
  * Platform Super Admin authority.
  *
- * This remains separate from organization permission
- * evaluation because Platform Super Admin is a platform-level
- * authority rather than an organization role.
+ * The existing application-user lookup intentionally retains
+ * its original auth_user_id-only condition. It is not changed
+ * to the active-user lookup used by Authorization Context.
+ *
+ * Supabase Auth identity and the active platform membership
+ * result are shared with other authorization paths through
+ * request-scoped React caches.
  */
 export async function requirePlatformSuperAdmin(): Promise<void> {
 
-  const supabaseServer =
-    await createSupabaseServerClient();
-
-
-  /* ========================================================
-     Authorization Context Is Not Appropriate Here
-  ======================================================== */
-
-  /*
-   * Platform authority is global and does not require an
-   * organizationId.
-   *
-   * Therefore this function resolves the authenticated
-   * application User directly through the existing server
-   * authorization infrastructure.
-   */
-
   const {
-    data: {
-      user: authUser,
-    },
-    error: authError,
-  } = await supabaseServer.auth.getUser();
-
-  if (authError) {
-
-    console.error(
-      "Error loading authenticated user:",
-      authError
-    );
-
-    throw new Error(
-      `Failed to load authenticated user: ${authError.message}`
-    );
-  }
+    supabaseServer,
+    authUser,
+  } = await getCurrentServerAuth();
 
   if (!authUser) {
 
@@ -673,41 +570,12 @@ export async function requirePlatformSuperAdmin(): Promise<void> {
      Platform Membership
   ======================================================== */
 
-  const {
-    data: platformMembership,
-    error: platformMembershipError,
-  } = await supabaseServer
-    .from("platform_memberships")
-    .select(
-      "id"
-    )
-    .eq(
-      "user_id",
+  const platformSuperAdmin =
+    await isApplicationUserPlatformSuperAdmin(
       applicationUser.id
-    )
-    .eq(
-      "platform_role",
-      "super_admin"
-    )
-    .eq(
-      "is_active",
-      true
-    )
-    .maybeSingle();
-
-  if (platformMembershipError) {
-
-    console.error(
-      "Error loading platform membership:",
-      platformMembershipError
     );
 
-    throw new Error(
-      `Failed to load platform membership: ${platformMembershipError.message}`
-    );
-  }
-
-  if (!platformMembership) {
+  if (!platformSuperAdmin) {
 
     throw new Error(
       "Platform Super Admin access is required."
@@ -720,14 +588,6 @@ export async function requirePlatformSuperAdmin(): Promise<void> {
    Require Authorization Context
 ========================================================== */
 
-/**
- * Requires the authenticated user to have a valid
- * authorization context for the requested Organization.
- *
- * This is useful when a server operation needs authenticated
- * organization context but does not yet require a specific
- * permission.
- */
 export async function requireAuthorizationContext(
   organizationId: string
 ): Promise<AuthorizationContext> {

@@ -50,6 +50,12 @@ import type {
 
 } from "@/services/dashboard.service";
 
+import type {
+
+  RuntimeNavigationTab,
+
+} from "@/lib/types/domain/runtimenavigationtab";
+
 import {
 
   saveRuntimePerformanceSheetAction,
@@ -216,6 +222,12 @@ interface PerformanceSheetProps {
   operationalTables?: RuntimeOperationalTableNavigationItem[];
 
   /*
+   * Saved Runtime navigation configuration supplied by the
+   * organization Runtime page.
+   */
+  navigationTabs?: RuntimeNavigationTab[];
+
+  /*
 
    * The currently selected Runtime navigation tab, when supplied.
 
@@ -261,6 +273,8 @@ export default function PerformanceSheet({
   performanceMonths,
 
   operationalTables = [],
+
+  navigationTabs = [],
 
   selectedRuntimeTab,
 
@@ -1033,6 +1047,12 @@ export default function PerformanceSheet({
                 operationalTables={
 
                   operationalTables
+
+                }
+
+                navigationTabs={
+
+                  navigationTabs
 
                 }
 

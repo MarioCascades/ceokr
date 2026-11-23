@@ -32,6 +32,7 @@
 
 import "server-only";
 
+import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type {
@@ -40,20 +41,24 @@ import type {
 
 
 /* ==========================================================
-   Get Current Server User
+   Request-Scoped Supabase Authentication
 ========================================================== */
 
-export async function getCurrentServerUser(): Promise<
-  User | null
-> {
+/**
+ * Resolves the authenticated Supabase identity and its
+ * cookie-aware server client once per React server request.
+ *
+ * Sharing this result allows independent authorization paths
+ * to reuse the same verified Auth lookup without changing
+ * their application-user filtering rules.
+ *
+ * React cache is request-scoped. It does not persist identity
+ * data between requests or users.
+ */
+async function resolveCurrentServerAuth() {
 
   const supabaseServer =
     await createSupabaseServerClient();
-
-
-  /* ========================================================
-     Supabase Auth Identity
-  ======================================================== */
 
   const {
     data: {
@@ -73,6 +78,37 @@ export async function getCurrentServerUser(): Promise<
       `Failed to load authenticated user: ${authError.message}`
     );
   }
+
+  return {
+    supabaseServer,
+    authUser,
+  };
+}
+
+
+/**
+ * Shared request-scoped authentication result.
+ *
+ * The Supabase client and authenticated identity are reused
+ * only within the current React server request.
+ */
+export const getCurrentServerAuth = cache(
+  resolveCurrentServerAuth
+);
+
+
+/* ==========================================================
+   Get Current Server User
+========================================================== */
+
+async function resolveCurrentServerUser(): Promise<
+  User | null
+> {
+
+  const {
+    supabaseServer,
+    authUser,
+  } = await getCurrentServerAuth();
 
   if (!authUser) {
     return null;
@@ -117,3 +153,13 @@ export async function getCurrentServerUser(): Promise<
 
   return data as User;
 }
+
+
+/**
+ * Reuses the active application-user lookup during the same
+ * React server request. The is_active=true condition and the
+ * complete User selection remain unchanged.
+ */
+export const getCurrentServerUser = cache(
+  resolveCurrentServerUser
+);

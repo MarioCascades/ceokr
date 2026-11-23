@@ -49,6 +49,7 @@
  * ==========================================================
  */
 
+import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentServerUser } from "@/lib/auth/currentserveruser";
 
@@ -101,8 +102,12 @@ export type AuthorizationContext = {
  *
  * This helper intentionally accepts an application User id
  * rather than resolving the authenticated identity again.
+ *
+ * The request-scoped cache allows the organization context
+ * and the independent platform-admin guard to share the same
+ * platform membership result during one server request.
  */
-async function isApplicationUserPlatformSuperAdmin(
+async function resolveApplicationUserPlatformSuperAdmin(
   applicationUserId: string
 ): Promise<boolean> {
 
@@ -145,6 +150,16 @@ async function isApplicationUserPlatformSuperAdmin(
 }
 
 
+/**
+ * Shared request-scoped platform authority lookup.
+ *
+ * This does not cache across requests, users, or deployments.
+ */
+export const isApplicationUserPlatformSuperAdmin = cache(
+  resolveApplicationUserPlatformSuperAdmin
+);
+
+
 /* ==========================================================
    Get Authorization Context
 ========================================================== */
@@ -175,7 +190,7 @@ async function isApplicationUserPlatformSuperAdmin(
  * Permission evaluation remains the responsibility of the
  * authorization layer.
  */
-export async function getAuthorizationContext(
+async function resolveAuthorizationContext(
   organizationId: string
 ): Promise<AuthorizationContext | null> {
 
@@ -307,6 +322,25 @@ export async function getAuthorizationContext(
 
   };
 }
+
+
+/* ==========================================================
+   Request-Scoped Authorization Context Cache
+========================================================== */
+
+/**
+ * Reuses the resolved authorization context during the same
+ * React Server Component request when the organization ID
+ * is identical. React invalidates this cache between requests.
+ *
+ * This does not persist authorization data or share it across
+ * users, organizations, or independent requests. Calls made
+ * outside a React Server Component cache context still execute
+ * the underlying resolver normally.
+ */
+export const getAuthorizationContext = cache(
+  resolveAuthorizationContext
+);
 
 
 /* ==========================================================

@@ -730,13 +730,7 @@ export default async function RuntimePage({
 
 
 
-  const [members, dashboard] = await Promise.all([
-
-    listUserManagementRecords(organization.id),
-
-    loadDashboard(organization.id),
-
-  ]);
+  const members = await listUserManagementRecords(organization.id);
 
 
 
@@ -777,73 +771,72 @@ export default async function RuntimePage({
 
   let canEditCustomTableRows = false;
 
-
+  let savedNavigationTabs: Awaited<
+    ReturnType<typeof loadRuntimeNavigationTabs>
+  > = [];
 
   try {
-
-    [canViewCustomTables, canEditCustomTableRows] =
-
-      await Promise.all([
-
-        hasPermission(
-
-          organization.id,
-
-          "custom_tables.view"
-
-        ),
-
-        hasPermission(
-
-          organization.id,
-
-          "custom_tables.rows.edit"
-
-        ),
-
-      ]);
-
-
-
-    if (canViewCustomTables) {
-
-      const organizationTables = await listCustomTables(
-
-        organization.id
-
-      );
-
-
-
-      customTables = organizationTables.filter(
-
-        (table) => table.isEnabled
-
-      );
-
-    }
-
-  } catch (error) {
-
-    console.error(
-
-      "Unable to load Runtime Custom Tables:",
-
-      error
-
+    const navigationTabsPromise = loadRuntimeNavigationTabs(
+      organization.id
+    ).then(
+      (tabs) => ({
+        tabs,
+        error: null as unknown,
+      }),
+      (error: unknown) => ({
+        tabs: [] as Awaited<
+          ReturnType<typeof loadRuntimeNavigationTabs>
+        >,
+        error,
+      })
     );
 
+    const [
+      canViewPermission,
+      canEditPermission,
+      navigationResult,
+    ] = await Promise.all([
+      hasPermission(
+        organization.id,
+        "custom_tables.view"
+      ),
+      hasPermission(
+        organization.id,
+        "custom_tables.rows.edit"
+      ),
+      navigationTabsPromise,
+    ]);
 
+    canViewCustomTables = canViewPermission;
+    canEditCustomTableRows = canEditPermission;
+    savedNavigationTabs = navigationResult.tabs;
+
+    if (navigationResult.error && canViewCustomTables) {
+      console.error(
+        "Unable to load Runtime navigation configuration:",
+        navigationResult.error
+      );
+    }
+
+    if (canViewCustomTables) {
+      const organizationTables = await listCustomTables(
+        organization.id
+      );
+
+      customTables = organizationTables.filter(
+        (table) => table.isEnabled
+      );
+    }
+  } catch (error) {
+    console.error(
+      "Unable to load Runtime Custom Tables:",
+      error
+    );
 
     customTables = [];
-
     canViewCustomTables = false;
-
     canEditCustomTableRows = false;
-
   }
-
-
 
   const operationalTables = customTables.map((table) => ({
 
@@ -871,6 +864,8 @@ export default async function RuntimePage({
 
     operationalTables,
 
+    navigationTabs: savedNavigationTabs,
+
   };
 
 
@@ -892,40 +887,6 @@ export default async function RuntimePage({
    */
 
   if (!params.subjectId && !params.runtimeTab) {
-
-    let savedNavigationTabs: Awaited<
-
-      ReturnType<typeof loadRuntimeNavigationTabs>
-
-    > = [];
-
-
-
-    if (canViewCustomTables) {
-
-      try {
-
-        savedNavigationTabs = await loadRuntimeNavigationTabs(
-
-          organization.id
-
-        );
-
-      } catch (error) {
-
-        console.error(
-
-          "Unable to resolve the initial Runtime navigation tab:",
-
-          error
-
-        );
-
-      }
-
-    }
-
-
 
     const hasSavedNavigationConfiguration =
 
@@ -2454,6 +2415,11 @@ export default async function RuntimePage({
 
 
 
+  // Operational workspaces return above and do not require Dashboard data.
+  // Load it only for the organization Dashboard and individual Member Performance.
+  const dashboard = await loadDashboard(organization.id);
+
+
   /* ========================================================
 
      Organization Dashboard
@@ -2801,6 +2767,7 @@ export default async function RuntimePage({
         performanceMonths={runtimeExecution.performanceMonths}
 
         operationalTables={operationalTables}
+        navigationTabs={savedNavigationTabs}
         stickyReturnBarVisible={canReturnToOrgAdmin}
 
       />
