@@ -64,7 +64,6 @@ import {
 
 import ObjectiveCard from "./objectivecard";
 
-import ObjectiveEditor from "./objectiveeditor";
 
 import RuntimeHeader from "../shared/runtimeheader";
 
@@ -343,25 +342,7 @@ export default function PerformanceSheet({
      Runtime Objectives
   ======================================================== */
 
-  const [
-
-    objectives,
-
-    setObjectives,
-
-  ] = useState(
-
-    initialObjectives
-
-  );
-
-  const [
-
-    addingObjective,
-
-    setAddingObjective,
-
-  ] = useState(false);
+  const objectives = initialObjectives;
 
   /* ========================================================
 
@@ -796,101 +777,6 @@ export default function PerformanceSheet({
       );
 
     }
-
-  }
-
-  /* ========================================================
-
-     Objective Updates
-  ======================================================== */
-
-  function handleObjectiveUpdated(
-
-    updatedObjective:
-
-      RuntimePerformanceObjective
-
-  ) {
-
-    setObjectives(
-
-      (current) =>
-
-        current.map(
-
-          (objective) =>
-
-            objective.id ===
-
-            updatedObjective.id
-
-              ? updatedObjective
-
-              : objective
-
-        )
-
-    );
-
-  }
-
-  function handleObjectiveDeleted(
-
-    objectiveId: string
-
-  ) {
-
-    setObjectives(
-
-      (current) =>
-
-        current.filter(
-
-          (objective) =>
-
-            objective.id !==
-
-            objectiveId
-
-        )
-
-    );
-
-  }
-
-  function handleObjectiveCreated(
-
-    objective:
-
-      RuntimePerformanceObjective
-
-  ) {
-
-    setObjectives(
-
-      (current) => [
-
-        ...current,
-
-        {
-
-          ...objective,
-
-          position:
-
-            current.length + 1,
-
-        },
-
-      ]
-
-    );
-
-    setAddingObjective(
-
-      false
-
-    );
 
   }
 
@@ -1472,18 +1358,6 @@ export default function PerformanceSheet({
 
                 }
 
-                onUpdated={
-
-                  handleObjectiveUpdated
-
-                }
-
-                onDeleted={
-
-                  handleObjectiveDeleted
-
-                }
-
                 onKeyResultDraftChange={
 
                   handleKeyResultDraftChange
@@ -1496,153 +1370,6 @@ export default function PerformanceSheet({
 
           )}
 
-          {addingObjective && (
-
-            <ObjectiveEditor
-
-              organizationId={
-
-                organizationId
-
-              }
-
-              performanceInstanceId={
-
-                performanceInstanceId
-
-              }
-
-              onSaved={
-
-                handleObjectiveCreated
-
-              }
-
-              onCancel={() =>
-
-                setAddingObjective(
-
-                  false
-
-                )
-
-              }
-
-            />
-
-          )}
-
-          {!addingObjective &&
-
-            editing && (
-
-              <button
-
-                type="button"
-
-                onClick={() =>
-
-                  setAddingObjective(
-
-                    true
-
-                  )
-
-                }
-
-                className="
-
-                  group
-
-                  flex
-
-                  w-full
-
-                  items-center
-
-                  justify-center
-
-                  gap-3
-
-                  rounded-xl
-
-                  border-2
-
-                  border-dashed
-
-                  border-[#b4c2d1]
-
-                  bg-[#e9f4f8]/40
-
-                  px-4
-
-                  py-3
-
-                  text-sm
-
-                  font-bold
-
-                  text-primary
-
-                  transition-all
-
-                  duration-200
-
-                  hover:border-primary
-
-                  hover:bg-[#e9f4f8]
-
-                "
-
-              >
-
-                <span
-
-                  className="
-
-                    flex
-
-                    h-8
-
-                    w-8
-
-                    items-center
-
-                    justify-center
-
-                    rounded-full
-
-                    bg-primary
-
-                    text-lg
-
-                    font-normal
-
-                    leading-none
-
-                    text-primary-foreground
-
-                    transition-transform
-
-                    duration-200
-
-                    group-hover:scale-105
-
-                  "
-
-                  aria-hidden="true"
-
-                >
-
-                  +
-
-                </span>
-
-                Add Objective
-
-              </button>
-
-            )}
 
         </div>
 

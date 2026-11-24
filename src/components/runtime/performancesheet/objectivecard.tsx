@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
 
 import type {
   RuntimePerformanceObjective,
@@ -16,10 +14,6 @@ import type {
 } from "./performancesheet";
 
 import KeyResultRow from "../keyresults/keyresultrow";
-import ObjectiveEditor from "./objectiveeditor";
-import {
-  deleteRuntimePerformanceInstanceObjectiveAction,
-} from "@/app/runtime/actions";
 
 /* ==========================================================
    Props
@@ -47,14 +41,6 @@ interface ObjectiveCardProps {
   >;
 
   editing?: boolean;
-
-  onUpdated: (
-    updatedObjective: RuntimePerformanceObjective
-  ) => void;
-
-  onDeleted: (
-    objectiveId: string
-  ) => void;
 
   /*
    * Runtime Performance Sheet owns the
@@ -90,23 +76,11 @@ export default function ObjectiveCard({
 
   editing: globalEditing = false,
 
-  onUpdated,
-
-  onDeleted,
 
   onKeyResultDraftChange,
 
 }: ObjectiveCardProps) {
 
-  const [
-    editingObjective,
-    setEditingObjective,
-  ] = useState(false);
-
-  const [
-    deleting,
-    setDeleting,
-  ] = useState(false);
 
   /* ========================================================
      Objective Progress
@@ -134,105 +108,6 @@ export default function ObjectiveCard({
 
   const objectiveProgress =
     keyResultProgress;
-
-  /* ========================================================
-     Delete Objective
-  ======================================================== */
-
-  async function handleDelete() {
-
-    if (deleting) {
-      return;
-    }
-
-    const confirmed =
-      window.confirm(
-        `Delete "${objective.title}"?\n\nThis will remove the Objective from this Performance Instance.`
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setDeleting(true);
-
-    try {
-
-      await deleteRuntimePerformanceInstanceObjectiveAction(
-        organizationId,
-        performanceInstanceId,
-        objective.id
-      );
-
-      onDeleted(
-        objective.id
-      );
-
-    } catch (error) {
-
-      console.error(
-        "Failed to delete objective:",
-        error
-      );
-
-      setDeleting(false);
-    }
-  }
-
-  /* ========================================================
-     Individual Objective Editing
-  ======================================================== */
-
-  /*
-   * Objective configuration editing remains separate
-   * from Runtime performance-value saving.
-   *
-   * The global Save controls performance values,
-   * targets, scores, and employee comments.
-   */
-
-  if (editingObjective) {
-
-    return (
-
-      <ObjectiveEditor
-
-        organizationId={
-          organizationId
-        }
-
-        performanceInstanceId={
-          performanceInstanceId
-        }
-
-        objective={
-          objective
-        }
-
-        onSaved={(
-          updatedObjective
-        ) => {
-
-          setEditingObjective(
-            false
-          );
-
-          onUpdated(
-            updatedObjective
-          );
-
-        }}
-
-        onCancel={() =>
-          setEditingObjective(
-            false
-          )
-        }
-
-      />
-
-    );
-  }
 
   /* ========================================================
      Render
@@ -268,50 +143,6 @@ export default function ObjectiveCard({
 
         </div>
 
-        {/* ==================================================
-            Objective Actions
-        ================================================== */}
-
-        {!globalEditing && (
-
-          <div className="flex shrink-0 items-center gap-2">
-
-            <button
-              type="button"
-              onClick={() =>
-                setEditingObjective(true)
-              }
-              className="inline-flex items-center gap-2 rounded-md border-2 bg-white px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-100"
-            >
-
-              <Pencil className="h-4 w-4" />
-
-              Edit
-
-            </button>
-
-            <button
-              type="button"
-              onClick={
-                handleDelete
-              }
-              disabled={
-                deleting
-              }
-              className="inline-flex items-center gap-2 rounded-md border-2 border-destructive/30 bg-white px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-
-              <Trash2 className="h-4 w-4" />
-
-              {deleting
-                ? "Deleting..."
-                : "Delete"}
-
-            </button>
-
-          </div>
-
-        )}
 
       </div>
 
